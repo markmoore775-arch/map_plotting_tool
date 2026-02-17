@@ -17,19 +17,17 @@ try {
     const hasMap = html.includes('id="map"');
     const hasPointInput = html.includes('id="pointInput"');
     const hasPointName = html.includes('id="pointName"');
-    const hasPointType = html.includes('id="pointType"');
     const hasAddPointBtn = html.includes('id="addPointBtn"');
     
     console.log("✓ Sidebar element exists:", hasSidebar);
     console.log("✓ Map element exists:", hasMap);
     console.log("✓ Location input exists:", hasPointInput);
     console.log("✓ Name input exists:", hasPointName);
-    console.log("✓ Point type select exists:", hasPointType);
     console.log("✓ Add Point button exists:", hasAddPointBtn);
     
     // Test 2: Check JavaScript files exist
     console.log("\nTEST 2: JavaScript Files");
-    const jsFiles = ['converters.js', 'cellFan.js', 'exporters.js', 'io.js', 'app.js'];
+    const jsFiles = ['converters.js', 'exporters.js', 'io.js', 'app.js'];
     jsFiles.forEach(file => {
         const exists = fs.existsSync(path.join(__dirname, 'js', file));
         console.log(exists ? "✓" : "✗", file, exists ? "exists" : "MISSING");
@@ -61,8 +59,8 @@ try {
     console.log("and perform the following manual tests:");
     console.log("1. Check if sidebar is visible on the left with map on the right");
     console.log("2. Open browser console (F12) and check for errors");
-    console.log("3. Try adding: SW1A 1AA, name: Westminster, type: General Point");
-    console.log("4. Try adding: TQ 30163 80311, name: OS Grid Test, type: Cell Site, azimuth: 45");
+    console.log("3. Try adding: SW1A 1AA, name: Westminster, icon: Address / Reference");
+    console.log("4. Try adding: TQ 30163 80311, name: OS Grid Test, icon: Primary TOLA");
     
 } catch (err) {
     console.error("Error running tests:", err.message);

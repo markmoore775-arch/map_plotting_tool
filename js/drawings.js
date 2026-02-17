@@ -12,7 +12,7 @@ const Drawings = (() => {
     let showShapeLabels = true;
     let shapeLayerMap = {};
     // Each entry: { layer, measureTooltip?, radialGroup?, labelMarker? }
-    let customDrawMode = null;       // 'arrow' | 'curve' | 'arrow_stamp' | null
+    let customDrawMode = null;       // 'arrow' | 'arrow_stamp' | null
     let customDrawPoints = [];
     let customTempLayer = null;
 
@@ -156,11 +156,6 @@ const Drawings = (() => {
                 arrowBtn.title = 'Draw Arrow';
                 arrowBtn.innerHTML = '&#8599;';
 
-                const curveBtn = L.DomUtil.create('a', 'leaflet-control-extra-draw', container);
-                curveBtn.href = '#';
-                curveBtn.title = 'Draw Curve';
-                curveBtn.innerHTML = '&#8764;';
-
                 const stampBtn = L.DomUtil.create('a', 'leaflet-control-extra-draw', container);
                 stampBtn.href = '#';
                 stampBtn.title = 'Place Arrow Stamp';
@@ -175,14 +170,6 @@ const Drawings = (() => {
                         startCustomDraw('arrow');
                     }
                 });
-                L.DomEvent.on(curveBtn, 'click', (e) => {
-                    L.DomEvent.stop(e);
-                    if (customDrawMode === 'curve') {
-                        stopCustomDraw(true);
-                    } else {
-                        startCustomDraw('curve');
-                    }
-                });
                 L.DomEvent.on(stampBtn, 'click', (e) => {
                     L.DomEvent.stop(e);
                     if (customDrawMode === 'arrow_stamp') {
@@ -193,7 +180,6 @@ const Drawings = (() => {
                 });
 
                 container._arrowBtn = arrowBtn;
-                container._curveBtn = curveBtn;
                 container._stampBtn = stampBtn;
                 return container;
             }
@@ -218,11 +204,6 @@ const Drawings = (() => {
                 finishCustomDraw();
                 return;
             }
-            if (customDrawMode === 'curve' && customDrawPoints.length === 3) {
-                finishCustomDraw();
-                return;
-            }
-
             redrawCustomTempLayer();
         });
 
@@ -233,7 +214,6 @@ const Drawings = (() => {
 
         map.on('dblclick', () => {
             if (!customDrawMode) return;
-            if (customDrawMode === 'arrow_stamp') return;
             finishCustomDraw();
         });
     }
@@ -272,14 +252,6 @@ const Drawings = (() => {
                 dashArray: currentStyle.dashArray || '',
                 opacity: 0.85
             }).addTo(map);
-        } else if (customDrawMode === 'curve' && pts.length >= 3 && L.curve) {
-            const path = ['M', pts[0], 'Q', pts[1], pts[2]];
-            customTempLayer = L.curve(path, {
-                color: currentStyle.color,
-                weight: currentStyle.weight,
-                dashArray: currentStyle.dashArray || '',
-                opacity: 0.85
-            }).addTo(map);
         }
     }
 
@@ -292,18 +264,6 @@ const Drawings = (() => {
                 label: '',
                 style: { ...currentStyle },
                 latlngs: customDrawPoints.slice(0, 2)
-            };
-            shapes.push(shape);
-            addShapeToMap(shape);
-            refreshShapesList();
-        }
-        if (customDrawMode === 'curve' && customDrawPoints.length >= 3) {
-            const shape = {
-                id: nextShapeId++,
-                type: 'curve',
-                label: '',
-                style: { ...currentStyle },
-                curvePoints: customDrawPoints.slice(0, 3)
             };
             shapes.push(shape);
             addShapeToMap(shape);
@@ -509,38 +469,18 @@ const Drawings = (() => {
         const startLng = start.lng != null ? start.lng : start[1];
         const bearing = bearingTo(startLat, startLng, endLat, endLng);
 
-        if (entry.arrowDecorator && map.hasLayer(entry.arrowDecorator)) {
-            map.removeLayer(entry.arrowDecorator);
-        }
         if (entry.arrowHeadMarker && map.hasLayer(entry.arrowHeadMarker)) {
             map.removeLayer(entry.arrowHeadMarker);
         }
 
         const arrowColor = shape.style.color || currentStyle.color;
-        const arrowSize = Math.max(14, (shape.style.weight || 2) * 6);
-        if (L.polylineDecorator) {
-            entry.arrowDecorator = L.polylineDecorator(entry.layer, {
-                patterns: [{
-                    offset: '100%',
-                    repeat: 0,
-                    symbol: L.Symbol.arrowHead({
-                        pixelSize: arrowSize,
-                        polygon: true,
-                        pathOptions: {
-                            color: arrowColor,
-                            fillColor: arrowColor,
-                            fillOpacity: 1,
-                            weight: 1.5
-                        }
-                    })
-                }]
-            }).addTo(map);
-        }
+        const arrowSize = Math.max(16, (shape.style.weight || 2) * 7);
+        const wing = Math.max(5, Math.round(arrowSize * 0.34));
+        const head = Math.max(8, Math.round(arrowSize * 0.6));
 
-        // Fallback/assist marker to guarantee visible arrowhead.
         const arrowHeadIcon = L.divIcon({
             className: 'map-arrowhead-wrap',
-            html: `<div class="map-arrowhead" style="border-left-color:${arrowColor}; transform: translate(-50%, -50%) rotate(${bearing - 90}deg);"></div>`,
+            html: `<div class="map-arrowhead" style="border-top:${wing}px solid transparent; border-bottom:${wing}px solid transparent; border-left:${head}px solid ${arrowColor}; transform: rotate(${bearing - 90}deg);"></div>`,
             iconSize: [arrowSize, arrowSize],
             iconAnchor: [arrowSize / 2, arrowSize / 2]
         });
@@ -599,6 +539,9 @@ const Drawings = (() => {
 
         selectedShapeId = id;
         populatePanelFromShape(shape);
+        if (shape.type === 'arrow_stamp') {
+            addArrowStampHandles(shape);
+        }
 
         // Highlight in sidebar
         refreshShapesList();
@@ -621,6 +564,9 @@ const Drawings = (() => {
             updateShapeFromLayer(shape, entry.layer);
             updateMeasurement(shape);
             bindShapePopup(shape);
+        }
+        if (entry && entry.stampHandles) {
+            removeArrowStampHandles(selectedShapeId);
         }
 
         selectedShapeId = null;
@@ -804,6 +750,11 @@ const Drawings = (() => {
             showContextMenu(shape.id, e.originalEvent);
         });
 
+        // Single-click selects shape for immediate styling/interaction feedback.
+        layer.on('click', () => {
+            selectShape(shape.id);
+        });
+
         // Double-click -> open properties
         layer.on('dblclick', (e) => {
             L.DomEvent.stop(e);
@@ -815,11 +766,13 @@ const Drawings = (() => {
                 updateShapeFromLayer(shape, layer);
                 updateMeasurement(shape);
                 updateShapeLabelMarker(shape);
+                refreshArrowStampHandles(shape);
             });
             layer.on('dragend', () => {
                 updateShapeFromLayer(shape, layer);
                 updateMeasurement(shape);
                 updateShapeLabelMarker(shape);
+                refreshArrowStampHandles(shape);
                 bindShapePopup(shape);
                 refreshShapesList();
             });
@@ -892,6 +845,7 @@ const Drawings = (() => {
 
             removeMeasurement(id);
             removeShapeLabelMarker(id);
+            removeArrowStampHandles(id);
             if (shapeLayerMap[id] && shapeLayerMap[id].arrowDecorator && map.hasLayer(shapeLayerMap[id].arrowDecorator)) {
                 map.removeLayer(shapeLayerMap[id].arrowDecorator);
             }
@@ -1036,6 +990,68 @@ const Drawings = (() => {
         if (shape.center) {
             entry.layer.setLatLng(shape.center);
         }
+        if (entry.stampHandles) {
+            refreshArrowStampHandles(shape);
+        }
+    }
+
+    function getArrowStampTip(shape) {
+        const center = shape.center || [0, 0];
+        const angle = shape.arrowAngle != null ? shape.arrowAngle : 45;
+        const halfLen = Math.max(20, (shape.arrowLength || 200) / 2);
+        return destinationPoint(center[0], center[1], angle, halfLen);
+    }
+
+    function addArrowStampHandles(shape) {
+        const entry = shapeLayerMap[shape.id];
+        if (!entry || !entry.layer || shape.type !== 'arrow_stamp') return;
+        removeArrowStampHandles(shape.id);
+
+        const tip = getArrowStampTip(shape);
+        const handle = L.marker(tip, {
+            icon: L.divIcon({
+                className: 'radial-drag-handle',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            }),
+            draggable: true,
+            zIndexOffset: 1100
+        }).addTo(map);
+
+        handle.on('drag', (e) => {
+            const pos = e.target.getLatLng();
+            const center = shape.center || [pos.lat, pos.lng];
+            const newAngle = bearingTo(center[0], center[1], pos.lat, pos.lng);
+            const halfDistance = L.latLng(center).distanceTo(pos);
+            shape.arrowAngle = newAngle;
+            shape.arrowLength = Math.max(40, halfDistance * 2);
+            refreshArrowStampLayer(shape);
+            updateMeasurement(shape);
+            updateShapeLabelMarker(shape);
+        });
+
+        handle.on('dragend', () => {
+            refreshArrowStampLayer(shape);
+            bindShapePopup(shape);
+            refreshShapesList();
+        });
+
+        entry.stampHandles = { tipHandle: handle };
+    }
+
+    function refreshArrowStampHandles(shape) {
+        const entry = shapeLayerMap[shape.id];
+        if (!entry || !entry.stampHandles || !entry.stampHandles.tipHandle) return;
+        entry.stampHandles.tipHandle.setLatLng(getArrowStampTip(shape));
+    }
+
+    function removeArrowStampHandles(id) {
+        const entry = shapeLayerMap[id];
+        if (!entry || !entry.stampHandles) return;
+        if (entry.stampHandles.tipHandle && map.hasLayer(entry.stampHandles.tipHandle)) {
+            map.removeLayer(entry.stampHandles.tipHandle);
+        }
+        entry.stampHandles = null;
     }
 
     function refreshAllArrowStampLayers() {
@@ -1724,6 +1740,7 @@ const Drawings = (() => {
         if (entry) {
             removeMeasurement(id);
             removeShapeLabelMarker(id);
+            removeArrowStampHandles(id);
             if (entry.arrowDecorator && map.hasLayer(entry.arrowDecorator)) {
                 map.removeLayer(entry.arrowDecorator);
             }
@@ -1750,6 +1767,7 @@ const Drawings = (() => {
             if (shape && shape.type === 'circle') {
                 removeRadialMeasurement(numId);
             }
+            removeArrowStampHandles(numId);
             if (entry && entry.arrowDecorator && map.hasLayer(entry.arrowDecorator)) {
                 map.removeLayer(entry.arrowDecorator);
             }

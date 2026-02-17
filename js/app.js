@@ -16,8 +16,6 @@
 
     let settings = {
         w3wApiKey: '',
-        defaultRadius: 500,
-        defaultFanColor: '#3388ff',
         showLabels: true,
         showMeasurements: true,
         showShapeLabels: true
@@ -104,17 +102,15 @@
     // ---- Point Management ----
 
     function createPoint(data) {
-        const resolvedIconType = normalizeIconType(data.iconType, data.type);
+        const resolvedIconType = normalizeIconType(data.iconType);
         const point = {
             id: nextId++,
             name: data.name || '',
             lat: data.lat,
             lng: data.lng,
-            type: data.type || 'general',
             iconType: resolvedIconType,
             iconColor: getIconColor(resolvedIconType, data.iconColor),
             customSymbol: (data.customSymbol || '').trim().toUpperCase().slice(0, 2),
-            sectors: data.sectors || [],
             notes: data.notes || '',
             originalInput: data.originalInput || ''
         };
@@ -125,19 +121,16 @@
     }
 
     function createPointAtLatLng(lat, lng) {
-        const sectors = pointType.value === 'cell' ? getSectorsFromContainer(sectorsContainer) : [];
-        const iconType = normalizeIconType(pointIconType.value, pointType.value);
+        const iconType = normalizeIconType(pointIconType.value);
         const defaultLabel = (ICON_DEFS[iconType] && ICON_DEFS[iconType].label) || 'Dropped Point';
         const name = pointName.value.trim() || defaultLabel;
         createPoint({
             name,
             lat,
             lng,
-            type: pointType.value,
             iconType,
             iconColor: pointIconColor.value,
             customSymbol: pointCustomSymbol.value,
-            sectors,
             notes: pointNotes.value.trim(),
             originalInput: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
         });
@@ -153,8 +146,8 @@
         const point = points.find(p => p.id === id);
         if (!point) return;
 
-        if (data.iconType !== undefined || data.type !== undefined) {
-            data.iconType = normalizeIconType(data.iconType || point.iconType, data.type || point.type);
+        if (data.iconType !== undefined) {
+            data.iconType = normalizeIconType(data.iconType || point.iconType);
             data.iconColor = getIconColor(data.iconType, data.iconColor || point.iconColor);
         }
         if (data.customSymbol !== undefined) {
@@ -200,16 +193,16 @@
         return Object.prototype.hasOwnProperty.call(ICON_DEFS, iconType);
     }
 
-    function normalizeIconType(iconType, pointType) {
+    function normalizeIconType(iconType) {
         if (isValidIconType(iconType)) return iconType;
-        return pointType === 'cell' ? 'primary_tola' : 'address';
+        return 'address';
     }
 
-    function parseIconTypeInput(rawValue, pointType) {
+    function parseIconTypeInput(rawValue) {
         const val = (rawValue || '').toString().trim().toLowerCase()
             .replace(/[\s-]+/g, '_')
             .replace(/[^\w]/g, '');
-        if (!val) return normalizeIconType('', pointType);
+        if (!val) return normalizeIconType('');
 
         const aliases = {
             primary: 'primary_tola',
@@ -237,7 +230,7 @@
         };
 
         const canonical = aliases[val] || val;
-        return normalizeIconType(canonical, pointType);
+        return normalizeIconType(canonical);
     }
 
     function getDefaultIconColor(iconType) {
@@ -253,7 +246,7 @@
     }
 
     function getPointSymbol(point) {
-        const type = normalizeIconType(point.iconType, point.type);
+        const type = normalizeIconType(point.iconType);
         if (type === 'custom_point') {
             const custom = (point.customSymbol || '').trim().toUpperCase();
             return custom ? custom.slice(0, 2) : ICON_DEFS.custom_point.symbol;
@@ -314,7 +307,7 @@
     }
 
     function getPointIcon(point) {
-        const iconType = normalizeIconType(point.iconType, point.type);
+        const iconType = normalizeIconType(point.iconType);
         const color = getIconColor(iconType, point.iconColor);
         const symbol = getPointSymbol(point);
         const key = `${iconType}|${color}|${symbol}`;
@@ -332,14 +325,10 @@
         return icon;
     }
 
-    function addMarkerToMap(point) {
-        const icon = getPointIcon(point);
-        const marker = L.marker([point.lat, point.lng], { icon }).addTo(map);
-
-        // Popup
+    function buildPointPopupHtml(point) {
         let popupHtml = `<div class="popup-title">${escapeHtml(point.name || 'Unnamed')}</div>`;
         popupHtml += `<div class="popup-detail">${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}</div>`;
-        const iconType = normalizeIconType(point.iconType, point.type);
+        const iconType = normalizeIconType(point.iconType);
         popupHtml += `<div class="popup-detail">Icon: ${escapeHtml(ICON_DEFS[iconType].label)}</div>`;
         if (iconType === 'custom_point') {
             popupHtml += `<div class="popup-detail">Symbol: ${escapeHtml(getPointSymbol(point))}</div>`;
@@ -347,21 +336,16 @@
         if (point.notes) {
             popupHtml += `<div class="popup-detail">${escapeHtml(point.notes)}</div>`;
         }
-        if (point.type === 'cell' && point.sectors && point.sectors.length > 0) {
-            popupHtml += '<div class="popup-sectors">';
-            point.sectors.forEach((s, i) => {
-                if (s.azimuth != null) {
-                    popupHtml += `<span>S${i + 1}: ${s.azimuth}&deg;</span>`;
-                }
-            });
-            popupHtml += '</div>';
-        }
         popupHtml += `<div class="popup-actions"><a href="#" class="popup-edit-link" data-point-id="${point.id}">Edit Point</a></div>`;
+        return popupHtml;
+    }
 
-        const popup = L.popup().setContent(popupHtml);
+    function bindPointPopup(marker, point) {
+        marker.unbindPopup();
+        const popup = L.popup().setContent(buildPointPopupHtml(point));
         marker.bindPopup(popup);
 
-        // Attach edit handler when popup opens
+        marker.off('popupopen');
         marker.on('popupopen', () => {
             const editLink = document.querySelector(`.popup-edit-link[data-point-id="${point.id}"]`);
             if (editLink) {
@@ -372,6 +356,12 @@
                 });
             }
         });
+    }
+
+    function addMarkerToMap(point) {
+        const icon = getPointIcon(point);
+        const marker = L.marker([point.lat, point.lng], { icon, draggable: true }).addTo(map);
+        bindPointPopup(marker, point);
 
         // Tooltip/label
         let label = null;
@@ -385,15 +375,27 @@
             marker.bindTooltip(label);
         }
 
-        // Cell fans
         let fans = null;
-        if (point.type === 'cell') {
-            fans = CellFan.createFansForPoint(map, point);
-            fans.addTo(map);
-        }
 
         marker.on('click', () => {
             highlightPoint(point.id);
+        });
+
+        marker.on('dragstart', () => {
+            marker.closePopup();
+        });
+        marker.on('dragend', () => {
+            const pos = marker.getLatLng();
+            point.lat = pos.lat;
+            point.lng = pos.lng;
+
+            const layers = markerLayers[point.id];
+            if (layers && layers.fans) {
+                map.removeLayer(layers.fans);
+                layers.fans = null;
+            }
+            bindPointPopup(marker, point);
+            refreshPointsList();
         });
 
         markerLayers[point.id] = { marker, fans, label };
@@ -444,7 +446,7 @@
             const li = document.createElement('li');
             li.className = 'point-item';
             li.dataset.id = p.id;
-            const iconType = normalizeIconType(p.iconType, p.type);
+            const iconType = normalizeIconType(p.iconType);
             const iconDef = ICON_DEFS[iconType];
             const badgeColor = getIconColor(iconType, p.iconColor);
             const badgeTextColor = getContrastingTextColor(badgeColor);
@@ -495,20 +497,15 @@
     const addPointForm = document.getElementById('addPointForm');
     const pointInput = document.getElementById('pointInput');
     const pointName = document.getElementById('pointName');
-    const pointType = document.getElementById('pointType');
     const pointIconType = document.getElementById('pointIconType');
     const pointIconColor = document.getElementById('pointIconColor');
     const pointIconColorGroup = document.getElementById('pointIconColorGroup');
     const pointCustomSymbol = document.getElementById('pointCustomSymbol');
     const pointCustomSymbolGroup = document.getElementById('pointCustomSymbolGroup');
     const pointNotes = document.getElementById('pointNotes');
-    const cellFields = document.getElementById('cellFields');
     const formatHint = document.getElementById('formatHint');
-    const sectorsContainer = document.getElementById('sectorsContainer');
-    const addSectorBtn = document.getElementById('addSectorBtn');
     const dropPointModeBtn = document.getElementById('dropPointModeBtn');
     const dropPointToolbarPanel = document.getElementById('dropPointToolbarPanel');
-    const dropPointToolbarType = document.getElementById('dropPointToolbarType');
     const dropPointToolbarIconType = document.getElementById('dropPointToolbarIconType');
     const dropPointToolbarIconColor = document.getElementById('dropPointToolbarIconColor');
     const dropPointToolbarSymbol = document.getElementById('dropPointToolbarSymbol');
@@ -519,7 +516,7 @@
     const dropPointToolbarCancel = document.getElementById('dropPointToolbarCancel');
 
     function refreshPointIconControls() {
-        const iconType = normalizeIconType(pointIconType.value, pointType.value);
+        const iconType = normalizeIconType(pointIconType.value);
         const iconDef = ICON_DEFS[iconType];
         pointIconColorGroup.classList.toggle('hidden', !iconDef.colorEditable);
         pointCustomSymbolGroup.classList.toggle('hidden', iconType !== 'custom_point');
@@ -544,14 +541,13 @@
     }
 
     function refreshDropPointToolbarControls() {
-        const iconType = normalizeIconType(dropPointToolbarIconType.value, dropPointToolbarType.value);
+        const iconType = normalizeIconType(dropPointToolbarIconType.value);
         const iconDef = ICON_DEFS[iconType];
         dropPointToolbarColorGroup.classList.toggle('hidden', !iconDef.colorEditable);
         dropPointToolbarSymbolGroup.classList.toggle('hidden', iconType !== 'custom_point');
     }
 
     function copyFormSelectionsToDropToolbar() {
-        dropPointToolbarType.value = pointType.value;
         dropPointToolbarIconType.value = pointIconType.value;
         dropPointToolbarIconColor.value = pointIconColor.value;
         dropPointToolbarSymbol.value = pointCustomSymbol.value || '';
@@ -560,11 +556,9 @@
     }
 
     function applyDropToolbarToForm() {
-        pointType.value = dropPointToolbarType.value;
         pointIconType.value = dropPointToolbarIconType.value;
         pointIconColor.value = dropPointToolbarIconColor.value;
         pointCustomSymbol.value = dropPointToolbarSymbol.value;
-        pointType.dispatchEvent(new Event('change'));
         refreshPointIconControls();
     }
 
@@ -578,18 +572,9 @@
     }
 
     function populateDropToolbarSelectors() {
-        dropPointToolbarType.innerHTML = pointType.innerHTML;
         dropPointToolbarIconType.innerHTML = pointIconType.innerHTML;
     }
 
-    // Show/hide cell fields based on type
-    pointType.addEventListener('change', () => {
-        cellFields.classList.toggle('hidden', pointType.value !== 'cell');
-        if (!isValidIconType(pointIconType.value)) {
-            pointIconType.value = pointType.value === 'cell' ? 'primary_tola' : 'address';
-        }
-        refreshPointIconControls();
-    });
     pointIconType.addEventListener('change', () => {
         refreshPointIconControls();
     });
@@ -604,12 +589,6 @@
         setDropPointMode(!dropPointMode);
     });
 
-    dropPointToolbarType.addEventListener('change', () => {
-        if (!isValidIconType(dropPointToolbarIconType.value)) {
-            dropPointToolbarIconType.value = dropPointToolbarType.value === 'cell' ? 'primary_tola' : 'address';
-        }
-        refreshDropPointToolbarControls();
-    });
     dropPointToolbarIconType.addEventListener('change', refreshDropPointToolbarControls);
 
     dropPointToolbarStart.addEventListener('click', () => {
@@ -631,68 +610,6 @@
         formatHint.textContent = fmt ? `Detected: ${Converters.formatLabel(fmt)}` : '';
     });
 
-    // Add sector
-    let sectorCount = 1;
-    addSectorBtn.addEventListener('click', () => {
-        addSectorEntry(sectorsContainer, sectorCount++);
-    });
-
-    function addSectorEntry(container, index) {
-        const div = document.createElement('div');
-        div.className = 'sector-entry';
-        div.dataset.sector = index;
-        div.innerHTML = `
-            <div class="sector-header">
-                <span>Sector ${index + 1}</span>
-                <button type="button" class="btn-icon btn-remove-sector" title="Remove sector">&times;</button>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Azimuth (&deg;)</label>
-                    <input type="number" class="sector-azimuth" min="0" max="360" placeholder="0-360">
-                </div>
-                <div class="form-group">
-                    <label>Radius (m)</label>
-                    <input type="number" class="sector-radius" min="50" placeholder="${settings.defaultRadius}">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Colour</label>
-                <input type="color" class="sector-color" value="${settings.defaultFanColor}">
-            </div>
-        `;
-
-        div.querySelector('.btn-remove-sector').addEventListener('click', () => {
-            div.remove();
-        });
-
-        container.appendChild(div);
-    }
-
-    // Remove sector button for initial sector
-    document.querySelector('.btn-remove-sector').addEventListener('click', function () {
-        if (sectorsContainer.children.length > 1) {
-            this.closest('.sector-entry').remove();
-        }
-    });
-
-    function getSectorsFromContainer(container) {
-        const sectors = [];
-        container.querySelectorAll('.sector-entry').forEach(entry => {
-            const az = entry.querySelector('.sector-azimuth').value;
-            const rad = entry.querySelector('.sector-radius').value;
-            const col = entry.querySelector('.sector-color').value;
-            if (az !== '') {
-                sectors.push({
-                    azimuth: parseFloat(az),
-                    radius: rad ? parseFloat(rad) : settings.defaultRadius,
-                    color: col || settings.defaultFanColor
-                });
-            }
-        });
-        return sectors;
-    }
-
     // Submit
     addPointForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -711,17 +628,13 @@
                 return;
             }
 
-            const sectors = pointType.value === 'cell' ? getSectorsFromContainer(sectorsContainer) : [];
-
             createPoint({
                 name: pointName.value.trim(),
                 lat: coords.lat,
                 lng: coords.lng,
-                type: pointType.value,
                 iconType: pointIconType.value,
                 iconColor: pointIconColor.value,
                 customSymbol: pointCustomSymbol.value,
-                sectors: sectors,
                 notes: pointNotes.value.trim(),
                 originalInput: inputVal
             });
@@ -733,7 +646,7 @@
             pointInput.value = '';
             pointName.value = '';
             pointNotes.value = '';
-            pointIconType.value = pointType.value === 'cell' ? 'primary_tola' : 'address';
+            pointIconType.value = 'address';
             pointIconColor.value = '#5b8def';
             pointCustomSymbol.value = '';
             refreshPointIconControls();
@@ -806,7 +719,6 @@
     // ---- Edit Point Modal ----
 
     const editModal = document.getElementById('editModal');
-    const editSectorsContainer = document.getElementById('editSectorsContainer');
 
     function openEditModal(id) {
         const point = points.find(p => p.id === id);
@@ -815,90 +727,36 @@
         document.getElementById('editPointId').value = id;
         document.getElementById('editPointName').value = point.name || '';
         document.getElementById('editCoordDisplay').textContent = `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
-        document.getElementById('editPointType').value = point.type || 'general';
-        const editIconType = normalizeIconType(point.iconType, point.type);
+        const editIconType = normalizeIconType(point.iconType);
         document.getElementById('editPointIconType').value = editIconType;
         document.getElementById('editPointIconColor').value = getIconColor(editIconType, point.iconColor);
         document.getElementById('editPointCustomSymbol').value = (point.customSymbol || '').slice(0, 2);
         document.getElementById('editPointNotes').value = point.notes || '';
-
-        // Cell fields
-        const editCellFields = document.getElementById('editCellFields');
-        editCellFields.classList.toggle('hidden', point.type !== 'cell');
         refreshEditPointIconControls();
-
-        // Populate sectors
-        editSectorsContainer.innerHTML = '';
-        if (point.sectors && point.sectors.length > 0) {
-            point.sectors.forEach((sector, i) => {
-                const div = document.createElement('div');
-                div.className = 'sector-entry';
-                div.innerHTML = `
-                    <div class="sector-header">
-                        <span>Sector ${i + 1}</span>
-                        <button type="button" class="btn-icon btn-remove-sector" title="Remove">&times;</button>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Azimuth (&deg;)</label>
-                            <input type="number" class="sector-azimuth" min="0" max="360" value="${sector.azimuth ?? ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Radius (m)</label>
-                            <input type="number" class="sector-radius" min="50" value="${sector.radius || ''}">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Colour</label>
-                        <input type="color" class="sector-color" value="${sector.color || settings.defaultFanColor}">
-                    </div>
-                `;
-                div.querySelector('.btn-remove-sector').addEventListener('click', () => div.remove());
-                editSectorsContainer.appendChild(div);
-            });
-        }
 
         openModal('editModal');
     }
 
     function refreshEditPointIconControls() {
         const iconSel = document.getElementById('editPointIconType');
-        const iconType = normalizeIconType(iconSel.value, document.getElementById('editPointType').value);
+        const iconType = normalizeIconType(iconSel.value);
         const iconDef = ICON_DEFS[iconType];
         document.getElementById('editPointIconColorGroup').classList.toggle('hidden', !iconDef.colorEditable);
         document.getElementById('editPointCustomSymbolGroup').classList.toggle('hidden', iconType !== 'custom_point');
     }
 
-    // Type toggle for edit modal (registered once, outside openEditModal)
-    document.getElementById('editPointType').addEventListener('change', function () {
-        document.getElementById('editCellFields').classList.toggle('hidden', this.value !== 'cell');
-        const iconSel = document.getElementById('editPointIconType');
-        if (!isValidIconType(iconSel.value)) {
-            iconSel.value = this.value === 'cell' ? 'primary_tola' : 'address';
-        }
-        refreshEditPointIconControls();
-    });
     document.getElementById('editPointIconType').addEventListener('change', function () {
         refreshEditPointIconControls();
     });
 
-    document.getElementById('editAddSectorBtn').addEventListener('click', () => {
-        const idx = editSectorsContainer.children.length;
-        addSectorEntry(editSectorsContainer, idx);
-    });
-
     document.getElementById('editSaveBtn').addEventListener('click', () => {
         const id = parseInt(document.getElementById('editPointId').value);
-        const type = document.getElementById('editPointType').value;
-        const sectors = type === 'cell' ? getSectorsFromContainer(editSectorsContainer) : [];
 
         updatePoint(id, {
             name: document.getElementById('editPointName').value.trim(),
-            type: type,
             iconType: document.getElementById('editPointIconType').value,
             iconColor: document.getElementById('editPointIconColor').value,
             customSymbol: document.getElementById('editPointCustomSymbol').value,
-            sectors: sectors,
             notes: document.getElementById('editPointNotes').value.trim()
         });
 
@@ -1055,7 +913,7 @@
     }
 
     function populateColumnMapping(headers) {
-        const selects = ['mapLat', 'mapLng', 'mapLocation', 'mapName', 'mapType', 'mapAzimuth', 'mapRadius', 'mapNotes', 'mapIconType', 'mapIconColor', 'mapIconSymbol'];
+        const selects = ['mapLat', 'mapLng', 'mapLocation', 'mapName', 'mapNotes', 'mapIconType', 'mapIconColor', 'mapIconSymbol'];
         for (const selectId of selects) {
             const sel = document.getElementById(selectId);
             sel.innerHTML = '<option value="">-- None --</option>';
@@ -1079,9 +937,6 @@
             'mapLng': ['lng', 'lon', 'long', 'longitude', 'easting', 'x'],
             'mapLocation': ['location', 'postcode', 'address', 'gridref', 'grid_ref', 'coord', 'coordinates'],
             'mapName': ['name', 'label', 'title', 'site', 'site_name', 'sitename'],
-            'mapType': ['type', 'category', 'class'],
-            'mapAzimuth': ['azimuth', 'bearing', 'direction', 'az'],
-            'mapRadius': ['radius', 'range', 'distance'],
             'mapNotes': ['notes', 'note', 'description', 'comment', 'comments'],
             'mapIconType': ['icon', 'icon_type', 'icontype', 'marker', 'marker_type'],
             'mapIconColor': ['icon_color', 'iconcolor', 'color', 'marker_color', 'markercolor'],
@@ -1146,7 +1001,6 @@
                         name: pc.toUpperCase(),
                         lat: results[key].lat,
                         lng: results[key].lng,
-                        type: 'general',
                         originalInput: pc
                     });
                     imported++;
@@ -1165,7 +1019,6 @@
                         name: line,
                         lat: coords.lat,
                         lng: coords.lng,
-                        type: 'general',
                         originalInput: line
                     });
                     imported++;
@@ -1200,9 +1053,6 @@
         const colLng = getColIndex('mapLng');
         const colLocation = getColIndex('mapLocation');
         const colName = getColIndex('mapName');
-        const colType = getColIndex('mapType');
-        const colAzimuth = getColIndex('mapAzimuth');
-        const colRadius = getColIndex('mapRadius');
         const colNotes = getColIndex('mapNotes');
         const colIconType = getColIndex('mapIconType');
         const colIconColor = getColIndex('mapIconColor');
@@ -1246,35 +1096,14 @@
                 const key = pr.postcode.toUpperCase().replace(/\s+/g, '');
                 if (results[key]) {
                     const row = pr.row;
-                    const type = colType !== -1 ? (row[colType] || '').toLowerCase() : 'general';
-                    const isCell = type === 'cell' || type === 'cellsite' || type === 'cell site';
-
-                    const sectors = [];
-                    if (colAzimuth !== -1 && row[colAzimuth]) {
-                        // Support multiple azimuths separated by ; or /
-                        const azParts = row[colAzimuth].split(/[;\/]+/);
-                        const radParts = colRadius !== -1 && row[colRadius] ? row[colRadius].split(/[;\/]+/) : [];
-                        azParts.forEach((az, idx) => {
-                            const azVal = parseFloat(az.trim());
-                            if (!isNaN(azVal)) {
-                                sectors.push({
-                                    azimuth: azVal,
-                                    radius: radParts[idx] ? parseFloat(radParts[idx].trim()) || settings.defaultRadius : settings.defaultRadius,
-                                    color: settings.defaultFanColor
-                                });
-                            }
-                        });
-                    }
 
                     createPoint({
                         name: colName !== -1 ? (row[colName] || '') : pr.postcode,
                         lat: results[key].lat,
                         lng: results[key].lng,
-                        type: isCell || sectors.length > 0 ? 'cell' : 'general',
-                        iconType: colIconType !== -1 ? parseIconTypeInput(row[colIconType], isCell || sectors.length > 0 ? 'cell' : 'general') : '',
+                        iconType: colIconType !== -1 ? parseIconTypeInput(row[colIconType]) : '',
                         iconColor: colIconColor !== -1 ? (row[colIconColor] || '').trim() : '',
                         customSymbol: colIconSymbol !== -1 ? (row[colIconSymbol] || '').trim() : '',
-                        sectors: sectors,
                         notes: colNotes !== -1 ? (row[colNotes] || '') : '',
                         originalInput: pr.postcode
                     });
@@ -1307,34 +1136,13 @@
                 }
 
                 if (coords) {
-                    const type = colType !== -1 ? (row[colType] || '').toLowerCase() : 'general';
-                    const isCell = type === 'cell' || type === 'cellsite' || type === 'cell site';
-
-                    const sectors = [];
-                    if (colAzimuth !== -1 && row[colAzimuth]) {
-                        const azParts = row[colAzimuth].split(/[;\/]+/);
-                        const radParts = colRadius !== -1 && row[colRadius] ? row[colRadius].split(/[;\/]+/) : [];
-                        azParts.forEach((az, idx) => {
-                            const azVal = parseFloat(az.trim());
-                            if (!isNaN(azVal)) {
-                                sectors.push({
-                                    azimuth: azVal,
-                                    radius: radParts[idx] ? parseFloat(radParts[idx].trim()) || settings.defaultRadius : settings.defaultRadius,
-                                    color: settings.defaultFanColor
-                                });
-                            }
-                        });
-                    }
-
                     createPoint({
                         name: colName !== -1 ? (row[colName] || '') : '',
                         lat: coords.lat,
                         lng: coords.lng,
-                        type: isCell || sectors.length > 0 ? 'cell' : 'general',
-                        iconType: colIconType !== -1 ? parseIconTypeInput(row[colIconType], isCell || sectors.length > 0 ? 'cell' : 'general') : '',
+                        iconType: colIconType !== -1 ? parseIconTypeInput(row[colIconType]) : '',
                         iconColor: colIconColor !== -1 ? (row[colIconColor] || '').trim() : '',
                         customSymbol: colIconSymbol !== -1 ? (row[colIconSymbol] || '').trim() : '',
-                        sectors: sectors,
                         notes: colNotes !== -1 ? (row[colNotes] || '') : '',
                         originalInput: colLocation !== -1 ? (row[colLocation] || '') : ''
                     });
@@ -1430,11 +1238,9 @@
                     name: p.name || '',
                     lat: p.lat,
                     lng: p.lng,
-                    type: p.type || 'general',
-                    iconType: normalizeIconType(p.iconType, p.type),
-                    iconColor: getIconColor(normalizeIconType(p.iconType, p.type), p.iconColor),
+                    iconType: normalizeIconType(p.iconType),
+                    iconColor: getIconColor(normalizeIconType(p.iconType), p.iconColor),
                     customSymbol: (p.customSymbol || '').trim().toUpperCase().slice(0, 2),
-                    sectors: p.sectors || [],
                     notes: p.notes || '',
                     originalInput: p.originalInput || ''
                 };
@@ -1464,8 +1270,6 @@
     document.getElementById('settingsBtn').addEventListener('click', () => {
         // Populate from current settings
         document.getElementById('w3wApiKey').value = settings.w3wApiKey;
-        document.getElementById('defaultRadius').value = settings.defaultRadius;
-        document.getElementById('defaultFanColor').value = settings.defaultFanColor;
         document.getElementById('showLabels').checked = settings.showLabels;
         document.getElementById('showMeasurements').checked = settings.showMeasurements;
         document.getElementById('showShapeLabels').checked = settings.showShapeLabels;
@@ -1474,8 +1278,6 @@
 
     document.getElementById('saveSettingsBtn').addEventListener('click', () => {
         settings.w3wApiKey = document.getElementById('w3wApiKey').value.trim();
-        settings.defaultRadius = parseInt(document.getElementById('defaultRadius').value) || 500;
-        settings.defaultFanColor = document.getElementById('defaultFanColor').value;
         settings.showLabels = document.getElementById('showLabels').checked;
         settings.showMeasurements = document.getElementById('showMeasurements').checked;
         settings.showShapeLabels = document.getElementById('showShapeLabels').checked;
@@ -1484,11 +1286,6 @@
     });
 
     function applySettings() {
-        // Update sector radius placeholders
-        document.querySelectorAll('.sector-radius').forEach(input => {
-            input.placeholder = settings.defaultRadius;
-        });
-
         // Refresh labels on all markers
         for (const point of points) {
             const layers = markerLayers[point.id];

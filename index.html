@@ -44,13 +44,6 @@
                     <input type="text" id="pointName" placeholder="e.g. Site Alpha">
                 </div>
                 <div class="form-group">
-                    <label for="pointType">Type</label>
-                    <select id="pointType">
-                        <option value="general">General Point</option>
-                        <option value="cell">Cell Site</option>
-                    </select>
-                </div>
-                <div class="form-group">
                     <label for="pointIconType">Icon</label>
                     <select id="pointIconType">
                         <option value="address">Address / Reference</option>
@@ -72,33 +65,6 @@
                 </div>
                 <div class="form-hint" style="margin-top:-4px; margin-bottom:8px;">
                     Add points with this form or use <strong>Drop Point Mode</strong> in Actions.
-                </div>
-
-                <!-- Cell Site Fields (shown when type=cell) -->
-                <div id="cellFields" class="cell-fields hidden">
-                    <div class="sectors-container" id="sectorsContainer">
-                        <div class="sector-entry" data-sector="0">
-                            <div class="sector-header">
-                                <span>Sector 1</span>
-                                <button type="button" class="btn-icon btn-remove-sector" title="Remove sector">&times;</button>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Azimuth (&deg;)</label>
-                                    <input type="number" class="sector-azimuth" min="0" max="360" placeholder="0-360">
-                                </div>
-                                <div class="form-group">
-                                    <label>Radius (m)</label>
-                                    <input type="number" class="sector-radius" min="50" placeholder="500">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Colour</label>
-                                <input type="color" class="sector-color" value="#3388ff">
-                            </div>
-                        </div>
-                    </div>
-                    <button type="button" id="addSectorBtn" class="btn btn-small btn-secondary">+ Add Sector</button>
                 </div>
 
                 <div class="form-group">
@@ -145,6 +111,8 @@
             </div>
             <div class="shapes-hint">
                 Right-click a shape for options &middot; Double-click for properties &middot; Esc to deselect
+                <br>
+                Tip: Click an arrow stamp to select it, then drag its tip handle to rotate/resize. You can also drag point markers to update coordinates.
             </div>
             <ul id="shapesList" class="points-list"></ul>
         </section>
@@ -171,10 +139,6 @@
             <span>Drop Point</span>
         </div>
         <div class="drop-point-toolbar-body">
-            <div class="form-group">
-                <label for="dropPointToolbarType">Point Type</label>
-                <select id="dropPointToolbarType"></select>
-            </div>
             <div class="form-group">
                 <label for="dropPointToolbarIconType">Icon</label>
                 <select id="dropPointToolbarIconType"></select>
@@ -343,18 +307,6 @@
                             <select id="mapName" class="col-map"></select>
                         </div>
                         <div class="form-group">
-                            <label>Type</label>
-                            <select id="mapType" class="col-map"></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Azimuth</label>
-                            <select id="mapAzimuth" class="col-map"></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Radius (m)</label>
-                            <select id="mapRadius" class="col-map"></select>
-                        </div>
-                        <div class="form-group">
                             <label>Notes</label>
                             <select id="mapNotes" class="col-map"></select>
                         </div>
@@ -433,14 +385,6 @@
                     <span class="form-hint">Required for What3Words lookups. Get a free key at <a href="https://what3words.com/developer" target="_blank">what3words.com/developer</a></span>
                 </div>
                 <div class="form-group">
-                    <label for="defaultRadius">Default Fan Radius (metres)</label>
-                    <input type="number" id="defaultRadius" value="500" min="50" max="50000">
-                </div>
-                <div class="form-group">
-                    <label for="defaultFanColor">Default Fan Colour</label>
-                    <input type="color" id="defaultFanColor" value="#3388ff">
-                </div>
-                <div class="form-group">
                     <label>
                         <input type="checkbox" id="showLabels" checked>
                         Show point labels on map
@@ -485,13 +429,6 @@
                     <div class="coord-display" id="editCoordDisplay"></div>
                 </div>
                 <div class="form-group">
-                    <label for="editPointType">Type</label>
-                    <select id="editPointType">
-                        <option value="general">General Point</option>
-                        <option value="cell">Cell Site</option>
-                    </select>
-                </div>
-                <div class="form-group">
                     <label for="editPointIconType">Icon</label>
                     <select id="editPointIconType">
                         <option value="address">Address / Reference</option>
@@ -510,10 +447,6 @@
                 <div class="form-group hidden" id="editPointCustomSymbolGroup">
                     <label for="editPointCustomSymbol">Custom Symbol (1-2 chars)</label>
                     <input type="text" id="editPointCustomSymbol" maxlength="2" placeholder="e.g. D">
-                </div>
-                <div id="editCellFields" class="cell-fields hidden">
-                    <div class="sectors-container" id="editSectorsContainer"></div>
-                    <button type="button" id="editAddSectorBtn" class="btn btn-small btn-secondary">+ Add Sector</button>
                 </div>
                 <div class="form-group">
                     <label for="editPointNotes">Notes</label>
@@ -564,7 +497,6 @@
 
     <!-- App Scripts -->
     <script src="js/converters.js"></script>
-    <script src="js/cellFan.js"></script>
     <script src="js/drawings.js"></script>
     <script src="js/exporters.js"></script>
     <script src="js/io.js"></script>

@@ -7,20 +7,15 @@ const Exporters = (() => {
     // ---- CSV Export ----
 
     function exportCSV(points) {
-        const headers = ['Name', 'Latitude', 'Longitude', 'Type', 'IconType', 'IconColor', 'IconSymbol', 'Azimuth(s)', 'Radius(m)', 'Notes'];
+        const headers = ['Name', 'Latitude', 'Longitude', 'IconType', 'IconColor', 'IconSymbol', 'Notes'];
         const rows = points.map(p => {
-            const azimuths = (p.sectors || []).map(s => s.azimuth).filter(a => a != null).join('; ');
-            const radii = (p.sectors || []).map(s => s.radius || '').join('; ');
             return [
                 csvEscape(p.name || ''),
                 p.lat,
                 p.lng,
-                p.type || 'general',
                 p.iconType || '',
                 p.iconColor || '',
                 p.customSymbol || '',
-                azimuths,
-                radii,
                 csvEscape(p.notes || '')
             ].join(',');
         });
@@ -52,42 +47,6 @@ const Exporters = (() => {
       </Point>
     </Placemark>`;
 
-            // Fan polygons for cell sites
-            if (p.type === 'cell' && p.sectors) {
-                for (let i = 0; i < p.sectors.length; i++) {
-                    const sector = p.sectors[i];
-                    if (sector.azimuth == null) continue;
-                    const coords = CellFan.fanToKMLCoords(
-                        p.lat, p.lng,
-                        sector.azimuth,
-                        sector.radius || 500
-                    );
-                    const coordStr = coords.map(c => c.join(',')).join(' ');
-                    const color = kmlColor(sector.color || '#3388ff', 0.5);
-
-                    placemarks += `
-    <Placemark>
-      <name>${escapeXml(p.name || 'Unnamed')} - Sector ${i + 1} (${sector.azimuth}°)</name>
-      <Style>
-        <PolyStyle>
-          <color>${color}</color>
-          <outline>1</outline>
-        </PolyStyle>
-        <LineStyle>
-          <color>${color}</color>
-          <width>1</width>
-        </LineStyle>
-      </Style>
-      <Polygon>
-        <outerBoundaryIs>
-          <LinearRing>
-            <coordinates>${coordStr}</coordinates>
-          </LinearRing>
-        </outerBoundaryIs>
-      </Polygon>
-    </Placemark>`;
-                }
-            }
         }
 
         // Export drawn shapes
@@ -102,7 +61,7 @@ const Exporters = (() => {
                     const circleCoords = [];
                     for (let i = 0; i <= 36; i++) {
                         const angle = (i * 10) % 360;
-                        const pt = CellFan.destinationPoint(s.center[0], s.center[1], angle, s.radius);
+                        const pt = destinationPoint(s.center[0], s.center[1], angle, s.radius);
                         circleCoords.push(`${pt.lng},${pt.lat},0`);
                     }
                     placemarks += `
@@ -180,6 +139,29 @@ const Exporters = (() => {
         const b = hex.substring(4, 6);
         const a = Math.round(alpha * 255).toString(16).padStart(2, '0');
         return a + b + g + r;
+    }
+
+    // Local geo helper to keep exporter standalone.
+    function destinationPoint(lat, lng, bearing, distance) {
+        const R = 6371000;
+        const d = distance / R;
+        const brng = bearing * Math.PI / 180;
+        const lat1 = lat * Math.PI / 180;
+        const lon1 = lng * Math.PI / 180;
+
+        const lat2 = Math.asin(
+            Math.sin(lat1) * Math.cos(d) +
+            Math.cos(lat1) * Math.sin(d) * Math.cos(brng)
+        );
+        const lon2 = lon1 + Math.atan2(
+            Math.sin(brng) * Math.sin(d) * Math.cos(lat1),
+            Math.cos(d) - Math.sin(lat1) * Math.sin(lat2)
+        );
+
+        return {
+            lat: lat2 * 180 / Math.PI,
+            lng: ((lon2 * 180 / Math.PI) + 540) % 360 - 180
+        };
     }
 
     // ---- Screenshot Export ----
