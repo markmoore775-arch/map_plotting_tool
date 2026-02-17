@@ -1,0 +1,12 @@
+{
+  "name": "map-plotting-tool-tests",
+  "version": "1.0.0",
+  "description": "Automated tests for map plotting tool",
+  "scripts": {
+    "test": "node test_browser.js"
+  },
+  "dependencies": {
+    "playwright": "^1.58.2",
+    "puppeteer": "^21.0.0"
+  }
+}

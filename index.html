@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Plotting Tool</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet-Geoman CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.16.0/dist/leaflet-geoman.css" />
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Map Plotter</h1>
+            <button id="sidebarToggle" class="sidebar-toggle" title="Collapse sidebar">&laquo;</button>
+        </div>
+
+        <!-- Add Point Section -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Add Point</h2>
+            <form id="addPointForm" class="add-point-form">
+                <div class="form-group">
+                    <label for="pointInput">Location</label>
+                    <input type="text" id="pointInput" placeholder="Postcode, lat/long, OS Grid, DMS..." autocomplete="off">
+                    <span id="formatHint" class="format-hint"></span>
+                </div>
+                <div class="form-group">
+                    <label for="pointName">Name / Label</label>
+                    <input type="text" id="pointName" placeholder="e.g. Site Alpha">
+                </div>
+                <div class="form-group">
+                    <label for="pointType">Type</label>
+                    <select id="pointType">
+                        <option value="general">General Point</option>
+                        <option value="cell">Cell Site</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pointIconType">Icon</label>
+                    <select id="pointIconType">
+                        <option value="address">Address / Reference</option>
+                        <option value="primary_tola">Primary TOLA</option>
+                        <option value="secondary_tola">Secondary TOLA</option>
+                        <option value="emergency_lz">Emergency Landing Zone</option>
+                        <option value="no_fly">No-Fly Marker</option>
+                        <option value="hazard">Hazard</option>
+                        <option value="custom_point">Custom Point</option>
+                    </select>
+                </div>
+                <div class="form-group" id="pointIconColorGroup">
+                    <label for="pointIconColor">Icon Colour</label>
+                    <input type="color" id="pointIconColor" value="#5b8def">
+                </div>
+                <div class="form-group hidden" id="pointCustomSymbolGroup">
+                    <label for="pointCustomSymbol">Custom Symbol (1-2 chars)</label>
+                    <input type="text" id="pointCustomSymbol" maxlength="2" placeholder="e.g. D">
+                </div>
+                <div class="form-hint" style="margin-top:-4px; margin-bottom:8px;">
+                    Add points with this form or use <strong>Drop Point Mode</strong> in Actions.
+                </div>
+
+                <!-- Cell Site Fields (shown when type=cell) -->
+                <div id="cellFields" class="cell-fields hidden">
+                    <div class="sectors-container" id="sectorsContainer">
+                        <div class="sector-entry" data-sector="0">
+                            <div class="sector-header">
+                                <span>Sector 1</span>
+                                <button type="button" class="btn-icon btn-remove-sector" title="Remove sector">&times;</button>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Azimuth (&deg;)</label>
+                                    <input type="number" class="sector-azimuth" min="0" max="360" placeholder="0-360">
+                                </div>
+                                <div class="form-group">
+                                    <label>Radius (m)</label>
+                                    <input type="number" class="sector-radius" min="50" placeholder="500">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Colour</label>
+                                <input type="color" class="sector-color" value="#3388ff">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="addSectorBtn" class="btn btn-small btn-secondary">+ Add Sector</button>
+                </div>
+
+                <div class="form-group">
+                    <label for="pointNotes">Notes</label>
+                    <textarea id="pointNotes" rows="2" placeholder="Optional notes..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="addPointBtn">Add Point</button>
+            </form>
+        </section>
+
+        <!-- Actions -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Actions</h2>
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="dropPointModeBtn">Drop Point Mode: Off</button>
+                <button class="btn btn-secondary" id="bulkImportBtn">Bulk Import</button>
+                <button class="btn btn-secondary" id="exportBtn">Export</button>
+                <button class="btn btn-secondary" id="saveProjectBtn">Save Project</button>
+                <button class="btn btn-secondary" id="loadProjectBtn">Load Project</button>
+                <button class="btn btn-secondary" id="settingsBtn">Settings</button>
+            </div>
+        </section>
+
+        <!-- Points & Shapes combined scrollable area -->
+        <section class="sidebar-section points-section">
+            <!-- Points -->
+            <h2 class="section-title">
+                Points <span id="pointCount" class="point-count">(0)</span>
+            </h2>
+            <input type="text" id="pointSearch" class="point-search" placeholder="Search points...">
+            <div class="points-actions-row">
+                <button class="btn btn-small btn-danger" id="clearAllBtn">Clear All</button>
+                <button class="btn btn-small btn-secondary" id="fitAllBtn">Fit All</button>
+            </div>
+            <ul id="pointsList" class="points-list"></ul>
+
+            <!-- Shapes -->
+            <h2 class="section-title" style="margin-top:14px;">
+                Shapes <span id="shapeCount" class="point-count">(0)</span>
+            </h2>
+            <div class="points-actions-row">
+                <button class="btn btn-small btn-danger" id="clearShapesBtn">Clear Shapes</button>
+            </div>
+            <div class="shapes-hint">
+                Right-click a shape for options &middot; Double-click for properties &middot; Esc to deselect
+            </div>
+            <ul id="shapesList" class="points-list"></ul>
+        </section>
+    </aside>
+
+    <!-- Sidebar collapsed toggle -->
+    <button id="sidebarOpen" class="sidebar-open hidden" title="Open sidebar">&raquo;</button>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Icon Legend -->
+    <div id="iconLegend" class="icon-legend">
+        <div class="icon-legend-header">
+            <span>Icon Legend</span>
+            <button id="iconLegendToggle" class="btn-icon" title="Hide/Show legend">&minus;</button>
+        </div>
+        <div id="iconLegendBody" class="icon-legend-body"></div>
+    </div>
+
+    <!-- Drop Point Toolbar Panel -->
+    <div id="dropPointToolbarPanel" class="drop-point-toolbar-panel hidden">
+        <div class="drop-point-toolbar-header">
+            <span>Drop Point</span>
+        </div>
+        <div class="drop-point-toolbar-body">
+            <div class="form-group">
+                <label for="dropPointToolbarType">Point Type</label>
+                <select id="dropPointToolbarType"></select>
+            </div>
+            <div class="form-group">
+                <label for="dropPointToolbarIconType">Icon</label>
+                <select id="dropPointToolbarIconType"></select>
+            </div>
+            <div class="form-group" id="dropPointToolbarColorGroup">
+                <label for="dropPointToolbarIconColor">Icon Colour</label>
+                <input type="color" id="dropPointToolbarIconColor" value="#5b8def">
+            </div>
+            <div class="form-group hidden" id="dropPointToolbarSymbolGroup">
+                <label for="dropPointToolbarSymbol">Custom Symbol (1-2 chars)</label>
+                <input type="text" id="dropPointToolbarSymbol" maxlength="2" placeholder="e.g. D">
+            </div>
+            <label class="drop-point-keep-active-row">
+                <input type="checkbox" id="dropPointKeepActive">
+                Keep active for multiple drops
+            </label>
+        </div>
+        <div class="drop-point-toolbar-actions">
+            <button class="btn btn-secondary" id="dropPointToolbarCancel">Cancel</button>
+            <button class="btn btn-primary" id="dropPointToolbarStart">Start Drop</button>
+        </div>
+    </div>
+
+    <!-- Drawing Style Panel (floating on map) -->
+    <div id="drawStylePanel" class="draw-style-panel">
+        <div class="draw-style-header">
+            <span>Drawing Style</span>
+            <button id="drawStyleToggle" class="btn-icon" title="Toggle">&minus;</button>
+        </div>
+        <div class="draw-style-body">
+            <div class="draw-style-row">
+                <label>Colour</label>
+                <input type="color" id="drawColor" value="#e05555">
+            </div>
+            <div class="draw-style-row">
+                <label>Fill Opacity</label>
+                <div class="slider-row">
+                    <input type="range" id="drawFillOpacity" min="0" max="0.8" step="0.05" value="0.15">
+                    <span id="drawFillOpacityVal">0.15</span>
+                </div>
+            </div>
+            <div class="draw-style-row">
+                <label>Stroke Width</label>
+                <input type="number" id="drawWeight" min="1" max="8" value="2" style="width:60px;">
+            </div>
+            <div class="draw-style-row">
+                <label>Stroke Style</label>
+                <select id="drawDash">
+                    <option value="">Solid</option>
+                    <option value="10,6">Dashed</option>
+                    <option value="3,4">Dotted</option>
+                    <option value="15,6,3,6">Dash-Dot</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shape Edit Modal -->
+    <div id="shapeEditModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Shape</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editShapeId">
+                <div class="form-group">
+                    <label for="editShapeLabel">Label</label>
+                    <input type="text" id="editShapeLabel" placeholder="e.g. Max Flight Radius, No-Fly Zone...">
+                </div>
+                <div class="form-group" id="editShapeRadiusGroup">
+                    <label for="editShapeRadius">Radius (metres)</label>
+                    <input type="number" id="editShapeRadius" min="1">
+                </div>
+                <div class="form-group hidden" id="editShapeAngleGroup">
+                    <label for="editShapeAngle">Label Angle (0-360&deg;, 0=North)</label>
+                    <input type="number" id="editShapeAngle" min="0" max="360" value="45">
+                    <span class="form-hint">Or drag the handle on the map to reposition</span>
+                </div>
+                <div class="form-group">
+                    <label for="editShapeColor">Colour</label>
+                    <input type="color" id="editShapeColor" value="#e05555">
+                </div>
+                <div class="form-group">
+                    <label>Fill Opacity</label>
+                    <div class="slider-row">
+                        <input type="range" id="editShapeFillOpacity" min="0" max="0.8" step="0.05" value="0.15">
+                        <span id="editShapeFillOpacityVal">0.15</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editShapeWeight">Stroke Width</label>
+                    <input type="number" id="editShapeWeight" min="1" max="8" value="2">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="shapeEditDeleteBtn">Delete</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="shapeEditSaveBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div id="bulkModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Bulk Import</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" data-tab="csv">Upload CSV</button>
+                    <button class="tab" data-tab="paste">Paste Data</button>
+                    <button class="tab" data-tab="list">Paste List</button>
+                </div>
+
+                <!-- CSV Upload Tab -->
+                <div class="tab-panel active" id="tab-csv">
+                    <div class="form-group">
+                        <label>Select CSV File</label>
+                        <input type="file" id="csvFileInput" accept=".csv,.txt,.tsv">
+                    </div>
+                    <div id="csvPreview" class="data-preview hidden"></div>
+                </div>
+
+                <!-- Paste Data Tab -->
+                <div class="tab-panel" id="tab-paste">
+                    <div class="form-group">
+                        <label>Paste tabular data (tab or comma separated)</label>
+                        <textarea id="pasteDataInput" rows="8" placeholder="Paste from spreadsheet or CSV data..."></textarea>
+                    </div>
+                    <button class="btn btn-secondary" id="parsePasteBtn">Parse Data</button>
+                    <div id="pastePreview" class="data-preview hidden"></div>
+                </div>
+
+                <!-- Paste List Tab -->
+                <div class="tab-panel" id="tab-list">
+                    <div class="form-group">
+                        <label>One location per line (postcodes, coordinates, OS Grid refs...)</label>
+                        <textarea id="listInput" rows="10" placeholder="SW1A 1AA&#10;51.5074, -0.1278&#10;TQ 30163 80311&#10;51°30'26.4&quot;N 0°07'40.1&quot;W"></textarea>
+                    </div>
+                </div>
+
+                <!-- Column Mapping (shown after parsing CSV/paste) -->
+                <div id="columnMapping" class="column-mapping hidden">
+                    <h3>Map Columns</h3>
+                    <div class="mapping-grid">
+                        <div class="form-group">
+                            <label>Latitude / Northing</label>
+                            <select id="mapLat" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Longitude / Easting</label>
+                            <select id="mapLng" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Location (single column)</label>
+                            <select id="mapLocation" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Name / Label</label>
+                            <select id="mapName" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="mapType" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Azimuth</label>
+                            <select id="mapAzimuth" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Radius (m)</label>
+                            <select id="mapRadius" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <select id="mapNotes" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Icon Type</label>
+                            <select id="mapIconType" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Icon Color</label>
+                            <select id="mapIconColor" class="col-map"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Icon Symbol</label>
+                            <select id="mapIconSymbol" class="col-map"></select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="hasHeaderRow" checked>
+                            First row is a header
+                        </label>
+                    </div>
+                </div>
+
+                <div id="bulkStatus" class="bulk-status hidden"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="bulkImportExecute">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Export</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <button class="btn btn-primary export-option" id="exportCSV">
+                        <span class="export-icon">&#128196;</span>
+                        Export as CSV
+                    </button>
+                    <button class="btn btn-primary export-option" id="exportKML">
+                        <span class="export-icon">&#127758;</span>
+                        Export as KML
+                    </button>
+                    <button class="btn btn-primary export-option" id="exportScreenshot">
+                        <span class="export-icon">&#128247;</span>
+                        Screenshot Map
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-cancel">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="w3wApiKey">What3Words API Key (optional)</label>
+                    <input type="text" id="w3wApiKey" placeholder="Enter your W3W API key...">
+                    <span class="form-hint">Required for What3Words lookups. Get a free key at <a href="https://what3words.com/developer" target="_blank">what3words.com/developer</a></span>
+                </div>
+                <div class="form-group">
+                    <label for="defaultRadius">Default Fan Radius (metres)</label>
+                    <input type="number" id="defaultRadius" value="500" min="50" max="50000">
+                </div>
+                <div class="form-group">
+                    <label for="defaultFanColor">Default Fan Colour</label>
+                    <input type="color" id="defaultFanColor" value="#3388ff">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="showLabels" checked>
+                        Show point labels on map
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="showMeasurements" checked>
+                        Show shape measurements on map
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="showShapeLabels" checked>
+                        Show shape labels on map
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Point Modal -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Point</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editPointId">
+                <div class="form-group">
+                    <label for="editPointName">Name / Label</label>
+                    <input type="text" id="editPointName">
+                </div>
+                <div class="form-group">
+                    <label>Coordinates</label>
+                    <div class="coord-display" id="editCoordDisplay"></div>
+                </div>
+                <div class="form-group">
+                    <label for="editPointType">Type</label>
+                    <select id="editPointType">
+                        <option value="general">General Point</option>
+                        <option value="cell">Cell Site</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editPointIconType">Icon</label>
+                    <select id="editPointIconType">
+                        <option value="address">Address / Reference</option>
+                        <option value="primary_tola">Primary TOLA</option>
+                        <option value="secondary_tola">Secondary TOLA</option>
+                        <option value="emergency_lz">Emergency Landing Zone</option>
+                        <option value="no_fly">No-Fly Marker</option>
+                        <option value="hazard">Hazard</option>
+                        <option value="custom_point">Custom Point</option>
+                    </select>
+                </div>
+                <div class="form-group" id="editPointIconColorGroup">
+                    <label for="editPointIconColor">Icon Colour</label>
+                    <input type="color" id="editPointIconColor" value="#5b8def">
+                </div>
+                <div class="form-group hidden" id="editPointCustomSymbolGroup">
+                    <label for="editPointCustomSymbol">Custom Symbol (1-2 chars)</label>
+                    <input type="text" id="editPointCustomSymbol" maxlength="2" placeholder="e.g. D">
+                </div>
+                <div id="editCellFields" class="cell-fields hidden">
+                    <div class="sectors-container" id="editSectorsContainer"></div>
+                    <button type="button" id="editAddSectorBtn" class="btn btn-small btn-secondary">+ Add Sector</button>
+                </div>
+                <div class="form-group">
+                    <label for="editPointNotes">Notes</label>
+                    <textarea id="editPointNotes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="editDeleteBtn">Delete</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="editSaveBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shape Context Menu (right-click) -->
+    <div id="shapeContextMenu" class="shape-context-menu hidden">
+        <button class="ctx-item" data-action="edit-vertices">Edit Vertices</button>
+        <button class="ctx-item" data-action="move">Move Shape</button>
+        <div class="ctx-separator"></div>
+        <button class="ctx-item" data-action="properties">Properties&hellip;</button>
+        <div class="ctx-separator"></div>
+        <button class="ctx-item ctx-danger" data-action="delete">Delete</button>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loadingText">Loading...</p>
+    </div>
+
+    <!-- Hidden file input for project load -->
+    <input type="file" id="projectFileInput" accept=".json" class="hidden">
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <!-- html2canvas for screenshots -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <!-- Leaflet-Geoman -->
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.16.0/dist/leaflet-geoman.min.js"></script>
+
+    <!-- App Scripts -->
+    <script src="js/converters.js"></script>
+    <script src="js/cellFan.js"></script>
+    <script src="js/drawings.js"></script>
+    <script src="js/exporters.js"></script>
+    <script src="js/io.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
