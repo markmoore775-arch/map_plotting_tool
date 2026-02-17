@@ -127,7 +127,8 @@
     function createPointAtLatLng(lat, lng) {
         const sectors = pointType.value === 'cell' ? getSectorsFromContainer(sectorsContainer) : [];
         const iconType = normalizeIconType(pointIconType.value, pointType.value);
-        const name = pointName.value.trim() || 'Dropped Point';
+        const defaultLabel = (ICON_DEFS[iconType] && ICON_DEFS[iconType].label) || 'Dropped Point';
+        const name = pointName.value.trim() || defaultLabel;
         createPoint({
             name,
             lat,
@@ -762,6 +763,11 @@
         sidebarOpen.classList.add('hidden');
         setTimeout(() => map.invalidateSize(), 300);
     });
+
+    // Start with sidebar collapsed for more map space.
+    document.body.classList.add('sidebar-collapsed');
+    sidebarOpen.classList.remove('hidden');
+    setTimeout(() => map.invalidateSize(), 50);
 
     // ---- Clear All / Fit All ----
 
