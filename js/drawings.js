@@ -11,10 +11,7 @@ const Drawings = (() => {
     let showMeasurements = true;
     let showShapeLabels = true;
     let shapeLayerMap = {};
-    // Each entry: { layer, measureTooltip?, radialGroup?, labelMarker? }
-    let customDrawMode = null;       // 'arrow' | 'arrow_stamp' | null
-    let customDrawPoints = [];
-    let customTempLayer = null;
+    let arrowDrawState = null; // { tail: [lat,lng] } while placing tip
 
     // Selection & interaction state
     let selectedShapeId = null;
@@ -29,6 +26,11 @@ const Drawings = (() => {
         weight: 2,
         dashArray: ''
     };
+
+    // Arrow geometry proportions
+    const ARROW_SHAFT_RATIO = 0.08;
+    const ARROW_HEAD_WIDTH_RATIO = 0.22;
+    const ARROW_HEAD_LENGTH_RATIO = 0.25;
 
     // ---- Geo helpers ----
 
@@ -66,13 +68,50 @@ const Drawings = (() => {
         return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
     }
 
+    // ---- Arrow polygon geometry ----
+
+    function computeArrowVertices(tail, tip) {
+        const bearing = bearingTo(tail[0], tail[1], tip[0], tip[1]);
+        const length = L.latLng(tail).distanceTo(L.latLng(tip));
+
+        if (length < 0.5) return [tail, tail, tail, tip, tail, tail, tail];
+
+        const shaftHalf = length * ARROW_SHAFT_RATIO;
+        const headHalf = length * ARROW_HEAD_WIDTH_RATIO;
+        const headStart = length * (1 - ARROW_HEAD_LENGTH_RATIO);
+
+        const perpL = (bearing + 270) % 360;
+        const perpR = (bearing + 90) % 360;
+
+        const sL1 = destinationPoint(tail[0], tail[1], perpL, shaftHalf);
+        const sR1 = destinationPoint(tail[0], tail[1], perpR, shaftHalf);
+
+        const neckPt = destinationPoint(tail[0], tail[1], bearing, headStart);
+        const sL2 = destinationPoint(neckPt[0], neckPt[1], perpL, shaftHalf);
+        const sR2 = destinationPoint(neckPt[0], neckPt[1], perpR, shaftHalf);
+
+        const wL = destinationPoint(neckPt[0], neckPt[1], perpL, headHalf);
+        const wR = destinationPoint(neckPt[0], neckPt[1], perpR, headHalf);
+
+        return [sL1, sL2, wL, tip, wR, sR2, sR1];
+    }
+
+    function extractTailTipFromVertices(vertices) {
+        if (!vertices || vertices.length < 7) return { tail: [0, 0], tip: [0, 0] };
+        const sL1 = vertices[0];
+        const sR1 = vertices[6];
+        const tail = midpoint(sL1, sR1);
+        const tip = vertices[3];
+        return { tail, tip };
+    }
+
     // ---- Initialisation ----
 
     function init(mapInstance) {
         map = mapInstance;
         contextMenuEl = document.getElementById('shapeContextMenu');
         setupGeoman();
-        setupExtraDrawControls();
+        setupArrowDrawControl();
         setupStylePanel();
         setupShapeEvents();
         setupCircleDrawFeedback();
@@ -80,7 +119,6 @@ const Drawings = (() => {
         setupKeyboardShortcuts();
         setupMapDismiss();
         setupCursorState();
-        map.on('zoomend', refreshAllArrowStampLayers);
     }
 
     function setupCursorState() {
@@ -96,7 +134,7 @@ const Drawings = (() => {
         const mapEl = document.getElementById('map');
         if (!mapEl || !map || !map.pm) return;
 
-        const isCustomDraw = !!customDrawMode;
+        const isArrowDraw = !!arrowDrawState;
         const isGeoDraw = !!(map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled());
         const isMoveMode = !!(
             (map.pm.globalDragModeEnabled && map.pm.globalDragModeEnabled()) ||
@@ -104,8 +142,8 @@ const Drawings = (() => {
             (map.pm.globalRemovalModeEnabled && map.pm.globalRemovalModeEnabled())
         );
 
-        mapEl.classList.toggle('draw-tool-cursor', isCustomDraw || isGeoDraw);
-        mapEl.classList.toggle('move-tool-cursor', !isCustomDraw && !isGeoDraw && isMoveMode);
+        mapEl.classList.toggle('draw-tool-cursor', isArrowDraw || isGeoDraw);
+        mapEl.classList.toggle('move-tool-cursor', !isArrowDraw && !isGeoDraw && isMoveMode);
     }
 
     function setupGeoman() {
@@ -145,146 +183,189 @@ const Drawings = (() => {
         });
     }
 
-    function setupExtraDrawControls() {
-        const ExtraControl = L.Control.extend({
+    // ============================================================
+    //  ARROW DRAW TOOL - single button, two-click placement
+    // ============================================================
+
+    let arrowDrawBtn = null;
+    let arrowTempLine = null;
+    let arrowTempPolygon = null;
+
+    function setupArrowDrawControl() {
+        const ArrowControl = L.Control.extend({
             options: { position: 'topleft' },
             onAdd: function () {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-
-                const arrowBtn = L.DomUtil.create('a', 'leaflet-control-extra-draw', container);
-                arrowBtn.href = '#';
-                arrowBtn.title = 'Draw Arrow';
-                arrowBtn.innerHTML = '&#8599;';
-
-                const stampBtn = L.DomUtil.create('a', 'leaflet-control-extra-draw', container);
-                stampBtn.href = '#';
-                stampBtn.title = 'Place Arrow Stamp';
-                stampBtn.innerHTML = '&#10148;';
+                const btn = L.DomUtil.create('a', 'leaflet-control-extra-draw', container);
+                btn.href = '#';
+                btn.title = 'Draw Arrow';
+                btn.innerHTML = '&#10148;';
 
                 L.DomEvent.disableClickPropagation(container);
-                L.DomEvent.on(arrowBtn, 'click', (e) => {
+                L.DomEvent.on(btn, 'click', (e) => {
                     L.DomEvent.stop(e);
-                    if (customDrawMode === 'arrow') {
-                        stopCustomDraw(true);
+                    if (arrowDrawState != null) {
+                        cancelArrowDraw();
                     } else {
-                        startCustomDraw('arrow');
-                    }
-                });
-                L.DomEvent.on(stampBtn, 'click', (e) => {
-                    L.DomEvent.stop(e);
-                    if (customDrawMode === 'arrow_stamp') {
-                        stopCustomDraw(true);
-                    } else {
-                        startCustomDraw('arrow_stamp');
+                        startArrowDraw();
                     }
                 });
 
-                container._arrowBtn = arrowBtn;
-                container._stampBtn = stampBtn;
+                arrowDrawBtn = btn;
                 return container;
             }
         });
 
-        const control = new ExtraControl();
-        map.addControl(control);
+        map.addControl(new ArrowControl());
 
-        map.on('click', (e) => {
-            if (!customDrawMode) return;
-            const clickPt = [e.latlng.lat, e.latlng.lng];
-
-            if (customDrawMode === 'arrow_stamp') {
-                createArrowStamp(clickPt);
-                stopCustomDraw(true);
-                return;
-            }
-
-            customDrawPoints.push(clickPt);
-
-            if (customDrawMode === 'arrow' && customDrawPoints.length === 2) {
-                finishCustomDraw();
-                return;
-            }
-            redrawCustomTempLayer();
-        });
-
-        map.on('mousemove', (e) => {
-            if (!customDrawMode || customDrawPoints.length === 0) return;
-            redrawCustomTempLayer([e.latlng.lat, e.latlng.lng]);
-        });
-
-        map.on('dblclick', () => {
-            if (!customDrawMode) return;
-            finishCustomDraw();
-        });
+        map.on('click', onArrowMapClick);
+        map.on('mousemove', onArrowMapMouseMove);
     }
 
-    function startCustomDraw(mode) {
-        stopCustomDraw(true);
-        customDrawMode = mode;
-        customDrawPoints = [];
+    function startArrowDraw() {
+        cancelArrowDraw();
+        arrowDrawState = {};
         map.doubleClickZoom.disable();
+        if (arrowDrawBtn) arrowDrawBtn.classList.add('active-draw');
         refreshInteractionCursor();
     }
 
-    function stopCustomDraw(clearTemp) {
-        if (clearTemp && customTempLayer && map.hasLayer(customTempLayer)) {
-            map.removeLayer(customTempLayer);
-        }
-        customTempLayer = null;
-        customDrawMode = null;
-        customDrawPoints = [];
+    function cancelArrowDraw() {
+        arrowDrawState = null;
+        if (arrowTempLine && map.hasLayer(arrowTempLine)) map.removeLayer(arrowTempLine);
+        if (arrowTempPolygon && map.hasLayer(arrowTempPolygon)) map.removeLayer(arrowTempPolygon);
+        arrowTempLine = null;
+        arrowTempPolygon = null;
         map.doubleClickZoom.enable();
+        if (arrowDrawBtn) arrowDrawBtn.classList.remove('active-draw');
         refreshInteractionCursor();
     }
 
-    function redrawCustomTempLayer(hoverPoint) {
-        if (customTempLayer && map.hasLayer(customTempLayer)) {
-            map.removeLayer(customTempLayer);
-            customTempLayer = null;
-        }
-        const pts = hoverPoint ? [...customDrawPoints, hoverPoint] : [...customDrawPoints];
-        if (pts.length < 2) return;
+    function onArrowMapClick(e) {
+        if (!arrowDrawState) return;
+        const pt = [e.latlng.lat, e.latlng.lng];
 
-        if (customDrawMode === 'arrow') {
-            customTempLayer = L.polyline(pts.slice(0, 2), {
-                color: currentStyle.color,
-                weight: currentStyle.weight,
-                dashArray: currentStyle.dashArray || '',
-                opacity: 0.85
-            }).addTo(map);
+        if (!arrowDrawState.tail) {
+            arrowDrawState.tail = pt;
+            return;
         }
+
+        const tail = arrowDrawState.tail;
+        const tip = pt;
+        createArrowShape(tail, tip);
+        cancelArrowDraw();
     }
 
-    function finishCustomDraw() {
-        if (!customDrawMode) return;
-        if (customDrawMode === 'arrow' && customDrawPoints.length >= 2) {
-            const shape = {
-                id: nextShapeId++,
-                type: 'arrow',
-                label: '',
-                style: { ...currentStyle },
-                latlngs: customDrawPoints.slice(0, 2)
-            };
-            shapes.push(shape);
-            addShapeToMap(shape);
-            refreshShapesList();
-        }
-        stopCustomDraw(true);
+    function onArrowMapMouseMove(e) {
+        if (!arrowDrawState || !arrowDrawState.tail) return;
+        const tail = arrowDrawState.tail;
+        const hover = [e.latlng.lat, e.latlng.lng];
+
+        if (arrowTempLine && map.hasLayer(arrowTempLine)) map.removeLayer(arrowTempLine);
+        if (arrowTempPolygon && map.hasLayer(arrowTempPolygon)) map.removeLayer(arrowTempPolygon);
+
+        const dist = L.latLng(tail).distanceTo(L.latLng(hover));
+        if (dist < 1) return;
+
+        const vertices = computeArrowVertices(tail, hover);
+        arrowTempPolygon = L.polygon(vertices, {
+            color: currentStyle.color,
+            fillColor: currentStyle.fillColor,
+            fillOpacity: Math.max(0.25, currentStyle.fillOpacity),
+            weight: currentStyle.weight,
+            dashArray: '',
+            interactive: false
+        }).addTo(map);
     }
 
-    function createArrowStamp(center) {
+    function createArrowShape(tail, tip) {
         const shape = {
             id: nextShapeId++,
-            type: 'arrow_stamp',
+            type: 'arrow',
             label: '',
-            style: { ...currentStyle },
-            center: [center[0], center[1]],
-            arrowLength: 200,
-            arrowAngle: 45
+            style: { ...currentStyle, fillOpacity: Math.max(0.25, currentStyle.fillOpacity) },
+            tail: [...tail],
+            tip: [...tip]
         };
         shapes.push(shape);
         addShapeToMap(shape);
         refreshShapesList();
+    }
+
+    // ---- Arrow handles (tip + tail drag markers) ----
+
+    function addArrowHandles(shape) {
+        const entry = shapeLayerMap[shape.id];
+        if (!entry || shape.type !== 'arrow') return;
+        removeArrowHandles(shape.id);
+
+        const makeHandle = (latlng) => {
+            return L.marker(latlng, {
+                icon: L.divIcon({
+                    className: 'arrow-handle-icon',
+                    iconSize: [12, 12],
+                    iconAnchor: [6, 6]
+                }),
+                draggable: true,
+                zIndexOffset: 1100
+            }).addTo(map);
+        };
+
+        const tipHandle = makeHandle(shape.tip);
+        const tailHandle = makeHandle(shape.tail);
+
+        tipHandle.on('drag', () => {
+            const pos = tipHandle.getLatLng();
+            shape.tip = [pos.lat, pos.lng];
+            rebuildArrowPolygon(shape);
+        });
+        tipHandle.on('dragend', () => {
+            rebuildArrowPolygon(shape);
+            bindShapePopup(shape);
+            refreshShapesList();
+        });
+
+        tailHandle.on('drag', () => {
+            const pos = tailHandle.getLatLng();
+            shape.tail = [pos.lat, pos.lng];
+            rebuildArrowPolygon(shape);
+        });
+        tailHandle.on('dragend', () => {
+            rebuildArrowPolygon(shape);
+            bindShapePopup(shape);
+            refreshShapesList();
+        });
+
+        entry.arrowHandles = { tipHandle, tailHandle };
+    }
+
+    function refreshArrowHandlePositions(shape) {
+        const entry = shapeLayerMap[shape.id];
+        if (!entry || !entry.arrowHandles) return;
+        entry.arrowHandles.tipHandle.setLatLng(shape.tip);
+        entry.arrowHandles.tailHandle.setLatLng(shape.tail);
+    }
+
+    function removeArrowHandles(id) {
+        const entry = shapeLayerMap[id];
+        if (!entry || !entry.arrowHandles) return;
+        if (entry.arrowHandles.tipHandle && map.hasLayer(entry.arrowHandles.tipHandle)) {
+            map.removeLayer(entry.arrowHandles.tipHandle);
+        }
+        if (entry.arrowHandles.tailHandle && map.hasLayer(entry.arrowHandles.tailHandle)) {
+            map.removeLayer(entry.arrowHandles.tailHandle);
+        }
+        entry.arrowHandles = null;
+    }
+
+    function rebuildArrowPolygon(shape) {
+        const entry = shapeLayerMap[shape.id];
+        if (!entry || !entry.layer) return;
+        const vertices = computeArrowVertices(shape.tail, shape.tip);
+        entry.layer.setLatLngs([vertices]);
+        updateMeasurement(shape);
+        updateShapeLabelMarker(shape);
+        refreshArrowHandlePositions(shape);
     }
 
     // ---- Live radius feedback during circle draw ----
@@ -374,7 +455,6 @@ const Drawings = (() => {
         const dashSelect = document.getElementById('drawDash');
         const toggleBtn = document.getElementById('drawStyleToggle');
 
-        // Set initial values
         colorInput.value = currentStyle.color;
         opacityInput.value = currentStyle.fillOpacity;
         opacityVal.textContent = currentStyle.fillOpacity;
@@ -434,7 +514,6 @@ const Drawings = (() => {
             shape.style[prop] = value;
         }
 
-        // Live-update the layer
         const entry = shapeLayerMap[shape.id];
         if (entry && entry.layer && entry.layer.setStyle) {
             entry.layer.setStyle({
@@ -445,51 +524,8 @@ const Drawings = (() => {
                 dashArray: shape.style.dashArray || ''
             });
         }
-        if (shape.type === 'arrow') {
-            refreshArrowDecorator(shape);
-        }
-        if (shape.type === 'arrow_stamp') {
-            refreshArrowStampLayer(shape);
-        }
 
         refreshShapesList();
-    }
-
-    function refreshArrowDecorator(shape) {
-        const entry = shapeLayerMap[shape.id];
-        if (!entry || shape.type !== 'arrow' || !entry.layer) return;
-
-        const latlngs = entry.layer.getLatLngs ? entry.layer.getLatLngs() : (shape.latlngs || []);
-        if (!latlngs || latlngs.length < 2) return;
-        const start = latlngs[latlngs.length - 2];
-        const end = latlngs[latlngs.length - 1];
-        const endLat = end.lat != null ? end.lat : end[0];
-        const endLng = end.lng != null ? end.lng : end[1];
-        const startLat = start.lat != null ? start.lat : start[0];
-        const startLng = start.lng != null ? start.lng : start[1];
-        const bearing = bearingTo(startLat, startLng, endLat, endLng);
-
-        if (entry.arrowHeadMarker && map.hasLayer(entry.arrowHeadMarker)) {
-            map.removeLayer(entry.arrowHeadMarker);
-        }
-
-        const arrowColor = shape.style.color || currentStyle.color;
-        const arrowSize = Math.max(16, (shape.style.weight || 2) * 7);
-        const wing = Math.max(5, Math.round(arrowSize * 0.34));
-        const head = Math.max(8, Math.round(arrowSize * 0.6));
-
-        const arrowHeadIcon = L.divIcon({
-            className: 'map-arrowhead-wrap',
-            html: `<div class="map-arrowhead" style="border-top:${wing}px solid transparent; border-bottom:${wing}px solid transparent; border-left:${head}px solid ${arrowColor}; transform: rotate(${bearing - 90}deg);"></div>`,
-            iconSize: [arrowSize, arrowSize],
-            iconAnchor: [arrowSize / 2, arrowSize / 2]
-        });
-        entry.arrowHeadMarker = L.marker([endLat, endLng], {
-            icon: arrowHeadIcon,
-            interactive: false,
-            keyboard: false,
-            zIndexOffset: 900
-        }).addTo(map);
     }
 
     function populatePanelFromShape(shape) {
@@ -503,7 +539,6 @@ const Drawings = (() => {
         document.getElementById('drawWeight').value = shape.style.weight || currentStyle.weight;
         document.getElementById('drawDash').value = shape.style.dashArray || '';
 
-        // Ensure panel is visible and expanded
         const panel = document.getElementById('drawStylePanel');
         panel.classList.remove('collapsed');
         panel.classList.add('editing-shape');
@@ -528,7 +563,6 @@ const Drawings = (() => {
     // ============================================================
 
     function selectShape(id) {
-        // Deselect previous
         if (selectedShapeId && selectedShapeId !== id) {
             deselectShape();
         }
@@ -539,11 +573,11 @@ const Drawings = (() => {
 
         selectedShapeId = id;
         populatePanelFromShape(shape);
-        if (shape.type === 'arrow_stamp') {
-            addArrowStampHandles(shape);
+
+        if (shape.type === 'arrow') {
+            addArrowHandles(shape);
         }
 
-        // Highlight in sidebar
         refreshShapesList();
     }
 
@@ -558,16 +592,14 @@ const Drawings = (() => {
             }
         }
 
-        // Update shape data from layer in case it was edited
         const shape = shapes.find(s => s.id === selectedShapeId);
         if (shape && entry && entry.layer) {
             updateShapeFromLayer(shape, entry.layer);
             updateMeasurement(shape);
             bindShapePopup(shape);
         }
-        if (entry && entry.stampHandles) {
-            removeArrowStampHandles(selectedShapeId);
-        }
+
+        removeArrowHandles(selectedShapeId);
 
         selectedShapeId = null;
         restorePanelDefaults();
@@ -576,6 +608,9 @@ const Drawings = (() => {
 
     function editVertices(id) {
         selectShape(id);
+        const shape = shapes.find(s => s.id === id);
+        if (shape && shape.type === 'arrow') return;
+
         const entry = shapeLayerMap[id];
         if (entry && entry.layer && entry.layer.pm) {
             entry.layer.pm.enable();
@@ -584,11 +619,13 @@ const Drawings = (() => {
 
     function moveShape(id) {
         selectShape(id);
+        const shape = shapes.find(s => s.id === id);
+
+        if (shape && shape.type === 'arrow') return;
+
         const entry = shapeLayerMap[id];
         if (entry && entry.layer && entry.layer.pm) {
             entry.layer.pm.enableLayerDrag();
-        } else if (entry && entry.layer && entry.layer.dragging) {
-            entry.layer.dragging.enable();
         }
     }
 
@@ -599,7 +636,6 @@ const Drawings = (() => {
     function setupContextMenu() {
         if (!contextMenuEl) return;
 
-        // Handle menu item clicks
         contextMenuEl.addEventListener('click', (e) => {
             const item = e.target.closest('[data-action]');
             if (!item || contextTargetId == null) return;
@@ -624,7 +660,6 @@ const Drawings = (() => {
             }
         });
 
-        // Prevent menu's own context menu
         contextMenuEl.addEventListener('contextmenu', (e) => e.preventDefault());
     }
 
@@ -635,23 +670,27 @@ const Drawings = (() => {
 
         contextTargetId = shapeId;
         const shape = shapes.find(s => s.id === shapeId);
-
-        // Show/hide "Edit Vertices" for text shapes
-        const editVertBtn = contextMenuEl.querySelector('[data-action="edit-vertices"]');
         const layer = shape ? (shapeLayerMap[shapeId] && shapeLayerMap[shapeId].layer) : null;
-        const canEditGeometry = !!(layer && layer.pm);
-        const canMoveShape = !!((layer && layer.pm) || (shape && shape.type === 'arrow_stamp' && layer && layer.dragging));
-        if (editVertBtn) {
-            editVertBtn.style.display = (shape && shape.type === 'text') || !canEditGeometry ? 'none' : '';
-        }
+
+        const editVertBtn = contextMenuEl.querySelector('[data-action="edit-vertices"]');
         const moveBtn = contextMenuEl.querySelector('[data-action="move"]');
+
+        const isArrow = shape && shape.type === 'arrow';
+        const isText = shape && shape.type === 'text';
+        const canEditGeometry = !!(layer && layer.pm) && !isArrow;
+        const canMoveShape = !!(layer && layer.pm) && !isArrow;
+
+        if (editVertBtn) {
+            editVertBtn.style.display = isText || !canEditGeometry ? 'none' : '';
+            if (isArrow) editVertBtn.style.display = 'none';
+        }
         if (moveBtn) {
-            moveBtn.style.display = (shape && shape.type === 'text') || !canMoveShape ? 'none' : '';
+            moveBtn.style.display = isText || !canMoveShape ? 'none' : '';
+            if (isArrow) moveBtn.style.display = 'none';
         }
 
         contextMenuEl.classList.remove('hidden');
 
-        // Position near cursor, clamped to viewport
         const x = originalEvent.clientX;
         const y = originalEvent.clientY;
         const menuW = contextMenuEl.offsetWidth;
@@ -671,12 +710,10 @@ const Drawings = (() => {
     }
 
     function setupMapDismiss() {
-        // Click on map (not shape) dismisses context menu and deselects
         map.on('click', () => {
             hideContextMenu();
         });
 
-        // Also dismiss on any click outside the context menu
         document.addEventListener('mousedown', (e) => {
             if (contextMenuEl && !contextMenuEl.classList.contains('hidden') &&
                 !contextMenuEl.contains(e.target)) {
@@ -684,7 +721,6 @@ const Drawings = (() => {
             }
         });
 
-        // Deselect when global Geoman modes toggle on
         map.on('pm:globaleditmodetoggled', (e) => {
             if (e.enabled && selectedShapeId) deselectShape();
         });
@@ -703,32 +739,27 @@ const Drawings = (() => {
     function setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                // Close context menu first
                 if (contextMenuEl && !contextMenuEl.classList.contains('hidden')) {
                     hideContextMenu();
                     return;
                 }
 
-                // Close shape edit modal if open
                 const modal = document.getElementById('shapeEditModal');
                 if (modal && !modal.classList.contains('hidden')) {
                     modal.classList.add('hidden');
                     return;
                 }
 
-                // Deselect shape
                 if (selectedShapeId) {
                     deselectShape();
                     return;
                 }
 
-                // Cancel custom arrow/curve drawing.
-                if (customDrawMode) {
-                    stopCustomDraw(true);
+                if (arrowDrawState) {
+                    cancelArrowDraw();
                     return;
                 }
 
-                // Cancel any active Geoman drawing
                 if (map.pm.globalDrawModeEnabled()) {
                     map.pm.disableDraw();
                 }
@@ -745,41 +776,41 @@ const Drawings = (() => {
         if (!entry || !entry.layer) return;
         const layer = entry.layer;
 
-        // Right-click context menu
         layer.on('contextmenu', (e) => {
             showContextMenu(shape.id, e.originalEvent);
         });
 
-        // Single-click selects shape for immediate styling/interaction feedback.
         layer.on('click', () => {
             selectShape(shape.id);
         });
 
-        // Double-click -> open properties
         layer.on('dblclick', (e) => {
             L.DomEvent.stop(e);
             openShapeEditModal(shape.id);
         });
 
-        if (shape.type === 'arrow_stamp') {
-            layer.on('drag', () => {
-                updateShapeFromLayer(shape, layer);
+        if (shape.type === 'arrow') {
+            layer.on('pm:drag', () => {
+                const verts = flattenLatLngs(layer.getLatLngs());
+                const { tail, tip } = extractTailTipFromVertices(verts);
+                shape.tail = tail;
+                shape.tip = tip;
                 updateMeasurement(shape);
                 updateShapeLabelMarker(shape);
-                refreshArrowStampHandles(shape);
+                refreshArrowHandlePositions(shape);
             });
-            layer.on('dragend', () => {
-                updateShapeFromLayer(shape, layer);
-                updateMeasurement(shape);
-                updateShapeLabelMarker(shape);
-                refreshArrowStampHandles(shape);
+            layer.on('pm:dragend', () => {
+                const verts = flattenLatLngs(layer.getLatLngs());
+                const { tail, tip } = extractTailTipFromVertices(verts);
+                shape.tail = tail;
+                shape.tip = tip;
+                rebuildArrowPolygon(shape);
                 bindShapePopup(shape);
                 refreshShapesList();
             });
             return;
         }
 
-        // Keep measurements and labels attached while dragging/moving.
         layer.on('pm:drag', () => {
             updateShapeFromLayer(shape, layer);
             updateMeasurement(shape);
@@ -789,7 +820,6 @@ const Drawings = (() => {
             updateShapeFromLayer(shape, layer);
             updateMeasurement(shape);
             updateShapeLabelMarker(shape);
-            if (shape.type === 'arrow') refreshArrowDecorator(shape);
             bindShapePopup(shape);
             refreshShapesList();
         });
@@ -845,13 +875,7 @@ const Drawings = (() => {
 
             removeMeasurement(id);
             removeShapeLabelMarker(id);
-            removeArrowStampHandles(id);
-            if (shapeLayerMap[id] && shapeLayerMap[id].arrowDecorator && map.hasLayer(shapeLayerMap[id].arrowDecorator)) {
-                map.removeLayer(shapeLayerMap[id].arrowDecorator);
-            }
-            if (shapeLayerMap[id] && shapeLayerMap[id].arrowHeadMarker && map.hasLayer(shapeLayerMap[id].arrowHeadMarker)) {
-                map.removeLayer(shapeLayerMap[id].arrowHeadMarker);
-            }
+            removeArrowHandles(id);
             shapes = shapes.filter(s => s.id !== id);
             delete shapeLayerMap[id];
             refreshShapesList();
@@ -865,7 +889,6 @@ const Drawings = (() => {
                         updateShapeFromLayer(shape, entry.layer);
                         updateMeasurement(shape);
                         updateShapeLabelMarker(shape);
-                        if (shape.type === 'arrow') refreshArrowDecorator(shape);
                         bindShapePopup(shape);
                     }
                 }
@@ -881,7 +904,6 @@ const Drawings = (() => {
                         updateShapeFromLayer(shape, entry.layer);
                         updateMeasurement(shape);
                         updateShapeLabelMarker(shape);
-                        if (shape.type === 'arrow') refreshArrowDecorator(shape);
                     }
                 }
             }
@@ -920,9 +942,11 @@ const Drawings = (() => {
             const center = layer.getLatLng();
             shape.center = [center.lat, center.lng];
             shape.radius = layer.getRadius();
-        } else if (shape.type === 'arrow_stamp') {
-            const center = layer.getLatLng();
-            shape.center = [center.lat, center.lng];
+        } else if (shape.type === 'arrow') {
+            const verts = flattenLatLngs(layer.getLatLngs());
+            const { tail, tip } = extractTailTipFromVertices(verts);
+            shape.tail = tail;
+            shape.tip = tip;
         } else if (shape.type === 'text') {
             const pos = layer.getLatLng();
             shape.position = [pos.lat, pos.lng];
@@ -930,8 +954,6 @@ const Drawings = (() => {
                 shape.text = layer.pm.getText();
             }
         } else if (shape.type === 'curve') {
-            // Curves are currently created as 3-point bezier and are not vertex-editable.
-            // Preserve original control points.
             return;
         } else {
             const latlngs = layer.getLatLngs();
@@ -946,9 +968,7 @@ const Drawings = (() => {
             'Rectangle': 'rectangle',
             'Line': 'polyline',
             'Text': 'text',
-            'Arrow': 'arrow',
-            'Curve': 'curve',
-            'ArrowStamp': 'arrow_stamp'
+            'Curve': 'curve'
         };
         return typeMap[geomanType] || geomanType.toLowerCase();
     }
@@ -958,108 +978,6 @@ const Drawings = (() => {
             return latlngs[0].map(ll => ll.lat !== undefined ? [ll.lat, ll.lng] : ll);
         }
         return latlngs.map(ll => ll.lat !== undefined ? [ll.lat, ll.lng] : ll);
-    }
-
-    function getArrowStampIcon(shape) {
-        const center = shape.center || [0, 0];
-        const angle = shape.arrowAngle != null ? shape.arrowAngle : 45;
-        const halfLen = Math.max(20, (shape.arrowLength || 200) / 2);
-        const tip = destinationPoint(center[0], center[1], angle, halfLen);
-        const tail = destinationPoint(center[0], center[1], (angle + 180) % 360, halfLen);
-        const pxLen = map.latLngToLayerPoint(L.latLng(tip)).distanceTo(map.latLngToLayerPoint(L.latLng(tail)));
-        const width = Math.max(28, Math.min(180, pxLen));
-        const height = Math.max(14, Math.min(54, width * 0.32));
-        const color = shape.style?.color || currentStyle.color;
-        const opacity = shape.style?.fillOpacity != null ? Math.max(0.45, shape.style.fillOpacity) : 0.85;
-        return L.divIcon({
-            className: 'map-arrow-stamp-wrap',
-            html: `<div class="map-arrow-stamp" style="opacity:${opacity}; transform: translate(-50%, -50%) rotate(${angle - 90}deg);">
-                    <svg width="${width}" height="${height}" viewBox="0 0 140 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path d="M0 15 H86 V4 L140 22 L86 40 V29 H0 Z" fill="${color}" />
-                    </svg>
-                   </div>`,
-            iconSize: null,
-            iconAnchor: [0, 0]
-        });
-    }
-
-    function refreshArrowStampLayer(shape) {
-        const entry = shapeLayerMap[shape.id];
-        if (!entry || !entry.layer || shape.type !== 'arrow_stamp') return;
-        entry.layer.setIcon(getArrowStampIcon(shape));
-        if (shape.center) {
-            entry.layer.setLatLng(shape.center);
-        }
-        if (entry.stampHandles) {
-            refreshArrowStampHandles(shape);
-        }
-    }
-
-    function getArrowStampTip(shape) {
-        const center = shape.center || [0, 0];
-        const angle = shape.arrowAngle != null ? shape.arrowAngle : 45;
-        const halfLen = Math.max(20, (shape.arrowLength || 200) / 2);
-        return destinationPoint(center[0], center[1], angle, halfLen);
-    }
-
-    function addArrowStampHandles(shape) {
-        const entry = shapeLayerMap[shape.id];
-        if (!entry || !entry.layer || shape.type !== 'arrow_stamp') return;
-        removeArrowStampHandles(shape.id);
-
-        const tip = getArrowStampTip(shape);
-        const handle = L.marker(tip, {
-            icon: L.divIcon({
-                className: 'radial-drag-handle',
-                iconSize: [14, 14],
-                iconAnchor: [7, 7]
-            }),
-            draggable: true,
-            zIndexOffset: 1100
-        }).addTo(map);
-
-        handle.on('drag', (e) => {
-            const pos = e.target.getLatLng();
-            const center = shape.center || [pos.lat, pos.lng];
-            const newAngle = bearingTo(center[0], center[1], pos.lat, pos.lng);
-            const halfDistance = L.latLng(center).distanceTo(pos);
-            shape.arrowAngle = newAngle;
-            shape.arrowLength = Math.max(40, halfDistance * 2);
-            refreshArrowStampLayer(shape);
-            updateMeasurement(shape);
-            updateShapeLabelMarker(shape);
-        });
-
-        handle.on('dragend', () => {
-            refreshArrowStampLayer(shape);
-            bindShapePopup(shape);
-            refreshShapesList();
-        });
-
-        entry.stampHandles = { tipHandle: handle };
-    }
-
-    function refreshArrowStampHandles(shape) {
-        const entry = shapeLayerMap[shape.id];
-        if (!entry || !entry.stampHandles || !entry.stampHandles.tipHandle) return;
-        entry.stampHandles.tipHandle.setLatLng(getArrowStampTip(shape));
-    }
-
-    function removeArrowStampHandles(id) {
-        const entry = shapeLayerMap[id];
-        if (!entry || !entry.stampHandles) return;
-        if (entry.stampHandles.tipHandle && map.hasLayer(entry.stampHandles.tipHandle)) {
-            map.removeLayer(entry.stampHandles.tipHandle);
-        }
-        entry.stampHandles = null;
-    }
-
-    function refreshAllArrowStampLayers() {
-        for (const shape of shapes) {
-            if (shape.type === 'arrow_stamp') {
-                refreshArrowStampLayer(shape);
-            }
-        }
     }
 
     // ---- Add shapes to map (from loaded data) ----
@@ -1093,17 +1011,13 @@ const Drawings = (() => {
                 });
                 layer.setIcon(icon);
             }
+        } else if (shape.type === 'arrow') {
+            const vertices = computeArrowVertices(shape.tail, shape.tip);
+            layer = L.polygon(vertices, pathOpts).addTo(map);
         } else if (shape.type === 'rectangle') {
             layer = L.rectangle(shape.latlngs, pathOpts).addTo(map);
         } else if (shape.type === 'polyline') {
             layer = L.polyline(shape.latlngs, pathOpts).addTo(map);
-        } else if (shape.type === 'arrow') {
-            layer = L.polyline(shape.latlngs, pathOpts).addTo(map);
-        } else if (shape.type === 'arrow_stamp' && shape.center) {
-            layer = L.marker(shape.center, {
-                icon: getArrowStampIcon(shape),
-                draggable: true
-            }).addTo(map);
         } else if (shape.type === 'polygon') {
             layer = L.polygon(shape.latlngs, pathOpts).addTo(map);
         } else if (shape.type === 'curve' && shape.curvePoints && shape.curvePoints.length >= 3 && L.curve) {
@@ -1116,9 +1030,6 @@ const Drawings = (() => {
                 layer.pm.setOptions({ allowSelfIntersection: false });
             }
             shapeLayerMap[shape.id] = { layer };
-            if (shape.type === 'arrow') {
-                refreshArrowDecorator(shape);
-            }
 
             if (showMeasurements) {
                 addMeasurement(shape);
@@ -1314,37 +1225,25 @@ const Drawings = (() => {
     function getMeasurementText(shape) {
         if (shape.type === 'circle') {
             const r = shape.radius;
-            if (r >= 1000) {
-                return `${(r / 1000).toFixed(2)} km`;
-            }
+            if (r >= 1000) return `${(r / 1000).toFixed(2)} km`;
             return `${Math.round(r)} m`;
         }
 
         if (shape.type === 'polyline') {
             const dist = calcPolylineLength(shape.latlngs);
-            if (dist >= 1000) {
-                return `${(dist / 1000).toFixed(2)} km`;
-            }
+            if (dist >= 1000) return `${(dist / 1000).toFixed(2)} km`;
             return `${Math.round(dist)} m`;
         }
 
         if (shape.type === 'arrow') {
-            // Hidden by default for arrow workflow.
-            return null;
-        }
-
-        if (shape.type === 'arrow_stamp') {
-            // Hidden by default for stamp workflow.
             return null;
         }
 
         if (shape.type === 'curve') {
-            // Hidden by default for curve workflow.
             return null;
         }
 
         if (shape.type === 'polygon' || shape.type === 'rectangle') {
-            // Area display intentionally disabled for planning workflow.
             return null;
         }
 
@@ -1442,37 +1341,29 @@ const Drawings = (() => {
     function getShapeLabelAnchor(shape) {
         if (shape.type === 'text') return null;
 
-        // Circles: use the same angle as radial measurement so label stays near perimeter.
         if (shape.type === 'circle' && shape.center && shape.radius != null) {
             const angle = shape.measureAngle != null ? shape.measureAngle : 45;
             const edge = destinationPoint(shape.center[0], shape.center[1], angle, shape.radius);
             return projectOutwardPixels(edge, shape.center, 14);
         }
 
-        // Polylines: place near the end point, pushed outward from midpoint.
         if (shape.type === 'polyline' && shape.latlngs && shape.latlngs.length >= 2) {
             const end = shape.latlngs[shape.latlngs.length - 1];
             const prev = shape.latlngs[shape.latlngs.length - 2];
-            const mid = midpoint(prev, end);
-            return projectOutwardPixels(end, mid, 12);
+            const mid2 = midpoint(prev, end);
+            return projectOutwardPixels(end, mid2, 12);
         }
-        if (shape.type === 'arrow' && shape.latlngs && shape.latlngs.length >= 2) {
-            const end = shape.latlngs[shape.latlngs.length - 1];
-            const prev = shape.latlngs[shape.latlngs.length - 2];
-            const mid = midpoint(prev, end);
-            return projectOutwardPixels(end, mid, 12);
+
+        if (shape.type === 'arrow' && shape.tip && shape.tail) {
+            return projectOutwardPixels(shape.tip, shape.tail, 16);
         }
-        if (shape.type === 'arrow_stamp' && shape.center && shape.arrowLength != null) {
-            const tip = destinationPoint(shape.center[0], shape.center[1], shape.arrowAngle || 45, Math.max(20, shape.arrowLength / 2));
-            return projectOutwardPixels(tip, shape.center, 12);
-        }
+
         if (shape.type === 'curve' && shape.curvePoints && shape.curvePoints.length >= 3) {
             const end = shape.curvePoints[2];
             const ctrl = shape.curvePoints[1];
             return projectOutwardPixels(end, ctrl, 12);
         }
 
-        // Polygons/rectangles: use right edge midpoint then push outward.
         if (shape.latlngs && shape.latlngs.length > 0) {
             const centroid = getShapeCentroid(shape);
             if (!centroid) return null;
@@ -1498,7 +1389,6 @@ const Drawings = (() => {
         const entry = shapeLayerMap[shape.id];
         if (!entry) return;
 
-        // Remove existing label marker if any
         removeShapeLabelMarker(shape.id);
 
         const anchor = getShapeLabelAnchor(shape);
@@ -1640,14 +1530,16 @@ const Drawings = (() => {
             if (angleHint) angleHint.textContent = 'Or drag the handle on the map to reposition';
             document.getElementById('editShapeRadius').value = Math.round(shape.radius);
             document.getElementById('editShapeAngle').value = Math.round(shape.measureAngle || 45);
-        } else if (shape.type === 'arrow_stamp') {
+        } else if (shape.type === 'arrow') {
             radiusGroup.classList.remove('hidden');
             angleGroup.classList.remove('hidden');
+            const arrowLen = L.latLng(shape.tail).distanceTo(L.latLng(shape.tip));
+            const arrowBearing = bearingTo(shape.tail[0], shape.tail[1], shape.tip[0], shape.tip[1]);
             if (radiusLabel) radiusLabel.textContent = 'Arrow Length (metres)';
             if (angleLabel) angleLabel.innerHTML = 'Arrow Direction (0-360&deg;, 0=North)';
-            if (angleHint) angleHint.textContent = 'Use direction + length to resize/orient the arrow';
-            document.getElementById('editShapeRadius').value = Math.round(shape.arrowLength || 200);
-            document.getElementById('editShapeAngle').value = Math.round(shape.arrowAngle || 45);
+            if (angleHint) angleHint.textContent = 'Or drag the tip/tail handles on the map';
+            document.getElementById('editShapeRadius').value = Math.round(arrowLen);
+            document.getElementById('editShapeAngle').value = Math.round(arrowBearing);
         } else {
             radiusGroup.classList.add('hidden');
             angleGroup.classList.add('hidden');
@@ -1676,14 +1568,15 @@ const Drawings = (() => {
             if (!isNaN(newAngle)) {
                 shape.measureAngle = ((newAngle % 360) + 360) % 360;
             }
-        } else if (shape.type === 'arrow_stamp') {
+        } else if (shape.type === 'arrow') {
             const newLength = parseFloat(document.getElementById('editShapeRadius').value);
-            if (newLength > 0) {
-                shape.arrowLength = newLength;
-            }
-            const newAngle = parseFloat(document.getElementById('editShapeAngle').value);
-            if (!isNaN(newAngle)) {
-                shape.arrowAngle = ((newAngle % 360) + 360) % 360;
+            const newBearing = parseFloat(document.getElementById('editShapeAngle').value);
+            if (newLength > 0 && !isNaN(newBearing)) {
+                const bearing = ((newBearing % 360) + 360) % 360;
+                shape.tip = destinationPoint(shape.tail[0], shape.tail[1], bearing, newLength);
+            } else if (newLength > 0) {
+                const currentBearing = bearingTo(shape.tail[0], shape.tail[1], shape.tip[0], shape.tip[1]);
+                shape.tip = destinationPoint(shape.tail[0], shape.tail[1], currentBearing, newLength);
             }
         }
 
@@ -1702,10 +1595,7 @@ const Drawings = (() => {
                 entry.layer.setRadius(shape.radius);
             }
             if (shape.type === 'arrow') {
-                refreshArrowDecorator(shape);
-            }
-            if (shape.type === 'arrow_stamp') {
-                refreshArrowStampLayer(shape);
+                rebuildArrowPolygon(shape);
             }
         }
 
@@ -1714,7 +1604,6 @@ const Drawings = (() => {
         bindShapePopup(shape);
         refreshShapesList();
 
-        // If this shape is selected, refresh the style panel too
         if (selectedShapeId === id) {
             populatePanelFromShape(shape);
         }
@@ -1740,13 +1629,7 @@ const Drawings = (() => {
         if (entry) {
             removeMeasurement(id);
             removeShapeLabelMarker(id);
-            removeArrowStampHandles(id);
-            if (entry.arrowDecorator && map.hasLayer(entry.arrowDecorator)) {
-                map.removeLayer(entry.arrowDecorator);
-            }
-            if (entry.arrowHeadMarker && map.hasLayer(entry.arrowHeadMarker)) {
-                map.removeLayer(entry.arrowHeadMarker);
-            }
+            removeArrowHandles(id);
             if (entry.layer) map.removeLayer(entry.layer);
             delete shapeLayerMap[id];
         }
@@ -1767,13 +1650,7 @@ const Drawings = (() => {
             if (shape && shape.type === 'circle') {
                 removeRadialMeasurement(numId);
             }
-            removeArrowStampHandles(numId);
-            if (entry && entry.arrowDecorator && map.hasLayer(entry.arrowDecorator)) {
-                map.removeLayer(entry.arrowDecorator);
-            }
-            if (entry && entry.arrowHeadMarker && map.hasLayer(entry.arrowHeadMarker)) {
-                map.removeLayer(entry.arrowHeadMarker);
-            }
+            removeArrowHandles(numId);
             removeShapeLabelMarker(numId);
             if (entry && entry.layer) map.removeLayer(entry.layer);
         }
@@ -1864,13 +1741,31 @@ const Drawings = (() => {
                 center: shapeData.center,
                 radius: shapeData.radius,
                 measureAngle: shapeData.measureAngle != null ? shapeData.measureAngle : 45,
-                arrowLength: shapeData.arrowLength,
-                arrowAngle: shapeData.arrowAngle,
+                tail: shapeData.tail,
+                tip: shapeData.tip,
                 latlngs: shapeData.latlngs,
                 curvePoints: shapeData.curvePoints,
                 position: shapeData.position,
                 text: shapeData.text
             };
+
+            // Migrate old arrow_stamp data to new arrow format
+            if (shape.type === 'arrow_stamp') {
+                shape.type = 'arrow';
+                if (shapeData.center && shapeData.arrowLength && shapeData.arrowAngle != null) {
+                    const halfLen = Math.max(20, shapeData.arrowLength / 2);
+                    shape.tip = destinationPoint(shapeData.center[0], shapeData.center[1], shapeData.arrowAngle, halfLen);
+                    shape.tail = destinationPoint(shapeData.center[0], shapeData.center[1], (shapeData.arrowAngle + 180) % 360, halfLen);
+                }
+            }
+
+            // Migrate old polyline-based arrow data
+            if (shape.type === 'arrow' && !shape.tail && shape.latlngs && shape.latlngs.length >= 2) {
+                shape.tail = shape.latlngs[0];
+                shape.tip = shape.latlngs[shape.latlngs.length - 1];
+                delete shape.latlngs;
+            }
+
             shapes.push(shape);
             addShapeToMap(shape);
         }
@@ -1886,13 +1781,12 @@ const Drawings = (() => {
     }
 
     function getShapeTypeLabel(type) {
-        if (type === 'arrow_stamp') return 'Arrow Stamp';
         if (!type) return 'Shape';
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
 
     function isDrawingActive() {
-        return !!(map && map.pm && map.pm.globalDrawModeEnabled()) || !!customDrawMode;
+        return !!(map && map.pm && map.pm.globalDrawModeEnabled()) || !!arrowDrawState;
     }
 
     function getShapes() {

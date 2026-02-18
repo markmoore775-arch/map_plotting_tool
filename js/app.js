@@ -25,8 +25,8 @@
 
     function initMap() {
         map = L.map('map', {
-            center: [54.5, -2.5], // Centre of UK
-            zoom: 6,
+            center: [51.5074, -0.1278], // London
+            zoom: 11,
             zoomControl: true
         });
 
@@ -66,6 +66,16 @@
                 .setLatLng(e.latlng)
                 .setContent(`<div class="popup-detail">${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}</div>`)
                 .openOn(map);
+        });
+
+        // Ensure map fills container: invalidateSize when container resizes (handles initial load + layout changes)
+        const mapContainer = document.getElementById('map');
+        if (mapContainer && typeof ResizeObserver !== 'undefined') {
+            const ro = new ResizeObserver(() => map.invalidateSize());
+            ro.observe(mapContainer);
+        }
+        map.whenReady(() => {
+            requestAnimationFrame(() => map.invalidateSize());
         });
     }
 
@@ -677,10 +687,7 @@
         setTimeout(() => map.invalidateSize(), 300);
     });
 
-    // Start with sidebar collapsed for more map space.
-    document.body.classList.add('sidebar-collapsed');
-    sidebarOpen.classList.remove('hidden');
-    setTimeout(() => map.invalidateSize(), 50);
+    // Sidebar starts collapsed via HTML class; no layout shift before map init.
 
     // ---- Clear All / Fit All ----
 
@@ -1384,8 +1391,11 @@
 
     // ---- Initialise ----
 
-    initMap();
-    initIconLegend();
-    initDrawings();
+    // Defer init until load so layout is stable and map container has final dimensions
+    window.addEventListener('load', () => {
+        initMap();
+        initIconLegend();
+        initDrawings();
+    });
 
 })();
