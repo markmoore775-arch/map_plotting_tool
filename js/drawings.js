@@ -158,9 +158,9 @@ const Drawings = (() => {
             drawPolyline: true,
             cutPolygon: false,
             rotateMode: false,
-            editMode: true,
-            dragMode: true,
-            removalMode: true
+            editMode: false,
+            dragMode: false,
+            removalMode: false
         });
 
         applyStyleToGeoman();
@@ -578,6 +578,12 @@ const Drawings = (() => {
             addArrowHandles(shape);
         }
 
+        if (shape.type !== 'text' && entry.layer.pm) {
+            entry.layer.pm.enableLayerDrag();
+            const el = entry.layer.getElement ? entry.layer.getElement() : null;
+            if (el) el.classList.add('shape-draggable');
+        }
+
         refreshShapesList();
     }
 
@@ -585,10 +591,15 @@ const Drawings = (() => {
         if (!selectedShapeId) return;
 
         const entry = shapeLayerMap[selectedShapeId];
-        if (entry && entry.layer && entry.layer.pm) {
-            entry.layer.pm.disable();
-            if (entry.layer.pm.disableLayerDrag) {
-                entry.layer.pm.disableLayerDrag();
+        if (entry && entry.layer) {
+            const el = entry.layer.getElement ? entry.layer.getElement() : null;
+            if (el) el.classList.remove('shape-draggable');
+
+            if (entry.layer.pm) {
+                entry.layer.pm.disable();
+                if (entry.layer.pm.disableLayerDrag) {
+                    entry.layer.pm.disableLayerDrag();
+                }
             }
         }
 
@@ -619,10 +630,6 @@ const Drawings = (() => {
 
     function moveShape(id) {
         selectShape(id);
-        const shape = shapes.find(s => s.id === id);
-
-        if (shape && shape.type === 'arrow') return;
-
         const entry = shapeLayerMap[id];
         if (entry && entry.layer && entry.layer.pm) {
             entry.layer.pm.enableLayerDrag();
@@ -678,15 +685,13 @@ const Drawings = (() => {
         const isArrow = shape && shape.type === 'arrow';
         const isText = shape && shape.type === 'text';
         const canEditGeometry = !!(layer && layer.pm) && !isArrow;
-        const canMoveShape = !!(layer && layer.pm) && !isArrow;
+        const canMoveShape = !!(layer && layer.pm);
 
         if (editVertBtn) {
             editVertBtn.style.display = isText || !canEditGeometry ? 'none' : '';
-            if (isArrow) editVertBtn.style.display = 'none';
         }
         if (moveBtn) {
             moveBtn.style.display = isText || !canMoveShape ? 'none' : '';
-            if (isArrow) moveBtn.style.display = 'none';
         }
 
         contextMenuEl.classList.remove('hidden');

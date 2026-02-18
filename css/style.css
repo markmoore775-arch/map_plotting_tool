@@ -976,6 +976,14 @@ body.sidebar-collapsed .icon-legend {
     cursor: move !important;
 }
 
+.shape-draggable {
+    cursor: grab !important;
+}
+
+.shape-draggable:active {
+    cursor: grabbing !important;
+}
+
 .drop-point-toolbar-panel {
     position: absolute;
     top: 60px;
