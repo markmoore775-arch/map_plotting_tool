@@ -1,0 +1,12 @@
+node_modules/
+
+# Test screenshots
+*.png
+
+# Test files
+test_*.js
+test_*.html
+
+# OS files
+.DS_Store
+Thumbs.db
