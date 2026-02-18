@@ -1232,7 +1232,8 @@ body.sidebar-collapsed .draw-style-panel {
     line-height: 1;
     transform-origin: center center;
     user-select: none;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: move;
 }
 
 .map-arrow-stamp svg {
