@@ -11,8 +11,10 @@
     let markerLayers = {};   // pointId -> { marker, fans, label }
     let nextId = 1;
     let dropPointMode = false;
-    let dropPointKeepActive = false;
+    let lastDropIconType = 'address';
+    let lastDropIconColor = '#5b8def';
     let dropPointToolbarButton = null;
+    let quickEditUpdating = false;
 
     let settings = {
         w3wApiKey: '',
@@ -86,19 +88,14 @@
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
                 const btn = L.DomUtil.create('a', 'leaflet-control-drop-point', container);
                 btn.href = '#';
-                btn.title = 'Drop Point Tool';
+                btn.title = 'Drop Point Mode (click map to place points)';
                 btn.innerHTML = '&#128205;';
 
                 L.DomEvent.disableClickPropagation(container);
                 L.DomEvent.on(btn, 'click', (e) => {
                     L.DomEvent.stop(e);
                     L.DomEvent.preventDefault(e);
-                        if (dropPointMode) {
-                            setDropPointMode(false);
-                            hideDropPointToolbarPanel();
-                        } else {
-                            openDropPointToolbarPanel();
-                        }
+                    setDropPointMode(!dropPointMode);
                 });
 
                 dropPointToolbarButton = btn;
@@ -131,25 +128,20 @@
     }
 
     function createPointAtLatLng(lat, lng) {
-        const iconType = normalizeIconType(pointIconType.value);
+        const iconType = normalizeIconType(lastDropIconType);
         const defaultLabel = (ICON_DEFS[iconType] && ICON_DEFS[iconType].label) || 'Dropped Point';
-        const name = pointName.value.trim() || defaultLabel;
-        createPoint({
-            name,
+        const point = createPoint({
+            name: defaultLabel,
             lat,
             lng,
             iconType,
-            iconColor: pointIconColor.value,
-            customSymbol: pointCustomSymbol.value,
-            notes: pointNotes.value.trim(),
+            iconColor: lastDropIconColor,
+            customSymbol: '',
+            notes: '',
             originalInput: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
         });
         map.setView([lat, lng], Math.max(map.getZoom(), 14));
-
-        // One-shot by default; optional multi-drop when keep active is enabled.
-        if (!dropPointKeepActive) {
-            setDropPointMode(false);
-        }
+        openQuickEditPopup(point.id);
     }
 
     function updatePoint(id, data) {
@@ -368,6 +360,137 @@
         });
     }
 
+    function buildQuickEditPopupHtml(point) {
+        const iconKeys = Object.keys(ICON_DEFS);
+        const currentType = normalizeIconType(point.iconType);
+        let html = '<div class="quick-edit-popup">';
+        html += '<div class="quick-edit-icons">';
+        iconKeys.forEach(key => {
+            const def = ICON_DEFS[key];
+            const txtColor = getContrastingTextColor(def.color);
+            const sel = key === currentType ? ' selected' : '';
+            html += `<button class="quick-icon-btn${sel}" data-icon="${key}" style="background:${def.color}; color:${txtColor}" title="${escapeHtml(def.label)}">${escapeHtml(def.symbol)}</button>`;
+        });
+        html += '</div>';
+        html += '<div class="quick-edit-field">';
+        html += '<input class="quick-edit-label" type="text" value="" placeholder="Label...">';
+        html += '</div>';
+        html += '<div class="quick-edit-actions">';
+        html += `<a href="#" class="quick-edit-more" data-point-id="${point.id}">Edit details...</a>`;
+        html += '</div>';
+        html += '</div>';
+        return html;
+    }
+
+    function openQuickEditPopup(pointId) {
+        const point = points.find(p => p.id === pointId);
+        if (!point) return;
+        const layers = markerLayers[pointId];
+        if (!layers) return;
+
+        const marker = layers.marker;
+        marker.unbindPopup();
+
+        const popup = L.popup({
+            closeOnClick: false,
+            autoClose: true,
+            minWidth: 220,
+            maxWidth: 280,
+            className: 'quick-edit-popup-wrapper'
+        }).setContent(buildQuickEditPopupHtml(point));
+
+        marker.bindPopup(popup);
+        marker.openPopup();
+
+        marker.once('popupopen', () => {
+            const container = document.querySelector('.quick-edit-popup');
+            if (!container) return;
+
+            container.querySelectorAll('.quick-icon-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const newIconType = normalizeIconType(btn.dataset.icon);
+                    const def = ICON_DEFS[newIconType];
+
+                    const labelInput = container.querySelector('.quick-edit-label');
+                    const currentLabel = labelInput ? labelInput.value.trim() : point.name;
+                    const isDefault = Object.values(ICON_DEFS).some(d => d.label === currentLabel);
+                    const newLabel = isDefault ? def.label : currentLabel;
+
+                    lastDropIconType = newIconType;
+                    lastDropIconColor = def.colorEditable ? lastDropIconColor : def.color;
+
+                    quickEditUpdating = true;
+                    updatePoint(pointId, {
+                        iconType: newIconType,
+                        iconColor: lastDropIconColor,
+                        name: newLabel
+                    });
+                    quickEditUpdating = false;
+
+                    openQuickEditPopup(pointId);
+                });
+            });
+
+            const labelInput = container.querySelector('.quick-edit-label');
+            if (labelInput) {
+                labelInput.value = point.name || '';
+                labelInput.focus();
+                labelInput.select();
+
+                labelInput.addEventListener('input', () => {
+                    point.name = labelInput.value.trim();
+                });
+                labelInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        marker.closePopup();
+                    }
+                });
+            }
+
+            const moreLink = container.querySelector('.quick-edit-more');
+            if (moreLink) {
+                moreLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    quickEditUpdating = true;
+                    marker.closePopup();
+                    const currentPoint = points.find(p => p.id === pointId);
+                    if (currentPoint && markerLayers[pointId]) {
+                        bindPointPopup(markerLayers[pointId].marker, currentPoint);
+                    }
+                    refreshPointsList();
+                    quickEditUpdating = false;
+                    openEditModal(pointId);
+                });
+            }
+        });
+
+        marker.once('popupclose', () => {
+            if (quickEditUpdating) return;
+
+            const currentPoint = points.find(p => p.id === pointId);
+            if (!currentPoint) return;
+
+            const currentLayers = markerLayers[pointId];
+            if (currentLayers) {
+                const m = currentLayers.marker;
+                m.unbindTooltip();
+                if (settings.showLabels && currentPoint.name) {
+                    m.bindTooltip(currentPoint.name, {
+                        permanent: true,
+                        direction: 'top',
+                        offset: [0, -35],
+                        className: 'point-label-tooltip'
+                    });
+                }
+                bindPointPopup(m, currentPoint);
+            }
+            refreshPointsList();
+        });
+    }
+
     function addMarkerToMap(point) {
         const icon = getPointIcon(point);
         const marker = L.marker([point.lat, point.lng], { icon, draggable: true }).addTo(map);
@@ -514,16 +637,6 @@
     const pointCustomSymbolGroup = document.getElementById('pointCustomSymbolGroup');
     const pointNotes = document.getElementById('pointNotes');
     const formatHint = document.getElementById('formatHint');
-    const dropPointModeBtn = document.getElementById('dropPointModeBtn');
-    const dropPointToolbarPanel = document.getElementById('dropPointToolbarPanel');
-    const dropPointToolbarIconType = document.getElementById('dropPointToolbarIconType');
-    const dropPointToolbarIconColor = document.getElementById('dropPointToolbarIconColor');
-    const dropPointToolbarSymbol = document.getElementById('dropPointToolbarSymbol');
-    const dropPointToolbarColorGroup = document.getElementById('dropPointToolbarColorGroup');
-    const dropPointToolbarSymbolGroup = document.getElementById('dropPointToolbarSymbolGroup');
-    const dropPointKeepActiveInput = document.getElementById('dropPointKeepActive');
-    const dropPointToolbarStart = document.getElementById('dropPointToolbarStart');
-    const dropPointToolbarCancel = document.getElementById('dropPointToolbarCancel');
 
     function refreshPointIconControls() {
         const iconType = normalizeIconType(pointIconType.value);
@@ -533,9 +646,6 @@
     }
 
     function refreshDropPointModeButton() {
-        if (!dropPointModeBtn) return;
-        dropPointModeBtn.textContent = dropPointMode ? 'Drop Point Mode: On' : 'Drop Point Mode: Off';
-        dropPointModeBtn.classList.toggle('btn-toggle-active', dropPointMode);
         if (dropPointToolbarButton) {
             dropPointToolbarButton.classList.toggle('active', dropPointMode);
         }
@@ -550,40 +660,6 @@
         refreshDropPointModeButton();
     }
 
-    function refreshDropPointToolbarControls() {
-        const iconType = normalizeIconType(dropPointToolbarIconType.value);
-        const iconDef = ICON_DEFS[iconType];
-        dropPointToolbarColorGroup.classList.toggle('hidden', !iconDef.colorEditable);
-        dropPointToolbarSymbolGroup.classList.toggle('hidden', iconType !== 'custom_point');
-    }
-
-    function copyFormSelectionsToDropToolbar() {
-        dropPointToolbarIconType.value = pointIconType.value;
-        dropPointToolbarIconColor.value = pointIconColor.value;
-        dropPointToolbarSymbol.value = pointCustomSymbol.value || '';
-        dropPointKeepActiveInput.checked = dropPointKeepActive;
-        refreshDropPointToolbarControls();
-    }
-
-    function applyDropToolbarToForm() {
-        pointIconType.value = dropPointToolbarIconType.value;
-        pointIconColor.value = dropPointToolbarIconColor.value;
-        pointCustomSymbol.value = dropPointToolbarSymbol.value;
-        refreshPointIconControls();
-    }
-
-    function openDropPointToolbarPanel() {
-        copyFormSelectionsToDropToolbar();
-        dropPointToolbarPanel.classList.remove('hidden');
-    }
-
-    function hideDropPointToolbarPanel() {
-        dropPointToolbarPanel.classList.add('hidden');
-    }
-
-    function populateDropToolbarSelectors() {
-        dropPointToolbarIconType.innerHTML = pointIconType.innerHTML;
-    }
 
     pointIconType.addEventListener('change', () => {
         refreshPointIconControls();
@@ -591,23 +667,8 @@
     pointIconType.value = 'address';
     pointIconColor.value = '#5b8def';
     pointCustomSymbol.value = '';
-    populateDropToolbarSelectors();
     refreshPointIconControls();
     refreshDropPointModeButton();
-
-    dropPointModeBtn.addEventListener('click', () => {
-        setDropPointMode(!dropPointMode);
-    });
-
-    dropPointToolbarIconType.addEventListener('change', refreshDropPointToolbarControls);
-
-    dropPointToolbarStart.addEventListener('click', () => {
-        applyDropToolbarToForm();
-        dropPointKeepActive = !!dropPointKeepActiveInput.checked;
-        setDropPointMode(true);
-        hideDropPointToolbarPanel();
-    });
-    dropPointToolbarCancel.addEventListener('click', hideDropPointToolbarPanel);
 
     // Format hint on input
     pointInput.addEventListener('input', () => {
@@ -1341,8 +1402,8 @@
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             if (dropPointMode) {
-                dropPointMode = false;
-                refreshDropPointModeButton();
+                setDropPointMode(false);
+                map.closePopup();
                 return;
             }
             document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));

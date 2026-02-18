@@ -64,7 +64,7 @@
                     <input type="text" id="pointCustomSymbol" maxlength="2" placeholder="e.g. D">
                 </div>
                 <div class="form-hint" style="margin-top:-4px; margin-bottom:8px;">
-                    Add points with this form or use <strong>Drop Point Mode</strong> in Actions.
+                    Add points with this form, or click the <strong>pin button</strong> on the map to drop points directly.
                 </div>
 
                 <div class="form-group">
@@ -80,7 +80,7 @@
         <section class="sidebar-section">
             <h2 class="section-title">Actions</h2>
             <div class="action-buttons">
-                <button class="btn btn-secondary" id="dropPointModeBtn">Drop Point Mode: Off</button>
+
                 <button class="btn btn-secondary" id="bulkImportBtn">Bulk Import</button>
                 <button class="btn btn-secondary" id="exportBtn">Export</button>
                 <button class="btn btn-secondary" id="saveProjectBtn">Save Project</button>
@@ -133,34 +133,6 @@
         <div id="iconLegendBody" class="icon-legend-body"></div>
     </div>
 
-    <!-- Drop Point Toolbar Panel -->
-    <div id="dropPointToolbarPanel" class="drop-point-toolbar-panel hidden">
-        <div class="drop-point-toolbar-header">
-            <span>Drop Point</span>
-        </div>
-        <div class="drop-point-toolbar-body">
-            <div class="form-group">
-                <label for="dropPointToolbarIconType">Icon</label>
-                <select id="dropPointToolbarIconType"></select>
-            </div>
-            <div class="form-group" id="dropPointToolbarColorGroup">
-                <label for="dropPointToolbarIconColor">Icon Colour</label>
-                <input type="color" id="dropPointToolbarIconColor" value="#5b8def">
-            </div>
-            <div class="form-group hidden" id="dropPointToolbarSymbolGroup">
-                <label for="dropPointToolbarSymbol">Custom Symbol (1-2 chars)</label>
-                <input type="text" id="dropPointToolbarSymbol" maxlength="2" placeholder="e.g. D">
-            </div>
-            <label class="drop-point-keep-active-row">
-                <input type="checkbox" id="dropPointKeepActive">
-                Keep active for multiple drops
-            </label>
-        </div>
-        <div class="drop-point-toolbar-actions">
-            <button class="btn btn-secondary" id="dropPointToolbarCancel">Cancel</button>
-            <button class="btn btn-primary" id="dropPointToolbarStart">Start Drop</button>
-        </div>
-    </div>
 
     <!-- Drawing Style Panel (floating on map) -->
     <div id="drawStylePanel" class="draw-style-panel">
