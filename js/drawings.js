@@ -498,8 +498,11 @@ const Drawings = (() => {
             }
         });
 
+        panel.classList.add('collapsed');
+
         toggleBtn.addEventListener('click', () => {
             panel.classList.toggle('collapsed');
+            toggleBtn.innerHTML = panel.classList.contains('collapsed') ? '&plus;' : '&minus;';
         });
     }
 
@@ -542,6 +545,8 @@ const Drawings = (() => {
         const panel = document.getElementById('drawStylePanel');
         panel.classList.remove('collapsed');
         panel.classList.add('editing-shape');
+        const toggleBtn = document.getElementById('drawStyleToggle');
+        if (toggleBtn) toggleBtn.innerHTML = '&minus;';
     }
 
     function restorePanelDefaults() {

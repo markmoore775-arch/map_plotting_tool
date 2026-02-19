@@ -11,9 +11,11 @@
     let markerLayers = {};   // pointId -> { marker, fans, label }
     let nextId = 1;
     let dropPointMode = false;
+    let dropPointPickerOpen = false;
     let lastDropIconType = 'address';
     let lastDropIconColor = '#5b8def';
     let dropPointToolbarButton = null;
+    let dropPointIconStrip = null;
     let quickEditUpdating = false;
 
     let settings = {
@@ -55,13 +57,14 @@
             'Topographic': osmTopo,
             'Satellite': esriSatellite
         }, null, { position: 'topright' }).addTo(map);
-        initDropPointToolbarControl();
-
         // Click on map to place point or show coordinates (skip when drawing)
         map.on('click', function (e) {
             if (Drawings.isDrawingActive()) return;
             if (dropPointMode) {
                 createPointAtLatLng(e.latlng.lat, e.latlng.lng);
+                // Single-shot placement: disarm and reset picker after one pin drop.
+                setDropPointMode(false);
+                setDropPointPickerOpen(false);
                 return;
             }
             const popup = L.popup()
@@ -82,28 +85,83 @@
     }
 
     function initDropPointToolbarControl() {
-        const DropPointControl = L.Control.extend({
-            options: { position: 'topleft' },
-            onAdd: function () {
-                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                const btn = L.DomUtil.create('a', 'leaflet-control-drop-point', container);
-                btn.href = '#';
-                btn.title = 'Drop Point Mode (click map to place points)';
-                btn.innerHTML = '&#128205;';
+        const toolbar = document.querySelector('.leaflet-pm-toolbar.leaflet-pm-draw')
+            || document.querySelector('.leaflet-pm-toolbar');
+        if (!toolbar) return;
 
-                L.DomEvent.disableClickPropagation(container);
-                L.DomEvent.on(btn, 'click', (e) => {
-                    L.DomEvent.stop(e);
-                    L.DomEvent.preventDefault(e);
-                    setDropPointMode(!dropPointMode);
-                });
-
-                dropPointToolbarButton = btn;
-                return container;
+        // Move the arrow button into the Geoman toolbar if it's in a separate container
+        const arrowBtn = document.querySelector('.leaflet-control-extra-draw');
+        if (arrowBtn) {
+            const oldContainer = arrowBtn.closest('.leaflet-bar');
+            toolbar.appendChild(arrowBtn);
+            if (oldContainer && oldContainer !== toolbar && !oldContainer.children.length) {
+                oldContainer.remove();
             }
+        }
+
+        // Create pin button and append to the Geoman toolbar
+        const btn = document.createElement('a');
+        btn.className = 'leaflet-control-drop-point';
+        btn.href = '#';
+        btn.title = 'Drop Point (choose type, then click map)';
+        btn.innerHTML = '&#128205;';
+        toolbar.appendChild(btn);
+
+        L.DomEvent.on(btn, 'click', (e) => {
+            L.DomEvent.stop(e);
+            L.DomEvent.preventDefault(e);
+            if (dropPointPickerOpen || dropPointMode) {
+                setDropPointMode(false);
+                setDropPointPickerOpen(false);
+                return;
+            }
+            setDropPointMode(false);
+            setDropPointPickerOpen(true);
         });
 
-        map.addControl(new DropPointControl());
+        // Create icon strip below the toolbar
+        const strip = document.createElement('div');
+        strip.className = 'drop-icon-strip leaflet-control hidden';
+        strip.innerHTML = '<div class="drop-icon-strip-title">Select a point type</div>';
+        toolbar.parentNode.insertBefore(strip, toolbar.nextSibling);
+        L.DomEvent.disableClickPropagation(strip);
+
+        Object.keys(ICON_DEFS).forEach(key => {
+            const def = ICON_DEFS[key];
+            const option = document.createElement('button');
+            option.className = 'drop-icon-strip-btn';
+            option.type = 'button';
+            option.dataset.icon = key;
+            option.title = def.label;
+            option.innerHTML = `
+                <span class="drop-icon-strip-symbol" style="background:${def.color}; color:${getContrastingTextColor(def.color)}">${def.symbol}</span>
+                <span class="drop-icon-strip-label">${escapeHtml(def.label)}</span>
+            `;
+            if (key === lastDropIconType) option.classList.add('selected');
+            strip.appendChild(option);
+
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const newType = normalizeIconType(key);
+                const newDef = ICON_DEFS[newType];
+                lastDropIconType = newType;
+                lastDropIconColor = newDef.colorEditable ? lastDropIconColor : newDef.color;
+                refreshDropIconStrip();
+                setDropPointPickerOpen(false);
+                setDropPointMode(true);
+            });
+        });
+
+        dropPointToolbarButton = btn;
+        dropPointIconStrip = strip;
+    }
+
+    function refreshDropIconStrip() {
+        if (!dropPointIconStrip) return;
+        dropPointIconStrip.querySelectorAll('.drop-icon-strip-btn').forEach(btn => {
+            btn.classList.toggle('selected', btn.dataset.icon === lastDropIconType);
+        });
     }
 
     // ---- Point Management ----
@@ -302,6 +360,9 @@
             `;
         }).join('');
 
+        legend.classList.add('collapsed');
+        toggle.innerHTML = '&plus;';
+
         toggle.addEventListener('click', () => {
             legend.classList.toggle('collapsed');
             toggle.innerHTML = legend.classList.contains('collapsed') ? '&plus;' : '&minus;';
@@ -390,6 +451,8 @@
 
         const marker = layers.marker;
         marker.unbindPopup();
+        marker.off('popupopen');
+        marker.off('popupclose');
 
         const popup = L.popup({
             closeOnClick: false,
@@ -400,74 +463,9 @@
         }).setContent(buildQuickEditPopupHtml(point));
 
         marker.bindPopup(popup);
-        marker.openPopup();
 
-        marker.once('popupopen', () => {
-            const container = document.querySelector('.quick-edit-popup');
-            if (!container) return;
-
-            container.querySelectorAll('.quick-icon-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const newIconType = normalizeIconType(btn.dataset.icon);
-                    const def = ICON_DEFS[newIconType];
-
-                    const labelInput = container.querySelector('.quick-edit-label');
-                    const currentLabel = labelInput ? labelInput.value.trim() : point.name;
-                    const isDefault = Object.values(ICON_DEFS).some(d => d.label === currentLabel);
-                    const newLabel = isDefault ? def.label : currentLabel;
-
-                    lastDropIconType = newIconType;
-                    lastDropIconColor = def.colorEditable ? lastDropIconColor : def.color;
-
-                    quickEditUpdating = true;
-                    updatePoint(pointId, {
-                        iconType: newIconType,
-                        iconColor: lastDropIconColor,
-                        name: newLabel
-                    });
-                    quickEditUpdating = false;
-
-                    openQuickEditPopup(pointId);
-                });
-            });
-
-            const labelInput = container.querySelector('.quick-edit-label');
-            if (labelInput) {
-                labelInput.value = point.name || '';
-                labelInput.focus();
-                labelInput.select();
-
-                labelInput.addEventListener('input', () => {
-                    point.name = labelInput.value.trim();
-                });
-                labelInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        marker.closePopup();
-                    }
-                });
-            }
-
-            const moreLink = container.querySelector('.quick-edit-more');
-            if (moreLink) {
-                moreLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    quickEditUpdating = true;
-                    marker.closePopup();
-                    const currentPoint = points.find(p => p.id === pointId);
-                    if (currentPoint && markerLayers[pointId]) {
-                        bindPointPopup(markerLayers[pointId].marker, currentPoint);
-                    }
-                    refreshPointsList();
-                    quickEditUpdating = false;
-                    openEditModal(pointId);
-                });
-            }
-        });
-
-        marker.once('popupclose', () => {
+        marker.on('popupclose', function onClose() {
+            marker.off('popupclose', onClose);
             if (quickEditUpdating) return;
 
             const currentPoint = points.find(p => p.id === pointId);
@@ -489,6 +487,72 @@
             }
             refreshPointsList();
         });
+
+        marker.openPopup();
+
+        const container = document.querySelector('.quick-edit-popup');
+        if (!container) return;
+
+        container.querySelectorAll('.quick-icon-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const newIconType = normalizeIconType(btn.dataset.icon);
+                const def = ICON_DEFS[newIconType];
+
+                const labelInput = container.querySelector('.quick-edit-label');
+                const currentLabel = labelInput ? labelInput.value.trim() : point.name;
+                const isDefault = Object.values(ICON_DEFS).some(d => d.label === currentLabel);
+                const newLabel = isDefault ? def.label : currentLabel;
+
+                lastDropIconType = newIconType;
+                lastDropIconColor = def.colorEditable ? lastDropIconColor : def.color;
+                refreshDropIconStrip();
+
+                quickEditUpdating = true;
+                updatePoint(pointId, {
+                    iconType: newIconType,
+                    iconColor: lastDropIconColor,
+                    name: newLabel
+                });
+                quickEditUpdating = false;
+
+                openQuickEditPopup(pointId);
+            });
+        });
+
+        const labelInput = container.querySelector('.quick-edit-label');
+        if (labelInput) {
+            labelInput.value = point.name || '';
+            labelInput.focus();
+            labelInput.select();
+
+            labelInput.addEventListener('input', () => {
+                point.name = labelInput.value.trim();
+            });
+            labelInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    marker.closePopup();
+                }
+            });
+        }
+
+        const moreLink = container.querySelector('.quick-edit-more');
+        if (moreLink) {
+            moreLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                quickEditUpdating = true;
+                marker.closePopup();
+                const currentPoint = points.find(p => p.id === pointId);
+                if (currentPoint && markerLayers[pointId]) {
+                    bindPointPopup(markerLayers[pointId].marker, currentPoint);
+                }
+                refreshPointsList();
+                quickEditUpdating = false;
+                openEditModal(pointId);
+            });
+        }
     }
 
     function addMarkerToMap(point) {
@@ -647,7 +711,11 @@
 
     function refreshDropPointModeButton() {
         if (dropPointToolbarButton) {
-            dropPointToolbarButton.classList.toggle('active', dropPointMode);
+            dropPointToolbarButton.classList.toggle('active', dropPointMode || dropPointPickerOpen);
+        }
+        if (dropPointIconStrip) {
+            dropPointIconStrip.classList.toggle('hidden', !dropPointPickerOpen);
+            if (dropPointPickerOpen) refreshDropIconStrip();
         }
         const mapEl = document.getElementById('map');
         if (mapEl) {
@@ -657,6 +725,11 @@
 
     function setDropPointMode(enabled) {
         dropPointMode = !!enabled;
+        refreshDropPointModeButton();
+    }
+
+    function setDropPointPickerOpen(open) {
+        dropPointPickerOpen = !!open;
         refreshDropPointModeButton();
     }
 
@@ -1401,8 +1474,9 @@
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (dropPointMode) {
+            if (dropPointMode || dropPointPickerOpen) {
                 setDropPointMode(false);
+                setDropPointPickerOpen(false);
                 map.closePopup();
                 return;
             }
@@ -1457,6 +1531,7 @@
         initMap();
         initIconLegend();
         initDrawings();
+        initDropPointToolbarControl();
     });
 
 })();
