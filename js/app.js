@@ -199,7 +199,7 @@
             originalInput: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
         });
         map.setView([lat, lng], Math.max(map.getZoom(), 14));
-        openQuickEditPopup(point.id);
+        openQuickEditPopup(point.id, true);
     }
 
     function updatePoint(id, data) {
@@ -421,18 +421,20 @@
         });
     }
 
-    function buildQuickEditPopupHtml(point) {
-        const iconKeys = Object.keys(ICON_DEFS);
-        const currentType = normalizeIconType(point.iconType);
+    function buildQuickEditPopupHtml(point, fromDropPin) {
         let html = '<div class="quick-edit-popup">';
-        html += '<div class="quick-edit-icons">';
-        iconKeys.forEach(key => {
-            const def = ICON_DEFS[key];
-            const txtColor = getContrastingTextColor(def.color);
-            const sel = key === currentType ? ' selected' : '';
-            html += `<button class="quick-icon-btn${sel}" data-icon="${key}" style="background:${def.color}; color:${txtColor}" title="${escapeHtml(def.label)}">${escapeHtml(def.symbol)}</button>`;
-        });
-        html += '</div>';
+        if (!fromDropPin) {
+            const iconKeys = Object.keys(ICON_DEFS);
+            const currentType = normalizeIconType(point.iconType);
+            html += '<div class="quick-edit-icons">';
+            iconKeys.forEach(key => {
+                const def = ICON_DEFS[key];
+                const txtColor = getContrastingTextColor(def.color);
+                const sel = key === currentType ? ' selected' : '';
+                html += `<button class="quick-icon-btn${sel}" data-icon="${key}" style="background:${def.color}; color:${txtColor}" title="${escapeHtml(def.label)}">${escapeHtml(def.symbol)}</button>`;
+            });
+            html += '</div>';
+        }
         html += '<div class="quick-edit-field">';
         html += '<input class="quick-edit-label" type="text" value="" placeholder="Label...">';
         html += '</div>';
@@ -443,7 +445,7 @@
         return html;
     }
 
-    function openQuickEditPopup(pointId) {
+    function openQuickEditPopup(pointId, fromDropPin) {
         const point = points.find(p => p.id === pointId);
         if (!point) return;
         const layers = markerLayers[pointId];
@@ -460,7 +462,7 @@
             minWidth: 220,
             maxWidth: 280,
             className: 'quick-edit-popup-wrapper'
-        }).setContent(buildQuickEditPopupHtml(point));
+        }).setContent(buildQuickEditPopupHtml(point, fromDropPin));
 
         marker.bindPopup(popup);
 
@@ -517,7 +519,7 @@
                 });
                 quickEditUpdating = false;
 
-                openQuickEditPopup(pointId);
+                openQuickEditPopup(pointId, false);
             });
         });
 

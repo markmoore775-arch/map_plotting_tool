@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" width="64" height="80">
+  <!-- Map pin with drone cutout - dark navy blue, transparent background -->
+  <defs>
+    <mask id="cutout">
+      <rect width="64" height="80" fill="white"/>
+      <!-- Drone silhouette (black = transparent in mask) - quadcopter top-down -->
+      <g transform="translate(32, 30)">
+        <ellipse cx="0" cy="0" rx="5" ry="6" fill="black"/>
+        <rect x="-2" y="-12" width="4" height="24" fill="black"/>
+        <rect x="-12" y="-2" width="24" height="4" fill="black"/>
+        <ellipse cx="0" cy="-16" rx="7" ry="2.5" fill="black" transform="rotate(-45 0 -16)"/>
+        <ellipse cx="0" cy="16" rx="7" ry="2.5" fill="black" transform="rotate(-45 0 16)"/>
+        <ellipse cx="-16" cy="0" rx="7" ry="2.5" fill="black" transform="rotate(-45 -16 0)"/>
+        <ellipse cx="16" cy="0" rx="7" ry="2.5" fill="black" transform="rotate(-45 16 0)"/>
+      </g>
+    </mask>
+  </defs>
+  <path d="M32 0C14.3 0 0 14.3 0 32c0 24 32 48 32 48s32-24 32-48C64 14.3 49.7 0 32 0z" fill="#1a365d" mask="url(#cutout)"/>
+</svg>

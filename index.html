@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Map Plotting Tool</title>
+    <title>AirPlot</title>
+    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -26,10 +27,12 @@
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-header">
-            <h1 class="sidebar-title">Map Plotter</h1>
+            <img src="assets/airplot-icon.svg" alt="" class="sidebar-logo" aria-hidden="true">
+            <h1 class="sidebar-title">AirPlot</h1>
             <button id="sidebarToggle" class="sidebar-toggle" title="Collapse sidebar">&laquo;</button>
         </div>
 
+        <div class="sidebar-content">
         <!-- Add Point Section -->
         <section class="sidebar-section">
             <h2 class="section-title">Add Point</h2>
@@ -116,6 +119,7 @@
             </div>
             <ul id="shapesList" class="points-list"></ul>
         </section>
+        </div>
     </aside>
 
     <!-- Sidebar collapsed toggle -->
@@ -123,6 +127,12 @@
 
     <!-- Map -->
     <div id="map"></div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <img src="assets/airplot-icon.svg" alt="" class="app-footer-logo" aria-hidden="true">
+        <span>&copy; Mark Moore</span>
+    </footer>
 
     <!-- Icon Legend -->
     <div id="iconLegend" class="icon-legend">

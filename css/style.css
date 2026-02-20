@@ -56,6 +56,35 @@ body.sidebar-collapsed #map {
     left: 0;
 }
 
+/* ---- App Footer ---- */
+
+.app-footer {
+    position: absolute;
+    bottom: 8px;
+    left: var(--sidebar-width);
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+    z-index: 500;
+    transition: left var(--transition);
+}
+
+.app-footer-logo {
+    height: 14px;
+    width: auto;
+    opacity: 0.6;
+}
+
+body.sidebar-collapsed .app-footer {
+    left: 0;
+}
+
 /* ---- Sidebar ---- */
 
 .sidebar {
@@ -86,6 +115,13 @@ body.sidebar-collapsed .sidebar {
     flex-shrink: 0;
 }
 
+.sidebar-logo {
+    height: 28px;
+    width: auto;
+    flex-shrink: 0;
+    margin-right: 10px;
+}
+
 .sidebar-title {
     font-size: 18px;
     font-weight: 700;
@@ -107,6 +143,14 @@ body.sidebar-collapsed .sidebar {
 .sidebar-toggle:hover {
     background: var(--sidebar-surface);
     color: #fff;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-open {
