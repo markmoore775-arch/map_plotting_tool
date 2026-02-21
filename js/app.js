@@ -1530,10 +1530,22 @@
 
     // Defer init until load so layout is stable and map container has final dimensions
     window.addEventListener('load', () => {
-        initMap();
-        initIconLegend();
-        initDrawings();
-        initDropPointToolbarControl();
+        const introOverlay = document.getElementById('introOverlay');
+        const introProceedBtn = document.getElementById('introProceedBtn');
+
+        function dismissIntro() {
+            if (introOverlay) introOverlay.classList.add('hidden');
+            initMap();
+            initIconLegend();
+            initDrawings();
+            initDropPointToolbarControl();
+        }
+
+        if (introProceedBtn) {
+            introProceedBtn.addEventListener('click', dismissIntro);
+        } else {
+            dismissIntro();
+        }
     });
 
 })();
