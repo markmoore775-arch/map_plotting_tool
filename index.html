@@ -150,7 +150,7 @@
                 <button class="btn btn-small btn-danger" id="clearShapesBtn">Clear Shapes</button>
             </div>
             <div class="shapes-hint">
-                Right-click a shape for options &middot; Double-click for properties &middot; Esc to deselect
+                Right-click anywhere for options (edit shape, copy/paste, drop point) &middot; Ctrl+C / Ctrl+V &middot; Double-click for properties &middot; Esc to deselect
                 <br>
                 Tip: Click a shape to select &amp; drag it. Click an arrow to select it, then drag its handles to rotate/resize. You can also drag point markers to update coordinates.
             </div>
@@ -252,6 +252,12 @@
                 <div class="form-group">
                     <label for="editShapeWeight">Stroke Width</label>
                     <input type="number" id="editShapeWeight" min="1" max="8" value="2">
+                </div>
+                <div class="form-group hidden" id="editShapeFlightPathDistanceGroup">
+                    <label>
+                        <input type="checkbox" id="editShapeFlightPathShowDistance">
+                        Show distance on map
+                    </label>
                 </div>
             </div>
             <div class="modal-footer">
@@ -421,6 +427,12 @@
                         Show shape labels on map
                     </label>
                 </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="showFlightPathDistance">
+                        Show flight path distance on map
+                    </label>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary modal-cancel">Cancel</button>
@@ -480,14 +492,40 @@
         </div>
     </div>
 
-    <!-- Shape Context Menu (right-click) -->
-    <div id="shapeContextMenu" class="shape-context-menu hidden">
-        <button class="ctx-item" data-action="edit-vertices">Edit Vertices</button>
-        <button class="ctx-item" data-action="move">Move Shape</button>
+    <!-- Map Context Menu (right-click anywhere on map) -->
+    <div id="mapContextMenu" class="shape-context-menu hidden">
+        <div class="ctx-point-section" style="display:none;">
+            <button class="ctx-item" data-action="edit-point">Edit Point</button>
+            <button class="ctx-item ctx-danger" data-action="delete-point">Delete Point</button>
+            <div class="ctx-separator"></div>
+        </div>
+        <div class="ctx-shape-section" style="display:none;">
+            <button class="ctx-item" data-action="edit-shape">Edit Shape</button>
+            <button class="ctx-item" data-action="edit-vertices">Edit Vertices</button>
+            <button class="ctx-item" data-action="move-shape">Move Shape</button>
+            <button class="ctx-item" data-action="copy-shape">Copy Shape</button>
+            <button class="ctx-item ctx-danger" data-action="delete-shape">Delete Shape</button>
+            <div class="ctx-separator"></div>
+        </div>
+        <button class="ctx-item" data-action="drop-point">Drop Point&hellip;</button>
+        <button class="ctx-item" data-action="add-text">Add Text</button>
         <div class="ctx-separator"></div>
-        <button class="ctx-item" data-action="properties">Properties&hellip;</button>
+        <button class="ctx-item" data-action="draw-circle">Draw Circle</button>
+        <button class="ctx-item" data-action="draw-rectangle">Draw Rectangle</button>
+        <button class="ctx-item" data-action="draw-polygon">Draw Polygon</button>
+        <button class="ctx-item" data-action="draw-polyline">Draw Polyline</button>
+        <button class="ctx-item" data-action="draw-arrow">Draw Arrow</button>
+        <button class="ctx-item" data-action="draw-flightpath">Draw Flight Path</button>
         <div class="ctx-separator"></div>
-        <button class="ctx-item ctx-danger" data-action="delete">Delete</button>
+        <button class="ctx-item" data-action="paste">Paste</button>
+        <div class="ctx-separator"></div>
+        <button class="ctx-item" data-action="return-to-pan">Return to Pan</button>
+    </div>
+
+    <!-- Map Point Type Picker (shown after Drop Point from context menu) -->
+    <div id="mapPointTypePicker" class="shape-context-menu map-point-type-picker hidden">
+        <div class="ctx-picker-title">Choose point type</div>
+        <div id="mapPointTypePickerOptions" class="ctx-picker-options"></div>
     </div>
 
     <!-- Loading overlay -->

@@ -89,7 +89,7 @@ const Exporters = (() => {
         <outerBoundaryIs><LinearRing><coordinates>${coords.join(' ')}</coordinates></LinearRing></outerBoundaryIs>
       </Polygon>
     </Placemark>`;
-                } else if (s.type === 'polyline' && s.latlngs) {
+                } else if ((s.type === 'polyline' || s.type === 'flightpath') && s.latlngs) {
                     const coords = s.latlngs.map(ll => `${ll[1]},${ll[0]},0`);
                     placemarks += `
     <Placemark>

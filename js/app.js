@@ -16,13 +16,15 @@
     let lastDropIconColor = '#5b8def';
     let dropPointToolbarButton = null;
     let dropPointIconStrip = null;
+    let handToolbarButton = null;
     let quickEditUpdating = false;
 
     let settings = {
         w3wApiKey: '',
         showLabels: true,
         showMeasurements: true,
-        showShapeLabels: true
+        showShapeLabels: true,
+        showFlightPathDistance: false
     };
 
     // ---- Map Initialisation ----
@@ -57,7 +59,7 @@
             'Topographic': osmTopo,
             'Satellite': esriSatellite
         }, null, { position: 'topright' }).addTo(map);
-        // Click on map to place point or show coordinates (skip when drawing)
+        // Click on map to place point (skip when drawing). No coordinate popup by default.
         map.on('click', function (e) {
             if (Drawings.isDrawingActive()) return;
             if (dropPointMode) {
@@ -65,12 +67,7 @@
                 // Single-shot placement: disarm and reset picker after one pin drop.
                 setDropPointMode(false);
                 setDropPointPickerOpen(false);
-                return;
             }
-            const popup = L.popup()
-                .setLatLng(e.latlng)
-                .setContent(`<div class="popup-detail">${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}</div>`)
-                .openOn(map);
         });
 
         // Ensure map fills container: invalidateSize when container resizes (handles initial load + layout changes)
@@ -98,6 +95,36 @@
                 oldContainer.remove();
             }
         }
+
+        // Move the flight path button into the Geoman toolbar
+        const flightPathBtn = document.querySelector('.leaflet-control-flight-path');
+        if (flightPathBtn) {
+            const oldContainer = flightPathBtn.closest('.leaflet-bar');
+            toolbar.appendChild(flightPathBtn);
+            if (oldContainer && oldContainer !== toolbar && !oldContainer.children.length) {
+                oldContainer.remove();
+            }
+        }
+
+        // Create hand/pan button and prepend to toolbar (first button)
+        const handBtn = document.createElement('a');
+        handBtn.className = 'leaflet-control-hand-tool';
+        handBtn.href = '#';
+        handBtn.title = 'Pan / Move map (drag to pan)';
+        handBtn.innerHTML = '&#9995;';
+        handBtn.classList.add('active');
+        toolbar.insertBefore(handBtn, toolbar.firstChild);
+
+        L.DomEvent.on(handBtn, 'click', (e) => {
+            L.DomEvent.stop(e);
+            L.DomEvent.preventDefault(e);
+            setDropPointMode(false);
+            setDropPointPickerOpen(false);
+            Drawings.exitAllDrawingModes();
+            refreshHandToolState();
+        });
+
+        handToolbarButton = handBtn;
 
         // Create pin button and append to the Geoman toolbar
         const btn = document.createElement('a');
@@ -388,39 +415,6 @@
         return icon;
     }
 
-    function buildPointPopupHtml(point) {
-        let popupHtml = `<div class="popup-title">${escapeHtml(point.name || 'Unnamed')}</div>`;
-        popupHtml += `<div class="popup-detail">${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}</div>`;
-        const iconType = normalizeIconType(point.iconType);
-        popupHtml += `<div class="popup-detail">Icon: ${escapeHtml(ICON_DEFS[iconType].label)}</div>`;
-        if (iconType === 'custom_point') {
-            popupHtml += `<div class="popup-detail">Symbol: ${escapeHtml(getPointSymbol(point))}</div>`;
-        }
-        if (point.notes) {
-            popupHtml += `<div class="popup-detail">${escapeHtml(point.notes)}</div>`;
-        }
-        popupHtml += `<div class="popup-actions"><a href="#" class="popup-edit-link" data-point-id="${point.id}">Edit Point</a></div>`;
-        return popupHtml;
-    }
-
-    function bindPointPopup(marker, point) {
-        marker.unbindPopup();
-        const popup = L.popup().setContent(buildPointPopupHtml(point));
-        marker.bindPopup(popup);
-
-        marker.off('popupopen');
-        marker.on('popupopen', () => {
-            const editLink = document.querySelector(`.popup-edit-link[data-point-id="${point.id}"]`);
-            if (editLink) {
-                editLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    marker.closePopup();
-                    openEditModal(point.id);
-                });
-            }
-        });
-    }
-
     function buildQuickEditPopupHtml(point, fromDropPin) {
         let html = '<div class="quick-edit-popup">';
         if (!fromDropPin) {
@@ -476,6 +470,7 @@
             const currentLayers = markerLayers[pointId];
             if (currentLayers) {
                 const m = currentLayers.marker;
+                m.unbindPopup();
                 m.unbindTooltip();
                 if (settings.showLabels && currentPoint.name) {
                     m.bindTooltip(currentPoint.name, {
@@ -485,7 +480,6 @@
                         className: 'point-label-tooltip'
                     });
                 }
-                bindPointPopup(m, currentPoint);
             }
             refreshPointsList();
         });
@@ -546,10 +540,7 @@
                 e.preventDefault();
                 quickEditUpdating = true;
                 marker.closePopup();
-                const currentPoint = points.find(p => p.id === pointId);
-                if (currentPoint && markerLayers[pointId]) {
-                    bindPointPopup(markerLayers[pointId].marker, currentPoint);
-                }
+                marker.unbindPopup();
                 refreshPointsList();
                 quickEditUpdating = false;
                 openEditModal(pointId);
@@ -560,7 +551,6 @@
     function addMarkerToMap(point) {
         const icon = getPointIcon(point);
         const marker = L.marker([point.lat, point.lng], { icon, draggable: true }).addTo(map);
-        bindPointPopup(marker, point);
 
         // Tooltip/label
         let label = null;
@@ -580,6 +570,10 @@
             highlightPoint(point.id);
         });
 
+        marker.on('contextmenu', (e) => {
+            e.originalEvent._contextPointId = point.id;
+        });
+
         marker.on('dragstart', () => {
             marker.closePopup();
         });
@@ -593,7 +587,6 @@
                 map.removeLayer(layers.fans);
                 layers.fans = null;
             }
-            bindPointPopup(marker, point);
             refreshPointsList();
         });
 
@@ -711,6 +704,17 @@
         pointCustomSymbolGroup.classList.toggle('hidden', iconType !== 'custom_point');
     }
 
+    function refreshHandToolState() {
+        const isPanMode = !dropPointMode && !dropPointPickerOpen && !Drawings.isDrawingActive();
+        const mapEl = document.getElementById('map');
+        if (mapEl) {
+            mapEl.classList.toggle('pan-mode', isPanMode);
+        }
+        if (handToolbarButton) {
+            handToolbarButton.classList.toggle('active', isPanMode);
+        }
+    }
+
     function refreshDropPointModeButton() {
         if (dropPointToolbarButton) {
             dropPointToolbarButton.classList.toggle('active', dropPointMode || dropPointPickerOpen);
@@ -723,6 +727,7 @@
         if (mapEl) {
             mapEl.classList.toggle('drop-point-cursor', dropPointMode);
         }
+        refreshHandToolState();
     }
 
     function setDropPointMode(enabled) {
@@ -1416,6 +1421,7 @@
         document.getElementById('showLabels').checked = settings.showLabels;
         document.getElementById('showMeasurements').checked = settings.showMeasurements;
         document.getElementById('showShapeLabels').checked = settings.showShapeLabels;
+        document.getElementById('showFlightPathDistance').checked = settings.showFlightPathDistance === true;
         openModal('settingsModal');
     });
 
@@ -1424,6 +1430,7 @@
         settings.showLabels = document.getElementById('showLabels').checked;
         settings.showMeasurements = document.getElementById('showMeasurements').checked;
         settings.showShapeLabels = document.getElementById('showShapeLabels').checked;
+        settings.showFlightPathDistance = document.getElementById('showFlightPathDistance').checked;
         applySettings();
         closeModal('settingsModal');
     });
@@ -1451,6 +1458,7 @@
         // Toggle shape measurements
         Drawings.toggleMeasurements(settings.showMeasurements);
         Drawings.toggleShapeLabels(settings.showShapeLabels);
+        Drawings.toggleFlightPathDistance(settings.showFlightPathDistance === true);
     }
 
     // ---- Loading Overlay ----
@@ -1524,6 +1532,232 @@
                 Drawings.clearAllShapes();
             }
         });
+
+        initMapContextMenu();
+    }
+
+    // ---- Map Context Menu (right-click on empty map) ----
+
+    let mapContextMenuLatLng = null;
+    let mapContextShapeId = null;
+    let mapContextPointId = null;
+
+    function initMapContextMenu() {
+        const menuEl = document.getElementById('mapContextMenu');
+        if (!menuEl) return;
+
+        map.on('contextmenu', (e) => {
+            if (e.originalEvent.target.closest('.leaflet-control')) return;
+            e.originalEvent.preventDefault();
+            e.originalEvent.stopPropagation();
+            mapContextMenuLatLng = e.latlng;
+            mapContextShapeId = e.originalEvent._contextShapeId || null;
+            mapContextPointId = e.originalEvent._contextPointId || null;
+            showMapContextMenu(e.originalEvent);
+        });
+
+        menuEl.addEventListener('click', (e) => {
+            const item = e.target.closest('[data-action]');
+            if (!item || item.disabled) return;
+            const action = item.dataset.action;
+            const latlng = mapContextMenuLatLng;
+            const shapeId = mapContextShapeId;
+            const pointId = mapContextPointId;
+            hideMapContextMenu();
+            handleMapContextAction(action, latlng, shapeId, pointId);
+        });
+
+        menuEl.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        document.addEventListener('mousedown', (e) => {
+            if (menuEl && !menuEl.classList.contains('hidden') && !menuEl.contains(e.target)) {
+                hideMapContextMenu();
+            }
+            const pickerEl = document.getElementById('mapPointTypePicker');
+            if (pickerEl && !pickerEl.classList.contains('hidden') && !pickerEl.contains(e.target)) {
+                hideMapPointTypePicker();
+            }
+        });
+
+        map.on('click', hideMapContextMenu);
+        map.on('click', hideMapPointTypePicker);
+
+        initMapPointTypePicker();
+    }
+
+    function showMapContextMenu(originalEvent) {
+        const menuEl = document.getElementById('mapContextMenu');
+        if (!menuEl) return;
+
+        const pointSection = menuEl.querySelector('.ctx-point-section');
+        if (pointSection) {
+            pointSection.style.display = mapContextPointId ? '' : 'none';
+        }
+
+        const shapeInfo = mapContextShapeId ? Drawings.getShapeInfo(mapContextShapeId) : null;
+
+        const shapeSection = menuEl.querySelector('.ctx-shape-section');
+        if (shapeSection) {
+            shapeSection.style.display = shapeInfo ? '' : 'none';
+        }
+
+        if (shapeInfo) {
+            const isArrow = shapeInfo.type === 'arrow';
+            const isText = shapeInfo.type === 'text';
+            const editVertBtn = menuEl.querySelector('[data-action="edit-vertices"]');
+            const moveBtn = menuEl.querySelector('[data-action="move-shape"]');
+            if (editVertBtn) editVertBtn.style.display = (isText || isArrow) ? 'none' : '';
+            if (moveBtn) moveBtn.style.display = isText ? 'none' : '';
+        }
+
+        const pasteBtn = menuEl.querySelector('[data-action="paste"]');
+        if (pasteBtn) {
+            pasteBtn.disabled = !Drawings.hasClipboard();
+            pasteBtn.title = Drawings.hasClipboard() ? 'Paste shape' : 'Copy a shape first (Ctrl+C)';
+        }
+
+        menuEl.classList.remove('hidden');
+        const x = originalEvent.clientX;
+        const y = originalEvent.clientY;
+        const menuW = menuEl.offsetWidth;
+        const menuH = menuEl.offsetHeight;
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        menuEl.style.left = (x + menuW > winW ? winW - menuW - 4 : x) + 'px';
+        menuEl.style.top = (y + menuH > winH ? winH - menuH - 4 : y) + 'px';
+    }
+
+    function hideMapContextMenu() {
+        const menuEl = document.getElementById('mapContextMenu');
+        if (menuEl) menuEl.classList.add('hidden');
+        mapContextMenuLatLng = null;
+        mapContextShapeId = null;
+        mapContextPointId = null;
+    }
+
+    function initMapPointTypePicker() {
+        const pickerEl = document.getElementById('mapPointTypePicker');
+        const optionsEl = document.getElementById('mapPointTypePickerOptions');
+        if (!pickerEl || !optionsEl) return;
+
+        optionsEl.innerHTML = '';
+        const iconKeys = ['address', 'primary_tola', 'secondary_tola', 'emergency_lz', 'no_fly', 'hazard', 'custom_point'];
+        iconKeys.forEach(key => {
+            const def = ICON_DEFS[key];
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ctx-type-btn';
+            btn.dataset.iconType = key;
+            btn.innerHTML = `<span class="ctx-type-symbol" style="background:${def.color}; color:${getContrastingTextColor(def.color)}">${escapeHtml(def.symbol)}</span><span>${escapeHtml(def.label)}</span>`;
+            btn.addEventListener('click', () => {
+                const latlng = mapPointTypePickerLatLng;
+                hideMapPointTypePicker();
+                if (latlng) createPointAtLatLngWithType(latlng.lat, latlng.lng, key);
+            });
+            optionsEl.appendChild(btn);
+        });
+    }
+
+    let mapPointTypePickerLatLng = null;
+
+    function showMapPointTypePicker(latlng, menuX, menuY) {
+        const pickerEl = document.getElementById('mapPointTypePicker');
+        if (!pickerEl) return;
+        mapPointTypePickerLatLng = latlng;
+        pickerEl.classList.remove('hidden');
+        const menuW = pickerEl.offsetWidth;
+        const menuH = pickerEl.offsetHeight;
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        pickerEl.style.left = (menuX + menuW > winW ? winW - menuW - 4 : menuX) + 'px';
+        pickerEl.style.top = (menuY + menuH > winH ? winH - menuH - 4 : menuY) + 'px';
+    }
+
+    function hideMapPointTypePicker() {
+        const pickerEl = document.getElementById('mapPointTypePicker');
+        if (pickerEl) pickerEl.classList.add('hidden');
+        mapPointTypePickerLatLng = null;
+    }
+
+    function createPointAtLatLngWithType(lat, lng, iconType) {
+        const type = normalizeIconType(iconType);
+        const def = ICON_DEFS[type];
+        lastDropIconType = type;
+        lastDropIconColor = def.colorEditable ? lastDropIconColor : def.color;
+        createPointAtLatLng(lat, lng);
+    }
+
+    function handleMapContextAction(action, latlng, shapeId, pointId) {
+        switch (action) {
+            case 'edit-point':
+                if (pointId) openEditModal(pointId);
+                break;
+            case 'delete-point':
+                if (pointId) {
+                    const point = points.find(p => p.id === pointId);
+                    if (point && confirm(`Delete "${point.name || 'Unnamed'}"?`)) {
+                        deletePoint(pointId);
+                    }
+                }
+                break;
+            case 'edit-shape':
+                if (shapeId) Drawings.openShapeEditModal(shapeId);
+                break;
+            case 'edit-vertices':
+                if (shapeId) Drawings.editVertices(shapeId);
+                break;
+            case 'move-shape':
+                if (shapeId) Drawings.moveShape(shapeId);
+                break;
+            case 'copy-shape':
+                if (shapeId) Drawings.copyShape(shapeId);
+                break;
+            case 'delete-shape':
+                if (shapeId) Drawings.removeShape(shapeId);
+                break;
+            case 'drop-point':
+                if (latlng) {
+                    const menuEl = document.getElementById('mapContextMenu');
+                    const menuX = menuEl ? parseInt(menuEl.style.left, 10) || 0 : 0;
+                    const menuY = menuEl ? parseInt(menuEl.style.top, 10) || 0 : 0;
+                    showMapPointTypePicker(latlng, menuX, menuY);
+                }
+                break;
+            case 'add-text':
+                Drawings.enableDrawMode('Text');
+                break;
+            case 'draw-circle':
+                Drawings.enableDrawMode('Circle');
+                break;
+            case 'draw-rectangle':
+                Drawings.enableDrawMode('Rectangle');
+                break;
+            case 'draw-polygon':
+                Drawings.enableDrawMode('Polygon');
+                break;
+            case 'draw-polyline':
+                Drawings.enableDrawMode('Line');
+                break;
+            case 'draw-arrow':
+                if (latlng) {
+                    Drawings.enableArrowDrawAt(latlng);
+                } else {
+                    Drawings.enableDrawMode('Arrow');
+                }
+                break;
+            case 'draw-flightpath':
+                Drawings.enableDrawMode('FlightPath');
+                break;
+            case 'paste':
+                Drawings.pasteShape(latlng);
+                break;
+            case 'return-to-pan':
+                setDropPointMode(false);
+                setDropPointPickerOpen(false);
+                Drawings.exitAllDrawingModes();
+                refreshHandToolState();
+                break;
+        }
     }
 
     // ---- Initialise ----
@@ -1539,6 +1773,8 @@
             initIconLegend();
             initDrawings();
             initDropPointToolbarControl();
+            refreshHandToolState();
+            map.on('drawingmodechange', refreshHandToolState);
         }
 
         if (introProceedBtn) {
