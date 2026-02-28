@@ -13,7 +13,7 @@
     let dropPointMode = false;
     let dropPointPickerOpen = false;
     let lastDropIconType = 'address';
-    let lastDropIconColor = '#5b8def';
+    let lastDropIconColor = '#dc2626';
     let dropPointToolbarButton = null;
     let dropPointIconStrip = null;
     let handToolbarButton = null;
@@ -280,10 +280,11 @@
     // ---- Markers ----
 
     const ICON_DEFS = {
-        address: { label: 'Address / Reference', symbol: 'A', color: '#5b8def', colorEditable: true },
+        address: { label: 'Address / Reference', symbol: 'A', color: '#dc2626', colorEditable: true },
         primary_tola: { label: 'Primary TOLA', symbol: 'H', color: '#1e88e5', colorEditable: false },
         secondary_tola: { label: 'Secondary TOLA', symbol: 'H', color: '#f4c542', colorEditable: false },
-        emergency_lz: { label: 'Emergency Landing Zone', symbol: '+', color: '#e05555', colorEditable: false },
+        custom_tola: { label: 'Custom TOLA', symbol: 'H', color: '#22c55e', colorEditable: true },
+        emergency_lz: { label: 'Emergency Landing Zone', symbol: '\u271A', color: '#ef4444', colorEditable: false },
         no_fly: { label: 'No-Fly Marker', symbol: 'X', color: '#d32f2f', colorEditable: false },
         hazard: { label: 'Hazard', symbol: '!', color: '#ff9800', colorEditable: false },
         custom_point: { label: 'Custom Point', symbol: '?', color: '#8e24aa', colorEditable: true }
@@ -313,6 +314,9 @@
             secondary: 'secondary_tola',
             secondarytola: 'secondary_tola',
             tola_secondary: 'secondary_tola',
+            customtola: 'custom_tola',
+            custom_tola: 'custom_tola',
+            tola_custom: 'custom_tola',
             emergency: 'emergency_lz',
             emergencylandingzone: 'emergency_lz',
             emergency_landing_zone: 'emergency_lz',
@@ -384,6 +388,7 @@
             'address',
             'primary_tola',
             'secondary_tola',
+            'custom_tola',
             'emergency_lz',
             'no_fly',
             'hazard',
@@ -586,7 +591,12 @@
         });
 
         marker.on('contextmenu', (e) => {
-            e.originalEvent._contextPointId = point.id;
+            L.DomEvent.preventDefault(e);
+            L.DomEvent.stopPropagation(e);
+            mapContextPointId = point.id;
+            mapContextMenuLatLng = marker.getLatLng();
+            mapContextShapeId = null;
+            showMapContextMenu(e.originalEvent);
         });
 
         marker.on('dragstart', () => {
@@ -760,7 +770,7 @@
         refreshPointIconControls();
     });
     pointIconType.value = 'address';
-    pointIconColor.value = '#5b8def';
+    pointIconColor.value = '#dc2626';
     pointCustomSymbol.value = '';
     refreshPointIconControls();
     refreshDropPointModeButton();
@@ -813,7 +823,7 @@
             pointName.value = '';
             pointNotes.value = '';
             pointIconType.value = 'address';
-            pointIconColor.value = '#5b8def';
+            pointIconColor.value = '#dc2626';
             pointCustomSymbol.value = '';
             refreshPointIconControls();
             formatHint.textContent = '';
@@ -1656,7 +1666,7 @@
         if (!pickerEl || !optionsEl) return;
 
         optionsEl.innerHTML = '';
-        const iconKeys = ['address', 'primary_tola', 'secondary_tola', 'emergency_lz', 'no_fly', 'hazard', 'custom_point'];
+        const iconKeys = ['address', 'primary_tola', 'secondary_tola', 'custom_tola', 'emergency_lz', 'no_fly', 'hazard', 'custom_point'];
         iconKeys.forEach(key => {
             const def = ICON_DEFS[key];
             const btn = document.createElement('button');

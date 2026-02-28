@@ -48,16 +48,16 @@
             <div class="intro-logo-wrap">
                 <img src="assets/airplot-logo.png" alt="AirPlot" class="intro-logo">
             </div>
-            <p class="intro-tagline">Drone Flight Planning &amp; Mapping</p>
+            <p class="intro-tagline">Plan and visualise your drone flights directly on an interactive map.</p>
             <p class="intro-description">
-                Plot take-off and landing areas, mark no-fly zones and hazards, 
-                draw operational boundaries—then export for mission briefing.
+                Use this tool to draw flight areas, highlight zones to avoid, and mark key locations such as take-off and landing points. Once you're ready, tap below to open the map and start planning your mission.
             </p>
             <button type="button" class="intro-cta" id="introProceedBtn">
                 Launch App
                 <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </button>
             <p class="intro-version">v1.0</p>
+            <p class="intro-copyright">&copy; Mark Moore</p>
         </div>
     </div>
 
@@ -89,6 +89,7 @@
                         <option value="address">Address / Reference</option>
                         <option value="primary_tola">Primary TOLA</option>
                         <option value="secondary_tola">Secondary TOLA</option>
+                        <option value="custom_tola">Custom TOLA</option>
                         <option value="emergency_lz">Emergency Landing Zone</option>
                         <option value="no_fly">No-Fly Marker</option>
                         <option value="hazard">Hazard</option>
@@ -97,7 +98,7 @@
                 </div>
                 <div class="form-group" id="pointIconColorGroup">
                     <label for="pointIconColor">Icon Colour</label>
-                    <input type="color" id="pointIconColor" value="#5b8def">
+                    <input type="color" id="pointIconColor" value="#dc2626">
                 </div>
                 <div class="form-group hidden" id="pointCustomSymbolGroup">
                     <label for="pointCustomSymbol">Custom Symbol (1-2 chars)</label>
@@ -212,6 +213,10 @@
                     <option value="15,6,3,6">Dash-Dot</option>
                 </select>
             </div>
+            <div class="draw-style-row hidden" id="drawFlightPathArrowSizeRow">
+                <label for="drawFlightPathArrowSize">Arrow head size (m)</label>
+                <input type="number" id="drawFlightPathArrowSize" min="1" max="100" value="20" style="width:60px;">
+            </div>
         </div>
     </div>
 
@@ -252,6 +257,10 @@
                 <div class="form-group">
                     <label for="editShapeWeight">Stroke Width</label>
                     <input type="number" id="editShapeWeight" min="1" max="8" value="2">
+                </div>
+                <div class="form-group hidden" id="editShapeFlightPathArrowSizeGroup">
+                    <label for="editShapeFlightPathArrowSize">Arrow head size (metres)</label>
+                    <input type="number" id="editShapeFlightPathArrowSize" min="1" max="100" value="20">
                 </div>
                 <div class="form-group hidden" id="editShapeFlightPathDistanceGroup">
                     <label>
@@ -465,6 +474,7 @@
                         <option value="address">Address / Reference</option>
                         <option value="primary_tola">Primary TOLA</option>
                         <option value="secondary_tola">Secondary TOLA</option>
+                        <option value="custom_tola">Custom TOLA</option>
                         <option value="emergency_lz">Emergency Landing Zone</option>
                         <option value="no_fly">No-Fly Marker</option>
                         <option value="hazard">Hazard</option>
@@ -473,7 +483,7 @@
                 </div>
                 <div class="form-group" id="editPointIconColorGroup">
                     <label for="editPointIconColor">Icon Colour</label>
-                    <input type="color" id="editPointIconColor" value="#5b8def">
+                    <input type="color" id="editPointIconColor" value="#dc2626">
                 </div>
                 <div class="form-group hidden" id="editPointCustomSymbolGroup">
                     <label for="editPointCustomSymbol">Custom Symbol (1-2 chars)</label>

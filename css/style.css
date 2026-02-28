@@ -263,6 +263,12 @@ body.sidebar-collapsed #map {
     text-transform: uppercase;
 }
 
+.intro-copyright {
+    margin-top: 8px;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.2);
+}
+
 /* ---- App Footer ---- */
 
 .app-footer {

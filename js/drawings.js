@@ -88,6 +88,68 @@ const Drawings = (() => {
         return Math.max(0.05, Math.min(0.95, t));
     }
 
+    function pointAlongPolyline(latlngs, ratio) {
+        if (!latlngs || latlngs.length < 2) return latlngs && latlngs[0] ? latlngs[0] : [0, 0];
+        const total = calcPolylineLength(latlngs);
+        if (total <= 0) return latlngs[0];
+        let target = Math.max(0, Math.min(1, ratio)) * total;
+        let acc = 0;
+        for (let i = 1; i < latlngs.length; i++) {
+            const a = L.latLng(latlngs[i - 1]);
+            const b = L.latLng(latlngs[i]);
+            const segLen = a.distanceTo(b);
+            if (acc + segLen >= target) {
+                const frac = segLen > 0 ? (target - acc) / segLen : 0;
+                return [
+                    latlngs[i - 1][0] + frac * (latlngs[i][0] - latlngs[i - 1][0]),
+                    latlngs[i - 1][1] + frac * (latlngs[i][1] - latlngs[i - 1][1])
+                ];
+            }
+            acc += segLen;
+        }
+        return latlngs[latlngs.length - 1];
+    }
+
+    function projectOntoPolyline(latlngs, pos) {
+        if (!latlngs || latlngs.length < 2) return 0.5;
+        const total = calcPolylineLength(latlngs);
+        if (total <= 0) return 0.5;
+        const p = L.latLng(pos);
+        let bestRatio = 0.5;
+        let bestDist = Infinity;
+        let acc = 0;
+        for (let i = 1; i < latlngs.length; i++) {
+            const a = L.latLng(latlngs[i - 1]);
+            const b = L.latLng(latlngs[i]);
+            const segLen = a.distanceTo(b);
+            if (segLen <= 0) {
+                const d = p.distanceTo(a);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestRatio = acc / total;
+                }
+                acc += segLen;
+                continue;
+            }
+            const ax = a.lat; const ay = a.lng;
+            const bx = b.lat; const by = b.lng;
+            const dx = bx - ax; const dy = by - ay;
+            const t = Math.max(0, Math.min(1,
+                ((p.lat - ax) * dx + (p.lng - ay) * dy) / (dx * dx + dy * dy)
+            ));
+            const projLat = ax + t * dx;
+            const projLng = ay + t * dy;
+            const proj = L.latLng(projLat, projLng);
+            const d = p.distanceTo(proj);
+            if (d < bestDist) {
+                bestDist = d;
+                bestRatio = (acc + t * segLen) / total;
+            }
+            acc += segLen;
+        }
+        return Math.max(0.02, Math.min(0.98, bestRatio));
+    }
+
     // ---- Copy / Paste ----
     const PASTE_OFFSET_DEG = 0.0004; // ~44m offset so pasted shape doesn't overlap
 
@@ -108,6 +170,7 @@ const Drawings = (() => {
         if (shape.position) data.position = [...shape.position];
         if (shape.text != null) data.text = shape.text;
         if (shape.showDistance != null) data.showDistance = shape.showDistance;
+        if (shape.arrowSize != null) data.arrowSize = shape.arrowSize;
         return data;
     }
 
@@ -172,7 +235,8 @@ const Drawings = (() => {
             curvePoints: data.curvePoints,
             position: data.position,
             text: data.text,
-            showDistance: data.showDistance
+            showDistance: data.showDistance,
+            arrowSize: data.arrowSize != null ? data.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT
         };
         if (shape.type === 'flightpath' && !shape.style.color) {
             shape.style = { ...flightPathStyle };
@@ -225,8 +289,16 @@ const Drawings = (() => {
     }
 
     // ---- Flight path: small arrowhead at a point (for direction markers) ----
-    const FLIGHT_PATH_ARROW_SIZE = 4; // metres
-    const FLIGHT_PATH_ARROW_INTERVAL = 50; // metres between arrows
+    const FLIGHT_PATH_ARROW_SIZE_DEFAULT = 20; // metres (default size for new flight paths)
+    const FLIGHT_PATH_ARROW_INTERVAL = 100; // metres between arrows
+    const FLIGHT_PATH_ZOOM_REFERENCE = 15; // zoom level where base size/interval are used
+
+    function getFlightPathZoomScale() {
+        if (!map) return 1;
+        const zoom = map.getZoom();
+        const scale = Math.pow(2, FLIGHT_PATH_ZOOM_REFERENCE - zoom);
+        return Math.max(0.25, Math.min(16, scale));
+    }
 
     function computeArrowheadVertices(center, bearing, sizeM) {
         const tip = destinationPoint(center[0], center[1], bearing, sizeM);
@@ -283,6 +355,17 @@ const Drawings = (() => {
         setupKeyboardShortcuts();
         setupMapDismiss();
         setupCursorState();
+        setupFlightPathZoomRebuild();
+    }
+
+    function setupFlightPathZoomRebuild() {
+        map.on('zoomend', () => {
+            for (const shape of shapes) {
+                if (shape.type === 'flightpath') {
+                    rebuildFlightPathArrows(shape);
+                }
+            }
+        });
     }
 
     function setupCursorState() {
@@ -856,6 +939,22 @@ const Drawings = (() => {
             }
         });
 
+        const flightPathArrowSizeInput = document.getElementById('drawFlightPathArrowSize');
+        const flightPathArrowSizeRow = document.getElementById('drawFlightPathArrowSizeRow');
+        if (flightPathArrowSizeInput && flightPathArrowSizeRow) {
+            flightPathArrowSizeInput.addEventListener('input', (e) => {
+                if (!selectedShapeId) return;
+                const shape = shapes.find(s => s.id === selectedShapeId);
+                if (!shape || shape.type !== 'flightpath') return;
+                const val = parseFloat(e.target.value);
+                if (!isNaN(val) && val >= 1 && val <= 100) {
+                    shape.arrowSize = val;
+                    rebuildFlightPathArrows(shape);
+                    refreshShapesList();
+                }
+            });
+        }
+
         panel.classList.add('collapsed');
 
         toggleBtn.addEventListener('click', () => {
@@ -900,6 +999,15 @@ const Drawings = (() => {
         document.getElementById('drawWeight').value = shape.style.weight || currentStyle.weight;
         document.getElementById('drawDash').value = shape.style.dashArray || '';
 
+        const flightPathArrowSizeRow = document.getElementById('drawFlightPathArrowSizeRow');
+        const flightPathArrowSizeInput = document.getElementById('drawFlightPathArrowSize');
+        if (shape.type === 'flightpath' && flightPathArrowSizeRow && flightPathArrowSizeInput) {
+            flightPathArrowSizeRow.classList.remove('hidden');
+            flightPathArrowSizeInput.value = shape.arrowSize != null ? shape.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT;
+        } else if (flightPathArrowSizeRow) {
+            flightPathArrowSizeRow.classList.add('hidden');
+        }
+
         const panel = document.getElementById('drawStylePanel');
         panel.classList.remove('collapsed');
         panel.classList.add('editing-shape');
@@ -916,6 +1024,9 @@ const Drawings = (() => {
         document.getElementById('drawFillOpacityVal').textContent = currentStyle.fillOpacity;
         document.getElementById('drawWeight').value = currentStyle.weight;
         document.getElementById('drawDash').value = currentStyle.dashArray || '';
+
+        const flightPathArrowSizeRow = document.getElementById('drawFlightPathArrowSizeRow');
+        if (flightPathArrowSizeRow) flightPathArrowSizeRow.classList.add('hidden');
 
         const panel = document.getElementById('drawStylePanel');
         panel.classList.remove('editing-shape');
@@ -1147,7 +1258,8 @@ const Drawings = (() => {
                     type: 'flightpath',
                     label: '',
                     style: { ...flightPathStyle },
-                    latlngs
+                    latlngs,
+                    arrowSize: FLIGHT_PATH_ARROW_SIZE_DEFAULT
                 };
                 shapes.push(shape);
                 addShapeToMap(shape);
@@ -1314,9 +1426,13 @@ const Drawings = (() => {
         const group = L.layerGroup();
         const fpStyle = shape.style || flightPathStyle;
         const color = fpStyle.color || flightPathStyle.color;
-        const points = getPointsAlongPath(shape.latlngs, FLIGHT_PATH_ARROW_INTERVAL);
+        const baseArrowSize = shape.arrowSize != null ? shape.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT;
+        const zoomScale = getFlightPathZoomScale();
+        const arrowSize = baseArrowSize * zoomScale;
+        const interval = FLIGHT_PATH_ARROW_INTERVAL * zoomScale;
+        const points = getPointsAlongPath(shape.latlngs, interval);
         for (const p of points) {
-            const verts = computeArrowheadVertices(p.latlng, p.bearing, FLIGHT_PATH_ARROW_SIZE);
+            const verts = computeArrowheadVertices(p.latlng, p.bearing, arrowSize);
             const arrow = L.polygon(verts, {
                 color,
                 fillColor: color,
@@ -1331,7 +1447,7 @@ const Drawings = (() => {
             const last = shape.latlngs[shape.latlngs.length - 1];
             const prev = shape.latlngs[shape.latlngs.length - 2];
             const bearing = bearingTo(prev[0], prev[1], last[0], last[1]);
-            const verts = computeArrowheadVertices(last, bearing, FLIGHT_PATH_ARROW_SIZE);
+            const verts = computeArrowheadVertices(last, bearing, arrowSize);
             const endArrow = L.polygon(verts, {
                 color,
                 fillColor: color,
@@ -1435,6 +1551,9 @@ const Drawings = (() => {
 
         if (shape.type === 'circle') {
             createRadialMeasurement(shape);
+        } else if ((shape.type === 'polyline' || shape.type === 'flightpath') && shape.latlngs && shape.latlngs.length >= 2) {
+            const text = getMeasurementText(shape);
+            if (text) createLineMeasurement(shape);
         } else {
             const text = getMeasurementText(shape);
             if (!text) return;
@@ -1458,6 +1577,17 @@ const Drawings = (() => {
 
         if (shape.type === 'circle') {
             updateRadialMeasurement(shape);
+        } else if (shape.type === 'polyline' || shape.type === 'flightpath') {
+            const text = getMeasurementText(shape);
+            if (!text) {
+                removeLineMeasurement(shape.id);
+                return;
+            }
+            if (shapeLayerMap[shape.id]?.lineMeasureGroup) {
+                updateLineMeasurement(shape);
+            } else {
+                createLineMeasurement(shape);
+            }
         } else {
             const entry = shapeLayerMap[shape.id];
             if (!entry || shape.type === 'text') return;
@@ -1481,6 +1611,8 @@ const Drawings = (() => {
         const shape = shapes.find(s => s.id === id);
         if (shape && shape.type === 'circle') {
             removeRadialMeasurement(id);
+        } else if (shape && (shape.type === 'polyline' || shape.type === 'flightpath')) {
+            removeLineMeasurement(id);
         } else {
             if (entry.layer && entry.layer.getTooltip()) {
                 entry.layer.unbindTooltip();
@@ -1495,10 +1627,78 @@ const Drawings = (() => {
         const cls = draggable ? 'radial-label-marker radial-label-draggable' : 'radial-label-marker';
         return L.divIcon({
             className: cls,
-            html: `<div class="radial-measurement-label">${text}</div>`,
+            html: `<div class="radial-measurement-label">${escapeHtml(String(text || ''))}</div>`,
             iconSize: null,
             iconAnchor: [0, 14]
         });
+    }
+
+    function createLineMeasurement(shape) {
+        const entry = shapeLayerMap[shape.id];
+        if (!entry || !entry.layer || !shape.latlngs || shape.latlngs.length < 2) return;
+
+        removeLineMeasurement(shape.id);
+
+        const text = getMeasurementText(shape);
+        if (!text) return;
+
+        const ratio = shape.measureLabelRatio != null ? shape.measureLabelRatio : 0.5;
+        const labelPt = pointAlongPolyline(shape.latlngs, ratio);
+
+        const label = L.marker(labelPt, {
+            icon: makeLabelIcon(text, true),
+            draggable: true,
+            zIndexOffset: 900
+        }).addTo(map);
+
+        label.on('drag', (e) => {
+            const pos = e.target.getLatLng();
+            const newRatio = projectOntoPolyline(shape.latlngs, pos);
+            const newLabelPt = pointAlongPolyline(shape.latlngs, newRatio);
+            e.target.setLatLng(newLabelPt);
+            shape.measureLabelRatio = newRatio;
+        });
+
+        label.on('dragend', () => {
+            const pos = label.getLatLng();
+            const finalRatio = projectOntoPolyline(shape.latlngs, pos);
+            const finalLabelPt = pointAlongPolyline(shape.latlngs, finalRatio);
+            label.setLatLng(finalLabelPt);
+            shape.measureLabelRatio = finalRatio;
+        });
+
+        label.on('contextmenu', (e) => {
+            e.originalEvent._contextShapeId = shape.id;
+        });
+
+        entry.lineMeasureGroup = { label };
+    }
+
+    function updateLineMeasurement(shape) {
+        const entry = shapeLayerMap[shape.id];
+        if (!entry) return;
+
+        if (!entry.lineMeasureGroup) {
+            if (showMeasurements) createLineMeasurement(shape);
+            return;
+        }
+
+        const ratio = shape.measureLabelRatio != null ? shape.measureLabelRatio : 0.5;
+        const labelPt = pointAlongPolyline(shape.latlngs, ratio);
+        const text = getMeasurementText(shape);
+
+        const lg = entry.lineMeasureGroup;
+        lg.label.setLatLng(labelPt);
+        lg.label.setIcon(makeLabelIcon(text || '', true));
+    }
+
+    function removeLineMeasurement(id) {
+        const entry = shapeLayerMap[id];
+        if (!entry || !entry.lineMeasureGroup) return;
+
+        const lg = entry.lineMeasureGroup;
+        if (lg.label && map.hasLayer(lg.label)) map.removeLayer(lg.label);
+        entry.lineMeasureGroup = null;
     }
 
     function createRadialMeasurement(shape) {
@@ -1939,12 +2139,16 @@ const Drawings = (() => {
             angleGroup.classList.add('hidden');
         }
 
+        const flightPathArrowSizeGroup = document.getElementById('editShapeFlightPathArrowSizeGroup');
         const flightPathDistanceGroup = document.getElementById('editShapeFlightPathDistanceGroup');
         const flightPathShowDistanceCheck = document.getElementById('editShapeFlightPathShowDistance');
         if (shape.type === 'flightpath') {
+            flightPathArrowSizeGroup.classList.remove('hidden');
+            document.getElementById('editShapeFlightPathArrowSize').value = shape.arrowSize != null ? shape.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT;
             flightPathDistanceGroup.classList.remove('hidden');
             flightPathShowDistanceCheck.checked = shape.showDistance !== undefined ? shape.showDistance : showFlightPathDistance;
         } else {
+            flightPathArrowSizeGroup.classList.add('hidden');
             flightPathDistanceGroup.classList.add('hidden');
         }
 
@@ -1982,6 +2186,10 @@ const Drawings = (() => {
                 shape.tip = destinationPoint(shape.tail[0], shape.tail[1], currentBearing, newLength);
             }
         } else if (shape.type === 'flightpath') {
+            const arrowSizeVal = parseFloat(document.getElementById('editShapeFlightPathArrowSize').value);
+            if (!isNaN(arrowSizeVal) && arrowSizeVal >= 1 && arrowSizeVal <= 100) {
+                shape.arrowSize = arrowSizeVal;
+            }
             shape.showDistance = document.getElementById('editShapeFlightPathShowDistance').checked;
         }
 
@@ -2062,6 +2270,9 @@ const Drawings = (() => {
             const shape = shapes.find(s => s.id === numId);
             if (shape && shape.type === 'circle') {
                 removeRadialMeasurement(numId);
+            }
+            if (shape && (shape.type === 'polyline' || shape.type === 'flightpath')) {
+                removeLineMeasurement(numId);
             }
             removeArrowHandles(numId);
             removeShapeLabelMarker(numId);
@@ -2163,7 +2374,8 @@ const Drawings = (() => {
                 curvePoints: shapeData.curvePoints,
                 position: shapeData.position,
                 text: shapeData.text,
-                showDistance: shapeData.showDistance
+                showDistance: shapeData.showDistance,
+                arrowSize: shapeData.arrowSize != null ? shapeData.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT
             };
 
             // Migrate old arrow_stamp data to new arrow format
