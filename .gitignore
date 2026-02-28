@@ -1,7 +1,8 @@
 node_modules/
 
-# Test screenshots
+# Test screenshots (keep assets/ for app images)
 *.png
+!assets/*.png
 
 # Test files
 test_*.js
