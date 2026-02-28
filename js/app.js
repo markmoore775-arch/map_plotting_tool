@@ -108,10 +108,10 @@
 
         // Create hand/pan button and prepend to toolbar (first button)
         const handBtn = document.createElement('a');
-        handBtn.className = 'leaflet-control-hand-tool';
+        handBtn.className = 'leaflet-control-hand-tool leaflet-buttons-control-button';
         handBtn.href = '#';
         handBtn.title = 'Pan / Move map (drag to pan)';
-        handBtn.innerHTML = '&#9995;';
+        handBtn.innerHTML = '<span class="control-icon leaflet-pm-icon-drag"></span>';
         handBtn.classList.add('active');
         toolbar.insertBefore(handBtn, toolbar.firstChild);
 
@@ -126,13 +126,16 @@
 
         handToolbarButton = handBtn;
 
-        // Create pin button and append to the Geoman toolbar
+        // Create drop point wrapper (button + popup menu) and insert at top of toolbar (after hand)
+        const dropPointWrapper = document.createElement('div');
+        dropPointWrapper.className = 'drop-point-wrapper';
+
         const btn = document.createElement('a');
-        btn.className = 'leaflet-control-drop-point';
+        btn.className = 'leaflet-control-drop-point leaflet-buttons-control-button';
         btn.href = '#';
         btn.title = 'Drop Point (choose type, then click map)';
-        btn.innerHTML = '&#128205;';
-        toolbar.appendChild(btn);
+        btn.innerHTML = '<span class="control-icon leaflet-pm-icon-marker"></span>';
+        dropPointWrapper.appendChild(btn);
 
         L.DomEvent.on(btn, 'click', (e) => {
             L.DomEvent.stop(e);
@@ -146,11 +149,13 @@
             setDropPointPickerOpen(true);
         });
 
-        // Create icon strip below the toolbar
+        // Create icon strip (positioned to the side of the button)
         const strip = document.createElement('div');
         strip.className = 'drop-icon-strip leaflet-control hidden';
         strip.innerHTML = '<div class="drop-icon-strip-title">Select a point type</div>';
-        toolbar.parentNode.insertBefore(strip, toolbar.nextSibling);
+        dropPointWrapper.appendChild(strip);
+
+        toolbar.insertBefore(dropPointWrapper, handBtn.nextSibling);
         L.DomEvent.disableClickPropagation(strip);
 
         Object.keys(ICON_DEFS).forEach(key => {
@@ -1734,9 +1739,6 @@
                 break;
             case 'draw-polygon':
                 Drawings.enableDrawMode('Polygon');
-                break;
-            case 'draw-polyline':
-                Drawings.enableDrawMode('Line');
                 break;
             case 'draw-arrow':
                 if (latlng) {

@@ -319,7 +319,7 @@ const Drawings = (() => {
             drawCircle: true,
             drawRectangle: true,
             drawPolygon: true,
-            drawPolyline: true,
+            drawPolyline: false,
             cutPolygon: false,
             rotateMode: false,
             editMode: false,
@@ -397,10 +397,10 @@ const Drawings = (() => {
             options: { position: 'topleft' },
             onAdd: function () {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                const btn = L.DomUtil.create('a', 'leaflet-control-flight-path', container);
+                const btn = L.DomUtil.create('a', 'leaflet-control-flight-path leaflet-buttons-control-button', container);
                 btn.href = '#';
                 btn.title = 'Draw Flight Path';
-                btn.innerHTML = '&#128640;'; // drone icon
+                btn.innerHTML = '<span class="control-icon leaflet-pm-icon-polyline"></span>';
 
                 L.DomEvent.disableClickPropagation(container);
                 L.DomEvent.on(btn, 'click', (e) => {
