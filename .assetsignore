@@ -1,0 +1,26 @@
+# Dependencies - never deploy these
+node_modules/
+
+# Version control
+.git/
+.gitignore
+
+# Wrangler config and cache
+.wrangler/
+
+# Package management - not needed for static assets
+package.json
+package-lock.json
+
+# Test files
+test_*.js
+test_*.html
+test_app.js
+
+# Test screenshots (keep assets/ for app images)
+*.png
+!assets/*.png
+
+# OS files
+.DS_Store
+Thumbs.db
