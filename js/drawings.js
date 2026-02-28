@@ -14,6 +14,7 @@ const Drawings = (() => {
     let shapeLayerMap = {};
     let arrowDrawState = null; // { tail: [lat,lng] } while placing tip
     let flightPathDrawState = null; // true when drawing a flight path
+    let lineDrawState = null; // { start: [lat,lng] } while placing end point
     let lastCircleRadiusPoint = null; // last mouse pos during circle draw (for label angle)
 
     // Selection & interaction state
@@ -274,6 +275,7 @@ const Drawings = (() => {
         map = mapInstance;
         setupGeoman();
         setupArrowDrawControl();
+        setupLineDrawControl();
         setupFlightPathDrawControl();
         setupStylePanel();
         setupShapeEvents();
@@ -297,6 +299,7 @@ const Drawings = (() => {
         if (!mapEl || !map || !map.pm) return;
 
         const isArrowDraw = !!arrowDrawState;
+        const isLineDraw = !!lineDrawState;
         const isFlightPathDraw = !!flightPathDrawState;
         const isGeoDraw = !!(map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled());
         const isMoveMode = !!(
@@ -305,7 +308,7 @@ const Drawings = (() => {
             (map.pm.globalRemovalModeEnabled && map.pm.globalRemovalModeEnabled())
         );
 
-        mapEl.classList.toggle('draw-tool-cursor', isArrowDraw || isFlightPathDraw || isGeoDraw);
+        mapEl.classList.toggle('draw-tool-cursor', isArrowDraw || isLineDraw || isFlightPathDraw || isGeoDraw);
         mapEl.classList.toggle('move-tool-cursor', !isArrowDraw && !isGeoDraw && isMoveMode);
         map.fire('drawingmodechange');
     }
@@ -360,10 +363,10 @@ const Drawings = (() => {
             options: { position: 'topleft' },
             onAdd: function () {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                const btn = L.DomUtil.create('a', 'leaflet-control-extra-draw', container);
+                const btn = L.DomUtil.create('a', 'leaflet-control-extra-draw leaflet-buttons-control-button', container);
                 btn.href = '#';
                 btn.title = 'Draw Arrow';
-                btn.innerHTML = '&#10148;';
+                btn.innerHTML = '<span class="control-icon lucide-arrow-big-right-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-big-right"><path d="M11 9a1 1 0 0 0 1-1V5.061a1 1 0 0 1 1.811-.75l6.836 6.836a1.207 1.207 0 0 1 0 1.707l-6.836 6.835a1 1 0 0 1-1.811-.75V16a1 1 0 0 0-1-1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/></svg></span>';
 
                 L.DomEvent.disableClickPropagation(container);
                 L.DomEvent.on(btn, 'click', (e) => {
@@ -387,6 +390,111 @@ const Drawings = (() => {
     }
 
     // ============================================================
+    //  LINE DRAW TOOL - two-click placement, shows distance
+    // ============================================================
+
+    let lineDrawBtn = null;
+    let lineTempLine = null;
+
+    function setupLineDrawControl() {
+        const LineControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: function () {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                const btn = L.DomUtil.create('a', 'leaflet-control-line-draw leaflet-buttons-control-button', container);
+                btn.href = '#';
+                btn.title = 'Draw Line (measure distance)';
+                btn.innerHTML = '<span class="control-icon lucide-ruler-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ruler"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg></span>';
+
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.on(btn, 'click', (e) => {
+                    L.DomEvent.stop(e);
+                    if (lineDrawState != null) {
+                        cancelLineDraw();
+                    } else {
+                        startLineDraw();
+                    }
+                });
+
+                lineDrawBtn = btn;
+                return container;
+            }
+        });
+
+        map.addControl(new LineControl());
+
+        map.on('click', onLineMapClick);
+        map.on('mousemove', onLineMapMouseMove);
+    }
+
+    function startLineDraw(optionalStartLatLng) {
+        cancelArrowDraw();
+        cancelFlightPathDraw();
+        if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) {
+            map.pm.disableDraw();
+        }
+        lineDrawState = optionalStartLatLng
+            ? { start: [optionalStartLatLng.lat, optionalStartLatLng.lng] }
+            : {};
+        map.doubleClickZoom.disable();
+        if (lineDrawBtn) lineDrawBtn.classList.add('active-draw');
+        refreshInteractionCursor();
+    }
+
+    function cancelLineDraw() {
+        lineDrawState = null;
+        if (lineTempLine && map.hasLayer(lineTempLine)) map.removeLayer(lineTempLine);
+        lineTempLine = null;
+        map.doubleClickZoom.enable();
+        if (lineDrawBtn) lineDrawBtn.classList.remove('active-draw');
+        refreshInteractionCursor();
+    }
+
+    function onLineMapClick(e) {
+        if (!lineDrawState) return;
+        const pt = [e.latlng.lat, e.latlng.lng];
+
+        if (!lineDrawState.start) {
+            lineDrawState.start = pt;
+            return;
+        }
+
+        const start = lineDrawState.start;
+        const end = pt;
+        createLineShape(start, end);
+        cancelLineDraw();
+    }
+
+    function onLineMapMouseMove(e) {
+        if (!lineDrawState || !lineDrawState.start) return;
+        const start = lineDrawState.start;
+        const hover = [e.latlng.lat, e.latlng.lng];
+
+        if (lineTempLine && map.hasLayer(lineTempLine)) map.removeLayer(lineTempLine);
+
+        lineTempLine = L.polyline([start, hover], {
+            color: currentStyle.color,
+            weight: currentStyle.weight,
+            dashArray: currentStyle.dashArray || '5,5',
+            opacity: 0.8,
+            interactive: false
+        }).addTo(map);
+    }
+
+    function createLineShape(start, end) {
+        const shape = {
+            id: nextShapeId++,
+            type: 'polyline',
+            label: '',
+            style: { ...currentStyle },
+            latlngs: [[...start], [...end]]
+        };
+        shapes.push(shape);
+        addShapeToMap(shape);
+        refreshShapesList();
+    }
+
+    // ============================================================
     //  FLIGHT PATH DRAW TOOL - polyline with direction arrows
     // ============================================================
 
@@ -400,7 +508,7 @@ const Drawings = (() => {
                 const btn = L.DomUtil.create('a', 'leaflet-control-flight-path leaflet-buttons-control-button', container);
                 btn.href = '#';
                 btn.title = 'Draw Flight Path';
-                btn.innerHTML = '<span class="control-icon leaflet-pm-icon-polyline"></span>';
+                btn.innerHTML = '<span class="control-icon lucide-drone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-drone"><path d="M10 10 7 7"/><path d="m10 14-3 3"/><path d="m14 10 3-3"/><path d="m14 14 3 3"/><path d="M14.205 4.139a4 4 0 1 1 5.439 5.863"/><path d="M19.637 14a4 4 0 1 1-5.432 5.868"/><path d="M4.367 10a4 4 0 1 1 5.438-5.862"/><path d="M9.795 19.862a4 4 0 1 1-5.429-5.873"/><rect x="10" y="8" width="4" height="8" rx="1"/></svg></span>';
 
                 L.DomEvent.disableClickPropagation(container);
                 L.DomEvent.on(btn, 'click', (e) => {
@@ -420,8 +528,23 @@ const Drawings = (() => {
         map.addControl(new FlightPathControl());
     }
 
+    function startLineDraw(optionalStartLatLng) {
+        cancelArrowDraw();
+        cancelFlightPathDraw();
+        if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) {
+            map.pm.disableDraw();
+        }
+        lineDrawState = optionalStartLatLng
+            ? { start: [optionalStartLatLng.lat, optionalStartLatLng.lng] }
+            : {};
+        map.doubleClickZoom.disable();
+        if (lineDrawBtn) lineDrawBtn.classList.add('active-draw');
+        refreshInteractionCursor();
+    }
+
     function startFlightPathDraw() {
         cancelArrowDraw();
+        cancelLineDraw();
         if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) {
             map.pm.disableDraw();
         }
@@ -447,7 +570,8 @@ const Drawings = (() => {
     }
 
     function startArrowDraw(optionalTailLatLng) {
-        cancelArrowDraw();
+        cancelLineDraw();
+        cancelArrowDraw(); // clear any existing arrow state
         arrowDrawState = optionalTailLatLng
             ? { tail: [optionalTailLatLng.lat, optionalTailLatLng.lng] }
             : {};
@@ -927,6 +1051,11 @@ const Drawings = (() => {
 
                 if (flightPathDrawState) {
                     cancelFlightPathDraw();
+                    return;
+                }
+
+                if (lineDrawState) {
+                    cancelLineDraw();
                     return;
                 }
 
@@ -2088,13 +2217,17 @@ const Drawings = (() => {
     }
 
     function isDrawingActive() {
-        return !!(map && map.pm && map.pm.globalDrawModeEnabled()) || !!arrowDrawState || !!flightPathDrawState;
+        return !!(map && map.pm && map.pm.globalDrawModeEnabled()) || !!arrowDrawState || !!lineDrawState || !!flightPathDrawState;
     }
 
     function enableDrawMode(mode) {
         exitAllDrawingModes();
         if (mode === 'Arrow') {
             startArrowDraw();
+            return;
+        }
+        if (mode === 'Line') {
+            startLineDraw();
             return;
         }
         if (mode === 'FlightPath') {
@@ -2112,8 +2245,14 @@ const Drawings = (() => {
         startArrowDraw(tailLatLng);
     }
 
+    function enableLineDrawAt(startLatLng) {
+        exitAllDrawingModes();
+        startLineDraw(startLatLng);
+    }
+
     function exitAllDrawingModes() {
         if (arrowDrawState) cancelArrowDraw();
+        if (lineDrawState) cancelLineDraw();
         if (flightPathDrawState) cancelFlightPathDraw();
         if (map && map.pm && map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) {
             map.pm.disableDraw();
@@ -2154,7 +2293,8 @@ const Drawings = (() => {
         pasteShape,
         hasClipboard,
         enableDrawMode,
-        enableArrowDrawAt
+        enableArrowDrawAt,
+        enableLineDrawAt
     };
 
 })();

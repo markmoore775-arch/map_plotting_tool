@@ -1209,6 +1209,17 @@ body.sidebar-collapsed .icon-legend {
     height: 100%;
 }
 
+.leaflet-control-drop-point .lucide-map-pin-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-control-drop-point .lucide-map-pin-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
 .leaflet-control-drop-point.active {
     background: var(--primary) !important;
     color: #fff !important;
@@ -1307,6 +1318,17 @@ body.sidebar-collapsed .icon-legend {
     height: 100%;
 }
 
+.leaflet-control-hand-tool .lucide-hand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-control-hand-tool .lucide-hand-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
 .leaflet-control-hand-tool.active {
     background: #1a73e8 !important;
     color: #fff !important;
@@ -1316,12 +1338,26 @@ body.sidebar-collapsed .icon-legend {
     display: block;
     width: 26px;
     height: 26px;
-    font-size: 14px;
-    line-height: 26px !important;
-    text-align: center;
     text-decoration: none;
     color: #333;
     cursor: pointer;
+}
+
+.leaflet-control-extra-draw .control-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.leaflet-control-extra-draw .lucide-arrow-big-right-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-control-extra-draw .lucide-arrow-big-right-icon svg {
+    width: 18px;
+    height: 18px;
 }
 
 .leaflet-control-extra-draw.active-draw {
@@ -1344,8 +1380,50 @@ body.sidebar-collapsed .icon-legend {
     height: 100%;
 }
 
+.leaflet-control-flight-path .lucide-drone-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-control-flight-path .lucide-drone-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
 .leaflet-control-flight-path.active-draw {
     background: #2196F3 !important;
+    color: #fff !important;
+}
+
+.leaflet-control-line-draw {
+    display: block;
+    width: 26px;
+    height: 26px;
+    text-decoration: none;
+    color: #333;
+    cursor: pointer;
+}
+
+.leaflet-control-line-draw .control-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.leaflet-control-line-draw .lucide-ruler-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-control-line-draw .lucide-ruler-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.leaflet-control-line-draw.active-draw {
+    background: #4caf50 !important;
     color: #fff !important;
 }
 
@@ -1849,15 +1927,67 @@ body.sidebar-collapsed .draw-style-panel {
 
 /* ---- Geoman toolbar overrides ---- */
 
-.leaflet-pm-toolbar .leaflet-pm-icon-circle,
-.leaflet-pm-toolbar .leaflet-pm-icon-polygon,
-.leaflet-pm-toolbar .leaflet-pm-icon-rectangle,
 .leaflet-pm-toolbar .leaflet-pm-icon-polyline,
-.leaflet-pm-toolbar .leaflet-pm-icon-text,
 .leaflet-pm-toolbar .leaflet-pm-icon-edit,
 .leaflet-pm-toolbar .leaflet-pm-icon-drag,
 .leaflet-pm-toolbar .leaflet-pm-icon-delete {
     /* Let Geoman's own icons render */
+}
+
+/* Custom Lucide vector-square icon for Draw Rectangle */
+.leaflet-pm-toolbar .leaflet-pm-icon-rectangle {
+    background-image: none !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19.5 7a24 24 0 0 1 0 10'/%3E%3Cpath d='M4.5 7a24 24 0 0 0 0 10'/%3E%3Cpath d='M7 19.5a24 24 0 0 0 10 0'/%3E%3Cpath d='M7 4.5a24 24 0 0 1 10 0'/%3E%3Crect x='17' y='17' width='5' height='5' rx='1'/%3E%3Crect x='17' y='2' width='5' height='5' rx='1'/%3E%3Crect x='2' y='17' width='5' height='5' rx='1'/%3E%3Crect x='2' y='2' width='5' height='5' rx='1'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19.5 7a24 24 0 0 1 0 10'/%3E%3Cpath d='M4.5 7a24 24 0 0 0 0 10'/%3E%3Cpath d='M7 19.5a24 24 0 0 0 10 0'/%3E%3Cpath d='M7 4.5a24 24 0 0 1 10 0'/%3E%3Crect x='17' y='17' width='5' height='5' rx='1'/%3E%3Crect x='17' y='2' width='5' height='5' rx='1'/%3E%3Crect x='2' y='17' width='5' height='5' rx='1'/%3E%3Crect x='2' y='2' width='5' height='5' rx='1'/%3E%3C/svg%3E");
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    background-color: currentColor;
+}
+
+/* Custom Lucide pentagon icon for Draw Polygon */
+.leaflet-pm-toolbar .leaflet-pm-icon-polygon {
+    background-image: none !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.83 2.38a2 2 0 0 1 2.34 0l8 5.74a2 2 0 0 1 .73 2.25l-3.04 9.26a2 2 0 0 1-1.9 1.37H7.04a2 2 0 0 1-1.9-1.37L2.1 10.37a2 2 0 0 1 .73-2.25z'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.83 2.38a2 2 0 0 1 2.34 0l8 5.74a2 2 0 0 1 .73 2.25l-3.04 9.26a2 2 0 0 1-1.9 1.37H7.04a2 2 0 0 1-1.9-1.37L2.1 10.37a2 2 0 0 1 .73-2.25z'/%3E%3C/svg%3E");
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    background-color: currentColor;
+}
+
+/* Custom Lucide radius icon for Draw Circle */
+.leaflet-pm-toolbar .leaflet-pm-icon-circle {
+    background-image: none !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.34 17.52a10 10 0 1 0-2.82 2.82'/%3E%3Ccircle cx='19' cy='19' r='2'/%3E%3Cpath d='m13.41 13.41 4.18 4.18'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.34 17.52a10 10 0 1 0-2.82 2.82'/%3E%3Ccircle cx='19' cy='19' r='2'/%3E%3Cpath d='m13.41 13.41 4.18 4.18'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3C/svg%3E");
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    background-color: currentColor;
+}
+
+/* Custom Lucide type-outline icon for Draw Text */
+.leaflet-pm-toolbar .leaflet-pm-icon-text {
+    background-image: none !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 16.5a.5.5 0 0 0 .5.5h.5a2 2 0 0 1 0 4H9a2 2 0 0 1 0-4h.5a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5V8a2 2 0 0 1-4 0V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-4 0v-.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5Z'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 16.5a.5.5 0 0 0 .5.5h.5a2 2 0 0 1 0 4H9a2 2 0 0 1 0-4h.5a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5V8a2 2 0 0 1-4 0V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-4 0v-.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5Z'/%3E%3C/svg%3E");
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    background-color: currentColor;
 }
 
 /* Point label tooltips */

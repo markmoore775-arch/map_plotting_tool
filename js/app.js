@@ -96,6 +96,16 @@
             }
         }
 
+        // Move the line draw button into the Geoman toolbar
+        const lineDrawBtn = document.querySelector('.leaflet-control-line-draw');
+        if (lineDrawBtn) {
+            const oldContainer = lineDrawBtn.closest('.leaflet-bar');
+            toolbar.appendChild(lineDrawBtn);
+            if (oldContainer && oldContainer !== toolbar && !oldContainer.children.length) {
+                oldContainer.remove();
+            }
+        }
+
         // Move the flight path button into the Geoman toolbar
         const flightPathBtn = document.querySelector('.leaflet-control-flight-path');
         if (flightPathBtn) {
@@ -111,7 +121,7 @@
         handBtn.className = 'leaflet-control-hand-tool leaflet-buttons-control-button';
         handBtn.href = '#';
         handBtn.title = 'Pan / Move map (drag to pan)';
-        handBtn.innerHTML = '<span class="control-icon leaflet-pm-icon-drag"></span>';
+        handBtn.innerHTML = '<span class="control-icon lucide-hand-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hand"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span>';
         handBtn.classList.add('active');
         toolbar.insertBefore(handBtn, toolbar.firstChild);
 
@@ -134,7 +144,7 @@
         btn.className = 'leaflet-control-drop-point leaflet-buttons-control-button';
         btn.href = '#';
         btn.title = 'Drop Point (choose type, then click map)';
-        btn.innerHTML = '<span class="control-icon leaflet-pm-icon-marker"></span>';
+        btn.innerHTML = '<span class="control-icon lucide-map-pin-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></span>';
         dropPointWrapper.appendChild(btn);
 
         L.DomEvent.on(btn, 'click', (e) => {
@@ -1739,6 +1749,13 @@
                 break;
             case 'draw-polygon':
                 Drawings.enableDrawMode('Polygon');
+                break;
+            case 'draw-line':
+                if (latlng) {
+                    Drawings.enableLineDrawAt(latlng);
+                } else {
+                    Drawings.enableDrawMode('Line');
+                }
                 break;
             case 'draw-arrow':
                 if (latlng) {
