@@ -228,28 +228,6 @@ body.sidebar-collapsed #map {
     margin-bottom: 32px;
 }
 
-/* Intro options (Launch App + Live Flights) */
-.intro-options {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.intro-options .intro-cta {
-    min-width: 200px;
-}
-
-.intro-cta-secondary {
-    background: linear-gradient(135deg, rgba(91,141,239,0.25), rgba(91,141,239,0.15)) !important;
-    border-color: rgba(91,141,239,0.5) !important;
-}
-
-.intro-cta-secondary:hover {
-    background: linear-gradient(135deg, rgba(91,141,239,0.4), rgba(91,141,239,0.25)) !important;
-}
-
 /* CTA button */
 .intro-cta {
     display: inline-flex;
@@ -300,96 +278,6 @@ body.sidebar-collapsed #map {
     margin-top: 8px;
     font-size: 0.7rem;
     color: rgba(255,255,255,0.2);
-}
-
-/* ---- Live Flights Mode ---- */
-body.live-flights-mode .sidebar,
-body.live-flights-mode .sidebar-open {
-    display: none;
-}
-
-body.live-flights-mode #map {
-    left: 0;
-}
-
-body.live-flights-mode .app-footer {
-    left: 0;
-}
-
-body.live-flights-mode .draw-style-panel {
-    display: none;
-}
-
-/* Live Flights Panel */
-.live-flights-panel {
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    z-index: 2000;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    border-radius: 10px;
-    padding: 14px 18px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    font-size: 13px;
-}
-
-.live-flights-panel.hidden {
-    display: none;
-}
-
-.live-flights-header {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: 8px;
-}
-
-.live-flights-title {
-    font-weight: 600;
-    color: #1e293b;
-}
-
-.live-flights-attribution {
-    font-size: 10px;
-    color: #64748b;
-}
-
-.live-flights-stats {
-    font-size: 14px;
-    font-weight: 500;
-    color: #2563eb;
-    margin-bottom: 4px;
-}
-
-.live-flights-meta {
-    font-size: 11px;
-    color: #94a3b8;
-    margin-bottom: 10px;
-}
-
-.live-flights-actions .btn {
-    width: 100%;
-}
-
-/* Aircraft marker */
-.live-flight-marker {
-    background: none !important;
-    border: none !important;
-}
-
-.live-flight-marker svg {
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-}
-
-.live-flight-popup {
-    font-size: 12px;
-    line-height: 1.5;
-}
-
-.live-flight-popup strong {
-    font-size: 13px;
 }
 
 /* ---- App Footer ---- */
@@ -1898,13 +1786,41 @@ body.sidebar-collapsed .draw-style-panel {
 }
 
 .text-annotation-content {
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
+    font-family: var(--font-family);
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    letter-spacing: 0.2px;
+}
+
+.map-text-annotation.text-annotation-highlight .text-annotation-content {
+    background: transparent !important;
+    padding: 2px 4px;
     text-shadow: 1px 1px 2px rgba(255,255,255,0.9),
                  -1px -1px 2px rgba(255,255,255,0.9),
                  1px -1px 2px rgba(255,255,255,0.9),
                  -1px 1px 2px rgba(255,255,255,0.9);
+}
+
+/* Geoman text editing textarea - match app dark theme, single-line height */
+.pm-textarea {
+    background-color: var(--sidebar-surface) !important;
+    color: var(--sidebar-text) !important;
+    border: 1px solid var(--sidebar-border) !important;
+    height: 1.5em !important;
+    min-height: 1.5em !important;
+    line-height: 1.4 !important;
+    resize: none !important;
+    overflow: hidden !important;
+}
+
+.pm-textarea:focus,
+.pm-textarea:focus-within,
+.pm-textarea:focus-visible,
+.pm-textarea:active {
+    border-color: var(--primary) !important;
+    outline: none !important;
 }
 
 /* ---- Arrow Handle Markers ---- */

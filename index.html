@@ -53,18 +53,12 @@
             </div>
             <p class="intro-tagline">Plan and visualise your drone flights directly on an interactive map.</p>
             <p class="intro-description">
-                Use this tool to draw flight areas, highlight zones to avoid, and mark key locations such as take-off and landing points. Or view live air traffic from ADS-B data.
+                Use this tool to draw flight areas, highlight zones to avoid, and mark key locations such as take-off and landing points. Once you're ready, tap below to open the map and start planning your mission.
             </p>
-            <div class="intro-options">
-                <button type="button" class="intro-cta intro-cta-primary" id="introProceedBtn">
-                    Launch App
-                    <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                </button>
-                <button type="button" class="intro-cta intro-cta-secondary" id="introLiveFlightsBtn">
-                    Live Flights
-                    <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                </button>
-            </div>
+            <button type="button" class="intro-cta" id="introProceedBtn">
+                Launch App
+                <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
             <p class="intro-version">v1.0</p>
             <p class="intro-copyright">&copy; Mark Moore</p>
         </div>
@@ -236,9 +230,34 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editShapeId">
-                <div class="form-group">
+                <div class="form-group hidden" id="editShapeTextGroup">
+                    <label for="editShapeText">Text on map</label>
+                    <textarea id="editShapeText" rows="2" placeholder="Text displayed on the map..."></textarea>
+                </div>
+                <div class="form-group" id="editShapeLabelGroup">
                     <label for="editShapeLabel">Label</label>
                     <input type="text" id="editShapeLabel" placeholder="e.g. Max Flight Radius, No-Fly Zone...">
+                    <span class="form-hint" id="editShapeLabelHint">Shown in sidebar list</span>
+                </div>
+                <div class="form-group hidden" id="editShapeTextStyleGroup">
+                    <label for="editShapeTextPreset">Text style</label>
+                    <select id="editShapeTextPreset">
+                        <option value="label">Label (dark pill, white text)</option>
+                        <option value="highlight">Highlight (coloured text, no background)</option>
+                        <option value="custom">Custom colours</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="editShapeTextColorGroup">
+                    <label for="editShapeTextColor">Text colour</label>
+                    <input type="color" id="editShapeTextColor" value="#e05555">
+                </div>
+                <div class="form-group hidden" id="editShapeTextBgGroup">
+                    <label for="editShapeTextBg">Background colour</label>
+                    <input type="color" id="editShapeTextBg" value="#1e1e2e">
+                </div>
+                <div class="form-group hidden" id="editShapeTextSizeGroup">
+                    <label for="editShapeTextSize">Font size (px)</label>
+                    <input type="number" id="editShapeTextSize" min="10" max="24" value="12" style="width:70px;">
                 </div>
                 <div class="form-group" id="editShapeRadiusGroup">
                     <label for="editShapeRadius">Radius (metres)</label>
@@ -249,18 +268,18 @@
                     <input type="number" id="editShapeAngle" min="0" max="360" value="45">
                     <span class="form-hint">Or drag the handle on the map to reposition</span>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="editShapeColorGroup">
                     <label for="editShapeColor">Colour</label>
                     <input type="color" id="editShapeColor" value="#e05555">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="editShapeFillOpacityGroup">
                     <label>Fill Opacity</label>
                     <div class="slider-row">
                         <input type="range" id="editShapeFillOpacity" min="0" max="0.8" step="0.05" value="0.15">
                         <span id="editShapeFillOpacityVal">0.15</span>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="editShapeWeightGroup">
                     <label for="editShapeWeight">Stroke Width</label>
                     <input type="number" id="editShapeWeight" min="1" max="8" value="2">
                 </div>
@@ -557,23 +576,6 @@
         <div id="mapPointTypePickerOptions" class="ctx-picker-options"></div>
     </div>
 
-    <!-- Live Flights Panel (shown in Live Flights mode) -->
-    <div id="liveFlightsPanel" class="live-flights-panel hidden">
-        <div class="live-flights-header">
-            <span class="live-flights-title">Live Flights</span>
-            <span class="live-flights-attribution">ADS-B via OpenSky</span>
-        </div>
-        <div class="live-flights-stats">
-            <span id="liveFlightsCount">0</span> aircraft in view
-        </div>
-        <div class="live-flights-meta">
-            <span id="liveFlightsLastUpdate">—</span>
-        </div>
-        <div class="live-flights-actions">
-            <button type="button" class="btn btn-small btn-secondary" id="liveFlightsRefreshBtn">Refresh</button>
-        </div>
-    </div>
-
     <!-- Loading overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
         <div class="spinner"></div>
@@ -608,7 +610,6 @@
     <script src="js/drawings.js"></script>
     <script src="js/exporters.js"></script>
     <script src="js/io.js"></script>
-    <script src="js/live-flights.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

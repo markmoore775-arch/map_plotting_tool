@@ -7,7 +7,6 @@
 
     // ---- State ----
     let map;
-    let launchMode = 'planning'; // 'planning' | 'liveFlights'
     let points = [];
     let markerLayers = {};   // pointId -> { marker, fans, label }
     let nextId = 1;
@@ -124,12 +123,10 @@
         }
     }
 
-    function initMap(center, zoom) {
-        const defaultCenter = center || [51.5074, -0.1278];
-        const defaultZoom = zoom != null ? zoom : 11;
+    function initMap() {
         map = L.map('map', {
-            center: defaultCenter,
-            zoom: defaultZoom,
+            center: [51.5074, -0.1278], // London
+            zoom: 11,
             zoomControl: true
         });
 
@@ -182,7 +179,6 @@
 
         // Click on map to place point (skip when drawing). No coordinate popup by default.
         map.on('click', function (e) {
-            if (launchMode === 'liveFlights') return;
             if (Drawings.isDrawingActive()) return;
             if (dropPointMode) {
                 createPointAtLatLng(e.latlng.lat, e.latlng.lng);
@@ -1742,6 +1738,13 @@
             document.getElementById('editShapeFillOpacityVal').textContent = e.target.value;
         });
 
+        // Text preset change - show/hide custom colour fields
+        document.getElementById('editShapeTextPreset').addEventListener('change', (e) => {
+            const preset = e.target.value;
+            document.getElementById('editShapeTextColorGroup').classList.toggle('hidden', preset !== 'custom' && preset !== 'highlight');
+            document.getElementById('editShapeTextBgGroup').classList.toggle('hidden', preset !== 'custom');
+        });
+
         // Close shape edit modal
         document.querySelectorAll('#shapeEditModal .modal-close, #shapeEditModal .modal-cancel').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1773,6 +1776,43 @@
     function initMapContextMenu() {
         const menuEl = document.getElementById('mapContextMenu');
         if (!menuEl) return;
+
+        // Capturing listener: handle right-click on text markers (divIcons / pm-textarea often don't propagate)
+        map.getContainer().addEventListener('contextmenu', (e) => {
+            const shapeIdEl = e.target.closest('[data-shape-id]');
+            const markerIcon = e.target.closest('.leaflet-marker-icon');
+            if (shapeIdEl) {
+                const shapeId = parseInt(shapeIdEl.dataset.shapeId, 10);
+                const shape = Drawings.getShapes().find(s => s.id === shapeId);
+                if (shape && shape.type === 'text') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    mapContextMenuLatLng = L.latLng(shape.position);
+                    mapContextShapeId = shapeId;
+                    mapContextPointId = null;
+                    showMapContextMenu(e);
+                    return;
+                }
+            }
+            if (markerIcon && e.target.closest('.pm-textarea')) {
+                for (const id in map._layers) {
+                    const layer = map._layers[id];
+                    if (layer._icon === markerIcon && layer._shapeId) {
+                        const shape = Drawings.getShapes().find(s => s.id === layer._shapeId);
+                        if (shape && shape.type === 'text') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            mapContextMenuLatLng = L.latLng(shape.position);
+                            mapContextShapeId = shape.id;
+                            mapContextPointId = null;
+                            showMapContextMenu(e);
+                            return;
+                        }
+                        break;
+                    }
+                }
+            }
+        }, true);
 
         map.on('contextmenu', (e) => {
             if (e.originalEvent.target.closest('.leaflet-control')) return;
@@ -1998,34 +2038,20 @@
     window.addEventListener('load', () => {
         const introOverlay = document.getElementById('introOverlay');
         const introProceedBtn = document.getElementById('introProceedBtn');
-        const introLiveFlightsBtn = document.getElementById('introLiveFlightsBtn');
 
-        function dismissIntro(mode) {
-            launchMode = mode || 'planning';
+        function dismissIntro() {
             if (introOverlay) introOverlay.classList.add('hidden');
-
-            if (launchMode === 'liveFlights') {
-                document.body.classList.add('live-flights-mode');
-                initMap([51.5, -1.5], 6); // UK centre, zoom for air traffic
-                if (typeof LiveFlights !== 'undefined') LiveFlights.init(map);
-            } else {
-                document.body.classList.remove('live-flights-mode');
-                initMap();
-                initDrawings();
-                initDropPointToolbarControl();
-                refreshHandToolState();
-                map.on('drawingmodechange', refreshHandToolState);
-            }
+            initMap();
+            initDrawings();
+            initDropPointToolbarControl();
+            refreshHandToolState();
+            map.on('drawingmodechange', refreshHandToolState);
         }
 
         if (introProceedBtn) {
-            introProceedBtn.addEventListener('click', () => dismissIntro('planning'));
-        }
-        if (introLiveFlightsBtn) {
-            introLiveFlightsBtn.addEventListener('click', () => dismissIntro('liveFlights'));
-        }
-        if (!introProceedBtn && !introLiveFlightsBtn) {
-            dismissIntro('planning');
+            introProceedBtn.addEventListener('click', dismissIntro);
+        } else {
+            dismissIntro();
         }
     });
 

@@ -169,6 +169,7 @@ const Drawings = (() => {
         if (shape.curvePoints) data.curvePoints = shape.curvePoints.map(p => [...p]);
         if (shape.position) data.position = [...shape.position];
         if (shape.text != null) data.text = shape.text;
+        if (shape.textStyle) data.textStyle = { ...shape.textStyle };
         if (shape.showDistance != null) data.showDistance = shape.showDistance;
         if (shape.arrowSize != null) data.arrowSize = shape.arrowSize;
         return data;
@@ -235,6 +236,7 @@ const Drawings = (() => {
             curvePoints: data.curvePoints,
             position: data.position,
             text: data.text,
+            textStyle: data.textStyle ? { ...data.textStyle } : undefined,
             showDistance: data.showDistance,
             arrowSize: data.arrowSize != null ? data.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT
         };
@@ -1052,7 +1054,7 @@ const Drawings = (() => {
             addArrowHandles(shape);
         }
 
-        if (shape.type !== 'text' && entry.layer.pm) {
+        if (entry.layer.pm) {
             entry.layer.pm.enableLayerDrag();
             const el = entry.layer.getElement ? entry.layer.getElement() : null;
             if (el) el.classList.add('shape-draggable');
@@ -1273,6 +1275,11 @@ const Drawings = (() => {
             layer._shapeId = shape.id;
             shapeLayerMap[shape.id] = { layer };
 
+            if (shape.type === 'text') {
+                if (shape.text) applyTextAnnotationStyle(layer, shape);
+                if (layer.dragging && layer.dragging.enable) layer.dragging.enable();
+            }
+
             if (showMeasurements) {
                 addMeasurement(shape);
             }
@@ -1291,6 +1298,9 @@ const Drawings = (() => {
             if (!shape) return;
 
             updateShapeFromLayer(shape, layer);
+            if (shape.type === 'text' && shape.text) {
+                applyTextAnnotationStyle(layer, shape);
+            }
             updateMeasurement(shape);
             updateShapeLabelMarker(shape);
             refreshShapesList();
@@ -1320,6 +1330,9 @@ const Drawings = (() => {
                     const entry = shapeLayerMap[shape.id];
                     if (entry && entry.layer) {
                         updateShapeFromLayer(shape, entry.layer);
+                        if (shape.type === 'text' && shape.text) {
+                            applyTextAnnotationStyle(entry.layer, shape);
+                        }
                         updateMeasurement(shape);
                         updateShapeLabelMarker(shape);
                     }
@@ -1334,6 +1347,9 @@ const Drawings = (() => {
                     const entry = shapeLayerMap[shape.id];
                     if (entry && entry.layer) {
                         updateShapeFromLayer(shape, entry.layer);
+                        if (shape.type === 'text' && shape.text) {
+                            applyTextAnnotationStyle(entry.layer, shape);
+                        }
                         updateMeasurement(shape);
                         updateShapeLabelMarker(shape);
                     }
@@ -1365,6 +1381,9 @@ const Drawings = (() => {
             const pos = layer.getLatLng();
             shape.position = [pos.lat, pos.lng];
             shape.text = layer.pm.getText ? layer.pm.getText() : (layer.options.text || '');
+            if (!shape.textStyle) {
+                shape.textStyle = { preset: 'label', fontSize: 12 };
+            }
         } else {
             const latlngs = layer.getLatLngs();
             shape.latlngs = flattenLatLngs(latlngs);
@@ -1490,15 +1509,11 @@ const Drawings = (() => {
         } else if (shape.type === 'text') {
             layer = L.marker(shape.position, {
                 textMarker: true,
-                text: shape.text || ''
+                text: shape.text || '',
+                draggable: true
             }).addTo(map);
             if (shape.text) {
-                const icon = L.divIcon({
-                    className: 'map-text-annotation',
-                    html: `<div class="text-annotation-content" style="color:${pathOpts.color}">${escapeHtml(shape.text)}</div>`,
-                    iconSize: null
-                });
-                layer.setIcon(icon);
+                applyTextAnnotationStyle(layer, shape);
             }
         } else if (shape.type === 'arrow') {
             const vertices = computeArrowVertices(shape.tail, shape.tip);
@@ -2110,6 +2125,48 @@ const Drawings = (() => {
         document.getElementById('editShapeFillOpacityVal').textContent = (shape.style.fillOpacity != null ? shape.style.fillOpacity : currentStyle.fillOpacity);
         document.getElementById('editShapeWeight').value = shape.style.weight || currentStyle.weight;
 
+        const textGroup = document.getElementById('editShapeTextGroup');
+        const textStyleGroup = document.getElementById('editShapeTextStyleGroup');
+        const textColorGroup = document.getElementById('editShapeTextColorGroup');
+        const textBgGroup = document.getElementById('editShapeTextBgGroup');
+        const textSizeGroup = document.getElementById('editShapeTextSizeGroup');
+        const colorGroup = document.getElementById('editShapeColorGroup');
+        const fillOpacityGroup = document.getElementById('editShapeFillOpacityGroup');
+        const weightGroup = document.getElementById('editShapeWeightGroup');
+        const labelGroup = document.getElementById('editShapeLabelGroup');
+        const labelHint = document.getElementById('editShapeLabelHint');
+        const labelInput = document.getElementById('editShapeLabel');
+
+        if (shape.type === 'text') {
+            textGroup.classList.remove('hidden');
+            textStyleGroup.classList.remove('hidden');
+            textSizeGroup.classList.remove('hidden');
+            if (labelHint) labelHint.textContent = 'Optional: name for sidebar list';
+            if (labelInput) labelInput.placeholder = 'e.g. Note 1, Waypoint label...';
+            document.getElementById('editShapeText').value = shape.text || '';
+            const ts = shape.textStyle || { preset: 'label', fontSize: 12 };
+            document.getElementById('editShapeTextPreset').value = ts.preset || 'label';
+            document.getElementById('editShapeTextColor').value = ts.textColor || currentStyle.color;
+            document.getElementById('editShapeTextBg').value = ts.bgColor || '#1e1e2e';
+            document.getElementById('editShapeTextSize').value = ts.fontSize || 12;
+            textColorGroup.classList.toggle('hidden', ts.preset !== 'custom' && ts.preset !== 'highlight');
+            textBgGroup.classList.toggle('hidden', ts.preset !== 'custom');
+            colorGroup.classList.add('hidden');
+            fillOpacityGroup.classList.add('hidden');
+            weightGroup.classList.add('hidden');
+        } else {
+            textGroup.classList.add('hidden');
+            textStyleGroup.classList.add('hidden');
+            textColorGroup.classList.add('hidden');
+            textBgGroup.classList.add('hidden');
+            textSizeGroup.classList.add('hidden');
+            colorGroup.classList.remove('hidden');
+            fillOpacityGroup.classList.remove('hidden');
+            weightGroup.classList.remove('hidden');
+            if (labelHint) labelHint.textContent = 'Shown in sidebar list';
+            if (labelInput) labelInput.placeholder = 'e.g. Max Flight Radius, No-Fly Zone...';
+        }
+
         const radiusGroup = document.getElementById('editShapeRadiusGroup');
         const angleGroup = document.getElementById('editShapeAngleGroup');
         const radiusLabel = radiusGroup ? radiusGroup.querySelector('label[for="editShapeRadius"]') : null;
@@ -2166,7 +2223,20 @@ const Drawings = (() => {
         shape.style.fillOpacity = parseFloat(document.getElementById('editShapeFillOpacity').value);
         shape.style.weight = parseInt(document.getElementById('editShapeWeight').value);
 
-        if (shape.type === 'circle') {
+        if (shape.type === 'text') {
+            shape.text = document.getElementById('editShapeText').value.trim() || ' ';
+            const preset = document.getElementById('editShapeTextPreset').value;
+            shape.textStyle = {
+                preset,
+                fontSize: Math.max(10, Math.min(24, parseInt(document.getElementById('editShapeTextSize').value) || 12))
+            };
+            if (preset === 'custom' || preset === 'highlight') {
+                shape.textStyle.textColor = document.getElementById('editShapeTextColor').value;
+            }
+            if (preset === 'custom') {
+                shape.textStyle.bgColor = document.getElementById('editShapeTextBg').value;
+            }
+        } else if (shape.type === 'circle') {
             const newRadius = parseFloat(document.getElementById('editShapeRadius').value);
             if (newRadius > 0) {
                 shape.radius = newRadius;
@@ -2195,7 +2265,9 @@ const Drawings = (() => {
 
         const entry = shapeLayerMap[id];
         if (entry && entry.layer) {
-            if (entry.layer.setStyle) {
+            if (shape.type === 'text' && shape.text) {
+                applyTextAnnotationStyle(entry.layer, shape);
+            } else if (entry.layer.setStyle) {
                 entry.layer.setStyle({
                     color: shape.style.color,
                     fillColor: shape.style.fillColor,
@@ -2306,11 +2378,14 @@ const Drawings = (() => {
             const typeLabel = getShapeTypeLabel(s.type);
             const measurement = showMeasurements ? (getMeasurementText(s) || '') : '';
             const colorDot = `<div class="point-marker-icon" style="background:${s.style.color || currentStyle.color}"></div>`;
+            const listName = s.type === 'text'
+                ? (s.label || (s.text ? String(s.text).slice(0, 30) + (String(s.text).length > 30 ? '…' : '') : '') || typeLabel)
+                : (s.label || typeLabel);
 
             li.innerHTML = `
                 ${colorDot}
                 <div class="point-item-info">
-                    <div class="point-item-name">${escapeHtml(s.label || typeLabel)}</div>
+                    <div class="point-item-name">${escapeHtml(listName)}</div>
                     <div class="point-item-detail">${typeLabel}${measurement ? ' | ' + measurement : ''}</div>
                 </div>
                 <div class="point-item-actions">
@@ -2374,6 +2449,7 @@ const Drawings = (() => {
                 curvePoints: shapeData.curvePoints,
                 position: shapeData.position,
                 text: shapeData.text,
+                textStyle: shapeData.textStyle ? { ...shapeData.textStyle } : undefined,
                 showDistance: shapeData.showDistance,
                 arrowSize: shapeData.arrowSize != null ? shapeData.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT
             };
@@ -2402,6 +2478,36 @@ const Drawings = (() => {
     }
 
     // ---- Utility ----
+
+    function applyTextAnnotationStyle(layer, shape) {
+        if (!shape.text || !layer.setIcon) return;
+        const ts = shape.textStyle || { preset: 'label', fontSize: 12 };
+        const preset = ts.preset || 'label';
+        const fontSize = Math.max(10, Math.min(24, ts.fontSize || 12));
+        const pathColor = (shape.style || currentStyle).color || currentStyle.color;
+        let bg = 'transparent';
+        let color = pathColor;
+        let extraClass = '';
+        if (preset === 'label') {
+            bg = 'rgba(30, 30, 46, 0.92)';
+            color = '#fff';
+            extraClass = ' text-annotation-label';
+        } else if (preset === 'highlight') {
+            color = ts.textColor || pathColor;
+            extraClass = ' text-annotation-highlight';
+        } else if (preset === 'custom') {
+            bg = ts.bgColor || 'rgba(30, 30, 46, 0.92)';
+            color = ts.textColor || '#fff';
+            extraClass = ' text-annotation-custom';
+        }
+        const icon = L.divIcon({
+            className: 'map-text-annotation' + extraClass,
+            html: `<div class="text-annotation-content" data-shape-id="${shape.id}" style="background:${bg};color:${color};font-size:${fontSize}px">${escapeHtml(shape.text)}</div>`,
+            iconSize: null
+        });
+        layer.setIcon(icon);
+        if (layer._icon) layer._icon.dataset.shapeId = shape.id;
+    }
 
     function escapeHtml(str) {
         const div = document.createElement('div');
