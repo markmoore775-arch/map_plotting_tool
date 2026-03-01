@@ -165,7 +165,61 @@
             baseLayers['Mapbox Outdoors'] = createMapboxLayer('mapbox/outdoors-v12', mapboxToken);
             baseLayers['Mapbox Light'] = createMapboxLayer('mapbox/light-v11', mapboxToken);
         }
+
+        // UK Airspace Restrictions overlay (NATS UAS data)
+        const airspaceOverlay = L.geoJSON(null, {
+            style: {
+                color: '#dc2626',
+                weight: 2,
+                fillColor: '#dc2626',
+                fillOpacity: 0.15
+            },
+            onEachFeature: function (feature, layer) {
+                if (feature.properties) {
+                    const name = feature.properties.name || '';
+                    const desc = feature.properties.description || '';
+                    const content = desc
+                        ? '<div class="airspace-popup"><strong>' + escapeHtml(name) + '</strong><div class="airspace-popup-body">' + desc + '</div></div>'
+                        : escapeHtml(name);
+                    layer.bindPopup(content, { maxWidth: 420, maxHeight: 400 });
+                }
+            }
+        });
+
+        // Standalone airspace toggle (visible outside layer control)
+        const AirspaceToggleControl = L.Control.extend({
+            options: { position: 'bottomleft' },
+            onAdd: function () {
+                const container = L.DomUtil.create('div', 'leaflet-control leaflet-control-airspace-toggle');
+                const label = L.DomUtil.create('label', 'airspace-toggle-label', container);
+                const input = L.DomUtil.create('input', 'airspace-toggle-input', label);
+                input.type = 'checkbox';
+                input.checked = false;
+                input.title = 'Show UK airspace restrictions (NATS UAS data)';
+                const span = L.DomUtil.create('span', 'airspace-toggle-text', label);
+                span.textContent = 'UK Airspace';
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.on(input, 'change', function () {
+                    if (input.checked) {
+                        airspaceOverlay.addTo(map);
+                    } else {
+                        map.removeLayer(airspaceOverlay);
+                    }
+                });
+                return container;
+            }
+        });
+        map.addControl(new AirspaceToggleControl());
+
         layerControl = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+
+        // Load UK airspace data (NATS UAS Flight Restrictions)
+        fetch('assets/uk-airspace.geojson')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                airspaceOverlay.addData(data);
+            })
+            .catch(function () { /* ignore - layer will be empty */ });
 
         // Add OS Maps layers if API key is configured (from localStorage or project)
         updateOsMapsLayers();
@@ -1089,6 +1143,34 @@
     document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
         backdrop.addEventListener('click', () => {
             backdrop.closest('.modal').classList.add('hidden');
+        });
+    });
+
+    // ---- Help Modal ----
+
+    document.getElementById('helpBtn').addEventListener('click', () => {
+        openModal('helpModal');
+    });
+
+    const footerDisclaimerBtn = document.getElementById('footerDisclaimerBtn');
+    if (footerDisclaimerBtn) {
+        footerDisclaimerBtn.addEventListener('click', () => {
+        openModal('helpModal');
+        document.querySelectorAll('#helpModal .tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('#helpModal .tab-panel').forEach(p => p.classList.remove('active'));
+        const disclaimerTab = document.querySelector('#helpModal .tab[data-tab="disclaimer"]');
+        const disclaimerPanel = document.getElementById('help-tab-disclaimer');
+        if (disclaimerTab) disclaimerTab.classList.add('active');
+        if (disclaimerPanel) disclaimerPanel.classList.add('active');
+        });
+    }
+
+    document.querySelectorAll('#helpModal .tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#helpModal .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#helpModal .tab-panel').forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('help-tab-' + tab.dataset.tab).classList.add('active');
         });
     });
 

@@ -55,6 +55,9 @@
             <p class="intro-description">
                 Use this tool to draw flight areas, highlight zones to avoid, and mark key locations such as take-off and landing points. Once you're ready, tap below to open the map and start planning your mission.
             </p>
+            <div class="intro-disclaimer">
+                <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in Help.
+            </div>
             <button type="button" class="intro-cta" id="introProceedBtn">
                 Launch App
                 <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -180,6 +183,8 @@
     <footer class="app-footer">
         <img src="assets/airplot-icon.svg" alt="" class="app-footer-logo" aria-hidden="true">
         <span>&copy; Mark Moore</span>
+        <span class="app-footer-sep">|</span>
+        <button type="button" class="app-footer-disclaimer-link" id="footerDisclaimerBtn" title="View disclaimer">Disclaimer</button>
     </footer>
 
     <!-- Drawing Style Panel (floating on map) -->
@@ -217,6 +222,14 @@
                 <label for="drawFlightPathArrowSize">Arrow head size (m)</label>
                 <input type="number" id="drawFlightPathArrowSize" min="1" max="100" value="20" style="width:60px;">
             </div>
+        </div>
+    </div>
+
+    <!-- Help Panel (floating on map, next to Drawing Style) -->
+    <div id="helpPanel" class="help-panel">
+        <div class="draw-style-header">
+            <span>Help</span>
+            <button id="helpBtn" class="btn-icon" title="Open help">?</button>
         </div>
     </div>
 
@@ -476,6 +489,94 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary modal-cancel">Cancel</button>
                 <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>AirPlot Help</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="help-overview">
+                    <p><strong>AirPlot</strong> lets you plan and visualise drone flights on an interactive map. Draw flight areas, mark no-fly zones, and place key locations such as take-off and landing points.</p>
+                </div>
+                <div class="tabs help-tabs">
+                    <button class="tab active" data-tab="points">Points</button>
+                    <button class="tab" data-tab="shapes">Shapes</button>
+                    <button class="tab" data-tab="import">Import &amp; Export</button>
+                    <button class="tab" data-tab="map">Map &amp; Settings</button>
+                    <button class="tab" data-tab="disclaimer">Disclaimer</button>
+                </div>
+                <div class="tab-panel active" id="help-tab-points">
+                    <h3>Adding Points</h3>
+                    <p>Add points either via the form in the sidebar or by clicking the <strong>pin button</strong> on the map toolbar, then choose a type and click the map.</p>
+                    <p><strong>Location formats supported:</strong> UK postcode, decimal lat/lng, Ordnance Survey grid reference, degrees/minutes/seconds (DMS), and What3Words (requires API key in Settings).</p>
+                    <h3>Point Types</h3>
+                    <p>Address/Reference, Primary TOLA, Secondary TOLA, Custom TOLA, Emergency Landing Zone, No-Fly Marker, Hazard, Waypoint, and Custom Point. Custom points can use a 1–2 character symbol.</p>
+                    <h3>Managing Points</h3>
+                    <p>Use the search box to filter points. Click a point in the list to pan to it and highlight it. Use the edit and delete buttons, or right-click a marker on the map. Drag markers to move them. Double-click a marker or use &ldquo;View Details&rdquo; for coordinates in multiple formats (Decimal, DMS, OS Grid Ref, What3Words, Elevation) with copy-to-clipboard.</p>
+                </div>
+                <div class="tab-panel" id="help-tab-shapes">
+                    <h3>Drawing Shapes</h3>
+                    <p><strong>Right-click</strong> anywhere on the map (or <strong>long-press</strong> on touch devices) to open the context menu. From there you can draw:</p>
+                    <ul>
+                        <li><strong>Circle</strong> — click centre, then edge</li>
+                        <li><strong>Rectangle</strong> — drag corners</li>
+                        <li><strong>Polygon</strong> — click vertices, double-click to finish</li>
+                        <li><strong>Line</strong> — click start and end points</li>
+                        <li><strong>Arrow</strong> — click tail, then tip</li>
+                        <li><strong>Flight Path</strong> — multi-point path with direction arrows</li>
+                        <li><strong>Text</strong> — add text labels on the map</li>
+                    </ul>
+                    <h3>Editing Shapes</h3>
+                    <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu to adjust polygon/line points.</p>
+                    <h3>Copy &amp; Paste</h3>
+                    <p>Right-click a shape to copy it (<strong>Ctrl+C</strong> when selected), then right-click elsewhere to paste (<strong>Ctrl+V</strong>).</p>
+                    <h3>Drawing Style</h3>
+                    <p>The floating panel shows colour, fill opacity, stroke width, and stroke style. These apply to new shapes.</p>
+                </div>
+                <div class="tab-panel" id="help-tab-import">
+                    <h3>Bulk Import</h3>
+                    <p>Import many points at once via <strong>Upload CSV</strong>, <strong>Paste Data</strong> (tabular), or <strong>Paste List</strong> (one location per line). Map columns to your data fields. UK postcodes are supported with bulk lookup.</p>
+                    <h3>Export</h3>
+                    <p>Export points as <strong>CSV</strong>, or points and shapes as <strong>KML</strong> for use in other mapping tools. <strong>Screenshot Map</strong> captures the current map view as an image.</p>
+                    <h3>Save &amp; Load Project</h3>
+                    <p>Save your entire project (points, shapes, settings) as a JSON file. Load it later to restore your work.</p>
+                </div>
+                <div class="tab-panel" id="help-tab-map">
+                    <h3>Map Layers</h3>
+                    <p>Use the layer control (top-right) to switch between OpenStreetMap, Topographic, Satellite, and optionally Mapbox or Ordnance Survey (OS Maps requires an API key in Settings).</p>
+                    <h3>UK Airspace</h3>
+                    <p>Toggle the <strong>UK Airspace</strong> checkbox (bottom-left) to show NATS UAS flight restrictions.</p>
+                    <h3>Geolocation</h3>
+                    <p>Use the locate button to show your current position on the map.</p>
+                    <h3>Settings</h3>
+                    <p>Configure optional API keys (What3Words, OS Maps), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
+                    <h3>Keyboard Shortcuts</h3>
+                    <p><strong>Escape</strong> — close modals, exit drawing/drop-point mode. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> — copy and paste shapes.</p>
+                </div>
+                <div class="tab-panel" id="help-tab-disclaimer">
+                    <h3>Disclaimer</h3>
+                    <p>AirPlot is a planning and visualisation tool for drone operations. Please read the following carefully.</p>
+                    <h4>Use at your own risk</h4>
+                    <p>This application is provided &ldquo;as is&rdquo; without warranty of any kind. The developer accepts no liability for any loss, damage, injury, or consequential loss arising from the use of this application or reliance on its outputs.</p>
+                    <h4>Development status</h4>
+                    <p>This application is currently in development. It may contain errors, bugs, or omissions. Features may change without notice. The application is not guaranteed to be complete, accurate, or fit for any particular purpose.</p>
+                    <h4>Operational decisions</h4>
+                    <p>The outputs of this application must not be used as the sole basis for operational decisions. You should always verify information against official sources (e.g. CAA, NATS, relevant aviation authorities) and exercise your own professional judgement. This tool is intended to support planning and visualisation only&mdash;it is not a substitute for proper flight planning, risk assessment, or regulatory compliance.</p>
+                    <h4>Data accuracy</h4>
+                    <p>Map data, airspace information, elevation data, and other outputs are derived from third-party sources and may be incomplete, inaccurate, or out of date. You are responsible for verifying all information before use.</p>
+                    <h4>Regulatory compliance</h4>
+                    <p>It is your responsibility to ensure that any flight operations comply with all applicable laws, regulations, and permissions. This application does not constitute legal or professional advice.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-cancel">Close</button>
             </div>
         </div>
     </div>

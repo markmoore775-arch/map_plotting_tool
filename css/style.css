@@ -265,6 +265,22 @@ body.sidebar-collapsed #map {
     transform: translateX(3px);
 }
 
+/* Intro disclaimer */
+.intro-disclaimer {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 24px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius);
+    border-left: 3px solid rgba(255, 152, 0, 0.6);
+}
+
+.intro-disclaimer strong {
+    color: rgba(255, 255, 255, 0.7);
+}
+
 /* Version badge */
 .intro-version {
     margin-top: 32px;
@@ -294,7 +310,6 @@ body.sidebar-collapsed #map {
     font-size: 11px;
     color: rgba(0, 0, 0, 0.5);
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-    pointer-events: none;
     z-index: 500;
     transition: left var(--transition);
 }
@@ -303,6 +318,26 @@ body.sidebar-collapsed #map {
     height: 14px;
     width: auto;
     opacity: 0.6;
+}
+
+.app-footer-sep {
+    opacity: 0.5;
+}
+
+.app-footer-disclaimer-link {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    padding-left: 2px;
+}
+
+.app-footer-disclaimer-link:hover {
+    opacity: 0.9;
 }
 
 body.sidebar-collapsed .app-footer {
@@ -414,7 +449,7 @@ body.sidebar-collapsed .leaflet-top.leaflet-left {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    min-height: 220px; /* Ensure Points & Shapes section is never fully squashed */
 }
 
 .section-title {
@@ -825,6 +860,62 @@ select {
     border-top: 1px solid var(--sidebar-border);
 }
 
+/* ---- Help Modal ---- */
+
+.help-overview {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.help-overview p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--sidebar-text);
+}
+
+.help-tabs {
+    margin-bottom: 16px;
+}
+
+#helpModal .tab-panel h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin: 16px 0 8px;
+}
+
+#helpModal .tab-panel h3:first-child {
+    margin-top: 0;
+}
+
+#helpModal .tab-panel h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sidebar-text-muted);
+    margin: 14px 0 6px;
+}
+
+#helpModal .tab-panel h4:first-of-type {
+    margin-top: 0;
+}
+
+#helpModal .tab-panel p {
+    margin: 0 0 10px;
+    line-height: 1.6;
+    color: var(--sidebar-text);
+}
+
+#helpModal .tab-panel ul {
+    margin: 8px 0 12px;
+    padding-left: 20px;
+}
+
+#helpModal .tab-panel li {
+    margin-bottom: 4px;
+    line-height: 1.5;
+}
+
 /* ---- Tabs ---- */
 
 .tabs {
@@ -1104,6 +1195,15 @@ select {
         left: 52px !important;
     }
 
+    .help-panel {
+        left: 260px !important;
+        top: 52px;
+    }
+
+    body.sidebar-collapsed .help-panel {
+        left: 260px !important;
+    }
+
     /* Footer - safe area and compact */
     .app-footer {
         left: 0;
@@ -1183,6 +1283,12 @@ select {
         height: 44px !important;
     }
 
+    .leaflet-control-airspace-toggle {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
     .leaflet-control-hand-tool .lucide-hand-icon svg,
     .leaflet-control-drop-point .lucide-map-pin-icon svg,
     .leaflet-control-extra-draw .lucide-arrow-big-right-icon svg,
@@ -1243,6 +1349,13 @@ select {
         width: auto !important;
         max-width: none !important;
         border-radius: 10px;
+    }
+
+    .help-panel {
+        left: auto !important;
+        right: 8px !important;
+        top: auto !important;
+        bottom: max(48px, calc(env(safe-area-inset-bottom, 8px) + 48px)) !important;
     }
 
     .draw-style-body {
@@ -1391,6 +1504,60 @@ select {
 .popup-edit-link:hover {
     text-decoration: underline;
     color: #3a6dd0;
+}
+
+/* UK Airspace Restrictions popup */
+.airspace-popup {
+    color: #333;
+}
+.airspace-popup strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+.airspace-popup-body {
+    max-height: 320px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.4;
+}
+.airspace-popup-body table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.airspace-popup-body td {
+    padding: 6px 8px;
+    vertical-align: top;
+    border: 1px solid #ddd;
+}
+
+/* UK Airspace toggle control (standalone, outside layer panel) */
+.leaflet-control-airspace-toggle {
+    background: var(--sidebar-bg) !important;
+    border: 1px solid var(--sidebar-border) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+    padding: 10px 14px !important;
+}
+.airspace-toggle-label {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--sidebar-text);
+    white-space: nowrap;
+}
+.airspace-toggle-input {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--danger);
+    flex-shrink: 0;
+}
+.airspace-toggle-text {
+    user-select: none;
 }
 
 /* ---- Drawing Style Panel ---- */
@@ -1801,6 +1968,34 @@ select {
 
 body.sidebar-collapsed .draw-style-panel {
     left: 52px;
+}
+
+/* Help panel - matches drawing style, positioned to the right */
+.help-panel {
+    position: absolute;
+    top: 10px;
+    left: calc(var(--sidebar-width) + 52px + 200px + 8px);
+    z-index: 1000;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    font-family: var(--font-family);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sidebar-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: left var(--transition);
+}
+
+.help-panel .draw-style-header {
+    padding: 8px 12px;
+    border-bottom: none;
+}
+
+body.sidebar-collapsed .help-panel {
+    left: 260px;
 }
 
 .draw-style-header {
