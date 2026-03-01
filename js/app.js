@@ -19,15 +19,109 @@
     let handToolbarButton = null;
     let quickEditUpdating = false;
 
+    const SETTINGS_STORAGE_KEY = 'airplot_settings';
+
     let settings = {
         w3wApiKey: '',
+        osMapsApiKey: '',
         showLabels: true,
         showMeasurements: true,
         showShapeLabels: true,
         showFlightPathDistance: false
     };
 
+    function loadSettingsFromStorage() {
+        try {
+            const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed.w3wApiKey !== undefined) settings.w3wApiKey = parsed.w3wApiKey;
+                if (parsed.osMapsApiKey !== undefined) settings.osMapsApiKey = parsed.osMapsApiKey;
+                if (parsed.showLabels !== undefined) settings.showLabels = parsed.showLabels;
+                if (parsed.showMeasurements !== undefined) settings.showMeasurements = parsed.showMeasurements;
+                if (parsed.showShapeLabels !== undefined) settings.showShapeLabels = parsed.showShapeLabels;
+                if (parsed.showFlightPathDistance !== undefined) settings.showFlightPathDistance = parsed.showFlightPathDistance;
+            }
+        } catch (_) { /* ignore */ }
+    }
+
+    // Load persisted settings on startup
+    loadSettingsFromStorage();
+
+    function saveSettingsToStorage() {
+        try {
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+                w3wApiKey: settings.w3wApiKey,
+                osMapsApiKey: settings.osMapsApiKey,
+                showLabels: settings.showLabels,
+                showMeasurements: settings.showMeasurements,
+                showShapeLabels: settings.showShapeLabels,
+                showFlightPathDistance: settings.showFlightPathDistance
+            }));
+        } catch (_) { /* ignore */ }
+    }
+
     // ---- Map Initialisation ----
+
+    let layerControl = null;
+    let osMapsLayers = {}; // name -> layer, for add/remove when key changes
+
+    function createOsMapsLayer(style, key) {
+        return L.tileLayer(
+            `https://api.os.uk/maps/raster/v1/zxy/${style}_3857/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}`,
+            {
+                attribution: '&copy; <a href="https://www.ordnancesurvey.co.uk/">Ordnance Survey</a>',
+                maxZoom: 20,
+                minZoom: 7
+            }
+        );
+    }
+
+    function createMapboxLayer(styleId, token) {
+        return L.tileLayer(
+            'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+            {
+                attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 22,
+                id: styleId,
+                accessToken: token
+            }
+        );
+    }
+
+    function updateOsMapsLayers() {
+        const key = (settings.osMapsApiKey || (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.osMapsApiKey) || '').trim();
+        const hasKey = key.length > 0;
+
+        if (hasKey && Object.keys(osMapsLayers).length === 0) {
+            // Add OS Maps layers
+            osMapsLayers['OS Outdoor'] = createOsMapsLayer('Outdoor', key);
+            osMapsLayers['OS Road'] = createOsMapsLayer('Road', key);
+            osMapsLayers['OS Light'] = createOsMapsLayer('Light', key);
+            for (const [name, layer] of Object.entries(osMapsLayers)) {
+                layerControl.addBaseLayer(layer, name);
+            }
+        } else if (!hasKey && Object.keys(osMapsLayers).length > 0) {
+            // Remove OS Maps layers (user cleared the key)
+            for (const [name, layer] of Object.entries(osMapsLayers)) {
+                layerControl.removeLayer(layer);
+                if (map.hasLayer(layer)) map.removeLayer(layer);
+            }
+            osMapsLayers = {};
+        } else if (hasKey && Object.keys(osMapsLayers).length > 0) {
+            // Key changed - recreate layers with new key
+            for (const [name, layer] of Object.entries(osMapsLayers)) {
+                layerControl.removeLayer(layer);
+                if (map.hasLayer(layer)) map.removeLayer(layer);
+            }
+            const styleMap = { 'OS Outdoor': 'Outdoor', 'OS Road': 'Road', 'OS Light': 'Light' };
+            osMapsLayers = {};
+            for (const [name, style] of Object.entries(styleMap)) {
+                osMapsLayers[name] = createOsMapsLayer(style, key);
+                layerControl.addBaseLayer(osMapsLayers[name], name);
+            }
+        }
+    }
 
     function initMap() {
         map = L.map('map', {
@@ -54,11 +148,21 @@
 
         osmStandard.addTo(map);
 
-        L.control.layers({
+        const baseLayers = {
             'OpenStreetMap': osmStandard,
             'Topographic': osmTopo,
             'Satellite': esriSatellite
-        }, null, { position: 'topright' }).addTo(map);
+        };
+        const mapboxToken = (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.mapboxAccessToken) || '';
+        if (mapboxToken) {
+            baseLayers['Mapbox Streets'] = createMapboxLayer('mapbox/streets-v12', mapboxToken);
+            baseLayers['Mapbox Outdoors'] = createMapboxLayer('mapbox/outdoors-v12', mapboxToken);
+            baseLayers['Mapbox Light'] = createMapboxLayer('mapbox/light-v11', mapboxToken);
+        }
+        layerControl = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+
+        // Add OS Maps layers if API key is configured (from localStorage or project)
+        updateOsMapsLayers();
         // Click on map to place point (skip when drawing). No coordinate popup by default.
         map.on('click', function (e) {
             if (Drawings.isDrawingActive()) return;
@@ -219,7 +323,9 @@
             iconColor: getIconColor(resolvedIconType, data.iconColor),
             customSymbol: (data.customSymbol || '').trim().toUpperCase().slice(0, 2),
             notes: data.notes || '',
-            originalInput: data.originalInput || ''
+            originalInput: data.originalInput || '',
+            alwaysDisplayElevation: !!data.alwaysDisplayElevation,
+            elevation: (typeof data.elevation === 'number' && !isNaN(data.elevation)) ? data.elevation : undefined
         };
         points.push(point);
         addMarkerToMap(point);
@@ -435,6 +541,16 @@
         return icon;
     }
 
+    function getPointTooltipContent(point) {
+        if (!settings.showLabels) return null;
+        const name = point.name || '';
+        if (!point.alwaysDisplayElevation) return name || null;
+        if (point.elevation != null && !isNaN(point.elevation)) {
+            return `${name} (${point.elevation.toFixed(1)} m)`;
+        }
+        return name ? `${name} (…)` : null;
+    }
+
     function buildQuickEditPopupHtml(point, fromDropPin) {
         let html = '<div class="quick-edit-popup">';
         if (!fromDropPin) {
@@ -452,6 +568,7 @@
         html += '<div class="quick-edit-field">';
         html += '<input class="quick-edit-label" type="text" value="" placeholder="Label...">';
         html += '</div>';
+        html += '<div class="quick-edit-elevation">Elevation: <span class="elevation-value">—</span></div>';
         html += '<div class="quick-edit-actions">';
         html += `<a href="#" class="quick-edit-more" data-point-id="${point.id}">Edit details...</a>`;
         html += '</div>';
@@ -492,8 +609,9 @@
                 const m = currentLayers.marker;
                 m.unbindPopup();
                 m.unbindTooltip();
-                if (settings.showLabels && currentPoint.name) {
-                    m.bindTooltip(currentPoint.name, {
+                const tooltipContent = getPointTooltipContent(currentPoint);
+                if (tooltipContent) {
+                    m.bindTooltip(tooltipContent, {
                         permanent: true,
                         direction: 'top',
                         offset: [0, -35],
@@ -508,6 +626,24 @@
 
         const container = document.querySelector('.quick-edit-popup');
         if (!container) return;
+
+        const mapboxToken = (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.mapboxAccessToken) || '';
+        const elevationEl = container.querySelector('.elevation-value');
+        if (elevationEl && mapboxToken && typeof Elevation !== 'undefined') {
+            elevationEl.textContent = '…';
+            Elevation.getElevationAtLatLng(point.lat, point.lng, mapboxToken).then(elev => {
+                if (elev !== null) {
+                    point.elevation = elev;
+                    if (elevationEl) elevationEl.textContent = `${elev.toFixed(1)} m AMSL`;
+                } else if (elevationEl) {
+                    elevationEl.textContent = '—';
+                }
+            }).catch(() => {
+                if (elevationEl) elevationEl.textContent = '—';
+            });
+        } else if (elevationEl && !mapboxToken) {
+            elevationEl.closest('.quick-edit-elevation').style.display = 'none';
+        }
 
         container.querySelectorAll('.quick-icon-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -574,14 +710,38 @@
 
         // Tooltip/label
         let label = null;
-        if (settings.showLabels && point.name) {
+        const tooltipContent = getPointTooltipContent(point);
+        if (tooltipContent) {
             label = L.tooltip({
                 permanent: true,
                 direction: 'top',
                 offset: [0, -35],
                 className: 'point-label-tooltip'
-            }).setContent(point.name);
+            }).setContent(tooltipContent);
             marker.bindTooltip(label);
+        }
+
+        // Fetch elevation on demand when alwaysDisplayElevation is on but we don't have it yet
+        const mapboxToken = (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.mapboxAccessToken) || '';
+        if (point.alwaysDisplayElevation && point.elevation == null && mapboxToken && typeof Elevation !== 'undefined') {
+            Elevation.getElevationAtLatLng(point.lat, point.lng, mapboxToken).then(elev => {
+                if (elev != null && points.find(p => p.id === point.id)) {
+                    point.elevation = elev;
+                    const layers = markerLayers[point.id];
+                    if (layers) {
+                        const content = getPointTooltipContent(point);
+                        if (content) {
+                            layers.marker.unbindTooltip();
+                            layers.marker.bindTooltip(content, {
+                                permanent: true,
+                                direction: 'top',
+                                offset: [0, -35],
+                                className: 'point-label-tooltip'
+                            });
+                        }
+                    }
+                }
+            }).catch(() => {});
         }
 
         let fans = null;
@@ -606,11 +766,34 @@
             const pos = marker.getLatLng();
             point.lat = pos.lat;
             point.lng = pos.lng;
+            point.elevation = undefined; // invalidate cached elevation when position changes
 
             const layers = markerLayers[point.id];
             if (layers && layers.fans) {
                 map.removeLayer(layers.fans);
                 layers.fans = null;
+            }
+            // Refetch elevation and update tooltip if alwaysDisplayElevation is on
+            const mapboxToken = (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.mapboxAccessToken) || '';
+            if (point.alwaysDisplayElevation && mapboxToken && typeof Elevation !== 'undefined') {
+                Elevation.getElevationAtLatLng(point.lat, point.lng, mapboxToken).then(elev => {
+                    if (elev != null && points.find(p => p.id === point.id)) {
+                        point.elevation = elev;
+                        const ly = markerLayers[point.id];
+                        if (ly) {
+                            const content = getPointTooltipContent(point);
+                            if (content) {
+                                ly.marker.unbindTooltip();
+                                ly.marker.bindTooltip(content, {
+                                    permanent: true,
+                                    direction: 'top',
+                                    offset: [0, -35],
+                                    className: 'point-label-tooltip'
+                                });
+                            }
+                        }
+                    }
+                }).catch(() => {});
             }
             refreshPointsList();
         });
@@ -812,7 +995,8 @@
                 iconColor: pointIconColor.value,
                 customSymbol: pointCustomSymbol.value,
                 notes: pointNotes.value.trim(),
-                originalInput: inputVal
+                originalInput: inputVal,
+                alwaysDisplayElevation: document.getElementById('pointAlwaysDisplayElevation').checked
             });
 
             // Pan to new point
@@ -825,6 +1009,7 @@
             pointIconType.value = 'address';
             pointIconColor.value = '#dc2626';
             pointCustomSymbol.value = '';
+            document.getElementById('pointAlwaysDisplayElevation').checked = false;
             refreshPointIconControls();
             formatHint.textContent = '';
         } catch (err) {
@@ -900,11 +1085,37 @@
         document.getElementById('editPointId').value = id;
         document.getElementById('editPointName').value = point.name || '';
         document.getElementById('editCoordDisplay').textContent = `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
+        const elevationEl = document.getElementById('editElevationDisplay');
+        const mapboxToken = (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.mapboxAccessToken) || '';
+        if (elevationEl) {
+            if (mapboxToken && typeof Elevation !== 'undefined') {
+                elevationEl.textContent = 'Elevation: …';
+                elevationEl.style.display = '';
+                Elevation.getElevationAtLatLng(point.lat, point.lng, mapboxToken).then(elev => {
+                    if (elev !== null) {
+                        point.elevation = elev;
+                        if (elevationEl) elevationEl.textContent = `Elevation: ${elev.toFixed(1)} m AMSL`;
+                    } else if (elevationEl) {
+                        elevationEl.textContent = '';
+                        elevationEl.style.display = 'none';
+                    }
+                }).catch(() => {
+                    if (elevationEl) {
+                        elevationEl.textContent = '';
+                        elevationEl.style.display = 'none';
+                    }
+                });
+            } else {
+                elevationEl.textContent = '';
+                elevationEl.style.display = 'none';
+            }
+        }
         const editIconType = normalizeIconType(point.iconType);
         document.getElementById('editPointIconType').value = editIconType;
         document.getElementById('editPointIconColor').value = getIconColor(editIconType, point.iconColor);
         document.getElementById('editPointCustomSymbol').value = (point.customSymbol || '').slice(0, 2);
         document.getElementById('editPointNotes').value = point.notes || '';
+        document.getElementById('editPointAlwaysDisplayElevation').checked = !!point.alwaysDisplayElevation;
         refreshEditPointIconControls();
 
         openModal('editModal');
@@ -930,7 +1141,8 @@
             iconType: document.getElementById('editPointIconType').value,
             iconColor: document.getElementById('editPointIconColor').value,
             customSymbol: document.getElementById('editPointCustomSymbol').value,
-            notes: document.getElementById('editPointNotes').value.trim()
+            notes: document.getElementById('editPointNotes').value.trim(),
+            alwaysDisplayElevation: document.getElementById('editPointAlwaysDisplayElevation').checked
         });
 
         closeModal('editModal');
@@ -1398,6 +1610,8 @@
             // Apply settings
             if (project.settings) {
                 Object.assign(settings, project.settings);
+                saveSettingsToStorage();
+                updateOsMapsLayers();
                 applySettings();
             }
 
@@ -1415,7 +1629,9 @@
                     iconColor: getIconColor(normalizeIconType(p.iconType), p.iconColor),
                     customSymbol: (p.customSymbol || '').trim().toUpperCase().slice(0, 2),
                     notes: p.notes || '',
-                    originalInput: p.originalInput || ''
+                    originalInput: p.originalInput || '',
+                    alwaysDisplayElevation: !!p.alwaysDisplayElevation,
+                    elevation: (typeof p.elevation === 'number' && !isNaN(p.elevation)) ? p.elevation : undefined
                 };
                 points.push(point);
                 addMarkerToMap(point);
@@ -1443,6 +1659,7 @@
     document.getElementById('settingsBtn').addEventListener('click', () => {
         // Populate from current settings
         document.getElementById('w3wApiKey').value = settings.w3wApiKey;
+        document.getElementById('osMapsApiKey').value = settings.osMapsApiKey;
         document.getElementById('showLabels').checked = settings.showLabels;
         document.getElementById('showMeasurements').checked = settings.showMeasurements;
         document.getElementById('showShapeLabels').checked = settings.showShapeLabels;
@@ -1452,10 +1669,13 @@
 
     document.getElementById('saveSettingsBtn').addEventListener('click', () => {
         settings.w3wApiKey = document.getElementById('w3wApiKey').value.trim();
+        settings.osMapsApiKey = document.getElementById('osMapsApiKey').value.trim();
         settings.showLabels = document.getElementById('showLabels').checked;
         settings.showMeasurements = document.getElementById('showMeasurements').checked;
         settings.showShapeLabels = document.getElementById('showShapeLabels').checked;
         settings.showFlightPathDistance = document.getElementById('showFlightPathDistance').checked;
+        saveSettingsToStorage();
+        updateOsMapsLayers();
         applySettings();
         closeModal('settingsModal');
     });
@@ -1466,15 +1686,15 @@
             const layers = markerLayers[point.id];
             if (!layers) continue;
 
-            if (settings.showLabels && point.name) {
-                if (!layers.marker.getTooltip()) {
-                    layers.marker.bindTooltip(point.name, {
-                        permanent: true,
-                        direction: 'top',
-                        offset: [0, -35],
-                        className: 'point-label-tooltip'
-                    });
-                }
+            const tooltipContent = getPointTooltipContent(point);
+            if (tooltipContent) {
+                layers.marker.unbindTooltip();
+                layers.marker.bindTooltip(tooltipContent, {
+                    permanent: true,
+                    direction: 'top',
+                    offset: [0, -35],
+                    className: 'point-label-tooltip'
+                });
             } else {
                 layers.marker.unbindTooltip();
             }
