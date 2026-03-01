@@ -393,6 +393,7 @@
         emergency_lz: { label: 'Emergency Landing Zone', symbol: '\u271A', color: '#ef4444', colorEditable: false },
         no_fly: { label: 'No-Fly Marker', symbol: 'X', color: '#d32f2f', colorEditable: false },
         hazard: { label: 'Hazard', symbol: '!', color: '#ff9800', colorEditable: false },
+        waypoint: { label: 'Waypoint', symbol: 'W', color: '#0ea5e9', colorEditable: true },
         custom_point: { label: 'Custom Point', symbol: '?', color: '#8e24aa', colorEditable: true }
     };
 
@@ -428,6 +429,8 @@
             emergency_landing_zone: 'emergency_lz',
             nofly: 'no_fly',
             no_fly_marker: 'no_fly',
+            wp: 'waypoint',
+            waypoint: 'waypoint',
             pilot: 'custom_point',
             pilot_position: 'custom_point',
             observer: 'custom_point',
@@ -482,44 +485,6 @@
             <circle cx="12.5" cy="12.5" r="7.2" fill="#ffffff" opacity="0.95"/>
             <text x="12.5" y="16.1" text-anchor="middle" font-size="9.2" font-family="Arial, sans-serif" font-weight="700" fill="#111827">${safeSymbol}</text>
         </svg>`);
-    }
-
-    function initIconLegend() {
-        const legend = document.getElementById('iconLegend');
-        const body = document.getElementById('iconLegendBody');
-        const toggle = document.getElementById('iconLegendToggle');
-        if (!legend || !body || !toggle) return;
-
-        const entries = [
-            'address',
-            'primary_tola',
-            'secondary_tola',
-            'custom_tola',
-            'emergency_lz',
-            'no_fly',
-            'hazard',
-            'custom_point'
-        ];
-
-        body.innerHTML = entries.map((key) => {
-            const def = ICON_DEFS[key];
-            const color = def.color;
-            const txt = getContrastingTextColor(color);
-            return `
-                <div class="legend-item">
-                    <span class="legend-badge" style="background:${color}; color:${txt};">${escapeHtml(def.symbol)}</span>
-                    <span class="legend-label">${escapeHtml(def.label)}</span>
-                </div>
-            `;
-        }).join('');
-
-        legend.classList.add('collapsed');
-        toggle.innerHTML = '&plus;';
-
-        toggle.addEventListener('click', () => {
-            legend.classList.toggle('collapsed');
-            toggle.innerHTML = legend.classList.contains('collapsed') ? '&plus;' : '&minus;';
-        });
     }
 
     function getPointIcon(point) {
@@ -1886,7 +1851,7 @@
         if (!pickerEl || !optionsEl) return;
 
         optionsEl.innerHTML = '';
-        const iconKeys = ['address', 'primary_tola', 'secondary_tola', 'custom_tola', 'emergency_lz', 'no_fly', 'hazard', 'custom_point'];
+        const iconKeys = ['address', 'primary_tola', 'secondary_tola', 'custom_tola', 'emergency_lz', 'no_fly', 'hazard', 'waypoint', 'custom_point'];
         iconKeys.forEach(key => {
             const def = ICON_DEFS[key];
             const btn = document.createElement('button');
@@ -2019,7 +1984,6 @@
         function dismissIntro() {
             if (introOverlay) introOverlay.classList.add('hidden');
             initMap();
-            initIconLegend();
             initDrawings();
             initDropPointToolbarControl();
             refreshHandToolState();
