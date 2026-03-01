@@ -1,7 +1,9 @@
 {
     "name": "airplot",
     "compatibility_date": "2026-02-19",
+    "main": "worker.js",
     "assets": {
-        "directory": "."
+        "directory": ".",
+        "binding": "ASSETS"
     }
 }

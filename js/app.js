@@ -7,6 +7,7 @@
 
     // ---- State ----
     let map;
+    let launchMode = 'planning'; // 'planning' | 'liveFlights'
     let points = [];
     let markerLayers = {};   // pointId -> { marker, fans, label }
     let nextId = 1;
@@ -123,10 +124,12 @@
         }
     }
 
-    function initMap() {
+    function initMap(center, zoom) {
+        const defaultCenter = center || [51.5074, -0.1278];
+        const defaultZoom = zoom != null ? zoom : 11;
         map = L.map('map', {
-            center: [51.5074, -0.1278], // London
-            zoom: 11,
+            center: defaultCenter,
+            zoom: defaultZoom,
             zoomControl: true
         });
 
@@ -163,8 +166,23 @@
 
         // Add OS Maps layers if API key is configured (from localStorage or project)
         updateOsMapsLayers();
+
+        // Geolocation: show user's current location (Leaflet.Locate plugin)
+        if (typeof L.control.locate === 'function') {
+            L.control.locate({
+                position: 'topleft',
+                strings: {
+                    title: 'Show my location',
+                    popup: 'You are within {distance} from this point',
+                    outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
+                },
+                locateOptions: { enableHighAccuracy: true }
+            }).addTo(map);
+        }
+
         // Click on map to place point (skip when drawing). No coordinate popup by default.
         map.on('click', function (e) {
+            if (launchMode === 'liveFlights') return;
             if (Drawings.isDrawingActive()) return;
             if (dropPointMode) {
                 createPointAtLatLng(e.latlng.lat, e.latlng.lng);
@@ -1980,20 +1998,34 @@
     window.addEventListener('load', () => {
         const introOverlay = document.getElementById('introOverlay');
         const introProceedBtn = document.getElementById('introProceedBtn');
+        const introLiveFlightsBtn = document.getElementById('introLiveFlightsBtn');
 
-        function dismissIntro() {
+        function dismissIntro(mode) {
+            launchMode = mode || 'planning';
             if (introOverlay) introOverlay.classList.add('hidden');
-            initMap();
-            initDrawings();
-            initDropPointToolbarControl();
-            refreshHandToolState();
-            map.on('drawingmodechange', refreshHandToolState);
+
+            if (launchMode === 'liveFlights') {
+                document.body.classList.add('live-flights-mode');
+                initMap([51.5, -1.5], 6); // UK centre, zoom for air traffic
+                if (typeof LiveFlights !== 'undefined') LiveFlights.init(map);
+            } else {
+                document.body.classList.remove('live-flights-mode');
+                initMap();
+                initDrawings();
+                initDropPointToolbarControl();
+                refreshHandToolState();
+                map.on('drawingmodechange', refreshHandToolState);
+            }
         }
 
         if (introProceedBtn) {
-            introProceedBtn.addEventListener('click', dismissIntro);
-        } else {
-            dismissIntro();
+            introProceedBtn.addEventListener('click', () => dismissIntro('planning'));
+        }
+        if (introLiveFlightsBtn) {
+            introLiveFlightsBtn.addEventListener('click', () => dismissIntro('liveFlights'));
+        }
+        if (!introProceedBtn && !introLiveFlightsBtn) {
+            dismissIntro('planning');
         }
     });
 

@@ -40,6 +40,17 @@ html, body {
     color: var(--sidebar-text);
 }
 
+/* Safe area insets for notched devices (iPhone X+, etc.) */
+@supports (padding: env(safe-area-inset-top)) {
+    html, body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        box-sizing: border-box;
+    }
+    body {
+        position: relative;
+    }
+}
+
 /* ---- Layout ---- */
 
 #map {
@@ -217,6 +228,28 @@ body.sidebar-collapsed #map {
     margin-bottom: 32px;
 }
 
+/* Intro options (Launch App + Live Flights) */
+.intro-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.intro-options .intro-cta {
+    min-width: 200px;
+}
+
+.intro-cta-secondary {
+    background: linear-gradient(135deg, rgba(91,141,239,0.25), rgba(91,141,239,0.15)) !important;
+    border-color: rgba(91,141,239,0.5) !important;
+}
+
+.intro-cta-secondary:hover {
+    background: linear-gradient(135deg, rgba(91,141,239,0.4), rgba(91,141,239,0.25)) !important;
+}
+
 /* CTA button */
 .intro-cta {
     display: inline-flex;
@@ -267,6 +300,96 @@ body.sidebar-collapsed #map {
     margin-top: 8px;
     font-size: 0.7rem;
     color: rgba(255,255,255,0.2);
+}
+
+/* ---- Live Flights Mode ---- */
+body.live-flights-mode .sidebar,
+body.live-flights-mode .sidebar-open {
+    display: none;
+}
+
+body.live-flights-mode #map {
+    left: 0;
+}
+
+body.live-flights-mode .app-footer {
+    left: 0;
+}
+
+body.live-flights-mode .draw-style-panel {
+    display: none;
+}
+
+/* Live Flights Panel */
+.live-flights-panel {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 2000;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 13px;
+}
+
+.live-flights-panel.hidden {
+    display: none;
+}
+
+.live-flights-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.live-flights-title {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.live-flights-attribution {
+    font-size: 10px;
+    color: #64748b;
+}
+
+.live-flights-stats {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2563eb;
+    margin-bottom: 4px;
+}
+
+.live-flights-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 10px;
+}
+
+.live-flights-actions .btn {
+    width: 100%;
+}
+
+/* Aircraft marker */
+.live-flight-marker {
+    background: none !important;
+    border: none !important;
+}
+
+.live-flight-marker svg {
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+
+.live-flight-popup {
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.live-flight-popup strong {
+    font-size: 13px;
 }
 
 /* ---- App Footer ---- */
@@ -1061,6 +1184,83 @@ select {
 
     body:not(.sidebar-collapsed) #map {
         pointer-events: none;
+    }
+
+    /* Intro screen - compact layout */
+    .intro-content {
+        padding: 24px 20px;
+        max-width: 100%;
+    }
+
+    .intro-logo {
+        width: 100px;
+    }
+
+    .intro-description {
+        font-size: 0.9rem;
+    }
+
+    .intro-cta {
+        padding: 12px 28px;
+        font-size: 0.9rem;
+    }
+
+    /* Draw style panel - position below toolbar when sidebar collapsed */
+    .draw-style-panel {
+        left: 52px !important;
+        top: 52px;
+        max-width: calc(100vw - 70px);
+    }
+
+    body.sidebar-collapsed .draw-style-panel {
+        left: 52px !important;
+    }
+
+    /* Footer - safe area and compact */
+    .app-footer {
+        left: 0;
+        bottom: max(8px, env(safe-area-inset-bottom, 8px));
+        font-size: 10px;
+    }
+
+    /* Leaflet controls - avoid overlap with locate button */
+    .leaflet-top.leaflet-left {
+        top: 52px;
+    }
+
+    .leaflet-control-layers {
+        max-height: 50vh;
+    }
+
+    /* Modals - full width, respect safe areas */
+    .modal-content {
+        width: 95%;
+        max-height: 90vh;
+        margin: env(safe-area-inset-top, 0) auto env(safe-area-inset-bottom, 0);
+    }
+
+    .modal-large {
+        max-width: 95%;
+    }
+
+    /* Touch-friendly targets (Apple HIG: 44px min) */
+    .btn,
+    .ctx-item,
+    .point-item {
+        min-height: 44px;
+    }
+
+    .point-item-actions {
+        opacity: 1;
+    }
+
+    .leaflet-control a,
+    .leaflet-control-locate a {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
     }
 }
 
