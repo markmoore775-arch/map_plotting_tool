@@ -48,6 +48,12 @@
     // Load persisted settings on startup
     loadSettingsFromStorage();
 
+    function getW3WApiKey() {
+        return settings.w3wApiKey
+            || (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.w3wApiKey)
+            || '';
+    }
+
     function saveSettingsToStorage() {
         try {
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
@@ -549,7 +555,8 @@
         html += '</div>';
         html += '<div class="quick-edit-elevation">Elevation: <span class="elevation-value">—</span></div>';
         html += '<div class="quick-edit-actions">';
-        html += `<a href="#" class="quick-edit-more" data-point-id="${point.id}">Edit details...</a>`;
+        html += `<a href="#" class="quick-edit-details" data-point-id="${point.id}">View details</a>`;
+        html += `<a href="#" class="quick-edit-more" data-point-id="${point.id}">Edit...</a>`;
         html += '</div>';
         html += '</div>';
         return html;
@@ -666,6 +673,19 @@
                     e.preventDefault();
                     marker.closePopup();
                 }
+            });
+        }
+
+        const detailsLink = container.querySelector('.quick-edit-details');
+        if (detailsLink) {
+            detailsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                quickEditUpdating = true;
+                marker.closePopup();
+                marker.unbindPopup();
+                refreshPointsList();
+                quickEditUpdating = false;
+                openPointDetailsModal(pointId);
             });
         }
 
@@ -910,11 +930,30 @@
             dropPointIconStrip.classList.toggle('hidden', !dropPointPickerOpen);
             if (dropPointPickerOpen) refreshDropIconStrip();
         }
+        // Mobile bottom drawer backdrop
+        updateDropPointBackdrop(dropPointPickerOpen);
         const mapEl = document.getElementById('map');
         if (mapEl) {
             mapEl.classList.toggle('drop-point-cursor', dropPointMode);
         }
         refreshHandToolState();
+    }
+
+    let dropPointBackdrop = null;
+    function updateDropPointBackdrop(show) {
+        if (window.innerWidth > 600) return;
+        if (show && !dropPointBackdrop) {
+            dropPointBackdrop = document.createElement('div');
+            dropPointBackdrop.className = 'drop-icon-strip-backdrop';
+            dropPointBackdrop.addEventListener('click', () => {
+                setDropPointMode(false);
+                setDropPointPickerOpen(false);
+            });
+            document.body.appendChild(dropPointBackdrop);
+        } else if (!show && dropPointBackdrop) {
+            dropPointBackdrop.remove();
+            dropPointBackdrop = null;
+        }
     }
 
     function setDropPointMode(enabled) {
@@ -960,7 +999,7 @@
         addBtn.textContent = 'Resolving...';
 
         try {
-            const coords = await Converters.resolve(inputVal, settings.w3wApiKey);
+            const coords = await Converters.resolve(inputVal, getW3WApiKey());
             if (!coords) {
                 alert('Could not resolve location. Please check the format and try again.');
                 return;
@@ -1057,6 +1096,121 @@
 
     const editModal = document.getElementById('editModal');
 
+    // ---- Point Details Modal ----
+
+    function openPointDetailsModal(id) {
+        const point = points.find(p => p.id === id);
+        if (!point) return;
+
+        const titleEl = document.getElementById('pointDetailsTitle');
+        titleEl.textContent = point.name || 'Point Details';
+
+        document.getElementById('detailDecimal').textContent = `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
+        document.getElementById('detailDMS').textContent = Converters.latLngToDMS(point.lat, point.lng);
+
+        const gridRef = Converters.latLngToGridRef(point.lat, point.lng, 10);
+        document.getElementById('detailOSGrid').textContent = gridRef || 'Outside UK grid';
+
+        const w3wEl = document.getElementById('detailW3WText');
+        const w3wHint = document.getElementById('detailW3WHint');
+        const w3wKey = getW3WApiKey();
+
+        if (w3wKey) {
+            w3wEl.textContent = 'Loading…';
+            w3wHint.style.display = 'none';
+            Converters.reverseW3W(point.lat, point.lng, w3wKey).then(words => {
+                if (words) {
+                    w3wEl.innerHTML = '<span class="detail-w3w-prefix">///</span>' + escapeHtml(words);
+                } else {
+                    w3wEl.textContent = 'Not available';
+                }
+            }).catch(() => {
+                w3wEl.textContent = 'Error';
+            });
+        } else {
+            w3wEl.textContent = '—';
+            w3wHint.style.display = '';
+        }
+
+        const elevationEl = document.getElementById('detailElevation');
+        const mapboxToken = (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.mapboxAccessToken) || '';
+        if (point.elevation != null && !isNaN(point.elevation)) {
+            elevationEl.textContent = `${point.elevation.toFixed(1)} m AMSL`;
+        } else if (mapboxToken && typeof Elevation !== 'undefined') {
+            elevationEl.textContent = 'Loading…';
+            Elevation.getElevationAtLatLng(point.lat, point.lng, mapboxToken).then(elev => {
+                if (elev !== null) {
+                    point.elevation = elev;
+                    elevationEl.textContent = `${elev.toFixed(1)} m AMSL`;
+                } else {
+                    elevationEl.textContent = '—';
+                }
+            }).catch(() => {
+                elevationEl.textContent = '—';
+            });
+        } else {
+            elevationEl.textContent = '—';
+        }
+
+        openModal('pointDetailsModal');
+    }
+
+    function initPointDetailsModal() {
+        const modal = document.getElementById('pointDetailsModal');
+        if (!modal) return;
+
+        modal.querySelectorAll('.detail-copyable').forEach(el => {
+            el.addEventListener('click', () => {
+                let text = el.textContent.trim();
+                if (!text || text === '—' || text === 'Loading…' || text === 'Error') return;
+                navigator.clipboard.writeText(text).then(() => {
+                    el.classList.add('copied');
+                    setTimeout(() => el.classList.remove('copied'), 1200);
+                }).catch(() => {});
+            });
+        });
+
+        document.getElementById('detailCopyAllBtn').addEventListener('click', () => {
+            const title = document.getElementById('pointDetailsTitle').textContent.trim();
+            const dec = document.getElementById('detailDecimal').textContent.trim();
+            const dms = document.getElementById('detailDMS').textContent.trim();
+            const grid = document.getElementById('detailOSGrid').textContent.trim();
+            const w3w = document.getElementById('detailW3WText').textContent.trim();
+            const elev = document.getElementById('detailElevation').textContent.trim();
+
+            const rows = [];
+            if (dec && dec !== '—')
+                rows.push({ label: 'Decimal', value: dec });
+            if (dms && dms !== '—')
+                rows.push({ label: 'DMS', value: dms });
+            if (grid && grid !== '—' && grid !== 'Outside UK grid')
+                rows.push({ label: 'OS Grid Ref', value: grid });
+            if (w3w && w3w !== '—' && w3w !== 'Loading…' && w3w !== 'Not available' && w3w !== 'Error')
+                rows.push({ label: 'What3Words', value: '///' + w3w.replace(/^\/\/\//, '') });
+            if (elev && elev !== '—' && elev !== 'Loading…')
+                rows.push({ label: 'Elevation', value: elev });
+
+            const maxLabel = Math.max(...rows.map(r => r.label.length));
+            const divider = '\u2500'.repeat(maxLabel + 4 + Math.max(...rows.map(r => r.value.length)));
+
+            const lines = [];
+            lines.push(title.toUpperCase());
+            lines.push(divider);
+            for (const row of rows) {
+                lines.push(`  ${row.label.padEnd(maxLabel + 2)}${row.value}`);
+            }
+            lines.push(divider);
+
+            const text = lines.join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('detailCopyAllBtn');
+                const orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = orig; }, 1200);
+            }).catch(() => {});
+        });
+    }
+
     function openEditModal(id) {
         const point = points.find(p => p.id === id);
         if (!point) return;
@@ -1125,6 +1279,12 @@
         });
 
         closeModal('editModal');
+    });
+
+    document.getElementById('editViewDetailsBtn').addEventListener('click', () => {
+        const id = parseInt(document.getElementById('editPointId').value);
+        closeModal('editModal');
+        openPointDetailsModal(id);
     });
 
     document.getElementById('editDeleteBtn').addEventListener('click', () => {
@@ -1377,7 +1537,7 @@
         // Resolve other formats
         for (const line of otherLines) {
             try {
-                const coords = await Converters.resolve(line, settings.w3wApiKey);
+                const coords = await Converters.resolve(line, getW3WApiKey());
                 if (coords) {
                     createPoint({
                         name: line,
@@ -1495,7 +1655,7 @@
                 if (!coords && colLocation !== -1) {
                     const loc = (row[colLocation] || '').trim();
                     if (loc) {
-                        coords = await Converters.resolve(loc, settings.w3wApiKey);
+                        coords = await Converters.resolve(loc, getW3WApiKey());
                     }
                 }
 
@@ -1847,10 +2007,90 @@
             }
         });
 
+        document.addEventListener('touchstart', (e) => {
+            if (menuEl && !menuEl.classList.contains('hidden') && !menuEl.contains(e.target)) {
+                hideMapContextMenu();
+            }
+            const pickerEl = document.getElementById('mapPointTypePicker');
+            if (pickerEl && !pickerEl.classList.contains('hidden') && !pickerEl.contains(e.target)) {
+                hideMapPointTypePicker();
+            }
+        }, { passive: true });
+
         map.on('click', hideMapContextMenu);
         map.on('click', hideMapPointTypePicker);
 
+        // Long-press (touch-hold) to open context menu on touch devices
+        setupLongPressContextMenu();
+
         initMapPointTypePicker();
+    }
+
+    function setupLongPressContextMenu() {
+        if (!('ontouchstart' in window) && navigator.maxTouchPoints === 0) return;
+
+        const LONG_PRESS_MS = 500;
+        const MOVE_THRESHOLD = 10;
+        let lpTimer = null;
+        let startX = 0;
+        let startY = 0;
+        let cancelled = false;
+
+        const mapContainer = map.getContainer();
+
+        mapContainer.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            if (e.target.closest('.leaflet-control')) return;
+            if (e.target.closest('.mobile-draw-controls')) return;
+            if (Drawings.isDrawingActive()) return;
+
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            cancelled = false;
+
+            lpTimer = setTimeout(() => {
+                if (cancelled) return;
+                const latlng = map.containerPointToLatLng(L.point(
+                    startX - mapContainer.getBoundingClientRect().left,
+                    startY - mapContainer.getBoundingClientRect().top
+                ));
+
+                mapContextMenuLatLng = latlng;
+                mapContextShapeId = null;
+                mapContextPointId = null;
+
+                // Synthesize a fake event for positioning
+                showMapContextMenu({ clientX: startX, clientY: startY, preventDefault() {}, stopPropagation() {} });
+            }, LONG_PRESS_MS);
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchmove', (e) => {
+            if (!lpTimer) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+            if (Math.sqrt(dx * dx + dy * dy) > MOVE_THRESHOLD) {
+                clearTimeout(lpTimer);
+                lpTimer = null;
+                cancelled = true;
+            }
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchend', () => {
+            if (lpTimer) {
+                clearTimeout(lpTimer);
+                lpTimer = null;
+            }
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchcancel', () => {
+            if (lpTimer) {
+                clearTimeout(lpTimer);
+                lpTimer = null;
+            }
+            cancelled = true;
+        }, { passive: true });
     }
 
     function showMapContextMenu(originalEvent) {
@@ -1957,6 +2197,9 @@
 
     function handleMapContextAction(action, latlng, shapeId, pointId) {
         switch (action) {
+            case 'point-details':
+                if (pointId) openPointDetailsModal(pointId);
+                break;
             case 'edit-point':
                 if (pointId) openEditModal(pointId);
                 break;
@@ -2044,6 +2287,7 @@
             initMap();
             initDrawings();
             initDropPointToolbarControl();
+            initPointDetailsModal();
             refreshHandToolState();
             map.on('drawingmodechange', refreshHandToolState);
         }

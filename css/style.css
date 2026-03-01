@@ -1150,6 +1150,190 @@ select {
         align-items: center;
         justify-content: center;
     }
+
+    /* ---- Uniform toolbar icon sizing on mobile ---- */
+
+    .leaflet-pm-toolbar .button-container {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .leaflet-pm-toolbar .button-container a {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .leaflet-pm-toolbar .leaflet-pm-icon-rectangle,
+    .leaflet-pm-toolbar .leaflet-pm-icon-polygon,
+    .leaflet-pm-toolbar .leaflet-pm-icon-circle,
+    .leaflet-pm-toolbar .leaflet-pm-icon-text {
+        width: 22px !important;
+        height: 22px !important;
+    }
+
+    .leaflet-control-hand-tool,
+    .leaflet-control-drop-point,
+    .leaflet-control-extra-draw,
+    .leaflet-control-flight-path,
+    .leaflet-control-line-draw {
+        width: 44px !important;
+        height: 44px !important;
+    }
+
+    .leaflet-control-hand-tool .lucide-hand-icon svg,
+    .leaflet-control-drop-point .lucide-map-pin-icon svg,
+    .leaflet-control-extra-draw .lucide-arrow-big-right-icon svg,
+    .leaflet-control-flight-path .lucide-drone-icon svg,
+    .leaflet-control-line-draw .lucide-ruler-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* ---- Enlarge Geoman vertex markers for touch ---- */
+
+    .marker-icon.leaflet-pm-icon,
+    .leaflet-pm-toolbar ~ .leaflet-pane .marker-icon {
+        width: 20px !important;
+        height: 20px !important;
+        margin-left: -10px !important;
+        margin-top: -10px !important;
+        border-radius: 50%;
+    }
+
+    /* ---- Drop icon strip as bottom drawer on mobile ---- */
+
+    .drop-icon-strip {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        margin-left: 0 !important;
+        border-radius: 16px 16px 0 0;
+        max-height: 60vh;
+        overflow-y: auto;
+        z-index: 2500 !important;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.35);
+        padding: 16px 16px max(16px, env(safe-area-inset-bottom, 16px));
+        animation: slideUpDrawer 0.25s ease-out;
+    }
+
+    @keyframes slideUpDrawer {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
+    }
+
+    .drop-icon-strip-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 2499;
+    }
+
+    /* ---- Drawing style panel as compact bottom bar ---- */
+
+    .draw-style-panel {
+        left: 8px !important;
+        right: 8px !important;
+        top: auto !important;
+        bottom: max(48px, calc(env(safe-area-inset-bottom, 8px) + 48px)) !important;
+        width: auto !important;
+        max-width: none !important;
+        border-radius: 10px;
+    }
+
+    .draw-style-body {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .draw-style-row {
+        flex: 1 1 45%;
+        min-width: 0;
+        margin-bottom: 0;
+    }
+
+    /* ---- Mobile flight path floating controls ---- */
+
+    .mobile-draw-controls {
+        position: fixed;
+        bottom: max(16px, env(safe-area-inset-bottom, 16px));
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        z-index: 2000;
+        animation: slideUpDrawer 0.2s ease-out;
+    }
+
+    .mobile-draw-controls button {
+        padding: 12px 22px;
+        border: none;
+        border-radius: 28px;
+        font-family: var(--font-family);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .mobile-draw-finish-btn {
+        background: var(--primary);
+        color: #fff;
+    }
+
+    .mobile-draw-undo-btn {
+        background: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        border: 1px solid var(--sidebar-border) !important;
+    }
+
+    .mobile-draw-cancel-btn {
+        background: var(--danger);
+        color: #fff;
+    }
+
+    /* ---- Mobile toast hint ---- */
+
+    .mobile-toast {
+        position: fixed;
+        top: max(16px, env(safe-area-inset-top, 16px));
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(30, 30, 46, 0.92);
+        color: #fff;
+        font-family: var(--font-family);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 10px 20px;
+        border-radius: 24px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        z-index: 3000;
+        pointer-events: none;
+        animation: toastFadeIn 0.3s ease-out;
+        white-space: nowrap;
+    }
+
+    .mobile-toast.fade-out {
+        animation: toastFadeOut 0.4s ease-in forwards;
+    }
+
+    @keyframes toastFadeIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    @keyframes toastFadeOut {
+        from { opacity: 1; transform: translateX(-50%) translateY(0); }
+        to   { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    }
 }
 
 /* ---- Leaflet overrides ---- */
@@ -1465,9 +1649,11 @@ select {
     cursor: move !important;
 }
 
-/* Allow clicks to pass through shapes when placing pins or drawing arrows */
-#map.draw-tool-cursor .leaflet-interactive,
-#map.drop-point-cursor .leaflet-interactive {
+/* Allow clicks to pass through shapes when placing pins or drawing arrows,
+   but preserve pointer-events on Geoman vertex/midpoint markers so users
+   can tap them to finish or adjust the drawn shape. */
+#map.draw-tool-cursor .leaflet-interactive:not(.marker-icon):not(.leaflet-pm-icon),
+#map.drop-point-cursor .leaflet-interactive:not(.marker-icon):not(.leaflet-pm-icon) {
     pointer-events: none;
 }
 
@@ -1566,9 +1752,24 @@ select {
 }
 
 .quick-edit-actions {
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding-top: 6px;
     border-top: 1px solid #e5e7eb;
+}
+
+.quick-edit-details {
+    font-size: 12px;
+    color: #6b7280;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.quick-edit-details:hover {
+    text-decoration: underline;
+    color: #374151;
 }
 
 .quick-edit-more {
@@ -2067,4 +2268,98 @@ body.sidebar-collapsed .draw-style-panel {
 
 .point-label-tooltip::before {
     border-top-color: rgba(30, 30, 46, 0.85) !important;
+}
+
+/* ---- Point Details Modal ---- */
+
+.point-details-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.detail-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--sidebar-border);
+    gap: 12px;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    flex-shrink: 0;
+    width: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--sidebar-text-muted);
+    padding-top: 2px;
+}
+
+.detail-value {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--sidebar-text);
+    word-break: break-all;
+    min-height: 20px;
+}
+
+.detail-copyable {
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition);
+    position: relative;
+}
+
+.detail-copyable:hover {
+    background: var(--sidebar-surface);
+}
+
+.detail-copyable::after {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 6px;
+    vertical-align: middle;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2' ry='2'/%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    transition: opacity var(--transition);
+}
+
+.detail-copyable:hover::after {
+    opacity: 0.8;
+}
+
+.detail-copyable.copied {
+    background: rgba(76, 175, 80, 0.15);
+}
+
+.detail-copyable.copied::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234caf50' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+    opacity: 1;
+}
+
+.detail-w3w-prefix {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.detail-hint {
+    font-size: 11px;
+    color: var(--sidebar-text-muted);
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(255, 152, 0, 0.1);
+    border: 1px solid rgba(255, 152, 0, 0.2);
+    border-radius: var(--radius-sm);
 }

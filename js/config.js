@@ -8,6 +8,7 @@
 
 const AIRPLOT_CONFIG = {
     osMapsApiKey: 'LyuGLrEGthv3cO3hjtyo4EWKBc9HGk8h',
+    w3wApiKey: 'TJWCEEHA',
     // Mapbox token (base64) - decoded at runtime to avoid secret scanning
     mapboxAccessToken: atob('cGsuZXlKMUlqb2liV0Z5YTIxdmIzSmxOemMxSWl3aVlTSTZJbU50YlRkdGNtOXFOVEJ2ZHpneWNITmxhSFZqWkdseFpIa2lmUS5yN0lPSGRscFdRYTRlNXFjdGRMUURR')
 };

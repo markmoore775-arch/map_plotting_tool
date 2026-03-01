@@ -369,6 +369,194 @@ const Converters = (() => {
         }
     }
 
+    // ---- WGS84 to OS Grid Reference (reverse conversion) ----
+
+    function wgs84ToOsgb36(lat, lon) {
+        const a2 = 6378137.000, b2 = 6356752.3141;
+        const a1 = 6377563.396, b1 = 6356256.909;
+
+        const tx = -446.448, ty = 125.157, tz = -542.060;
+        const rx = (-0.1502 / 3600) * Math.PI / 180;
+        const ry = (-0.2470 / 3600) * Math.PI / 180;
+        const rz = (-0.8421 / 3600) * Math.PI / 180;
+        const s = 20.4894e-6;
+
+        const latR = lat * Math.PI / 180;
+        const lonR = lon * Math.PI / 180;
+
+        const e2_2 = 1 - (b2 * b2) / (a2 * a2);
+        const sinLat = Math.sin(latR);
+        const cosLat = Math.cos(latR);
+        const sinLon = Math.sin(lonR);
+        const cosLon = Math.cos(lonR);
+        const nu = a2 / Math.sqrt(1 - e2_2 * sinLat * sinLat);
+
+        const x1 = nu * cosLat * cosLon;
+        const y1 = nu * cosLat * sinLon;
+        const z1 = nu * (1 - e2_2) * sinLat;
+
+        const x2 = tx + (1 + s) * (x1 - rz * y1 + ry * z1);
+        const y2 = ty + (1 + s) * (rz * x1 + y1 - rx * z1);
+        const z2 = tz + (1 + s) * (-ry * x1 + rx * y1 + z1);
+
+        const e2_1 = 1 - (b1 * b1) / (a1 * a1);
+        const p = Math.sqrt(x2 * x2 + y2 * y2);
+        let lat2 = Math.atan2(z2, p * (1 - e2_1));
+
+        for (let i = 0; i < 10; i++) {
+            const nu2 = a1 / Math.sqrt(1 - e2_1 * Math.sin(lat2) * Math.sin(lat2));
+            lat2 = Math.atan2(z2 + e2_1 * nu2 * Math.sin(lat2), p);
+        }
+
+        const lon2 = Math.atan2(y2, x2);
+
+        return { lat: lat2, lon: lon2 };
+    }
+
+    function osgb36LatLonToGrid(latR, lonR) {
+        const a = 6377563.396;
+        const b = 6356256.909;
+        const F0 = 0.9996012717;
+        const lat0 = 49 * Math.PI / 180;
+        const lon0 = -2 * Math.PI / 180;
+        const N0 = -100000;
+        const E0 = 400000;
+        const e2 = 1 - (b * b) / (a * a);
+        const n = (a - b) / (a + b);
+        const n2 = n * n;
+        const n3 = n * n * n;
+
+        const cosLat = Math.cos(latR);
+        const sinLat = Math.sin(latR);
+        const tanLat = Math.tan(latR);
+
+        const Ma = (1 + n + (5 / 4) * n2 + (5 / 4) * n3) * (latR - lat0);
+        const Mb = (3 * n + 3 * n2 + (21 / 8) * n3) * Math.sin(latR - lat0) * Math.cos(latR + lat0);
+        const Mc = ((15 / 8) * n2 + (15 / 8) * n3) * Math.sin(2 * (latR - lat0)) * Math.cos(2 * (latR + lat0));
+        const Md = (35 / 24) * n3 * Math.sin(3 * (latR - lat0)) * Math.cos(3 * (latR + lat0));
+        const M = b * F0 * (Ma - Mb + Mc - Md);
+
+        const nu = a * F0 / Math.sqrt(1 - e2 * sinLat * sinLat);
+        const rho = a * F0 * (1 - e2) / Math.pow(1 - e2 * sinLat * sinLat, 1.5);
+        const eta2 = nu / rho - 1;
+
+        const tan2 = tanLat * tanLat;
+        const tan4 = tan2 * tan2;
+        const cos3 = cosLat * cosLat * cosLat;
+        const cos5 = cos3 * cosLat * cosLat;
+
+        const I = M + N0;
+        const II = (nu / 2) * sinLat * cosLat;
+        const III = (nu / 24) * sinLat * cos3 * (5 - tan2 + 9 * eta2);
+        const IIIA = (nu / 720) * sinLat * cos5 * (61 - 58 * tan2 + tan4);
+        const IV = nu * cosLat;
+        const V = (nu / 6) * cos3 * (nu / rho - tan2);
+        const VI = (nu / 120) * cos5 * (5 - 18 * tan2 + tan4 + 14 * eta2 - 58 * tan2 * eta2);
+
+        const dLon = lonR - lon0;
+        const dLon2 = dLon * dLon;
+        const dLon3 = dLon2 * dLon;
+        const dLon4 = dLon2 * dLon2;
+        const dLon5 = dLon3 * dLon2;
+        const dLon6 = dLon3 * dLon3;
+
+        const N = I + II * dLon2 + III * dLon4 + IIIA * dLon6;
+        const E = E0 + IV * dLon + V * dLon3 + VI * dLon5;
+
+        return { easting: E, northing: N };
+    }
+
+    function gridToLetters(easting, northing) {
+        if (easting < 0 || easting > 700000 || northing < 0 || northing > 1300000) return null;
+
+        const e100k = Math.floor(easting / 100000);
+        const n100k = Math.floor(northing / 100000);
+
+        const majorLetters = ['SV', 'SW', 'SX', 'SY', 'SZ', 'TV', 'TW',
+                              'SQ', 'SR', 'SS', 'ST', 'SU', 'TQ', 'TR',
+                              'SL', 'SM', 'SN', 'SO', 'SP', 'TL', 'TM',
+                              'SF', 'SG', 'SH', 'SJ', 'SK', 'TF', 'TG',
+                              'SA', 'SB', 'SC', 'SD', 'SE', 'TA', 'TB',
+                              'NV', 'NW', 'NX', 'NY', 'NZ', 'OV', 'OW',
+                              'NQ', 'NR', 'NS', 'NT', 'NU', 'OQ', 'OR',
+                              'NL', 'NM', 'NN', 'NO', 'NP', 'OL', 'OM',
+                              'NF', 'NG', 'NH', 'NJ', 'NK', 'OF', 'OG',
+                              'NA', 'NB', 'NC', 'ND', 'NE', 'OA', 'OB',
+                              'HV', 'HW', 'HX', 'HY', 'HZ', 'JV', 'JW',
+                              'HQ', 'HR', 'HS', 'HT', 'HU', 'JQ', 'JR',
+                              'HL', 'HM', 'HN', 'HO', 'HP', 'JL', 'JM'];
+
+        const idx = n100k * 7 + e100k;
+        if (idx < 0 || idx >= majorLetters.length) return null;
+
+        const letters = majorLetters[idx];
+        const e = Math.floor(easting % 100000);
+        const n = Math.floor(northing % 100000);
+
+        const eStr = String(e).padStart(5, '0');
+        const nStr = String(n).padStart(5, '0');
+
+        return letters + ' ' + eStr + ' ' + nStr;
+    }
+
+    function latLngToGridRef(lat, lng, digits) {
+        digits = digits || 10;
+        const osgb = wgs84ToOsgb36(lat, lng);
+        const grid = osgb36LatLonToGrid(osgb.lat, osgb.lon);
+        const E = grid.easting;
+        const N = grid.northing;
+
+        if (E < 0 || E > 700000 || N < 0 || N > 1300000) return null;
+
+        const letters = gridToLetters(E, N);
+        if (!letters) return null;
+
+        const twoLetter = letters.substring(0, 2);
+        const e = Math.floor(E % 100000);
+        const n = Math.floor(N % 100000);
+
+        const half = digits / 2;
+        const divisor = Math.pow(10, 5 - half);
+
+        const eStr = String(Math.floor(e / divisor)).padStart(half, '0');
+        const nStr = String(Math.floor(n / divisor)).padStart(half, '0');
+
+        return twoLetter + ' ' + eStr + ' ' + nStr;
+    }
+
+    // ---- Lat/Lng to DMS string ----
+
+    function latLngToDMS(lat, lng) {
+        function toDMS(dd, isLat) {
+            const dir = isLat ? (dd >= 0 ? 'N' : 'S') : (dd >= 0 ? 'E' : 'W');
+            const abs = Math.abs(dd);
+            const d = Math.floor(abs);
+            const mFloat = (abs - d) * 60;
+            const m = Math.floor(mFloat);
+            const s = ((mFloat - m) * 60).toFixed(2);
+            return `${d}°${String(m).padStart(2, '0')}'${String(s).padStart(5, '0')}"${dir}`;
+        }
+        return toDMS(lat, true) + ' ' + toDMS(lng, false);
+    }
+
+    // ---- W3W Reverse Lookup (coordinates to 3-word address) ----
+
+    async function reverseW3W(lat, lng, apiKey) {
+        if (!apiKey) return null;
+        try {
+            const resp = await fetch(
+                `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${encodeURIComponent(apiKey)}`
+            );
+            const data = await resp.json();
+            if (data.words) {
+                return data.words;
+            }
+        } catch (e) {
+            console.error('W3W reverse lookup failed:', e);
+        }
+        return null;
+    }
+
     // ---- Public API ----
 
     return {
@@ -378,9 +566,12 @@ const Converters = (() => {
         lookupPostcode,
         lookupPostcodesBulk,
         lookupW3W,
+        reverseW3W,
         detectFormat,
         formatLabel,
-        resolve
+        resolve,
+        latLngToGridRef,
+        latLngToDMS
     };
 
 })();

@@ -534,6 +534,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-danger" id="editDeleteBtn">Delete</button>
+                <button class="btn btn-secondary" id="editViewDetailsBtn">View Details</button>
                 <button class="btn btn-secondary modal-cancel">Cancel</button>
                 <button class="btn btn-primary" id="editSaveBtn">Save Changes</button>
             </div>
@@ -543,6 +544,7 @@
     <!-- Map Context Menu (right-click anywhere on map) -->
     <div id="mapContextMenu" class="shape-context-menu hidden">
         <div class="ctx-point-section" style="display:none;">
+            <button class="ctx-item" data-action="point-details">Point Details</button>
             <button class="ctx-item" data-action="edit-point">Edit Point</button>
             <button class="ctx-item ctx-danger" data-action="delete-point">Delete Point</button>
             <div class="ctx-separator"></div>
@@ -574,6 +576,50 @@
     <div id="mapPointTypePicker" class="shape-context-menu map-point-type-picker hidden">
         <div class="ctx-picker-title">Choose point type</div>
         <div id="mapPointTypePickerOptions" class="ctx-picker-options"></div>
+    </div>
+
+    <!-- Point Details Modal -->
+    <div id="pointDetailsModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="pointDetailsTitle">Point Details</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="point-details-grid">
+                    <div class="detail-row">
+                        <span class="detail-label">Decimal</span>
+                        <span class="detail-value detail-copyable" id="detailDecimal" title="Click to copy">—</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">DMS</span>
+                        <span class="detail-value detail-copyable" id="detailDMS" title="Click to copy">—</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">OS Grid Ref</span>
+                        <span class="detail-value detail-copyable" id="detailOSGrid" title="Click to copy">—</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">What3Words</span>
+                        <span class="detail-value detail-copyable" id="detailW3W" title="Click to copy">
+                            <span id="detailW3WText">—</span>
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Elevation</span>
+                        <span class="detail-value" id="detailElevation">—</span>
+                    </div>
+                </div>
+                <div class="detail-hint" id="detailW3WHint" style="display:none;">
+                    W3W requires an API key. Set it in Settings.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-cancel">Close</button>
+                <button class="btn btn-primary" id="detailCopyAllBtn">Copy All</button>
+            </div>
+        </div>
     </div>
 
     <!-- Loading overlay -->

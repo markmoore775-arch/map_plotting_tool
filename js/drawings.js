@@ -16,6 +16,7 @@ const Drawings = (() => {
     let flightPathDrawState = null; // true when drawing a flight path
     let lineDrawState = null; // { start: [lat,lng] } while placing end point
     let lastCircleRadiusPoint = null; // last mouse pos during circle draw (for label angle)
+    let mobileDrawControlsEl = null; // floating Finish/Undo/Cancel bar on touch devices
 
     // Selection & interaction state
     let selectedShapeId = null;
@@ -371,8 +372,20 @@ const Drawings = (() => {
     }
 
     function setupCursorState() {
-        map.on('pm:drawstart', refreshInteractionCursor);
-        map.on('pm:drawend', refreshInteractionCursor);
+        map.on('pm:drawstart', (e) => {
+            refreshInteractionCursor();
+            if (isTouchDevice() && window.innerWidth <= 600 && !flightPathDrawState) {
+                const shape = e.shape;
+                if (shape === 'Polygon') {
+                    showMobileGeomanControls(shape);
+                    showMobileToast('Tap to add vertices \u00b7 Press Finish to complete');
+                }
+            }
+        });
+        map.on('pm:drawend', () => {
+            refreshInteractionCursor();
+            hideMobileDrawControls();
+        });
         map.on('pm:globaleditmodetoggled', refreshInteractionCursor);
         map.on('pm:globaldragmodetoggled', refreshInteractionCursor);
         map.on('pm:globalremovalmodetoggled', refreshInteractionCursor);
@@ -427,11 +440,14 @@ const Drawings = (() => {
             dashArray: currentStyle.dashArray
         };
 
+        const isTouch = isTouchDevice();
         map.pm.setPathOptions(pathOpts);
         map.pm.setGlobalOptions({
             pathOptions: pathOpts,
             templineStyle: { color: currentStyle.color, dashArray: '5,5' },
-            hintlineStyle: { color: currentStyle.color, dashArray: '5,5' }
+            hintlineStyle: { color: currentStyle.color, dashArray: '5,5' },
+            snappable: true,
+            snapDistance: isTouch ? 30 : 15
         });
     }
 
@@ -627,6 +643,10 @@ const Drawings = (() => {
         refreshInteractionCursor();
     }
 
+    function isTouchDevice() {
+        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    }
+
     function startFlightPathDraw() {
         cancelArrowDraw();
         cancelLineDraw();
@@ -636,12 +656,19 @@ const Drawings = (() => {
         flightPathDrawState = true;
         map.doubleClickZoom.disable();
         if (flightPathDrawBtn) flightPathDrawBtn.classList.add('active-draw');
+        const isTouch = isTouchDevice();
         map.pm.enableDraw('Line', {
             pathOptions: { ...flightPathStyle },
             templineStyle: { color: flightPathStyle.color, dashArray: '5,5' },
-            hintlineStyle: { color: flightPathStyle.color, dashArray: '5,5' }
+            hintlineStyle: { color: flightPathStyle.color, dashArray: '5,5' },
+            snappable: true,
+            snapDistance: isTouch ? 30 : 15
         });
         refreshInteractionCursor();
+        if (isTouch) {
+            showMobileDrawControls();
+            showMobileToast('Tap to add points \u00b7 Double-tap or press Finish to complete');
+        }
     }
 
     function cancelFlightPathDraw() {
@@ -651,7 +678,128 @@ const Drawings = (() => {
         if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) {
             map.pm.disableDraw();
         }
+        hideMobileDrawControls();
         refreshInteractionCursor();
+    }
+
+    // ---- Mobile draw controls (Finish / Undo / Cancel bar) ----
+
+    function showMobileDrawControls() {
+        hideMobileDrawControls();
+        if (window.innerWidth > 600) return;
+
+        const container = document.createElement('div');
+        container.className = 'mobile-draw-controls';
+
+        const finishBtn = document.createElement('button');
+        finishBtn.className = 'mobile-draw-finish-btn';
+        finishBtn.textContent = 'Finish';
+        finishBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try {
+                if (map.pm.Draw && map.pm.Draw.Line && map.pm.Draw.Line._finishShape) {
+                    map.pm.Draw.Line._finishShape();
+                }
+            } catch (_) { /* shape may not have enough points yet */ }
+        });
+
+        const undoBtn = document.createElement('button');
+        undoBtn.className = 'mobile-draw-undo-btn';
+        undoBtn.textContent = 'Undo';
+        undoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try {
+                if (map.pm.Draw && map.pm.Draw.Line && map.pm.Draw.Line._removeLastVertex) {
+                    map.pm.Draw.Line._removeLastVertex();
+                }
+            } catch (_) { /* ignore */ }
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'mobile-draw-cancel-btn';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            cancelFlightPathDraw();
+        });
+
+        container.appendChild(undoBtn);
+        container.appendChild(finishBtn);
+        container.appendChild(cancelBtn);
+        document.body.appendChild(container);
+        mobileDrawControlsEl = container;
+        L.DomEvent.disableClickPropagation(container);
+    }
+
+    function hideMobileDrawControls() {
+        if (mobileDrawControlsEl) {
+            mobileDrawControlsEl.remove();
+            mobileDrawControlsEl = null;
+        }
+    }
+
+    function showMobileGeomanControls(shape) {
+        hideMobileDrawControls();
+        if (window.innerWidth > 600) return;
+
+        const container = document.createElement('div');
+        container.className = 'mobile-draw-controls';
+
+        const finishBtn = document.createElement('button');
+        finishBtn.className = 'mobile-draw-finish-btn';
+        finishBtn.textContent = 'Finish';
+        finishBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try {
+                const drawer = map.pm.Draw[shape];
+                if (drawer && drawer._finishShape) drawer._finishShape();
+            } catch (_) { /* ignore */ }
+        });
+
+        const undoBtn = document.createElement('button');
+        undoBtn.className = 'mobile-draw-undo-btn';
+        undoBtn.textContent = 'Undo';
+        undoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try {
+                const drawer = map.pm.Draw[shape];
+                if (drawer && drawer._removeLastVertex) drawer._removeLastVertex();
+            } catch (_) { /* ignore */ }
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'mobile-draw-cancel-btn';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            map.pm.disableDraw();
+        });
+
+        container.appendChild(undoBtn);
+        container.appendChild(finishBtn);
+        container.appendChild(cancelBtn);
+        document.body.appendChild(container);
+        mobileDrawControlsEl = container;
+        L.DomEvent.disableClickPropagation(container);
+    }
+
+    // ---- Mobile toast notification ----
+
+    function showMobileToast(message, durationMs) {
+        if (window.innerWidth > 600) return;
+        const existing = document.querySelector('.mobile-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'mobile-toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        const duration = durationMs || 3500;
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            toast.addEventListener('animationend', () => toast.remove());
+        }, duration);
     }
 
     function startArrowDraw(optionalTailLatLng) {
@@ -1253,6 +1401,7 @@ const Drawings = (() => {
                 if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) {
                     map.pm.disableDraw();
                 }
+                hideMobileDrawControls();
                 refreshInteractionCursor();
 
                 const shape = {
