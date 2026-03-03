@@ -5,6 +5,10 @@
 const Drawings = (() => {
     'use strict';
 
+    function pushUndoSnapshot() {
+        if (typeof UndoHistory !== 'undefined') UndoHistory.pushSnapshot();
+    }
+
     let map;
     let shapes = [];
     let nextShapeId = 1;
@@ -215,6 +219,7 @@ const Drawings = (() => {
 
     function pasteShape(anchorLatLng) {
         if (!shapeClipboard) return null;
+        pushUndoSnapshot();
         const center = anchorLatLng && anchorLatLng.lat != null
             ? [anchorLatLng.lat, anchorLatLng.lng]
             : (map.getCenter ? [map.getCenter().lat, map.getCenter().lng] : [0, 0]);
@@ -583,6 +588,7 @@ const Drawings = (() => {
     }
 
     function createLineShape(start, end) {
+        pushUndoSnapshot();
         const shape = {
             id: nextShapeId++,
             type: 'polyline',
@@ -862,6 +868,7 @@ const Drawings = (() => {
     }
 
     function createArrowShape(tail, tip) {
+        pushUndoSnapshot();
         const shape = {
             id: nextShapeId++,
             type: 'arrow',
@@ -1242,6 +1249,7 @@ const Drawings = (() => {
 
     function editVertices(id) {
         selectShape(id);
+        panToShape(id);
         const shape = shapes.find(s => s.id === id);
         if (shape && shape.type === 'arrow') return;
 
@@ -1387,6 +1395,7 @@ const Drawings = (() => {
 
     function setupShapeEvents() {
         map.on('pm:create', (e) => {
+            pushUndoSnapshot();
             const layer = e.layer;
             const shapeType = e.shape;
 
@@ -1445,6 +1454,7 @@ const Drawings = (() => {
 
             const shape = shapes.find(s => s.id === id);
             if (!shape) return;
+            pushUndoSnapshot();
 
             updateShapeFromLayer(shape, layer);
             if (shape.type === 'text' && shape.text) {
@@ -1459,6 +1469,7 @@ const Drawings = (() => {
             const layer = e.layer;
             const id = layer._shapeId;
             if (!id) return;
+            pushUndoSnapshot();
 
             if (selectedShapeId === id) {
                 selectedShapeId = null;
@@ -1474,7 +1485,9 @@ const Drawings = (() => {
         });
 
         map.on('pm:globaleditmodetoggled', (e) => {
-            if (!e.enabled) {
+            if (e.enabled) {
+                pushUndoSnapshot();
+            } else {
                 for (const shape of shapes) {
                     const entry = shapeLayerMap[shape.id];
                     if (entry && entry.layer) {
@@ -1491,7 +1504,9 @@ const Drawings = (() => {
         });
 
         map.on('pm:globaldragmodetoggled', (e) => {
-            if (!e.enabled) {
+            if (e.enabled) {
+                pushUndoSnapshot();
+            } else {
                 for (const shape of shapes) {
                     const entry = shapeLayerMap[shape.id];
                     if (entry && entry.layer) {
@@ -1670,7 +1685,8 @@ const Drawings = (() => {
         } else if (shape.type === 'rectangle') {
             layer = L.rectangle(shape.latlngs, pathOpts).addTo(map);
         } else if (shape.type === 'polyline') {
-            layer = L.polyline(shape.latlngs, pathOpts).addTo(map);
+            const lineRenderer = L.canvas({ tolerance: 12 });
+            layer = L.polyline(shape.latlngs, { ...pathOpts, renderer: lineRenderer }).addTo(map);
         } else if (shape.type === 'flightpath') {
             const fpStyle = shape.style || flightPathStyle;
             const fpPathOpts = {
@@ -1680,7 +1696,8 @@ const Drawings = (() => {
                 weight: fpStyle.weight || flightPathStyle.weight,
                 dashArray: fpStyle.dashArray || flightPathStyle.dashArray
             };
-            layer = L.polyline(shape.latlngs, fpPathOpts).addTo(map);
+            const fpRenderer = L.canvas({ tolerance: 12 });
+            layer = L.polyline(shape.latlngs, { ...fpPathOpts, renderer: fpRenderer }).addTo(map);
             const arrowGroup = createFlightPathArrows(shape);
             arrowGroup.addTo(map);
             shapeLayerMap[shape.id] = { layer, arrowGroup };
@@ -2365,6 +2382,7 @@ const Drawings = (() => {
         const id = parseInt(document.getElementById('editShapeId').value);
         const shape = shapes.find(s => s.id === id);
         if (!shape) return;
+        pushUndoSnapshot();
 
         shape.label = document.getElementById('editShapeLabel').value.trim();
         shape.style.color = document.getElementById('editShapeColor').value;
@@ -2461,6 +2479,7 @@ const Drawings = (() => {
     // ---- Shape CRUD ----
 
     function removeShape(id) {
+        pushUndoSnapshot();
         if (selectedShapeId === id) {
             selectedShapeId = null;
             restorePanelDefaults();
@@ -2531,6 +2550,11 @@ const Drawings = (() => {
                 ? (s.label || (s.text ? String(s.text).slice(0, 30) + (String(s.text).length > 30 ? '…' : '') : '') || typeLabel)
                 : (s.label || typeLabel);
 
+            const isLineShape = s.type === 'polyline' || s.type === 'flightpath';
+            const verticesBtn = isLineShape
+                ? `<button class="btn-icon btn-edit-vertices" title="Edit vertices">&#9997;</button>`
+                : '';
+
             li.innerHTML = `
                 ${colorDot}
                 <div class="point-item-info">
@@ -2538,7 +2562,8 @@ const Drawings = (() => {
                     <div class="point-item-detail">${typeLabel}${measurement ? ' | ' + measurement : ''}</div>
                 </div>
                 <div class="point-item-actions">
-                    <button class="btn-icon btn-edit" title="Properties">&#9998;</button>
+                    <button class="btn-icon btn-edit" title="Edit properties">&#9998;</button>
+                    ${verticesBtn}
                     <button class="btn-icon btn-delete" title="Delete">&times;</button>
                 </div>
             `;
@@ -2546,6 +2571,8 @@ const Drawings = (() => {
             li.addEventListener('click', (e) => {
                 if (e.target.closest('.btn-edit')) {
                     openShapeEditModal(s.id);
+                } else if (e.target.closest('.btn-edit-vertices')) {
+                    editVertices(s.id);
                 } else if (e.target.closest('.btn-delete')) {
                     removeShape(s.id);
                 } else {
@@ -2578,13 +2605,14 @@ const Drawings = (() => {
         }));
     }
 
-    function loadShapes(data) {
+    function loadShapes(data, options) {
         clearAllShapes();
         if (!data || !Array.isArray(data)) return;
+        const preserveIds = options && options.preserveIds;
 
         for (const shapeData of data) {
             const shape = {
-                id: nextShapeId++,
+                id: preserveIds && shapeData.id != null ? shapeData.id : nextShapeId++,
                 type: shapeData.type,
                 label: shapeData.label || '',
                 style: shapeData.style || (shapeData.type === 'flightpath' ? { ...flightPathStyle } : { ...currentStyle }),
@@ -2622,6 +2650,9 @@ const Drawings = (() => {
 
             shapes.push(shape);
             addShapeToMap(shape);
+        }
+        if (preserveIds && data.length > 0) {
+            nextShapeId = Math.max(...data.map(s => s.id != null ? s.id : 0), 0) + 1;
         }
         refreshShapesList();
     }

@@ -259,10 +259,37 @@
         });
     }
 
+    function addStandaloneUndoControl() {
+        const UndoControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: function () {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                const btn = L.DomUtil.create('a', 'leaflet-control-undo leaflet-buttons-control-button disabled', container);
+                btn.href = '#';
+                btn.title = 'Undo last action (Ctrl+Z)';
+                btn.setAttribute('aria-disabled', 'true');
+                btn.innerHTML = '<span class="control-icon lucide-undo2-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-undo2-icon lucide-undo-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></span>';
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.on(btn, 'click', (e) => {
+                    L.DomEvent.stop(e);
+                    L.DomEvent.preventDefault(e);
+                    if (typeof UndoHistory !== 'undefined' && UndoHistory.undo()) {
+                        refreshHandToolState();
+                    }
+                });
+                return container;
+            }
+        });
+        map.addControl(new UndoControl());
+    }
+
     function initDropPointToolbarControl() {
         const toolbar = document.querySelector('.leaflet-pm-toolbar.leaflet-pm-draw')
             || document.querySelector('.leaflet-pm-toolbar');
-        if (!toolbar) return;
+        if (!toolbar) {
+            addStandaloneUndoControl();
+            return;
+        }
 
         // Move the arrow button into the Geoman toolbar if it's in a separate container
         const arrowBtn = document.querySelector('.leaflet-control-extra-draw');
@@ -313,6 +340,27 @@
         });
 
         handToolbarButton = handBtn;
+
+        // Create undo button and insert after hand (wrap in button-container to match Geoman structure)
+        const undoContainer = document.createElement('div');
+        undoContainer.className = 'button-container';
+        const undoToolbarBtn = document.createElement('a');
+        undoToolbarBtn.className = 'leaflet-control-undo leaflet-buttons-control-button disabled';
+        undoToolbarBtn.href = '#';
+        undoToolbarBtn.title = 'Undo last action (Ctrl+Z)';
+        undoToolbarBtn.setAttribute('aria-disabled', 'true');
+        undoToolbarBtn.innerHTML = '<span class="control-icon lucide-undo2-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-undo2-icon lucide-undo-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></span>';
+        undoContainer.appendChild(undoToolbarBtn);
+        const insertBefore = handBtn.nextElementSibling || handBtn.nextSibling;
+        toolbar.insertBefore(undoContainer, insertBefore);
+
+        L.DomEvent.on(undoToolbarBtn, 'click', (e) => {
+            L.DomEvent.stop(e);
+            L.DomEvent.preventDefault(e);
+            if (typeof UndoHistory !== 'undefined' && UndoHistory.undo()) {
+                refreshHandToolState();
+            }
+        });
 
         // Create drop point wrapper (button + popup menu) and insert at top of toolbar (after hand)
         const dropPointWrapper = document.createElement('div');
@@ -386,7 +434,12 @@
 
     // ---- Point Management ----
 
-    function createPoint(data) {
+    function pushUndoSnapshot() {
+        if (typeof UndoHistory !== 'undefined') UndoHistory.pushSnapshot();
+    }
+
+    function createPoint(data, options) {
+        if (!(options && options.skipUndoSnapshot)) pushUndoSnapshot();
         const resolvedIconType = normalizeIconType(data.iconType);
         const point = {
             id: nextId++,
@@ -427,6 +480,7 @@
     function updatePoint(id, data) {
         const point = points.find(p => p.id === id);
         if (!point) return;
+        pushUndoSnapshot();
 
         if (data.iconType !== undefined) {
             data.iconType = normalizeIconType(data.iconType || point.iconType);
@@ -443,17 +497,41 @@
     }
 
     function deletePoint(id) {
+        pushUndoSnapshot();
         removeMarkerFromMap(id);
         points = points.filter(p => p.id !== id);
         refreshPointsList();
     }
 
     function clearAllPoints() {
+        pushUndoSnapshot();
         for (const id of Object.keys(markerLayers)) {
             removeMarkerFromMap(parseInt(id));
         }
         points = [];
         nextId = 1;
+        refreshPointsList();
+    }
+
+    function restorePointsFromSnapshot(snapshotPoints) {
+        for (const id of Object.keys(markerLayers)) {
+            removeMarkerFromMap(parseInt(id));
+        }
+        markerLayers = {};
+        points = [];
+        if (!snapshotPoints || snapshotPoints.length === 0) {
+            nextId = 1;
+            refreshPointsList();
+            return;
+        }
+        let maxId = 0;
+        for (const p of snapshotPoints) {
+            const point = { ...p };
+            points.push(point);
+            addMarkerToMap(point);
+            if (point.id != null) maxId = Math.max(maxId, point.id);
+        }
+        nextId = maxId + 1;
         refreshPointsList();
     }
 
@@ -1580,6 +1658,7 @@
 
         const lines = text.split(/\r?\n/).filter(l => l.trim());
         showLoading(`Importing ${lines.length} locations...`);
+        pushUndoSnapshot();
 
         let imported = 0;
         let failed = 0;
@@ -1608,7 +1687,7 @@
                         lat: results[key].lat,
                         lng: results[key].lng,
                         originalInput: pc
-                    });
+                    }, { skipUndoSnapshot: true });
                     imported++;
                 } else {
                     failed++;
@@ -1626,7 +1705,7 @@
                         lat: coords.lat,
                         lng: coords.lng,
                         originalInput: line
-                    });
+                    }, { skipUndoSnapshot: true });
                     imported++;
                 } else {
                     failed++;
@@ -1670,6 +1749,7 @@
         }
 
         showLoading(`Importing ${rows.length} rows...`);
+        pushUndoSnapshot();
 
         let imported = 0;
         let failed = 0;
@@ -1712,7 +1792,7 @@
                         customSymbol: colIconSymbol !== -1 ? (row[colIconSymbol] || '').trim() : '',
                         notes: colNotes !== -1 ? (row[colNotes] || '') : '',
                         originalInput: pr.postcode
-                    });
+                    }, { skipUndoSnapshot: true });
                     imported++;
                 } else {
                     failed++;
@@ -1751,7 +1831,7 @@
                         customSymbol: colIconSymbol !== -1 ? (row[colIconSymbol] || '').trim() : '',
                         notes: colNotes !== -1 ? (row[colNotes] || '') : '',
                         originalInput: colLocation !== -1 ? (row[colLocation] || '') : ''
-                    });
+                    }, { skipUndoSnapshot: true });
                     imported++;
                 } else {
                     failed++;
@@ -1827,6 +1907,7 @@
         showLoading('Loading project...');
         try {
             const project = await ProjectIO.loadProject(file);
+            pushUndoSnapshot();
 
             // Apply settings
             if (project.settings) {
@@ -1958,6 +2039,14 @@
             }
             document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
         }
+        if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+            const active = document.activeElement;
+            const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable);
+            if (!isInput && typeof UndoHistory !== 'undefined' && UndoHistory.undo()) {
+                e.preventDefault();
+                refreshHandToolState();
+            }
+        }
     });
 
     // ---- Drawings Integration ----
@@ -1965,6 +2054,31 @@
     // Init drawings after map is ready
     function initDrawings() {
         Drawings.init(map);
+
+        // Undo history
+        if (typeof UndoHistory !== 'undefined') {
+            UndoHistory.init({
+                getState: () => ({
+                    points: points.map(p => ({ ...p })),
+                    shapes: Drawings.serializeShapes(),
+                    nextId,
+                    nextShapeId: Math.max(0, ...(Drawings.getShapes().map(s => s.id) || [0])) + 1
+                }),
+                restoreState: (snapshot) => {
+                    document.getElementById('shapeEditModal').classList.add('hidden');
+                    restorePointsFromSnapshot(snapshot.points);
+                    Drawings.loadShapes(snapshot.shapes || [], { preserveIds: true });
+                    if (typeof UndoHistory !== 'undefined') UndoHistory.updateUndoButtonState();
+                }
+            });
+            const undoBtn = document.getElementById('undoBtn');
+            if (undoBtn) {
+                undoBtn.addEventListener('click', () => {
+                    if (UndoHistory.undo()) refreshHandToolState();
+                });
+                UndoHistory.updateUndoButtonState();
+            }
+        }
 
         // Shape edit modal buttons
         document.getElementById('shapeEditSaveBtn').addEventListener('click', () => {
@@ -2002,6 +2116,7 @@
             const count = Drawings.getShapes().length;
             if (count === 0) return;
             if (confirm(`Clear all ${count} shapes?`)) {
+                pushUndoSnapshot();
                 Drawings.clearAllShapes();
             }
         });
@@ -2368,10 +2483,14 @@
             if (introOverlay) introOverlay.classList.add('hidden');
             initMap();
             initDrawings();
-            initDropPointToolbarControl();
-            initPointDetailsModal();
-            refreshHandToolState();
             map.on('drawingmodechange', refreshHandToolState);
+            // Defer toolbar setup to ensure Geoman has fully rendered
+            requestAnimationFrame(() => {
+                initDropPointToolbarControl();
+                initPointDetailsModal();
+                refreshHandToolState();
+                if (typeof UndoHistory !== 'undefined') UndoHistory.updateUndoButtonState();
+            });
         }
 
         if (introProceedBtn) {

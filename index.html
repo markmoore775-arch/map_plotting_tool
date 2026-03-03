@@ -135,6 +135,7 @@
             <h2 class="section-title">Actions</h2>
             <div class="action-buttons">
 
+                <button class="btn btn-secondary" id="undoBtn" title="Undo last action (Ctrl+Z)" disabled>Undo</button>
                 <button class="btn btn-secondary" id="bulkImportBtn">Bulk Import</button>
                 <button class="btn btn-secondary" id="exportBtn">Export</button>
                 <button class="btn btn-secondary" id="saveProjectBtn">Save Project</button>
@@ -164,9 +165,9 @@
                 <button class="btn btn-small btn-danger" id="clearShapesBtn">Clear Shapes</button>
             </div>
             <div class="shapes-hint">
-                Right-click anywhere for options (edit shape, copy/paste, drop point) &middot; Ctrl+C / Ctrl+V &middot; Double-click for properties &middot; Esc to deselect
+                Right-click anywhere for options &middot; Edit from sidebar (pencil = properties, vertices btn for paths) &middot; Ctrl+C / Ctrl+V &middot; Double-click for properties &middot; Esc to deselect
                 <br>
-                Tip: Click a shape to select &amp; drag it. Click an arrow to select it, then drag its handles to rotate/resize. You can also drag point markers to update coordinates.
+                Tip: Click a shape to select &amp; drag it. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path.
             </div>
             <ul id="shapesList" class="points-list"></ul>
         </section>
@@ -558,7 +559,7 @@
                     <h3>Settings</h3>
                     <p>Configure optional API keys (What3Words, OS Maps), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
                     <h3>Keyboard Shortcuts</h3>
-                    <p><strong>Escape</strong> — close modals, exit drawing/drop-point mode. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> — copy and paste shapes.</p>
+                    <p><strong>Escape</strong> — close modals, exit drawing/drop-point mode. <strong>Ctrl+Z</strong> — undo last action. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> — copy and paste shapes.</p>
                 </div>
                 <div class="tab-panel" id="help-tab-disclaimer">
                     <h3>Disclaimer</h3>
@@ -752,6 +753,7 @@
 
     <!-- App Scripts -->
     <script src="js/config.js"></script>
+    <script src="js/undo.js"></script>
     <script src="js/elevation.js"></script>
     <script src="js/converters.js"></script>
     <script src="js/drawings.js"></script>

@@ -1258,6 +1258,11 @@ select {
         min-height: 44px;
     }
 
+    .leaflet-pm-toolbar .button-container .leaflet-control-undo {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
     .leaflet-pm-toolbar .button-container a {
         min-width: 44px;
         min-height: 44px;
@@ -1275,6 +1280,7 @@ select {
     }
 
     .leaflet-control-hand-tool,
+    .leaflet-control-undo,
     .leaflet-control-drop-point,
     .leaflet-control-extra-draw,
     .leaflet-control-flight-path,
@@ -1290,6 +1296,7 @@ select {
     }
 
     .leaflet-control-hand-tool .lucide-hand-icon svg,
+    .leaflet-control-undo .lucide-undo2-icon svg,
     .leaflet-control-drop-point .lucide-map-pin-icon svg,
     .leaflet-control-extra-draw .lucide-arrow-big-right-icon svg,
     .leaflet-control-flight-path .lucide-drone-icon svg,
@@ -1706,6 +1713,43 @@ select {
 .leaflet-control-hand-tool.active {
     background: #1a73e8 !important;
     color: #fff !important;
+}
+
+.leaflet-control-undo {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+    text-decoration: none;
+    color: #333;
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.leaflet-control-undo .control-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.leaflet-control-undo .lucide-undo2-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-control-undo .lucide-undo2-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.leaflet-control-undo.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .leaflet-control-extra-draw {
