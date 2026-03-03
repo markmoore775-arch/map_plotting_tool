@@ -468,6 +468,15 @@
                     <span class="form-hint">Required for Ordnance Survey Maps in the map layer menu. Get a key at <a href="https://osdatahub.os.uk/" target="_blank">OS Data Hub</a></span>
                 </div>
                 <div class="form-group">
+                    <label for="bgaAirspaceUsername">BGA Airspace Service Username (optional)</label>
+                    <input type="text" id="bgaAirspaceUsername" placeholder="Username for RA(T) data...">
+                    <span class="form-hint">Required for RA(T) layer. Register at <a href="https://airspace.bgaladder.net/" target="_blank">airspace.bgaladder.net</a></span>
+                </div>
+                <div class="form-group">
+                    <label for="bgaAirspacePassword">BGA Airspace Service Password</label>
+                    <input type="password" id="bgaAirspacePassword" placeholder="Password (stored locally)">
+                </div>
+                <div class="form-group">
                     <label>
                         <input type="checkbox" id="showLabels" checked>
                         Show point labels on map
@@ -790,6 +799,8 @@
     <!-- App Scripts -->
     <script src="js/config.js"></script>
     <script src="js/airspace.js"></script>
+    <script src="js/notam.js"></script>
+    <script src="js/rat.js"></script>
     <script src="js/undo.js"></script>
     <script src="js/elevation.js"></script>
     <script src="js/converters.js"></script>

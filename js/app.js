@@ -24,6 +24,8 @@
     let settings = {
         w3wApiKey: '',
         osMapsApiKey: '',
+        bgaAirspaceUsername: '',
+        bgaAirspacePassword: '',
         showLabels: true,
         showMeasurements: true,
         showShapeLabels: true,
@@ -37,6 +39,8 @@
                 const parsed = JSON.parse(stored);
                 if (parsed.w3wApiKey !== undefined) settings.w3wApiKey = parsed.w3wApiKey;
                 if (parsed.osMapsApiKey !== undefined) settings.osMapsApiKey = parsed.osMapsApiKey;
+                if (parsed.bgaAirspaceUsername !== undefined) settings.bgaAirspaceUsername = parsed.bgaAirspaceUsername;
+                if (parsed.bgaAirspacePassword !== undefined) settings.bgaAirspacePassword = parsed.bgaAirspacePassword;
                 if (parsed.showLabels !== undefined) settings.showLabels = parsed.showLabels;
                 if (parsed.showMeasurements !== undefined) settings.showMeasurements = parsed.showMeasurements;
                 if (parsed.showShapeLabels !== undefined) settings.showShapeLabels = parsed.showShapeLabels;
@@ -59,6 +63,8 @@
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
                 w3wApiKey: settings.w3wApiKey,
                 osMapsApiKey: settings.osMapsApiKey,
+                bgaAirspaceUsername: settings.bgaAirspaceUsername,
+                bgaAirspacePassword: settings.bgaAirspacePassword,
                 showLabels: settings.showLabels,
                 showMeasurements: settings.showMeasurements,
                 showShapeLabels: settings.showShapeLabels,
@@ -168,8 +174,29 @@
 
         // UK Airspace Restrictions (toggled from legend, not layer control)
         let airspaceModule = null;
+        let notamModule = null;
+        let ratModule = null;
+        if (typeof Notam !== 'undefined') {
+            notamModule = Notam.init({ map: map });
+        }
+        if (typeof RAT !== 'undefined') {
+            ratModule = RAT.init({
+                map: map,
+                getCredentials: function () {
+                    return {
+                        username: settings.bgaAirspaceUsername || '',
+                        password: settings.bgaAirspacePassword || ''
+                    };
+                }
+            });
+        }
         if (typeof Airspace !== 'undefined') {
-            airspaceModule = Airspace.init({ map: map, dataUrl: 'assets/uk-airspace.geojson' });
+            airspaceModule = Airspace.init({
+                map: map,
+                dataUrl: 'assets/uk-airspace.geojson',
+                notamModule: notamModule,
+                ratModule: ratModule
+            });
         }
 
         layerControl = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
@@ -1996,6 +2023,10 @@
         // Populate from current settings
         document.getElementById('w3wApiKey').value = settings.w3wApiKey;
         document.getElementById('osMapsApiKey').value = settings.osMapsApiKey;
+        const bgaUser = document.getElementById('bgaAirspaceUsername');
+        const bgaPass = document.getElementById('bgaAirspacePassword');
+        if (bgaUser) bgaUser.value = settings.bgaAirspaceUsername;
+        if (bgaPass) bgaPass.value = settings.bgaAirspacePassword;
         document.getElementById('showLabels').checked = settings.showLabels;
         document.getElementById('showMeasurements').checked = settings.showMeasurements;
         document.getElementById('showShapeLabels').checked = settings.showShapeLabels;
@@ -2006,6 +2037,10 @@
     document.getElementById('saveSettingsBtn').addEventListener('click', () => {
         settings.w3wApiKey = document.getElementById('w3wApiKey').value.trim();
         settings.osMapsApiKey = document.getElementById('osMapsApiKey').value.trim();
+        const bgaUserEl = document.getElementById('bgaAirspaceUsername');
+        const bgaPassEl = document.getElementById('bgaAirspacePassword');
+        if (bgaUserEl) settings.bgaAirspaceUsername = bgaUserEl.value.trim();
+        if (bgaPassEl) settings.bgaAirspacePassword = bgaPassEl.value.trim();
         settings.showLabels = document.getElementById('showLabels').checked;
         settings.showMeasurements = document.getElementById('showMeasurements').checked;
         settings.showShapeLabels = document.getElementById('showShapeLabels').checked;

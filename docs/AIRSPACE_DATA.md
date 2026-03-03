@@ -107,9 +107,17 @@ npm install @tmcw/togeojson @xmldom/xmldom adm-zip
 
 ---
 
-## Alternative: UK Airspace Service API
+## NOTAM (Temporary Restrictions)
 
-The [UK Airspace Service](https://airspace.bgaladder.net/) (BGA) provides GeoJSON via API with registration. It includes airspace, LoAs, and RA(T)s. Integration would require adding an API client and handling authentication. Contact them for API access.
+AirPlot fetches NOTAMs from the [UK NOTAM Archive](https://jonty.github.io/uk-notam-archive/) (NATS AIS Contingency, hourly updated). Enable the **NOTAM** layer in the airspace key to display temporary restrictions. No API key required.
+
+## RA(T) – Restricted Area Temporary
+
+AirPlot can display RA(T)s from the [UK Airspace Service](https://airspace.bgaladder.net/) (BGA). **Registration required** at airspace.bgaladder.net. Add your username and password in **Settings** to enable the RA(T) layer.
+
+## Data Validity
+
+When you run the conversion script, the output GeoJSON includes metadata with the effective date range (from the NATS filename). This is shown in the airspace panel as "Data valid: YYYY-MM-DD – YYYY-MM-DD".
 
 ---
 

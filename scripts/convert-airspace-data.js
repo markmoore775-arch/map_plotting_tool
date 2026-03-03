@@ -115,10 +115,33 @@ async function main() {
         process.exit(1);
     }
 
+    function extractEffectiveDate(filePath) {
+        const name = path.basename(filePath, path.extname(filePath));
+        const m = name.match(/(\d{8})/);
+        if (!m) return null;
+        const yyyymmdd = m[1];
+        const year = parseInt(yyyymmdd.slice(0, 4), 10);
+        const month = parseInt(yyyymmdd.slice(4, 6), 10);
+        const day = parseInt(yyyymmdd.slice(6, 8), 10);
+        const from = new Date(year, month - 1, day);
+        const to = new Date(from);
+        to.setDate(to.getDate() + 28);
+        return {
+            from: from.toISOString().slice(0, 10),
+            to: to.toISOString().slice(0, 10)
+        };
+    }
+
     // Map NATS KML properties to AirPlot format
     // NATS designators: EGD### (Danger), EGP### (Prohibited), EGR### (Restricted), EGRU### (UAS Restricted), FRZ
+    const effectiveDate = extractEffectiveDate(inputPath);
     const mapped = {
         type: 'FeatureCollection',
+        metadata: effectiveDate ? {
+            effectiveFrom: effectiveDate.from,
+            effectiveTo: effectiveDate.to,
+            source: 'NATS UAS ENR 5.1'
+        } : undefined,
         features: geojson.features.map(f => {
             const p = f.properties || {};
             const name = (p.name || '').trim();

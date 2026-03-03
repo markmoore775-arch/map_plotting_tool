@@ -233,6 +233,8 @@
         options = options || {};
         const map = options.map;
         const dataUrl = options.dataUrl || 'assets/uk-airspace.geojson';
+        const notamModule = options.notamModule || null;
+        const ratModule = options.ratModule || null;
 
         const layersByType = {};
         const typeKeys = ['prohibited', 'restricted', 'danger', 'frz', 'other'];
@@ -268,6 +270,9 @@
             });
         }
 
+        let lastValidity = null;
+
+        let validityUpdateCallback = null;
         function loadData(callback) {
             typeKeys.forEach(function (key) {
                 layersByType[key].clearLayers();
@@ -277,12 +282,15 @@
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     addDataToLayers(data, layersByType);
+                    lastValidity = data.metadata || null;
+                    if (validityUpdateCallback) validityUpdateCallback();
                     if (callback) callback();
                 })
                 .catch(function () {
                     if (callback) callback();
                 });
         }
+        function setValidityUpdateCallback(fn) { validityUpdateCallback = fn; }
 
         loadData();
 
@@ -310,8 +318,9 @@
                     L.DomEvent.on(input, 'change', function () {
                         const checkboxes = container.querySelectorAll('.airspace-legend-item-cb');
                         checkboxes.forEach(function (cb) {
-                            cb.checked = input.checked;
                             const key = cb.dataset.type;
+                            if (key === 'notam' || key === 'rat') return;
+                            cb.checked = input.checked;
                             if (input.checked) {
                                 addLayerToMap(key);
                             } else {
@@ -327,6 +336,21 @@
                             refreshBtn.classList.remove('airspace-refreshing');
                         });
                     });
+                    const validityEl = L.DomUtil.create('div', 'airspace-legend-validity', container);
+                    validityEl.style.fontSize = '10px';
+                    validityEl.style.color = '#9ca3af';
+                    validityEl.style.marginBottom = '6px';
+                    function updateValidityDisplay() {
+                        if (lastValidity && lastValidity.effectiveFrom && lastValidity.effectiveTo) {
+                            validityEl.textContent = 'Data valid: ' + lastValidity.effectiveFrom + ' – ' + lastValidity.effectiveTo;
+                            validityEl.style.display = '';
+                        } else {
+                            validityEl.style.display = 'none';
+                        }
+                    }
+                    updateValidityDisplay();
+                    setValidityUpdateCallback(updateValidityDisplay);
+
                     const list = L.DomUtil.create('ul', 'airspace-legend-list', container);
                     const types = ['prohibited', 'restricted', 'danger', 'frz', 'other'];
                     types.forEach(function (key) {
@@ -349,6 +373,49 @@
                             }
                         });
                     });
+                    if (notamModule) {
+                        const li = L.DomUtil.create('li', 'airspace-legend-item', list);
+                        const itemLabel = L.DomUtil.create('label', 'airspace-legend-item-label', li);
+                        itemLabel.style.cursor = 'pointer';
+                        const cb = L.DomUtil.create('input', 'airspace-legend-item-cb', itemLabel);
+                        cb.type = 'checkbox';
+                        cb.dataset.type = 'notam';
+                        const swatch = L.DomUtil.create('span', 'airspace-legend-swatch', itemLabel);
+                        swatch.style.backgroundColor = '#059669';
+                        const lbl = L.DomUtil.create('span', 'airspace-legend-label', itemLabel);
+                        lbl.textContent = 'NOTAM';
+                        L.DomEvent.on(cb, 'change', function () {
+                            if (cb.checked) {
+                                notamModule.loadNotams(function () {
+                                    notamModule.addToMap();
+                                });
+                            } else {
+                                notamModule.removeFromMap();
+                            }
+                        });
+                    }
+                    if (ratModule) {
+                        const li = L.DomUtil.create('li', 'airspace-legend-item', list);
+                        const itemLabel = L.DomUtil.create('label', 'airspace-legend-item-label', li);
+                        itemLabel.style.cursor = 'pointer';
+                        const cb = L.DomUtil.create('input', 'airspace-legend-item-cb', itemLabel);
+                        cb.type = 'checkbox';
+                        cb.dataset.type = 'rat';
+                        const swatch = L.DomUtil.create('span', 'airspace-legend-swatch', itemLabel);
+                        swatch.style.backgroundColor = '#7c3aed';
+                        const lbl = L.DomUtil.create('span', 'airspace-legend-label', itemLabel);
+                        lbl.textContent = 'RA(T)';
+                        L.DomEvent.on(cb, 'change', function () {
+                            if (cb.checked) {
+                                const bounds = map.getBounds();
+                                ratModule.loadRAT(bounds, function () {
+                                    ratModule.addToMap();
+                                });
+                            } else {
+                                ratModule.removeFromMap();
+                            }
+                        });
+                    }
                     return container;
                 }
             });
@@ -361,6 +428,7 @@
             removeAllFromMap: removeAllFromMap,
             loadData: loadData,
             createLegendControl: createLegendControl,
+            setValidityUpdateCallback: setValidityUpdateCallback,
             AIRSPACE_TYPES: AIRSPACE_TYPES,
             classifyAirspaceType: classifyAirspaceType
         };
