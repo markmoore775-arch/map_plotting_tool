@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Test UAS Restrictions</name>
+    <Placemark>
+      <name>EGD001 TREVOSE HEAD</name>
+      <description>Danger area. Activity: Ordnance, Munitions.</description>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>-5.51,50.32,0 -5.50,50.32,0 -5.50,50.33,0 -5.51,50.33,0 -5.51,50.32,0</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark>
+      <name>EGP500 BUCKINGHAM PALACE</name>
+      <description>Prohibited area.</description>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>-0.15,51.50,0 -0.14,51.50,0 -0.14,51.51,0 -0.15,51.51,0 -0.15,51.50,0</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>

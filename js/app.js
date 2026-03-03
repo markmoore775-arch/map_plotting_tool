@@ -166,27 +166,17 @@
             baseLayers['Mapbox Light'] = createMapboxLayer('mapbox/light-v11', mapboxToken);
         }
 
-        // UK Airspace Restrictions overlay (NATS UAS data)
-        const airspaceOverlay = L.geoJSON(null, {
-            style: {
-                color: '#dc2626',
-                weight: 2,
-                fillColor: '#dc2626',
-                fillOpacity: 0.15
-            },
-            onEachFeature: function (feature, layer) {
-                if (feature.properties) {
-                    const name = feature.properties.name || '';
-                    const desc = feature.properties.description || '';
-                    const content = desc
-                        ? '<div class="airspace-popup"><strong>' + escapeHtml(name) + '</strong><div class="airspace-popup-body">' + desc + '</div></div>'
-                        : escapeHtml(name);
-                    layer.bindPopup(content, { maxWidth: 420, maxHeight: 400 });
-                }
-            }
-        });
+        // UK Airspace Restrictions overlay (NATS UAS / UK AIP ENR 5.1)
+        const airspaceOverlays = {};
+        let airspaceModule = null;
+        if (typeof Airspace !== 'undefined') {
+            airspaceModule = Airspace.init({ map: map, dataUrl: 'assets/uk-airspace.geojson' });
+            Object.assign(airspaceOverlays, airspaceModule.overlayGroups);
+        }
 
-        // Standalone airspace toggle (visible outside layer control)
+        layerControl = L.control.layers(baseLayers, airspaceOverlays, { position: 'topright' }).addTo(map);
+
+        // Standalone airspace toggle (visible outside layer control) - toggles all airspace layers
         const AirspaceToggleControl = L.Control.extend({
             options: { position: 'bottomleft' },
             onAdd: function () {
@@ -195,15 +185,17 @@
                 const input = L.DomUtil.create('input', 'airspace-toggle-input', label);
                 input.type = 'checkbox';
                 input.checked = false;
-                input.title = 'Show UK airspace restrictions (NATS UAS data)';
+                input.title = 'Show UK airspace restrictions (NATS UAS / UK AIP ENR 5.1)';
                 const span = L.DomUtil.create('span', 'airspace-toggle-text', label);
                 span.textContent = 'UK Airspace';
                 L.DomEvent.disableClickPropagation(container);
                 L.DomEvent.on(input, 'change', function () {
-                    if (input.checked) {
-                        airspaceOverlay.addTo(map);
-                    } else {
-                        map.removeLayer(airspaceOverlay);
+                    if (airspaceModule) {
+                        if (input.checked) {
+                            airspaceModule.addAllToMap();
+                        } else {
+                            airspaceModule.removeAllFromMap();
+                        }
                     }
                 });
                 return container;
@@ -211,15 +203,9 @@
         });
         map.addControl(new AirspaceToggleControl());
 
-        layerControl = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
-
-        // Load UK airspace data (NATS UAS Flight Restrictions)
-        fetch('assets/uk-airspace.geojson')
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                airspaceOverlay.addData(data);
-            })
-            .catch(function () { /* ignore - layer will be empty */ });
+        if (airspaceModule && airspaceModule.createLegendControl) {
+            map.addControl(airspaceModule.createLegendControl());
+        }
 
         // Add OS Maps layers if API key is configured (from localStorage or project)
         updateOsMapsLayers();

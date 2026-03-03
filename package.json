@@ -3,10 +3,16 @@
   "version": "1.0.0",
   "description": "Automated tests for map plotting tool",
   "scripts": {
-    "test": "node test_browser.js"
+    "test": "node test_browser.js",
+    "convert-airspace": "node scripts/convert-airspace-data.js"
   },
   "dependencies": {
     "playwright": "^1.58.2",
     "puppeteer": "^21.0.0"
+  },
+  "devDependencies": {
+    "@tmcw/togeojson": "^4.7.0",
+    "@xmldom/xmldom": "^0.8.11",
+    "adm-zip": "^0.5.16"
   }
 }

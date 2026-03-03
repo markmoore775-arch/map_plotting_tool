@@ -1567,6 +1567,56 @@ select {
     user-select: none;
 }
 
+/* UK Airspace legend */
+.airspace-legend {
+    background: var(--sidebar-bg) !important;
+    border: 1px solid var(--sidebar-border) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+    padding: 8px 12px !important;
+}
+.airspace-legend-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sidebar-text);
+    margin-bottom: 6px;
+}
+.airspace-legend-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.airspace-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--sidebar-text);
+    margin-bottom: 4px;
+}
+.airspace-legend-item:last-child {
+    margin-bottom: 0;
+}
+.airspace-legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.2);
+}
+.airspace-popup-type {
+    font-weight: 500;
+}
+.airspace-popup-desc {
+    margin-top: 8px;
+    font-size: 12px;
+}
+.airspace-popup-source {
+    margin-top: 8px;
+    font-size: 10px;
+    color: #888;
+}
+
 /* ---- Drawing Style Panel ---- */
 
 /* ---- Drop Point Toolbar ---- */

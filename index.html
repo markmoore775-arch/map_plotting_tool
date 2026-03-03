@@ -553,7 +553,15 @@
                     <h3>Map Layers</h3>
                     <p>Use the layer control (top-right) to switch between OpenStreetMap, Topographic, Satellite, and optionally Mapbox or Ordnance Survey (OS Maps requires an API key in Settings).</p>
                     <h3>UK Airspace</h3>
-                    <p>Toggle the <strong>UK Airspace</strong> checkbox (bottom-left) to show NATS UAS flight restrictions.</p>
+                    <p>Toggle the <strong>UK Airspace</strong> checkbox (bottom-left) to show all airspace restrictions, or use the layer control (top-right) to show individual types:</p>
+                    <ul>
+                        <li><strong>Prohibited</strong> — No flying permitted</li>
+                        <li><strong>Restricted</strong> — Flying limited under certain conditions</li>
+                        <li><strong>Danger</strong> — Hazardous activities may occur</li>
+                        <li><strong>FRZ / Aerodrome</strong> — Flight Restriction Zones around protected aerodromes</li>
+                    </ul>
+                    <p>Data is sourced from UK AIP ENR 5.1 / NATS UAS. Click any zone for details including vertical limits and activation times.</p>
+                    <p>To use real NATS data, see <code>docs/AIRSPACE_DATA.md</code> for download and conversion instructions.</p>
                     <h3>Geolocation</h3>
                     <p>Use the locate button to show your current position on the map.</p>
                     <h3>Settings</h3>
@@ -753,6 +761,7 @@
 
     <!-- App Scripts -->
     <script src="js/config.js"></script>
+    <script src="js/airspace.js"></script>
     <script src="js/undo.js"></script>
     <script src="js/elevation.js"></script>
     <script src="js/converters.js"></script>
