@@ -55,13 +55,13 @@
             <p class="intro-description">
                 Use this tool to draw flight areas, highlight zones to avoid, and mark key locations such as take-off and landing points. Once you're ready, tap below to open the map and start planning your mission.
             </p>
-            <div class="intro-disclaimer">
-                <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in Help.
-            </div>
             <button type="button" class="intro-cta" id="introProceedBtn">
                 Launch App
                 <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </button>
+            <div class="intro-disclaimer">
+                <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in Help.
+            </div>
             <p class="intro-version">v1.0</p>
             <p class="intro-copyright">&copy; Mark Moore</p>
         </div>
@@ -179,6 +179,11 @@
 
     <!-- Map -->
     <div id="map"></div>
+
+    <!-- Map logo (always visible when using the app) -->
+    <div class="map-logo" aria-hidden="true">
+        <img src="assets/airplot-icon.svg" alt="AirPlot">
+    </div>
 
     <!-- Footer -->
     <footer class="app-footer">
@@ -494,6 +499,29 @@
         </div>
     </div>
 
+    <!-- Search Modal -->
+    <div id="searchModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Search Location</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="searchInput">Search by postcode, lat/long, OS Grid, DMS, What3Words...</label>
+                    <input type="text" id="searchInput" placeholder="e.g. SW1A 1AA, 51.5074 -0.1278, ///filled.count.soap" autocomplete="off">
+                    <span id="searchFormatHint" class="format-hint"></span>
+                </div>
+                <div id="searchStatus" class="bulk-status hidden"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="searchGoBtn">Go to Location</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Help Modal -->
     <div id="helpModal" class="modal hidden">
         <div class="modal-backdrop"></div>
@@ -553,7 +581,7 @@
                     <h3>Map Layers</h3>
                     <p>Use the layer control (top-right) to switch between OpenStreetMap, Topographic, Satellite, and optionally Mapbox or Ordnance Survey (OS Maps requires an API key in Settings).</p>
                     <h3>UK Airspace</h3>
-                    <p>Toggle the <strong>UK Airspace</strong> checkbox (bottom-left) to show all airspace restrictions, or use the layer control (top-right) to show individual types:</p>
+                    <p>The airspace key (bottom-left) shows all restriction types. Use the <strong>UK Airspace</strong> checkbox to show or hide all types, or tick individual types:</p>
                     <ul>
                         <li><strong>Prohibited</strong> — No flying permitted</li>
                         <li><strong>Restricted</strong> — Flying limited under certain conditions</li>

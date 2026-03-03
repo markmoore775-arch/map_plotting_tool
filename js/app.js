@@ -166,42 +166,13 @@
             baseLayers['Mapbox Light'] = createMapboxLayer('mapbox/light-v11', mapboxToken);
         }
 
-        // UK Airspace Restrictions overlay (NATS UAS / UK AIP ENR 5.1)
-        const airspaceOverlays = {};
+        // UK Airspace Restrictions (toggled from legend, not layer control)
         let airspaceModule = null;
         if (typeof Airspace !== 'undefined') {
             airspaceModule = Airspace.init({ map: map, dataUrl: 'assets/uk-airspace.geojson' });
-            Object.assign(airspaceOverlays, airspaceModule.overlayGroups);
         }
 
-        layerControl = L.control.layers(baseLayers, airspaceOverlays, { position: 'topright' }).addTo(map);
-
-        // Standalone airspace toggle (visible outside layer control) - toggles all airspace layers
-        const AirspaceToggleControl = L.Control.extend({
-            options: { position: 'bottomleft' },
-            onAdd: function () {
-                const container = L.DomUtil.create('div', 'leaflet-control leaflet-control-airspace-toggle');
-                const label = L.DomUtil.create('label', 'airspace-toggle-label', container);
-                const input = L.DomUtil.create('input', 'airspace-toggle-input', label);
-                input.type = 'checkbox';
-                input.checked = false;
-                input.title = 'Show UK airspace restrictions (NATS UAS / UK AIP ENR 5.1)';
-                const span = L.DomUtil.create('span', 'airspace-toggle-text', label);
-                span.textContent = 'UK Airspace';
-                L.DomEvent.disableClickPropagation(container);
-                L.DomEvent.on(input, 'change', function () {
-                    if (airspaceModule) {
-                        if (input.checked) {
-                            airspaceModule.addAllToMap();
-                        } else {
-                            airspaceModule.removeAllFromMap();
-                        }
-                    }
-                });
-                return container;
-            }
-        });
-        map.addControl(new AirspaceToggleControl());
+        layerControl = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
 
         if (airspaceModule && airspaceModule.createLegendControl) {
             map.addControl(airspaceModule.createLegendControl());
@@ -307,14 +278,35 @@
             }
         }
 
-        // Create hand/pan button and prepend to toolbar (first button)
+        // Create search button and prepend to toolbar (first button, above hand)
+        const searchBtn = document.createElement('a');
+        searchBtn.className = 'leaflet-control-search leaflet-buttons-control-button';
+        searchBtn.href = '#';
+        searchBtn.title = 'Search location (postcode, lat/long, w3w...)';
+        searchBtn.innerHTML = '<span class="control-icon lucide-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>';
+        toolbar.insertBefore(searchBtn, toolbar.firstChild);
+
+        L.DomEvent.on(searchBtn, 'click', (e) => {
+            L.DomEvent.stop(e);
+            L.DomEvent.preventDefault(e);
+            openModal('searchModal');
+            const input = document.getElementById('searchInput');
+            if (input) {
+                input.value = '';
+                document.getElementById('searchStatus').classList.add('hidden');
+                document.getElementById('searchFormatHint').textContent = '';
+                requestAnimationFrame(() => input.focus());
+            }
+        });
+
+        // Create hand/pan button and prepend to toolbar (second button)
         const handBtn = document.createElement('a');
         handBtn.className = 'leaflet-control-hand-tool leaflet-buttons-control-button';
         handBtn.href = '#';
         handBtn.title = 'Pan / Move map (drag to pan)';
         handBtn.innerHTML = '<span class="control-icon lucide-hand-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hand"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span>';
         handBtn.classList.add('active');
-        toolbar.insertBefore(handBtn, toolbar.firstChild);
+        toolbar.insertBefore(handBtn, searchBtn.nextSibling);
 
         L.DomEvent.on(handBtn, 'click', (e) => {
             L.DomEvent.stop(e);
@@ -1354,6 +1346,62 @@
                 btn.textContent = 'Copied!';
                 setTimeout(() => { btn.textContent = orig; }, 1200);
             }).catch(() => {});
+        });
+    }
+
+    function initSearchModal() {
+        const searchGoBtn = document.getElementById('searchGoBtn');
+        const searchInput = document.getElementById('searchInput');
+        const searchFormatHint = document.getElementById('searchFormatHint');
+        const searchStatus = document.getElementById('searchStatus');
+
+        if (!searchGoBtn || !searchInput) return;
+
+        searchGoBtn.addEventListener('click', async () => {
+            const input = searchInput.value.trim();
+            if (!input) return;
+
+            searchGoBtn.disabled = true;
+            searchGoBtn.textContent = 'Resolving...';
+            searchStatus.classList.add('hidden');
+
+            try {
+                const coords = await Converters.resolve(input, getW3WApiKey());
+                if (coords) {
+                    map.setView([coords.lat, coords.lng], Math.max(map.getZoom(), 14));
+                    closeModal('searchModal');
+                    searchInput.value = '';
+                    searchFormatHint.textContent = '';
+                } else {
+                    searchStatus.textContent = 'Could not resolve location. Check format and try again.';
+                    searchStatus.className = 'bulk-status error';
+                    searchStatus.classList.remove('hidden');
+                }
+            } catch (err) {
+                searchStatus.textContent = 'Error: ' + (err.message || String(err));
+                searchStatus.className = 'bulk-status error';
+                searchStatus.classList.remove('hidden');
+            } finally {
+                searchGoBtn.disabled = false;
+                searchGoBtn.textContent = 'Go to Location';
+            }
+        });
+
+        searchInput.addEventListener('input', () => {
+            const val = searchInput.value.trim();
+            if (!val) {
+                searchFormatHint.textContent = '';
+                return;
+            }
+            const fmt = Converters.detectFormat(val);
+            searchFormatHint.textContent = fmt ? `Detected: ${Converters.formatLabel(fmt)}` : '';
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchGoBtn.click();
+            }
         });
     }
 
@@ -2474,6 +2522,7 @@
             requestAnimationFrame(() => {
                 initDropPointToolbarControl();
                 initPointDetailsModal();
+                initSearchModal();
                 refreshHandToolState();
                 if (typeof UndoHistory !== 'undefined') UndoHistory.updateUndoButtonState();
             });
