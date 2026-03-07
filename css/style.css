@@ -228,6 +228,19 @@ body.sidebar-collapsed #map {
     margin-bottom: 32px;
 }
 
+/* CTA button row */
+.intro-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+}
+
+.intro-cta-row .intro-cta {
+    margin-bottom: 0;
+}
+
 /* CTA button */
 .intro-cta {
     display: inline-flex;
@@ -264,6 +277,18 @@ body.sidebar-collapsed #map {
 
 .intro-cta:hover .intro-cta-arrow {
     transform: translateX(3px);
+}
+
+.intro-cta-secondary {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.intro-cta-secondary:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
 }
 
 /* Intro disclaimer */
@@ -807,6 +832,10 @@ select {
 
 /* ---- Modals ---- */
 
+#helpModal {
+    z-index: 10001;
+}
+
 .modal {
     position: fixed;
     top: 0;
@@ -943,6 +972,15 @@ select {
 #helpModal .tab-panel li {
     margin-bottom: 4px;
     line-height: 1.5;
+}
+
+#helpModal .tab-panel a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+#helpModal .tab-panel a:hover {
+    text-decoration: underline;
 }
 
 /* ---- Tabs ---- */
@@ -1999,6 +2037,15 @@ select {
     font-family: Arial, sans-serif;
 }
 
+.drop-icon-strip-symbol.drop-icon-strip-svg {
+    border-radius: 4px;
+    background: transparent;
+}
+
+.drop-icon-strip-symbol.drop-icon-strip-svg img {
+    display: block;
+}
+
 .drop-icon-strip-label {
     flex: 1;
     line-height: 1.25;
@@ -2725,6 +2772,42 @@ body.sidebar-collapsed .help-panel {
     font-weight: 700;
 }
 
+.map-point-type-picker .ctx-type-btn .ctx-type-symbol.ctx-type-svg {
+    border-radius: 4px;
+    background: transparent;
+}
+
+.map-point-type-picker .ctx-type-btn .ctx-type-symbol.ctx-type-svg img {
+    display: block;
+}
+
+/* ---- Icon Color Palette ---- */
+
+.icon-color-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.color-swatch:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.color-swatch.selected {
+    border-color: #fff;
+    box-shadow: 0 0 0 1px var(--sidebar-border);
+}
+
 /* ---- Shapes Hint ---- */
 
 .shapes-hint {
@@ -2770,11 +2853,11 @@ body.sidebar-collapsed .help-panel {
     background-color: currentColor;
 }
 
-/* Custom Lucide pentagon icon for Draw Polygon */
+/* Custom polygon icon for Draw Polygon */
 .leaflet-pm-toolbar .leaflet-pm-icon-polygon {
     background-image: none !important;
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.83 2.38a2 2 0 0 1 2.34 0l8 5.74a2 2 0 0 1 .73 2.25l-3.04 9.26a2 2 0 0 1-1.9 1.37H7.04a2 2 0 0 1-1.9-1.37L2.1 10.37a2 2 0 0 1 .73-2.25z'/%3E%3C/svg%3E");
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.83 2.38a2 2 0 0 1 2.34 0l8 5.74a2 2 0 0 1 .73 2.25l-3.04 9.26a2 2 0 0 1-1.9 1.37H7.04a2 2 0 0 1-1.9-1.37L2.1 10.37a2 2 0 0 1 .73-2.25z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M10 5a2 2 0 1 0 4 0a2 2 0 1 0-4 0m7 3a2 2 0 1 0 4 0a2 2 0 1 0-4 0M3 11a2 2 0 1 0 4 0a2 2 0 1 0-4 0m10 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0M6.5 9.5l3.5-3m4-1L17 7m1.5 3L16 17m-2.5.5l-7-5'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M10 5a2 2 0 1 0 4 0a2 2 0 1 0-4 0m7 3a2 2 0 1 0 4 0a2 2 0 1 0-4 0M3 11a2 2 0 1 0 4 0a2 2 0 1 0-4 0m10 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0M6.5 9.5l3.5-3m4-1L17 7m1.5 3L16 17m-2.5.5l-7-5'/%3E%3C/svg%3E");
     mask-size: contain;
     mask-repeat: no-repeat;
     mask-position: center;
@@ -2921,4 +3004,137 @@ body.sidebar-collapsed .help-panel {
     background: rgba(255, 152, 0, 0.1);
     border: 1px solid rgba(255, 152, 0, 0.2);
     border-radius: var(--radius-sm);
+}
+
+/* ---- Flight Overview Modal ---- */
+
+.flight-overview-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    color: var(--sidebar-text-muted);
+}
+
+.flight-overview-loading .spinner {
+    width: 32px;
+    height: 32px;
+}
+
+.flight-overview-message {
+    padding: 20px;
+    color: var(--sidebar-text-muted);
+    text-align: center;
+}
+
+.flight-overview-message code {
+    font-size: 12px;
+    background: var(--sidebar-surface);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.flight-overview-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.flight-overview-content h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sidebar-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.flight-overview-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.flight-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    background: var(--sidebar-surface);
+    border-radius: var(--radius-sm);
+}
+
+.flight-stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--sidebar-text-muted);
+}
+
+.flight-stat-value {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--sidebar-text);
+}
+
+.flight-stat-value.positive {
+    color: var(--success);
+}
+
+.flight-stat-value.negative {
+    color: var(--danger);
+}
+
+.flight-overview-table-wrap {
+    overflow-x: auto;
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-sm);
+}
+
+.flight-overview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.flight-overview-table th,
+.flight-overview-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.flight-overview-table th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--sidebar-text-muted);
+    background: var(--sidebar-surface);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.flight-overview-table td {
+    font-family: 'Courier New', monospace;
+    color: var(--sidebar-text);
+}
+
+.flight-overview-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.flight-overview-table .change-up {
+    color: var(--success);
+}
+
+.flight-overview-table .change-down {
+    color: var(--danger);
 }

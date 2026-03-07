@@ -436,10 +436,18 @@
             option.type = 'button';
             option.dataset.icon = key;
             option.title = def.label;
-            option.innerHTML = `
-                <span class="drop-icon-strip-symbol" style="background:${def.color}; color:${getContrastingTextColor(def.color)}">${def.symbol}</span>
-                <span class="drop-icon-strip-label">${escapeHtml(def.label)}</span>
-            `;
+            if (def.svgContent) {
+                const dataUri = svgToDataUri(def.svgContent, def.color);
+                option.innerHTML = `
+                    <span class="drop-icon-strip-symbol drop-icon-strip-svg"><img src="${dataUri}" alt="" width="18" height="18"></span>
+                    <span class="drop-icon-strip-label">${escapeHtml(def.label)}</span>
+                `;
+            } else {
+                option.innerHTML = `
+                    <span class="drop-icon-strip-symbol" style="background:${def.color}; color:${getContrastingTextColor(def.color)}">${def.symbol}</span>
+                    <span class="drop-icon-strip-label">${escapeHtml(def.label)}</span>
+                `;
+            }
             if (key === lastDropIconType) option.classList.add('selected');
             strip.appendChild(option);
 
@@ -449,7 +457,7 @@
                 const newType = normalizeIconType(key);
                 const newDef = ICON_DEFS[newType];
                 lastDropIconType = newType;
-                lastDropIconColor = newDef.colorEditable ? lastDropIconColor : newDef.color;
+                lastDropIconColor = (newDef.useColorPalette ? newDef.color : (newDef.colorEditable ? lastDropIconColor : newDef.color));
                 refreshDropIconStrip();
                 setDropPointPickerOpen(false);
                 setDropPointMode(true);
@@ -572,6 +580,8 @@
 
     // ---- Markers ----
 
+    const ICON_COLOR_PALETTE = ['#000000', '#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#ea580c', '#9333ea', '#0891b2'];
+
     const ICON_DEFS = {
         address: { label: 'Address / Reference', symbol: 'A', color: '#dc2626', colorEditable: true },
         primary_tola: { label: 'Primary TOLA', symbol: 'H', color: '#1e88e5', colorEditable: false },
@@ -581,7 +591,23 @@
         no_fly: { label: 'No-Fly Marker', symbol: 'X', color: '#d32f2f', colorEditable: false },
         hazard: { label: 'Hazard', symbol: '!', color: '#ff9800', colorEditable: false },
         waypoint: { label: 'Waypoint', symbol: 'W', color: '#0ea5e9', colorEditable: true },
-        custom_point: { label: 'Custom Point', symbol: '?', color: '#8e24aa', colorEditable: true }
+        custom_point: { label: 'Custom Point', symbol: '?', color: '#8e24aa', colorEditable: true },
+        house: {
+            label: 'House',
+            symbol: '\u2302',
+            color: '#000000',
+            colorEditable: true,
+            svgContent: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+            useColorPalette: true
+        },
+        tola_house: {
+            label: 'TOLA',
+            symbol: 'T',
+            color: '#000000',
+            colorEditable: true,
+            svgContent: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22a1 1 0 0 1-1-1v-4a1 1 0 0 1 .445-.832l3-2a1 1 0 0 1 1.11 0l3 2A1 1 0 0 1 22 17v4a1 1 0 0 1-1 1z"/><path d="M18 10a8 8 0 0 0-16 0c0 4.993 5.539 10.193 7.399 11.799a1 1 0 0 0 .601.2"/><path d="M18 22v-3"/><circle cx="10" cy="10" r="3"/></svg>',
+            useColorPalette: true
+        }
     };
 
     const iconCache = {};
@@ -628,7 +654,10 @@
             battery_swap: 'custom_point',
             custom: 'custom_point',
             custompoint: 'custom_point',
-            user: 'custom_point'
+            user: 'custom_point',
+            home: 'house',
+            tola: 'tola_house',
+            tolahouse: 'tola_house'
         };
 
         const canonical = aliases[val] || val;
@@ -674,9 +703,36 @@
         </svg>`);
     }
 
+    function colorizeSvg(svgString, color) {
+        const hex = (color || '#000000').replace('#', '');
+        return svgString.replace(/currentColor/gi, '#' + hex);
+    }
+
+    function svgToDataUri(svgString, color) {
+        const colored = colorizeSvg(svgString, color || '#000000');
+        return `data:image/svg+xml,${encodeURIComponent(colored)}`;
+    }
+
     function getPointIcon(point) {
         const iconType = normalizeIconType(point.iconType);
         const color = getIconColor(iconType, point.iconColor);
+        const def = ICON_DEFS[iconType];
+
+        if (def.svgContent) {
+            const key = `${iconType}|${color}`;
+            if (iconCache[key]) return iconCache[key];
+            const icon = L.icon({
+                iconUrl: svgToDataUri(def.svgContent, color),
+                iconSize: [24, 24],
+                iconAnchor: [12, 24],
+                popupAnchor: [0, -12],
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                shadowSize: [41, 41]
+            });
+            iconCache[key] = icon;
+            return icon;
+        }
+
         const symbol = getPointSymbol(point);
         const key = `${iconType}|${color}|${symbol}`;
         if (iconCache[key]) return iconCache[key];
@@ -811,7 +867,7 @@
                 const newLabel = isDefault ? def.label : currentLabel;
 
                 lastDropIconType = newIconType;
-                lastDropIconColor = def.colorEditable ? lastDropIconColor : def.color;
+                lastDropIconColor = (def.useColorPalette ? def.color : (def.colorEditable ? lastDropIconColor : def.color));
                 refreshDropIconStrip();
 
                 quickEditUpdating = true;
@@ -1066,6 +1122,8 @@
     const pointIconType = document.getElementById('pointIconType');
     const pointIconColor = document.getElementById('pointIconColor');
     const pointIconColorGroup = document.getElementById('pointIconColorGroup');
+    const pointIconColorPaletteGroup = document.getElementById('pointIconColorPaletteGroup');
+    const pointIconColorPalette = document.getElementById('pointIconColorPalette');
     const pointCustomSymbol = document.getElementById('pointCustomSymbol');
     const pointCustomSymbolGroup = document.getElementById('pointCustomSymbolGroup');
     const pointNotes = document.getElementById('pointNotes');
@@ -1074,8 +1132,28 @@
     function refreshPointIconControls() {
         const iconType = normalizeIconType(pointIconType.value);
         const iconDef = ICON_DEFS[iconType];
-        pointIconColorGroup.classList.toggle('hidden', !iconDef.colorEditable);
+        const usePalette = iconDef.useColorPalette === true;
+        pointIconColorGroup.classList.toggle('hidden', usePalette || !iconDef.colorEditable);
+        pointIconColorPaletteGroup.classList.toggle('hidden', !usePalette);
         pointCustomSymbolGroup.classList.toggle('hidden', iconType !== 'custom_point');
+        if (usePalette && pointIconColorPalette) {
+            pointIconColorPalette.innerHTML = '';
+            const currentColor = pointIconColor.value;
+            ICON_COLOR_PALETTE.forEach(c => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'color-swatch' + (c.toLowerCase() === currentColor.toLowerCase() ? ' selected' : '');
+                btn.dataset.color = c;
+                btn.style.backgroundColor = c;
+                btn.title = c;
+                btn.addEventListener('click', () => {
+                    pointIconColor.value = c;
+                    pointIconColorPalette.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+                    btn.classList.add('selected');
+                });
+                pointIconColorPalette.appendChild(btn);
+            });
+        }
     }
 
     function refreshHandToolState() {
@@ -1135,6 +1213,9 @@
 
 
     pointIconType.addEventListener('change', () => {
+        const iconType = normalizeIconType(pointIconType.value);
+        const iconDef = ICON_DEFS[iconType];
+        if (iconDef.useColorPalette) pointIconColor.value = iconDef.color;
         refreshPointIconControls();
     });
     pointIconType.value = 'address';
@@ -1406,6 +1487,133 @@
         });
     }
 
+    function openFlightOverviewModal(shapeId) {
+        const modal = document.getElementById('flightOverviewModal');
+        const loadingEl = document.getElementById('flightOverviewLoading');
+        const noTokenEl = document.getElementById('flightOverviewNoToken');
+        const errorEl = document.getElementById('flightOverviewError');
+        const errorTextEl = document.getElementById('flightOverviewErrorText');
+        const contentEl = document.getElementById('flightOverviewContent');
+
+        if (!modal || !loadingEl || !contentEl) return;
+
+        const shape = Drawings.getShapes().find(s => s.id === shapeId);
+        const isPathOrLine = shape && (shape.type === 'flightpath' || shape.type === 'polyline');
+        if (!isPathOrLine || !shape.latlngs || shape.latlngs.length < 2) return;
+
+        const mapboxToken = (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.mapboxAccessToken) || '';
+
+        loadingEl.classList.remove('hidden');
+        noTokenEl.classList.add('hidden');
+        errorEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+
+        modal.classList.remove('hidden');
+
+        if (!mapboxToken || !mapboxToken.trim()) {
+            loadingEl.classList.add('hidden');
+            noTokenEl.classList.remove('hidden');
+            return;
+        }
+
+        (async () => {
+            try {
+                const results = typeof Elevation !== 'undefined'
+                    ? await Elevation.getElevationsAlongPath(shape.latlngs, mapboxToken)
+                    : [];
+
+                loadingEl.classList.add('hidden');
+
+                const elevations = results.map(r => r.elevation);
+                const hasData = elevations.some(e => e != null && !Number.isNaN(e));
+
+                if (!hasData) {
+                    errorTextEl.textContent = 'Could not load elevation data for this path.';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                const validElevs = elevations.filter(e => e != null && !Number.isNaN(e));
+                const startAlt = elevations[0] != null ? elevations[0] : validElevs[0];
+                const endAlt = elevations[elevations.length - 1] != null ? elevations[elevations.length - 1] : validElevs[validElevs.length - 1];
+                const highest = Math.max(...validElevs);
+                const lowest = Math.min(...validElevs);
+                const variation = highest - lowest;
+                const netChange = endAlt - startAlt;
+
+                let totalGain = 0;
+                let totalLoss = 0;
+                for (let i = 1; i < elevations.length; i++) {
+                    const prev = elevations[i - 1];
+                    const curr = elevations[i];
+                    if (prev != null && curr != null && !Number.isNaN(prev) && !Number.isNaN(curr)) {
+                        const d = curr - prev;
+                        if (d > 0) totalGain += d;
+                        else totalLoss += Math.abs(d);
+                    }
+                }
+
+                const numSegments = Math.max(1, elevations.length - 1);
+                const avgChange = netChange / numSegments;
+
+                function fmtAlt(v) {
+                    if (v == null || Number.isNaN(v)) return '—';
+                    return `${v.toFixed(1)} m`;
+                }
+                function fmtChange(v) {
+                    if (v == null || Number.isNaN(v) || v === 0) return '—';
+                    const s = v > 0 ? '+' : '';
+                    return `${s}${v.toFixed(1)} m`;
+                }
+
+                document.getElementById('foStartAlt').textContent = fmtAlt(startAlt);
+                document.getElementById('foEndAlt').textContent = fmtAlt(endAlt);
+                document.getElementById('foHighest').textContent = fmtAlt(highest);
+                document.getElementById('foLowest').textContent = fmtAlt(lowest);
+                document.getElementById('foVariation').textContent = fmtAlt(variation);
+
+                const netChangeEl = document.getElementById('foNetChange');
+                netChangeEl.textContent = fmtChange(netChange);
+                netChangeEl.className = 'flight-stat-value' + (netChange > 0 ? ' positive' : netChange < 0 ? ' negative' : '');
+
+                document.getElementById('foTotalGain').textContent = fmtAlt(totalGain);
+                document.getElementById('foTotalLoss').textContent = fmtAlt(totalLoss);
+
+                const avgChangeEl = document.getElementById('foAvgChange');
+                avgChangeEl.textContent = fmtChange(avgChange);
+                avgChangeEl.className = 'flight-stat-value' + (avgChange > 0 ? ' positive' : avgChange < 0 ? ' negative' : '');
+
+                const tbody = document.getElementById('flightOverviewWaypointsBody');
+                tbody.innerHTML = '';
+                for (let i = 0; i < shape.latlngs.length; i++) {
+                    const ll = shape.latlngs[i];
+                    const lat = Array.isArray(ll) ? ll[0] : ll.lat;
+                    const lng = Array.isArray(ll) ? ll[1] : ll.lng;
+                    const elev = results[i]?.elevation;
+                    const prevElev = i > 0 ? results[i - 1]?.elevation : null;
+                    const change = (elev != null && prevElev != null) ? elev - prevElev : null;
+
+                    const tr = document.createElement('tr');
+                    const changeClass = change != null && change !== 0 ? (change > 0 ? 'change-up' : 'change-down') : '';
+                    tr.innerHTML = `
+                        <td>${i + 1}</td>
+                        <td>${lat.toFixed(5)}</td>
+                        <td>${lng.toFixed(5)}</td>
+                        <td>${elev != null ? elev.toFixed(1) : '—'}</td>
+                        <td class="${changeClass}">${change != null && change !== 0 ? (change > 0 ? '+' : '') + change.toFixed(1) + ' m' : '—'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+
+                contentEl.classList.remove('hidden');
+            } catch (err) {
+                loadingEl.classList.add('hidden');
+                errorTextEl.textContent = 'Error: ' + (err.message || String(err));
+                errorEl.classList.remove('hidden');
+            }
+        })();
+    }
+
     function initSearchModal() {
         const searchGoBtn = document.getElementById('searchGoBtn');
         const searchInput = document.getElementById('searchInput');
@@ -1509,7 +1717,30 @@
         const iconSel = document.getElementById('editPointIconType');
         const iconType = normalizeIconType(iconSel.value);
         const iconDef = ICON_DEFS[iconType];
-        document.getElementById('editPointIconColorGroup').classList.toggle('hidden', !iconDef.colorEditable);
+        const usePalette = iconDef.useColorPalette === true;
+        document.getElementById('editPointIconColorGroup').classList.toggle('hidden', usePalette || !iconDef.colorEditable);
+        const paletteGroup = document.getElementById('editPointIconColorPaletteGroup');
+        const paletteEl = document.getElementById('editPointIconColorPalette');
+        paletteGroup.classList.toggle('hidden', !usePalette);
+        if (usePalette && paletteEl) {
+            paletteEl.innerHTML = '';
+            const colorInput = document.getElementById('editPointIconColor');
+            const currentColor = colorInput.value;
+            ICON_COLOR_PALETTE.forEach(c => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'color-swatch' + (c.toLowerCase() === currentColor.toLowerCase() ? ' selected' : '');
+                btn.dataset.color = c;
+                btn.style.backgroundColor = c;
+                btn.title = c;
+                btn.addEventListener('click', () => {
+                    colorInput.value = c;
+                    paletteEl.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+                    btn.classList.add('selected');
+                });
+                paletteEl.appendChild(btn);
+            });
+        }
         document.getElementById('editPointCustomSymbolGroup').classList.toggle('hidden', iconType !== 'custom_point');
     }
 
@@ -2408,10 +2639,14 @@
         if (shapeInfo) {
             const isArrow = shapeInfo.type === 'arrow';
             const isText = shapeInfo.type === 'text';
+            const isFlightPath = shapeInfo.type === 'flightpath';
+            const isPolyline = shapeInfo.type === 'polyline';
             const editVertBtn = menuEl.querySelector('[data-action="edit-vertices"]');
             const moveBtn = menuEl.querySelector('[data-action="move-shape"]');
+            const flightOverviewBtn = menuEl.querySelector('#ctxFlightOverview');
             if (editVertBtn) editVertBtn.style.display = (isText || isArrow) ? 'none' : '';
             if (moveBtn) moveBtn.style.display = isText ? 'none' : '';
+            if (flightOverviewBtn) flightOverviewBtn.style.display = (isFlightPath || isPolyline) ? '' : 'none';
         }
 
         const pasteBtn = menuEl.querySelector('[data-action="paste"]');
@@ -2445,14 +2680,19 @@
         if (!pickerEl || !optionsEl) return;
 
         optionsEl.innerHTML = '';
-        const iconKeys = ['address', 'primary_tola', 'secondary_tola', 'custom_tola', 'emergency_lz', 'no_fly', 'hazard', 'waypoint', 'custom_point'];
+        const iconKeys = ['address', 'primary_tola', 'secondary_tola', 'custom_tola', 'emergency_lz', 'no_fly', 'hazard', 'waypoint', 'custom_point', 'house', 'tola_house'];
         iconKeys.forEach(key => {
             const def = ICON_DEFS[key];
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'ctx-type-btn';
             btn.dataset.iconType = key;
-            btn.innerHTML = `<span class="ctx-type-symbol" style="background:${def.color}; color:${getContrastingTextColor(def.color)}">${escapeHtml(def.symbol)}</span><span>${escapeHtml(def.label)}</span>`;
+            if (def.svgContent) {
+                const dataUri = svgToDataUri(def.svgContent, def.color);
+                btn.innerHTML = `<span class="ctx-type-symbol ctx-type-svg"><img src="${dataUri}" alt="" width="18" height="18"></span><span>${escapeHtml(def.label)}</span>`;
+            } else {
+                btn.innerHTML = `<span class="ctx-type-symbol" style="background:${def.color}; color:${getContrastingTextColor(def.color)}">${escapeHtml(def.symbol)}</span><span>${escapeHtml(def.label)}</span>`;
+            }
             btn.addEventListener('click', () => {
                 const latlng = mapPointTypePickerLatLng;
                 hideMapPointTypePicker();
@@ -2487,7 +2727,7 @@
         const type = normalizeIconType(iconType);
         const def = ICON_DEFS[type];
         lastDropIconType = type;
-        lastDropIconColor = def.colorEditable ? lastDropIconColor : def.color;
+        lastDropIconColor = (def.useColorPalette ? def.color : (def.colorEditable ? lastDropIconColor : def.color));
         createPointAtLatLng(lat, lng);
     }
 
@@ -2509,6 +2749,9 @@
                 break;
             case 'edit-shape':
                 if (shapeId) Drawings.openShapeEditModal(shapeId);
+                break;
+            case 'flight-overview':
+                if (shapeId) openFlightOverviewModal(shapeId);
                 break;
             case 'edit-vertices':
                 if (shapeId) Drawings.editVertices(shapeId);
@@ -2597,6 +2840,11 @@
             introProceedBtn.addEventListener('click', dismissIntro);
         } else {
             dismissIntro();
+        }
+
+        const introHelpBtn = document.getElementById('introHelpBtn');
+        if (introHelpBtn) {
+            introHelpBtn.addEventListener('click', () => openModal('helpModal'));
         }
     });
 

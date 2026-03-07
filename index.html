@@ -55,10 +55,15 @@
             <p class="intro-description">
                 Use this tool to draw flight areas, highlight zones to avoid, and mark key locations such as take-off and landing points. Once you're ready, tap below to open the map and start planning your mission.
             </p>
-            <button type="button" class="intro-cta" id="introProceedBtn">
-                Launch App
-                <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </button>
+            <div class="intro-cta-row">
+                <button type="button" class="intro-cta" id="introProceedBtn">
+                    Launch App
+                    <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+                <button type="button" class="intro-cta intro-cta-secondary" id="introHelpBtn">
+                    View Instructions
+                </button>
+            </div>
             <div class="intro-disclaimer">
                 <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in Help.
             </div>
@@ -101,11 +106,17 @@
                         <option value="hazard">Hazard</option>
                         <option value="waypoint">Waypoint</option>
                         <option value="custom_point">Custom Point</option>
+                        <option value="house">House</option>
+                        <option value="tola_house">TOLA</option>
                     </select>
                 </div>
                 <div class="form-group" id="pointIconColorGroup">
                     <label for="pointIconColor">Icon Colour</label>
                     <input type="color" id="pointIconColor" value="#dc2626">
+                </div>
+                <div class="form-group hidden" id="pointIconColorPaletteGroup">
+                    <label>Icon Colour</label>
+                    <div id="pointIconColorPalette" class="icon-color-palette"></div>
                 </div>
                 <div class="form-group hidden" id="pointCustomSymbolGroup">
                     <label for="pointCustomSymbol">Custom Symbol (1-2 chars)</label>
@@ -548,6 +559,7 @@
                     <button class="tab" data-tab="shapes">Shapes</button>
                     <button class="tab" data-tab="import">Import &amp; Export</button>
                     <button class="tab" data-tab="map">Map &amp; Settings</button>
+                    <button class="tab" data-tab="references">References</button>
                     <button class="tab" data-tab="disclaimer">Disclaimer</button>
                 </div>
                 <div class="tab-panel active" id="help-tab-points">
@@ -565,13 +577,13 @@
                     <h3>Drawing Shapes</h3>
                     <p><strong>Right-click</strong> anywhere on the map (or <strong>long-press</strong> on touch devices) to open the context menu. From there you can draw:</p>
                     <ul>
-                        <li><strong>Circle</strong> — click centre, then edge</li>
-                        <li><strong>Rectangle</strong> — drag corners</li>
-                        <li><strong>Polygon</strong> — click vertices, double-click to finish</li>
-                        <li><strong>Line</strong> — click start and end points</li>
-                        <li><strong>Arrow</strong> — click tail, then tip</li>
-                        <li><strong>Flight Path</strong> — multi-point path with direction arrows</li>
-                        <li><strong>Text</strong> — add text labels on the map</li>
+                        <li><strong>Circle</strong> - click centre, then edge</li>
+                        <li><strong>Rectangle</strong> - drag corners</li>
+                        <li><strong>Polygon</strong> - click vertices, double-click to finish</li>
+                        <li><strong>Line</strong> - click start and end points</li>
+                        <li><strong>Arrow</strong> - click tail, then tip</li>
+                        <li><strong>Flight Path</strong> - multi-point path with direction arrows</li>
+                        <li><strong>Text</strong> - add text labels on the map</li>
                     </ul>
                     <h3>Editing Shapes</h3>
                     <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu (or the vertices button in the sidebar) to adjust polygon/line points. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path. <strong>Measurement labels</strong> on circles and flight paths can be dragged to reposition them.</p>
@@ -579,6 +591,8 @@
                     <p>Right-click a shape to copy it (<strong>Ctrl+C</strong> when selected), then right-click elsewhere to paste (<strong>Ctrl+V</strong>). Press <strong>Esc</strong> to deselect.</p>
                     <h3>Drawing Style</h3>
                     <p>The floating panel shows colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. These apply to new shapes.</p>
+                    <h3>Flight Overview</h3>
+                    <p>For flight paths and lines, right-click the path or line and choose <strong>Flight Overview</strong> to see altitude statistics. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>.</p>
                 </div>
                 <div class="tab-panel" id="help-tab-import">
                     <h3>Bulk Import</h3>
@@ -592,7 +606,7 @@
                 </div>
                 <div class="tab-panel" id="help-tab-map">
                     <h3>Map Toolbar</h3>
-                    <p>The toolbar (top-left) includes: <strong>Search</strong> — open the Search Location modal; <strong>Hand/Pan</strong> — drag to move the map; <strong>Undo</strong> — revert last action; <strong>Drop Point</strong> — choose type and click map to add a point; plus drawing tools (circle, rectangle, polygon, line, arrow, flight path).</p>
+                    <p>The toolbar (top-left) includes: <strong>Search</strong> - open the Search Location modal; <strong>Hand/Pan</strong> - drag to move the map; <strong>Undo</strong> - revert last action; <strong>Drop Point</strong> - choose type and click map to add a point; plus drawing tools (circle, rectangle, polygon, line, arrow, flight path).</p>
                     <h3>Search Location</h3>
                     <p>Click the search button on the map toolbar to open the Search Location modal. Enter a postcode, lat/long, OS Grid ref, DMS, or What3Words address. The map will pan and zoom to that location.</p>
                     <h3>Map Layers</h3>
@@ -600,12 +614,12 @@
                     <h3>UK Airspace</h3>
                     <p>The airspace key (bottom-right) shows all restriction types. Use the <strong>UK Airspace</strong> checkbox to show or hide all types, or tick individual types:</p>
                     <ul>
-                        <li><strong>Prohibited</strong> — No flying permitted</li>
-                        <li><strong>Restricted</strong> — Flying limited under certain conditions</li>
-                        <li><strong>Danger</strong> — Hazardous activities may occur</li>
-                        <li><strong>FRZ / Aerodrome</strong> — Flight Restriction Zones around protected aerodromes</li>
-                        <li><strong>NOTAM</strong> — Temporary restrictions from UK NOTAM Archive. Click the arrow (▼) for options: max radius (5–50 NM), drone-relevant only, and opacity. No API key required.</li>
-                        <li><strong>RA(T)</strong> — Restricted Area Temporary from BGA Airspace Service. Requires username and password in Settings (register at airspace.bgaladder.net).</li>
+                        <li><strong>Prohibited</strong> - No flying permitted</li>
+                        <li><strong>Restricted</strong> - Flying limited under certain conditions</li>
+                        <li><strong>Danger</strong> - Hazardous activities may occur</li>
+                        <li><strong>FRZ / Aerodrome</strong> - Flight Restriction Zones around protected aerodromes</li>
+                        <li><strong>NOTAM</strong> - Temporary restrictions from UK NOTAM Archive. Click the arrow (▼) for options: max radius (5-50 NM), drone-relevant only, and opacity. No API key required.</li>
+                        <li><strong>RA(T)</strong> - Restricted Area Temporary from BGA Airspace Service. Requires username and password in Settings (register at airspace.bgaladder.net).</li>
                     </ul>
                     <p>Data is sourced from UK AIP ENR 5.1 / NATS UAS. Click any zone for details including vertical limits and activation times. Use the refresh button (↻) to reload airspace data.</p>
                     <p>To use real NATS data, see <code>docs/AIRSPACE_DATA.md</code> for download and conversion instructions.</p>
@@ -616,7 +630,33 @@
                     <h3>Settings</h3>
                     <p>Configure optional API keys (What3Words, OS Maps, BGA Airspace for RA(T)), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
                     <h3>Keyboard Shortcuts</h3>
-                    <p><strong>Escape</strong> — close modals, exit drawing/drop-point mode, deselect shapes. <strong>Ctrl+Z</strong> (Cmd+Z) — undo last action. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> — copy and paste shapes.</p>
+                    <p><strong>Escape</strong> - close modals, exit drawing/drop-point mode, deselect shapes. <strong>Ctrl+Z</strong> (Cmd+Z) - undo last action. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> - copy and paste shapes.</p>
+                </div>
+                <div class="tab-panel" id="help-tab-references">
+                    <h3>Data Sources</h3>
+                    <ul>
+                        <li><strong>UK Postcodes</strong> - <a href="https://postcodes.io/" target="_blank" rel="noopener">postcodes.io</a> (free, no API key required)</li>
+                        <li><strong>What3Words</strong> - <a href="https://what3words.com/developer" target="_blank" rel="noopener">What3Words API</a> (requires API key)</li>
+                        <li><strong>Ordnance Survey Maps</strong> - <a href="https://osdatahub.os.uk/" target="_blank" rel="noopener">OS Data Hub</a> (requires API key)</li>
+                        <li><strong>OpenStreetMap</strong> - <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (map tiles)</li>
+                        <li><strong>OpenTopoMap</strong> - <a href="https://opentopomap.org/" target="_blank" rel="noopener">OpenTopoMap</a> (topographic tiles, SRTM elevation)</li>
+                        <li><strong>Mapbox</strong> - <a href="https://www.mapbox.com/" target="_blank" rel="noopener">Mapbox</a> (map tiles, Terrain-RGB elevation; requires token in config)</li>
+                        <li><strong>UK Airspace</strong> - UK AIP ENR 5.1 / <a href="https://nats-uk.ead-it.com/" target="_blank" rel="noopener">NATS UAS</a> (Prohibited, Restricted, Danger, FRZ)</li>
+                        <li><strong>UK NOTAM</strong> - <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS Contingency PIB, hourly updated)</li>
+                        <li><strong>RA(T) Airspace</strong> - <a href="https://airspace.bgaladder.net/" target="_blank" rel="noopener">BGA Airspace Service</a> (requires username/password)</li>
+                    </ul>
+                    <h3>Libraries &amp; Tools</h3>
+                    <ul>
+                        <li><strong>Leaflet</strong> 1.9.4 - <a href="https://leafletjs.com/" target="_blank" rel="noopener">leafletjs.com</a> - interactive maps</li>
+                        <li><strong>Leaflet-Geoman</strong> 2.16.0 - <a href="https://geoman.io/leaflet-geoman" target="_blank" rel="noopener">geoman.io</a> - drawing and editing shapes</li>
+                        <li><strong>Leaflet.Locate</strong> 0.79.0 - <a href="https://github.com/domoritz/leaflet-locatecontrol" target="_blank" rel="noopener">GitHub</a> - geolocation control</li>
+                        <li><strong>Leaflet.Curve</strong> 0.9.2 - <a href="https://github.com/elfalem/Leaflet.curve" target="_blank" rel="noopener">GitHub</a> - bezier curves</li>
+                        <li><strong>Lucide Icons</strong> 0.468.0 - <a href="https://lucide.dev/" target="_blank" rel="noopener">lucide.dev</a> - icons</li>
+                        <li><strong>html2canvas</strong> 1.4.1 - <a href="https://html2canvas.hertzen.com/" target="_blank" rel="noopener">html2canvas</a> - map screenshots</li>
+                        <li><strong>Google Fonts</strong> - <a href="https://fonts.google.com/" target="_blank" rel="noopener">fonts.google.com</a> - Inter font</li>
+                    </ul>
+                    <h3>Coordinate Systems</h3>
+                    <p>OS Grid Reference conversion uses Ordnance Survey National Grid (OSGB36) to WGS84 transformation (Airy 1830 ellipsoid).</p>
                 </div>
                 <div class="tab-panel" id="help-tab-disclaimer">
                     <h3>Disclaimer</h3>
@@ -626,7 +666,7 @@
                     <h4>Development status</h4>
                     <p>This application is currently in development. It may contain errors, bugs, or omissions. Features may change without notice. The application is not guaranteed to be complete, accurate, or fit for any particular purpose.</p>
                     <h4>Operational decisions</h4>
-                    <p>The outputs of this application must not be used as the sole basis for operational decisions. You should always verify information against official sources (e.g. CAA, NATS, relevant aviation authorities) and exercise your own professional judgement. This tool is intended to support planning and visualisation only&mdash;it is not a substitute for proper flight planning, risk assessment, or regulatory compliance.</p>
+                    <p>The outputs of this application must not be used as the sole basis for operational decisions. You should always verify information against official sources (e.g. CAA, NATS, relevant aviation authorities) and exercise your own professional judgement. This tool is intended to support planning and visualisation only - it is not a substitute for proper flight planning, risk assessment, or regulatory compliance.</p>
                     <h4>Data accuracy</h4>
                     <p>Map data, airspace information, elevation data, and other outputs are derived from third-party sources and may be incomplete, inaccurate, or out of date. You are responsible for verifying all information before use.</p>
                     <h4>Regulatory compliance</h4>
@@ -670,11 +710,17 @@
                         <option value="hazard">Hazard</option>
                         <option value="waypoint">Waypoint</option>
                         <option value="custom_point">Custom Point</option>
+                        <option value="house">House</option>
+                        <option value="tola_house">TOLA</option>
                     </select>
                 </div>
                 <div class="form-group" id="editPointIconColorGroup">
                     <label for="editPointIconColor">Icon Colour</label>
                     <input type="color" id="editPointIconColor" value="#dc2626">
+                </div>
+                <div class="form-group hidden" id="editPointIconColorPaletteGroup">
+                    <label>Icon Colour</label>
+                    <div id="editPointIconColorPalette" class="icon-color-palette"></div>
                 </div>
                 <div class="form-group hidden" id="editPointCustomSymbolGroup">
                     <label for="editPointCustomSymbol">Custom Symbol (1-2 chars)</label>
@@ -710,6 +756,7 @@
         </div>
         <div class="ctx-shape-section" style="display:none;">
             <button class="ctx-item" data-action="edit-shape">Edit Shape</button>
+            <button class="ctx-item" id="ctxFlightOverview" data-action="flight-overview">Flight Overview</button>
             <button class="ctx-item" data-action="edit-vertices">Edit Vertices</button>
             <button class="ctx-item" data-action="move-shape">Move Shape</button>
             <button class="ctx-item" data-action="copy-shape">Copy Shape</button>
@@ -777,6 +824,92 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary modal-cancel">Close</button>
                 <button class="btn btn-primary" id="detailCopyAllBtn">Copy All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flight Overview Modal -->
+    <div id="flightOverviewModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Flight Overview</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="flightOverviewLoading" class="flight-overview-loading">
+                    <div class="spinner"></div>
+                    <p>Fetching elevation data…</p>
+                </div>
+                <div id="flightOverviewNoToken" class="flight-overview-message hidden">
+                    <p>Elevation data requires a Mapbox access token. Configure it in <code>js/config.js</code>.</p>
+                </div>
+                <div id="flightOverviewError" class="flight-overview-message hidden">
+                    <p id="flightOverviewErrorText">Failed to load elevation data.</p>
+                </div>
+                <div id="flightOverviewContent" class="flight-overview-content hidden">
+                    <div class="flight-overview-summary">
+                        <h3>Summary</h3>
+                        <div class="flight-overview-stats">
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Start altitude</span>
+                                <span class="flight-stat-value" id="foStartAlt">—</span>
+                            </div>
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">End altitude</span>
+                                <span class="flight-stat-value" id="foEndAlt">—</span>
+                            </div>
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Highest</span>
+                                <span class="flight-stat-value" id="foHighest">—</span>
+                            </div>
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Lowest</span>
+                                <span class="flight-stat-value" id="foLowest">—</span>
+                            </div>
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Total variation</span>
+                                <span class="flight-stat-value" id="foVariation">—</span>
+                            </div>
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Net change</span>
+                                <span class="flight-stat-value" id="foNetChange">—</span>
+                            </div>
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Total gain</span>
+                                <span class="flight-stat-value" id="foTotalGain">—</span>
+                            </div>
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Total loss</span>
+                                <span class="flight-stat-value" id="foTotalLoss">—</span>
+                            </div>
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Avg change per segment</span>
+                                <span class="flight-stat-value" id="foAvgChange">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flight-overview-waypoints">
+                        <h3>Waypoints</h3>
+                        <div class="flight-overview-table-wrap">
+                            <table class="flight-overview-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Lat</th>
+                                        <th>Lng</th>
+                                        <th>Altitude (m)</th>
+                                        <th>Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="flightOverviewWaypointsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-cancel">Close</button>
             </div>
         </div>
     </div>
