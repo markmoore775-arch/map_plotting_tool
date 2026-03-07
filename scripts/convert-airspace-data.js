@@ -10,11 +10,32 @@
  *   https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/
  * (Registration required. Select "UAS Flight Restrictions" / "UAS Airspace Restrictions File (ENR 5.1)")
  *
- * The file is typically provided as KMZ (zipped KML). This script handles both KML and KMZ.
+ * The file is typically provided as KMZ (zipped KML), or as a ZIP containing a KMZ.
+ * This script handles KML, KMZ, and ZIP (NATS download format).
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// Resolve input: if .zip, extract and find .kmz or .kml inside
+function resolveInputPath(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext !== '.zip') return filePath;
+    const AdmZip = require('adm-zip');
+    const zip = new AdmZip(filePath);
+    const entries = zip.getEntries();
+    const kmzEntry = entries.find(e => e.entryName.toLowerCase().endsWith('.kmz'));
+    const kmlEntry = entries.find(e => e.entryName.toLowerCase().endsWith('.kml'));
+    const entry = kmzEntry || kmlEntry;
+    if (!entry) {
+        throw new Error('No .kml or .kmz file found inside ZIP archive');
+    }
+    const tmpDir = path.join(require('os').tmpdir(), 'nats-airspace-' + Date.now());
+    fs.mkdirSync(tmpDir, { recursive: true });
+    zip.extractEntryTo(entry, tmpDir, false, true);
+    const extractedPath = path.join(tmpDir, path.basename(entry.entryName));
+    return extractedPath;
+}
 
 // Parse args
 const args = process.argv.slice(2);
@@ -32,9 +53,9 @@ for (let i = 0; i < args.length; i++) {
 
 if (!inputPath) {
     console.error(`
-Usage: node scripts/convert-airspace-data.js <input.kml|input.kmz> [-o output.geojson]
+Usage: node scripts/convert-airspace-data.js <input.kml|input.kmz|input.zip> [-o output.geojson]
 
-  input.kml / input.kmz  Path to NATS UAS Airspace Restrictions file
+  input.kml / input.kmz / input.zip  Path to NATS UAS Airspace Restrictions file
   -o output.geojson      Output path (default: assets/uk-airspace.geojson)
 
 To obtain the NATS data:
@@ -47,8 +68,8 @@ To obtain the NATS data:
 }
 
 const inputExt = path.extname(inputPath).toLowerCase();
-if (inputExt !== '.kml' && inputExt !== '.kmz') {
-    console.error('Input file must be .kml or .kmz');
+if (inputExt !== '.kml' && inputExt !== '.kmz' && inputExt !== '.zip') {
+    console.error('Input file must be .kml, .kmz, or .zip (NATS download)');
     process.exit(1);
 }
 
@@ -101,7 +122,8 @@ async function main() {
     }
 
     console.log('Reading input:', inputPath);
-    const kmlContent = loadKmlContent(inputPath);
+    const resolvedPath = inputExt === '.zip' ? resolveInputPath(inputPath) : inputPath;
+    const kmlContent = loadKmlContent(resolvedPath);
 
     console.log('Parsing KML...');
     const parser = new DOMParser();

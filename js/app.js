@@ -194,6 +194,7 @@
             airspaceModule = Airspace.init({
                 map: map,
                 dataUrl: 'assets/uk-airspace.geojson',
+                aipDataUrl: 'assets/uk-aip-airspace.geojson',
                 notamModule: notamModule,
                 ratModule: ratModule
             });

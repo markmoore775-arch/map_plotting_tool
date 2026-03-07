@@ -60,18 +60,22 @@
         const designator = (props.designator || props.type || props.id || '').toUpperCase();
         const name = (props.name || '').toUpperCase();
         const description = (props.description || '').toUpperCase();
+        const aixmType = (props.type || '').toUpperCase();
 
         if (description.includes('FRZ') || designator.includes('FRZ') || designator.includes('RPZ') || name.includes('FRZ') || name.includes('AERODROME') || name.includes('FLIGHT RESTRICTION')) {
             return 'frz';
         }
-        if (designator.startsWith('EG-P') || designator.startsWith('EGP') || designator.startsWith('P') || name.includes('PROHIBITED')) {
+        if (designator.startsWith('EG-P') || designator.startsWith('EGP') || designator.startsWith('P') || name.includes('PROHIBITED') || aixmType === 'P') {
             return 'prohibited';
         }
-        if (designator.startsWith('EG-R') || designator.startsWith('EGR') || designator.startsWith('R') || name.includes('RESTRICTED')) {
+        if (designator.startsWith('EG-R') || designator.startsWith('EGR') || designator.startsWith('R') || name.includes('RESTRICTED') || aixmType === 'R') {
             return 'restricted';
         }
-        if (designator.startsWith('EG-D') || designator.startsWith('EGD') || designator.startsWith('D') || name.includes('DANGER')) {
+        if (designator.startsWith('EG-D') || designator.startsWith('EGD') || designator.startsWith('D') || name.includes('DANGER') || aixmType === 'D') {
             return 'danger';
+        }
+        if (aixmType === 'CTR' || aixmType === 'TMA' || aixmType === 'FIR' || aixmType === 'UIR' || aixmType === 'CTA') {
+            return 'other';
         }
 
         return 'other';
@@ -185,7 +189,8 @@
             html += '</div>';
         }
 
-        html += '<div class="airspace-popup-source">UK AIP ENR 5.1 / NATS UAS</div>';
+        const source = props.source || 'UK AIP ENR 5.1 / NATS UAS';
+        html += '<div class="airspace-popup-source">' + escapeHtml(source) + '</div>';
         html += '</div></div>';
         return html;
     }
@@ -233,6 +238,7 @@
         options = options || {};
         const map = options.map;
         const dataUrl = options.dataUrl || 'assets/uk-airspace.geojson';
+        const aipDataUrl = options.aipDataUrl || 'assets/uk-aip-airspace.geojson';
         const notamModule = options.notamModule || null;
         const ratModule = options.ratModule || null;
 
@@ -278,17 +284,26 @@
                 layersByType[key].clearLayers();
             });
             const url = dataUrl + (dataUrl.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
-            fetch(url)
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    addDataToLayers(data, layersByType);
-                    lastValidity = data.metadata || null;
-                    if (validityUpdateCallback) validityUpdateCallback();
-                    if (callback) callback();
-                })
-                .catch(function () {
-                    if (callback) callback();
-                });
+            const aipUrl = aipDataUrl + (aipDataUrl.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+            Promise.all([
+                fetch(url).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+                fetch(aipUrl).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+            ]).then(function (results) {
+                const enrData = results[0];
+                const aipData = results[1];
+                if (enrData && enrData.features) {
+                    addDataToLayers(enrData, layersByType);
+                    lastValidity = enrData.metadata || lastValidity;
+                }
+                if (aipData && aipData.features && aipData.features.length > 0) {
+                    addDataToLayers(aipData, layersByType);
+                    if (!lastValidity && aipData.metadata) lastValidity = aipData.metadata;
+                }
+                if (validityUpdateCallback) validityUpdateCallback();
+                if (callback) callback();
+            }).catch(function () {
+                if (callback) callback();
+            });
         }
         function setValidityUpdateCallback(fn) { validityUpdateCallback = fn; }
 
@@ -299,7 +314,7 @@
          */
         function createLegendControl() {
             const LegendControl = L.Control.extend({
-                options: { position: 'bottomleft' },
+                options: { position: 'bottomright' },
                 onAdd: function () {
                     const container = L.DomUtil.create('div', 'leaflet-control airspace-legend');
                     const header = L.DomUtil.create('div', 'airspace-legend-header', container);
@@ -374,7 +389,7 @@
                         });
                     });
                     if (notamModule) {
-                        const li = L.DomUtil.create('li', 'airspace-legend-item', list);
+                        const li = L.DomUtil.create('li', 'airspace-legend-item airspace-legend-item-notam', list);
                         const itemLabel = L.DomUtil.create('label', 'airspace-legend-item-label', li);
                         itemLabel.style.cursor = 'pointer';
                         const cb = L.DomUtil.create('input', 'airspace-legend-item-cb', itemLabel);
@@ -384,6 +399,18 @@
                         swatch.style.backgroundColor = '#059669';
                         const lbl = L.DomUtil.create('span', 'airspace-legend-label', itemLabel);
                         lbl.textContent = 'NOTAM';
+                        const expandBtn = L.DomUtil.create('button', 'airspace-notam-expand', itemLabel);
+                        expandBtn.type = 'button';
+                        expandBtn.title = 'NOTAM options';
+                        expandBtn.textContent = '\u25BC';
+                        expandBtn.style.display = 'none';
+                        L.DomEvent.on(expandBtn, 'click', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const isOpen = optsWrap.style.display !== 'none';
+                            optsWrap.style.display = isOpen ? 'none' : 'block';
+                            expandBtn.textContent = isOpen ? '\u25BC' : '\u25B2';
+                        });
                         L.DomEvent.on(cb, 'change', function () {
                             if (cb.checked) {
                                 notamModule.loadNotams(function () {
@@ -391,6 +418,53 @@
                                 });
                             } else {
                                 notamModule.removeFromMap();
+                            }
+                        });
+                        const optsWrap = L.DomUtil.create('div', 'airspace-notam-options', li);
+                        optsWrap.style.display = 'none';
+                        const maxRadiusRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
+                        const maxRadiusLabel = L.DomUtil.create('label', 'airspace-notam-option-label', maxRadiusRow);
+                        maxRadiusLabel.textContent = 'Max radius';
+                        const maxRadiusSelect = L.DomUtil.create('select', 'airspace-notam-select', maxRadiusRow);
+                        [ { v: 5, l: '5 NM' }, { v: 10, l: '10 NM' }, { v: 12, l: '12 NM' }, { v: 20, l: '20 NM' }, { v: 50, l: '50 NM' }, { v: 999, l: 'All' } ].forEach(function (o) {
+                            const opt = L.DomUtil.create('option', '', maxRadiusSelect);
+                            opt.value = String(o.v);
+                            opt.textContent = o.l;
+                            if (o.v === 12) opt.selected = true;
+                        });
+                        L.DomEvent.on(maxRadiusSelect, 'change', function () {
+                            notamModule.setOptions({ maxRadius: parseInt(maxRadiusSelect.value, 10) });
+                        });
+                        const droneRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
+                        const droneLabel = L.DomUtil.create('label', 'airspace-notam-option-label airspace-notam-check-label', droneRow);
+                        const droneCb = L.DomUtil.create('input', 'airspace-notam-drone-cb', droneLabel);
+                        droneCb.type = 'checkbox';
+                        droneCb.title = 'Show only UAS/drone-relevant NOTAMs (cranes, TDA, BVLOS, etc.)';
+                        droneLabel.appendChild(document.createTextNode(' Drone-relevant only'));
+                        L.DomEvent.on(droneCb, 'change', function () {
+                            notamModule.setOptions({ droneRelevantOnly: droneCb.checked });
+                        });
+                        const opacityRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
+                        const opacityLabel = L.DomUtil.create('label', 'airspace-notam-option-label', opacityRow);
+                        opacityLabel.textContent = 'Opacity';
+                        const opacityRange = L.DomUtil.create('input', 'airspace-notam-opacity', opacityRow);
+                        opacityRange.type = 'range';
+                        opacityRange.min = '0.03';
+                        opacityRange.max = '0.2';
+                        opacityRange.step = '0.01';
+                        opacityRange.value = '0.08';
+                        opacityRange.title = 'Fill opacity';
+                        L.DomEvent.on(opacityRange, 'input', function () {
+                            const val = parseFloat(opacityRange.value);
+                            notamModule.setOptions({ fillOpacity: val });
+                        });
+                        cb.addEventListener('change', function () {
+                            if (cb.checked) {
+                                expandBtn.style.display = '';
+                            } else {
+                                expandBtn.style.display = 'none';
+                                optsWrap.style.display = 'none';
+                                expandBtn.textContent = '\u25BC';
                             }
                         });
                     }

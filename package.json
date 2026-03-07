@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node test_browser.js",
     "convert-airspace": "node scripts/convert-airspace-data.js",
-    "deploy": "wrangler deploy"
+    "convert-aip": "node scripts/convert-aip-aixm.js",
+    "deploy": "npx wrangler deploy"
   },
   "dependencies": {
     "playwright": "^1.58.2",

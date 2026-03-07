@@ -1593,6 +1593,11 @@ select {
     color: #6b7280;
     margin-bottom: 10px;
 }
+.airspace-popup-validity-raw {
+    font-size: 10px;
+    color: #9ca3af;
+    font-family: monospace;
+}
 .airspace-popup-body {
     max-height: 360px;
     overflow-y: auto;
@@ -1731,6 +1736,74 @@ select {
     padding-top: 8px;
     font-size: 10px;
     color: #9ca3af;
+}
+
+/* NOTAM options panel */
+.airspace-legend-item-notam {
+    position: relative;
+}
+.airspace-notam-expand {
+    position: absolute;
+    right: 0;
+    top: 2px;
+    background: transparent;
+    border: none;
+    color: var(--sidebar-text-muted);
+    cursor: pointer;
+    font-size: 10px;
+    padding: 2px 4px;
+    line-height: 1;
+}
+.airspace-notam-expand:hover {
+    color: var(--sidebar-text);
+}
+.airspace-notam-options {
+    margin-top: 6px;
+    margin-left: 22px;
+    padding: 8px;
+    background: rgba(0,0,0,0.15);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+}
+.airspace-notam-option-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.airspace-notam-option-row:last-child {
+    margin-bottom: 0;
+}
+.airspace-notam-option-label {
+    min-width: 75px;
+    color: var(--sidebar-text-muted);
+}
+.airspace-notam-check-label {
+    min-width: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.airspace-notam-select {
+    flex: 1;
+    max-width: 90px;
+    padding: 4px 6px;
+    font-size: 11px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    color: var(--sidebar-text);
+}
+.airspace-notam-opacity {
+    flex: 1;
+    max-width: 100px;
+    accent-color: #059669;
+}
+.airspace-notam-drone-cb {
+    width: 12px;
+    height: 12px;
+    accent-color: #059669;
 }
 
 /* ---- Drawing Style Panel ---- */
