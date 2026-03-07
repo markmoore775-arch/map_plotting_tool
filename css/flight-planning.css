@@ -1,0 +1,170 @@
+/* ============================================
+   DJI MISSION PLANNER - Flight Planning Mode
+   Full-screen map, no sidebar, floating toolbar
+   ============================================ */
+
+body.flight-planning-mode {
+    overflow: hidden;
+}
+
+body.flight-planning-mode #map {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+/* Floating toolbar - bottom centre */
+.fp-toolbar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    min-width: min(640px, 95vw);
+    padding: 10px 20px;
+    background: var(--sidebar-bg, #1e1e2e);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.fp-toolbar-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.fp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    font-family: var(--font-family, 'Inter', sans-serif);
+    font-weight: 500;
+    color: var(--sidebar-text, #e0e0e8);
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.fp-btn:hover {
+    background: #33334a;
+    border-color: #4a4a60;
+}
+
+.fp-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.fp-btn.active {
+    background: var(--primary, #5b8def);
+    border-color: var(--primary, #5b8def);
+    color: #fff;
+}
+
+.fp-btn-primary {
+    min-width: 140px;
+    background: var(--primary, #5b8def);
+    border-color: var(--primary, #5b8def);
+    color: #fff;
+}
+
+.fp-btn-primary:hover {
+    background: var(--primary-hover, #4a7de0);
+    border-color: var(--primary-hover, #4a7de0);
+}
+
+.fp-btn-back {
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.fp-btn-back:hover {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+/* Mission info - bottom left, inline with toolbar */
+.fp-info {
+    position: fixed;
+    bottom: 24px;
+    left: 12px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--sidebar-text-muted, #9999aa);
+    background: rgba(30, 30, 46, 0.9);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--sidebar-border, #3a3a50);
+}
+
+/* App logo - bottom right */
+.fp-logo {
+    position: fixed;
+    bottom: 24px;
+    right: 12px;
+    z-index: 1000;
+    opacity: 0.6;
+    pointer-events: none;
+}
+.fp-logo img {
+    height: 24px;
+    width: auto;
+    display: block;
+}
+
+/* Icon-only button (info) */
+.fp-btn-icon {
+    padding: 8px 12px;
+    min-width: 40px;
+}
+.fp-btn-icon span {
+    display: none;
+}
+
+/* SD card modal steps */
+.fp-sd-steps {
+    margin: 12px 0;
+    padding-left: 20px;
+    line-height: 1.6;
+}
+.fp-sd-steps li {
+    margin-bottom: 8px;
+}
+.fp-sd-steps code {
+    background: var(--sidebar-surface, #2a2a3d);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+.fp-sd-note {
+    margin-top: 12px;
+    font-size: 0.9em;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+/* Hide Geoman's default toolbar - we use our own */
+body.flight-planning-mode .leaflet-pm-toolbar {
+    display: none !important;
+}
+
+/* Show Geoman toolbar only when drawing - we need it for rectangle/circle */
+body.flight-planning-mode .leaflet-pm-actions-container {
+    /* Geoman draws its own UI - we trigger via our buttons */
+}

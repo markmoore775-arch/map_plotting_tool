@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Automated tests for map plotting tool",
   "scripts": {
+    "serve": "python3 -m http.server 8080",
     "test": "node test_browser.js",
     "convert-airspace": "node scripts/convert-airspace-data.js",
     "convert-aip": "node scripts/convert-aip-aixm.js",

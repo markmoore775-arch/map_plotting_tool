@@ -2846,6 +2846,15 @@
         if (introHelpBtn) {
             introHelpBtn.addEventListener('click', () => openModal('helpModal'));
         }
+
+        const introFlightPlanBtn = document.getElementById('introFlightPlanBtn');
+        if (introFlightPlanBtn) {
+            introFlightPlanBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = introFlightPlanBtn.getAttribute('href') || 'flight-planning.html';
+                window.location.assign(target);
+            }, true);
+        }
     });
 
 })();

@@ -228,17 +228,31 @@ body.sidebar-collapsed #map {
     margin-bottom: 32px;
 }
 
-/* CTA button row */
-.intro-cta-row {
+/* CTA button stack (Launch App, View Instructions) */
+.intro-cta-stack {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
     align-items: center;
 }
 
-.intro-cta-row .intro-cta {
+.intro-cta-stack .intro-cta {
     margin-bottom: 0;
+}
+
+/* DJI section (explanation + button) */
+.intro-dji-section {
+    margin-bottom: 32px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.intro-dji-description {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 16px;
 }
 
 /* CTA button */
@@ -251,6 +265,7 @@ body.sidebar-collapsed #map {
     font-size: 0.95rem;
     font-weight: 600;
     color: #fff;
+    text-decoration: none;
     background: linear-gradient(135deg, #3b6fd4, #5b8def);
     border: 1px solid rgba(91,141,239,0.3);
     padding: 14px 36px;
@@ -296,6 +311,7 @@ body.sidebar-collapsed #map {
     font-size: 0.75rem;
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.5);
+    margin-top: 24px;
     margin-bottom: 0;
     padding: 10px 14px;
     background: rgba(0, 0, 0, 0.2);
