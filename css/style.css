@@ -717,7 +717,7 @@ select {
     list-style: none;
     overflow-y: auto;
     flex: 1;
-    min-height: 0;
+    min-height: 80px;
 }
 
 .point-item {
@@ -1329,7 +1329,9 @@ select {
     .leaflet-control-drop-point,
     .leaflet-control-extra-draw,
     .leaflet-control-flight-path,
-    .leaflet-control-line-draw {
+    .leaflet-control-line-draw,
+    .leaflet-control-save,
+    .leaflet-control-load {
         width: 44px !important;
         height: 44px !important;
     }
@@ -1346,7 +1348,9 @@ select {
     .leaflet-control-drop-point .lucide-map-pin-icon svg,
     .leaflet-control-extra-draw .lucide-arrow-big-right-icon svg,
     .leaflet-control-flight-path .lucide-drone-icon svg,
-    .leaflet-control-line-draw .lucide-ruler-icon svg {
+    .leaflet-control-line-draw .lucide-ruler-icon svg,
+    .leaflet-control-save .lucide-save-icon svg,
+    .leaflet-control-load .lucide-folder-open-icon svg {
         width: 22px;
         height: 22px;
     }
@@ -1869,6 +1873,57 @@ select {
 .leaflet-control-drop-point.active {
     background: var(--primary) !important;
     color: #fff !important;
+}
+
+/* ---- Toolbar gaps (zoom | locate | save/load | rest) ---- */
+
+.leaflet-control-locate {
+    margin-top: 5px;
+}
+
+.leaflet-control-save-load {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.leaflet-pm-toolbar.leaflet-pm-draw,
+.leaflet-pm-toolbar {
+    margin-top: 5px;
+}
+
+/* ---- Save / Load toolbar buttons ---- */
+
+.leaflet-control-save,
+.leaflet-control-load {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    text-decoration: none;
+    color: #333;
+    cursor: pointer;
+}
+
+.leaflet-control-save .control-icon,
+.leaflet-control-load .control-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.leaflet-control-save .lucide-save-icon,
+.leaflet-control-load .lucide-folder-open-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-control-save .lucide-save-icon svg,
+.leaflet-control-load .lucide-folder-open-icon svg {
+    width: 18px;
+    height: 18px;
 }
 
 .drop-icon-strip {

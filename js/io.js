@@ -5,12 +5,13 @@
 const ProjectIO = (() => {
 
     /**
-     * Save project to a JSON file (triggers download).
+     * Save project to a JSON file. Uses native Save As dialog when available
+     * (File System Access API), otherwise falls back to download.
      * @param {Array} points - Array of point objects
      * @param {object} settings - Application settings
      * @param {Array} shapes - Array of shape objects (optional)
      */
-    function saveProject(points, settings, shapes) {
+    async function saveProject(points, settings, shapes) {
         const project = {
             version: 2,
             exportedAt: new Date().toISOString(),
@@ -20,7 +21,23 @@ const ProjectIO = (() => {
         };
 
         const json = JSON.stringify(project, null, 2);
-        Exporters.downloadFile(json, 'map_project.json', 'application/json');
+
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await showSaveFilePicker({
+                    suggestedName: 'map_project.json',
+                    types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(json);
+                await writable.close();
+            } catch (err) {
+                if (err.name === 'AbortError') return; // User cancelled
+                alert('Failed to save: ' + err.message);
+            }
+        } else {
+            Exporters.downloadFile(json, 'map_project.json', 'application/json');
+        }
     }
 
     /**

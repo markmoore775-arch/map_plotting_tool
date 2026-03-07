@@ -1956,25 +1956,41 @@ const Drawings = (() => {
         handle.on('drag', (e) => {
             const pos = e.target.getLatLng();
             const newAngle = bearingTo(center[0], center[1], pos.lat, pos.lng);
-            const newEdge = destinationPoint(center[0], center[1], newAngle, radius);
+            const newRadius = Math.max(1, L.latLng(center).distanceTo(L.latLng(pos)));
+            const newEdge = destinationPoint(center[0], center[1], newAngle, newRadius);
             const ratio = shape.measureLabelRatio != null ? shape.measureLabelRatio : 0.5;
             const newLabelPt = pointAlongRadius(center, newEdge, ratio);
 
+            shape.radius = newRadius;
+            shape.measureAngle = newAngle;
+            if (entry.layer && entry.layer.setRadius) entry.layer.setRadius(newRadius);
             e.target.setLatLng(newEdge);
             line.setLatLngs([center, newEdge]);
             label.setLatLng(newLabelPt);
-            shape.measureAngle = newAngle;
+            label.setIcon(makeLabelIcon(getMeasurementText(shape) || '', true));
         });
 
         handle.on('dragend', () => {
             const pos = handle.getLatLng();
             const finalAngle = bearingTo(center[0], center[1], pos.lat, pos.lng);
-            shape.measureAngle = finalAngle;
-            const finalEdge = destinationPoint(center[0], center[1], finalAngle, radius);
+            const finalRadius = Math.max(1, L.latLng(center).distanceTo(L.latLng(pos)));
+            const finalEdge = destinationPoint(center[0], center[1], finalAngle, finalRadius);
             const ratio = shape.measureLabelRatio != null ? shape.measureLabelRatio : 0.5;
+
+            shape.radius = finalRadius;
+            shape.measureAngle = finalAngle;
+            if (entry.layer && entry.layer.setRadius) entry.layer.setRadius(finalRadius);
             handle.setLatLng(finalEdge);
             line.setLatLngs([center, finalEdge]);
             label.setLatLng(pointAlongRadius(center, finalEdge, ratio));
+            label.setIcon(makeLabelIcon(getMeasurementText(shape) || '', true));
+
+            pushUndoSnapshot();
+            const modal = document.getElementById('shapeEditModal');
+            if (modal && !modal.classList.contains('hidden') && parseInt(document.getElementById('editShapeId').value, 10) === shape.id) {
+                document.getElementById('editShapeRadius').value = Math.round(shape.radius);
+                document.getElementById('editShapeAngle').value = Math.round(shape.measureAngle || 45);
+            }
         });
 
         handle.on('contextmenu', (e) => {
@@ -2344,7 +2360,7 @@ const Drawings = (() => {
             angleGroup.classList.remove('hidden');
             if (radiusLabel) radiusLabel.textContent = 'Radius (metres)';
             if (angleLabel) angleLabel.innerHTML = 'Label Angle (0-360&deg;, 0=North)';
-            if (angleHint) angleHint.textContent = 'Or drag the handle on the map to reposition';
+            if (angleHint) angleHint.textContent = 'Or drag the handle on the map to change angle or radius';
             document.getElementById('editShapeRadius').value = Math.round(shape.radius);
             document.getElementById('editShapeAngle').value = Math.round(shape.measureAngle || 45);
         } else if (shape.type === 'arrow') {

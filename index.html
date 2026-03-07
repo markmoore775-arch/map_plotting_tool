@@ -557,7 +557,9 @@
                     <h3>Point Types</h3>
                     <p>Address/Reference, Primary TOLA, Secondary TOLA, Custom TOLA, Emergency Landing Zone, No-Fly Marker, Hazard, Waypoint, and Custom Point. Custom points can use a 1–2 character symbol.</p>
                     <h3>Managing Points</h3>
-                    <p>Use the search box to filter points. Click a point in the list to pan to it and highlight it. Use the edit and delete buttons, or right-click a marker on the map. Drag markers to move them. Double-click a marker or use &ldquo;View Details&rdquo; for coordinates in multiple formats (Decimal, DMS, OS Grid Ref, What3Words, Elevation) with copy-to-clipboard.</p>
+                    <p>Use the search box to filter points. Click a point in the list to pan to it and highlight it. Use the edit and delete buttons, or right-click a marker on the map. Drag markers to move them. Click a marker to see a <strong>quick-edit popup</strong> with label, elevation, and links to View Details or Edit. Double-click a marker or use &ldquo;View Details&rdquo; for coordinates in multiple formats (Decimal, DMS, OS Grid Ref, What3Words, Elevation) with copy-to-clipboard.</p>
+                    <h3>Elevation</h3>
+                    <p>Points can display elevation (metres AMSL) when a Mapbox token is configured. Use the <strong>Always display elevation on map</strong> checkbox when adding or editing a point to show elevation in the quick-edit popup and point list.</p>
                 </div>
                 <div class="tab-panel" id="help-tab-shapes">
                     <h3>Drawing Shapes</h3>
@@ -572,11 +574,11 @@
                         <li><strong>Text</strong> — add text labels on the map</li>
                     </ul>
                     <h3>Editing Shapes</h3>
-                    <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu to adjust polygon/line points.</p>
+                    <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu (or the vertices button in the sidebar) to adjust polygon/line points. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path. <strong>Measurement labels</strong> on circles and flight paths can be dragged to reposition them.</p>
                     <h3>Copy &amp; Paste</h3>
-                    <p>Right-click a shape to copy it (<strong>Ctrl+C</strong> when selected), then right-click elsewhere to paste (<strong>Ctrl+V</strong>).</p>
+                    <p>Right-click a shape to copy it (<strong>Ctrl+C</strong> when selected), then right-click elsewhere to paste (<strong>Ctrl+V</strong>). Press <strong>Esc</strong> to deselect.</p>
                     <h3>Drawing Style</h3>
-                    <p>The floating panel shows colour, fill opacity, stroke width, and stroke style. These apply to new shapes.</p>
+                    <p>The floating panel shows colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. These apply to new shapes.</p>
                 </div>
                 <div class="tab-panel" id="help-tab-import">
                     <h3>Bulk Import</h3>
@@ -585,8 +587,14 @@
                     <p>Export points as <strong>CSV</strong>, or points and shapes as <strong>KML</strong> for use in other mapping tools. <strong>Screenshot Map</strong> captures the current map view as an image.</p>
                     <h3>Save &amp; Load Project</h3>
                     <p>Save your entire project (points, shapes, settings) as a JSON file. Load it later to restore your work.</p>
+                    <h3>Undo</h3>
+                    <p>Use the <strong>Undo</strong> button in the sidebar or map toolbar, or <strong>Ctrl+Z</strong> (Cmd+Z on Mac) to revert the last action.</p>
                 </div>
                 <div class="tab-panel" id="help-tab-map">
+                    <h3>Map Toolbar</h3>
+                    <p>The toolbar (top-left) includes: <strong>Search</strong> — open the Search Location modal; <strong>Hand/Pan</strong> — drag to move the map; <strong>Undo</strong> — revert last action; <strong>Drop Point</strong> — choose type and click map to add a point; plus drawing tools (circle, rectangle, polygon, line, arrow, flight path).</p>
+                    <h3>Search Location</h3>
+                    <p>Click the search button on the map toolbar to open the Search Location modal. Enter a postcode, lat/long, OS Grid ref, DMS, or What3Words address. The map will pan and zoom to that location.</p>
                     <h3>Map Layers</h3>
                     <p>Use the layer control (top-right) to switch between OpenStreetMap, Topographic, Satellite, and optionally Mapbox or Ordnance Survey (OS Maps requires an API key in Settings).</p>
                     <h3>UK Airspace</h3>
@@ -596,15 +604,19 @@
                         <li><strong>Restricted</strong> — Flying limited under certain conditions</li>
                         <li><strong>Danger</strong> — Hazardous activities may occur</li>
                         <li><strong>FRZ / Aerodrome</strong> — Flight Restriction Zones around protected aerodromes</li>
+                        <li><strong>NOTAM</strong> — Temporary restrictions from UK NOTAM Archive. Click the arrow (▼) for options: max radius (5–50 NM), drone-relevant only, and opacity. No API key required.</li>
+                        <li><strong>RA(T)</strong> — Restricted Area Temporary from BGA Airspace Service. Requires username and password in Settings (register at airspace.bgaladder.net).</li>
                     </ul>
-                    <p>Data is sourced from UK AIP ENR 5.1 / NATS UAS. Click any zone for details including vertical limits and activation times.</p>
+                    <p>Data is sourced from UK AIP ENR 5.1 / NATS UAS. Click any zone for details including vertical limits and activation times. Use the refresh button (↻) to reload airspace data.</p>
                     <p>To use real NATS data, see <code>docs/AIRSPACE_DATA.md</code> for download and conversion instructions.</p>
                     <h3>Geolocation</h3>
                     <p>Use the locate button to show your current position on the map.</p>
+                    <h3>Sidebar</h3>
+                    <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points.</p>
                     <h3>Settings</h3>
-                    <p>Configure optional API keys (What3Words, OS Maps), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
+                    <p>Configure optional API keys (What3Words, OS Maps, BGA Airspace for RA(T)), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
                     <h3>Keyboard Shortcuts</h3>
-                    <p><strong>Escape</strong> — close modals, exit drawing/drop-point mode. <strong>Ctrl+Z</strong> — undo last action. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> — copy and paste shapes.</p>
+                    <p><strong>Escape</strong> — close modals, exit drawing/drop-point mode, deselect shapes. <strong>Ctrl+Z</strong> (Cmd+Z) — undo last action. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> — copy and paste shapes.</p>
                 </div>
                 <div class="tab-panel" id="help-tab-disclaimer">
                     <h3>Disclaimer</h3>

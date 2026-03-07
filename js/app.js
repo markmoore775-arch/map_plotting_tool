@@ -222,6 +222,35 @@
             }).addTo(map);
         }
 
+        // Save / Load project buttons (toolbar)
+        const SaveLoadControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: function () {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-save-load');
+                const saveBtn = L.DomUtil.create('a', 'leaflet-control-save leaflet-buttons-control-button', container);
+                saveBtn.href = '#';
+                saveBtn.title = 'Save Project';
+                saveBtn.innerHTML = '<span class="control-icon lucide-save-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-save"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg></span>';
+                const loadBtn = L.DomUtil.create('a', 'leaflet-control-load leaflet-buttons-control-button', container);
+                loadBtn.href = '#';
+                loadBtn.title = 'Load Project';
+                loadBtn.innerHTML = '<span class="control-icon lucide-folder-open-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-open"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg></span>';
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.on(saveBtn, 'click', (e) => {
+                    L.DomEvent.stop(e);
+                    L.DomEvent.preventDefault(e);
+                    ProjectIO.saveProject(points, settings, Drawings.serializeShapes());
+                });
+                L.DomEvent.on(loadBtn, 'click', (e) => {
+                    L.DomEvent.stop(e);
+                    L.DomEvent.preventDefault(e);
+                    document.getElementById('projectFileInput').click();
+                });
+                return container;
+            }
+        });
+        map.addControl(new SaveLoadControl());
+
         // Click on map to place point (skip when drawing). No coordinate popup by default.
         map.on('click', function (e) {
             if (Drawings.isDrawingActive()) return;
