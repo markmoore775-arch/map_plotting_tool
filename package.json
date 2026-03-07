@@ -6,7 +6,8 @@
     "test": "node test_browser.js",
     "convert-airspace": "node scripts/convert-airspace-data.js",
     "convert-aip": "node scripts/convert-aip-aixm.js",
-    "deploy": "npx wrangler deploy"
+    "deploy": "node scripts/inject-cache-bust.js && npx wrangler deploy && git checkout index.html",
+    "deploy:no-bust": "npx wrangler deploy"
   },
   "dependencies": {
     "playwright": "^1.58.2",

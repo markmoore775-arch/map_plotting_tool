@@ -12,6 +12,9 @@ node_modules/
 package.json
 package-lock.json
 
+# Build scripts - not part of deployed app
+scripts/inject-cache-bust.js
+
 # Test files
 test_*.js
 test_*.html
