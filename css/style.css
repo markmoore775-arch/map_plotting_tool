@@ -76,7 +76,8 @@ body.sidebar-collapsed #map {
     align-items: center;
     justify-content: center;
     background: radial-gradient(ellipse at 30% 20%, #0c1f3d 0%, #0a0f1e 50%, #060a14 100%);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     transition: opacity 0.6s cubic-bezier(.4,0,.2,1), visibility 0.6s cubic-bezier(.4,0,.2,1);
 }
 
@@ -231,10 +232,12 @@ body.sidebar-collapsed #map {
 /* CTA button stack (Launch App, View Instructions) */
 .intro-cta-stack {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 32px;
     align-items: center;
+    justify-content: center;
 }
 
 .intro-cta-stack .intro-cta {
