@@ -16,6 +16,15 @@
     let undoStack = [];
     const R = 6371000; // Earth radius in metres
 
+    // Manual Recce mode: POI + exclusion fence for overlay (no auto-flight)
+    const RECCE_DEFAULT_RADIUS = 300;
+    let recceMode = true;    // default to Manual Recce
+    let recceTarget = null;  // { lat, lng } | null
+    let recceRadius = RECCE_DEFAULT_RADIUS;
+    let reccePoiMarker = null;
+    let recceExclusionLayer = null;
+    let recceAddTargetMode = false;
+
     // Default mission params (M4T - use M350 RTK enum as fallback; verify for M4T)
     const MISSION_DEFAULTS = {
         droneEnumValue: 89,      // M350 RTK - M4T may need different value
@@ -88,6 +97,162 @@
         });
     }
 
+    // ---- Manual Recce ----
+    function generateCircleLatlngs(centerLat, centerLng, radiusM) {
+        const latlngs = [];
+        for (let i = 0; i <= 36; i++) {
+            latlngs.push(destinationPoint(centerLat, centerLng, (i * 10) % 360, radiusM));
+        }
+        return latlngs;
+    }
+
+    function setRecceTarget(lat, lng) {
+        pushUndo();
+        recceTarget = { lat, lng };
+        if (reccePoiMarker) map.removeLayer(reccePoiMarker);
+        if (recceExclusionLayer) map.removeLayer(recceExclusionLayer);
+
+        const poiIcon = L.divIcon({
+            className: 'recce-poi-marker',
+            html: '<div class="recce-poi-diamond"></div>',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+        reccePoiMarker = L.marker([lat, lng], { icon: poiIcon })
+            .addTo(map)
+            .bindTooltip('Target (POI)', { permanent: false, direction: 'top' });
+
+        const latlngs = generateCircleLatlngs(lat, lng, recceRadius);
+        recceExclusionLayer = L.polygon(latlngs, {
+            color: '#e05555',
+            fillColor: '#e05555',
+            fillOpacity: 0.25,
+            weight: 2
+        }).addTo(map);
+
+        updateRecceUI();
+    }
+
+    function clearRecceTarget() {
+        recceTarget = null;
+        if (reccePoiMarker) { map.removeLayer(reccePoiMarker); reccePoiMarker = null; }
+        if (recceExclusionLayer) { map.removeLayer(recceExclusionLayer); recceExclusionLayer = null; }
+        updateRecceUI();
+    }
+
+    function updateRecceRadius(newRadius) {
+        recceRadius = Math.max(10, Math.min(5000, newRadius));
+        if (recceTarget && recceExclusionLayer) {
+            const latlngs = generateCircleLatlngs(recceTarget.lat, recceTarget.lng, recceRadius);
+            recceExclusionLayer.setLatLngs(latlngs);
+        }
+        const input = document.getElementById('fpRecceRadiusInput');
+        if (input) input.value = recceRadius;
+    }
+
+    function updateRecceUI() {
+        const addBtn = document.getElementById('fpRecceTargetBtn');
+        const radiusWrap = document.getElementById('fpRecceRadiusWrap');
+        const exportRecceBtn = document.getElementById('fpExportRecceBtn');
+        const recceInfo = document.getElementById('fpRecceInfo');
+        const waypointCount = document.getElementById('fpWaypointCount');
+        const exclusionCount = document.getElementById('fpExclusionCount');
+        if (addBtn) addBtn.classList.toggle('active', recceAddTargetMode);
+        if (radiusWrap) radiusWrap.classList.toggle('hidden', !recceTarget);
+        if (exportRecceBtn) exportRecceBtn.disabled = !recceTarget;
+        if (recceInfo) {
+            recceInfo.classList.toggle('hidden', !recceMode || !recceTarget);
+            recceInfo.textContent = recceTarget ? '1 target' : '';
+        }
+        if (recceMode) {
+            if (waypointCount) waypointCount.classList.add('hidden');
+            if (exclusionCount) exclusionCount.classList.add('hidden');
+        } else {
+            if (waypointCount) waypointCount.classList.remove('hidden');
+            if (exclusionCount) exclusionCount.classList.remove('hidden');
+        }
+    }
+
+    function buildRecceKml() {
+        if (!recceTarget) return '';
+        const latlngs = generateCircleLatlngs(recceTarget.lat, recceTarget.lng, recceRadius);
+        const coords = latlngs.map(ll => `${ll[1]},${ll[0]},0`).join(' ');
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Recce Mission</name>
+    <Placemark>
+      <name>Target Address</name>
+      <description>Recce target - appears as pin in DJI Pilot 2</description>
+      <Point>
+        <coordinates>${recceTarget.lng},${recceTarget.lat},0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>${recceRadius}m Buffer</name>
+      <Style>
+        <LineStyle><color>ff0000ff</color><width>2</width></LineStyle>
+        <PolyStyle><color>4dff0000</color><outline>1</outline></PolyStyle>
+      </Style>
+      <Polygon>
+        <extrude>1</extrude>
+        <altitudeMode>relativeToGround</altitudeMode>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${coords}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+      <ExtendedData>
+        <Data name="areaType">
+          <value>ExclusionZone</value>
+        </Data>
+      </ExtendedData>
+    </Placemark>
+  </Document>
+</kml>`;
+    }
+
+    async function exportRecceKmz() {
+        if (!recceTarget) {
+            alert('Add a target first by clicking the map.');
+            return;
+        }
+        const zip = new JSZip();
+        zip.file('doc.kml', buildRecceKml());
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const defaultName = 'Recce_Mission.kmz';
+
+        if (typeof window.showSaveFilePicker === 'function') {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: defaultName,
+                    types: [{
+                        description: 'KMZ file',
+                        accept: { 'application/vnd.google-earth.kmz': ['.kmz'] }
+                    }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                openSdCardModal(true);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    alert('Failed to save file.');
+                }
+            }
+        } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = defaultName;
+            a.click();
+            URL.revokeObjectURL(url);
+            openSdCardModal(true);
+        }
+    }
+
     // ---- Map init ----
     function initMap() {
         map = L.map('map', {
@@ -158,7 +323,9 @@
                 ...e,
                 latlngs: e.latlngs ? e.latlngs.map(ll => [...ll]) : undefined,
                 center: e.center ? [...e.center] : undefined
-            }))
+            })),
+            recceTarget: recceTarget ? { ...recceTarget } : null,
+            recceRadius
         });
         document.getElementById('fpUndoBtn').disabled = undoStack.length === 0;
     }
@@ -196,7 +363,11 @@
     }
 
     function onMapClick(e) {
-        if (waypointMode) {
+        if (recceAddTargetMode) {
+            setRecceTarget(e.latlng.lat, e.latlng.lng);
+            recceAddTargetMode = false;
+            updateRecceUI();
+        } else if (waypointMode) {
             addWaypoint(e.latlng.lat, e.latlng.lng);
         }
     }
@@ -475,9 +646,17 @@
 
     // ---- Clear / Undo ----
     function clearAll() {
-        if (waypoints.length === 0 && exclusions.length === 0) return;
-        if (!confirm('Clear all waypoints and exclusion zones?')) return;
+        const hasRecce = recceTarget !== null;
+        const hasWaypoint = waypoints.length > 0 || exclusions.length > 0;
+        if (!hasRecce && !hasWaypoint) return;
+        const msg = recceMode && hasRecce
+            ? 'Clear the recce target and exclusion zone?'
+            : 'Clear all waypoints and exclusion zones?';
+        if (!confirm(msg)) return;
         pushUndo();
+        if (recceMode && recceTarget) {
+            clearRecceTarget();
+        }
         waypoints = [];
         waypointMarkers.forEach(m => map.removeLayer(m));
         waypointMarkers = [];
@@ -496,6 +675,32 @@
         const state = undoStack.pop();
         waypoints = state.waypoints;
         exclusions = state.exclusions || [];
+        if (state.recceTarget !== undefined) {
+            if (state.recceTarget) {
+                recceTarget = state.recceTarget;
+                recceRadius = state.recceRadius != null ? state.recceRadius : RECCE_DEFAULT_RADIUS;
+                if (reccePoiMarker) map.removeLayer(reccePoiMarker);
+                if (recceExclusionLayer) map.removeLayer(recceExclusionLayer);
+                const poiIcon = L.divIcon({
+                    className: 'recce-poi-marker',
+                    html: '<div class="recce-poi-diamond"></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+                reccePoiMarker = L.marker([recceTarget.lat, recceTarget.lng], { icon: poiIcon })
+                    .addTo(map)
+                    .bindTooltip('Target (POI)', { permanent: false, direction: 'top' });
+                const latlngs = generateCircleLatlngs(recceTarget.lat, recceTarget.lng, recceRadius);
+                recceExclusionLayer = L.polygon(latlngs, {
+                    color: '#e05555',
+                    fillColor: '#e05555',
+                    fillOpacity: 0.25,
+                    weight: 2
+                }).addTo(map);
+            } else {
+                clearRecceTarget();
+            }
+        }
 
         waypointMarkers.forEach(m => map.removeLayer(m));
         waypointMarkers = [];
@@ -546,6 +751,21 @@
 
         document.getElementById('fpUndoBtn').disabled = undoStack.length === 0;
         updateCounts();
+        updateRecceUI();
+    }
+
+    function setRecceMode(enable) {
+        recceMode = enable;
+        recceAddTargetMode = false;
+        waypointMode = false;
+        map.pm.disableDraw();
+        document.getElementById('fpRecceModeBtn').classList.toggle('active', recceMode);
+        document.getElementById('fpWaypointModeBtn').classList.toggle('active', !recceMode);
+        document.getElementById('fpRecceToolbar').classList.toggle('hidden', !recceMode);
+        document.getElementById('fpWaypointToolbar').classList.toggle('hidden', recceMode);
+        document.getElementById('fpExportBtn').classList.toggle('hidden', recceMode);
+        document.getElementById('fpWaypointBtn').classList.remove('active');
+        updateRecceUI();
     }
 
     // ---- WPML / KMZ Export ----
@@ -719,7 +939,7 @@
                 const writable = await handle.createWritable();
                 await writable.write(blob);
                 await writable.close();
-                openSdCardModal();
+                openSdCardModal(false);
             } catch (err) {
                 if (err.name !== 'AbortError') {
                     console.error(err);
@@ -733,12 +953,17 @@
             a.download = defaultName;
             a.click();
             URL.revokeObjectURL(url);
-            openSdCardModal();
+            openSdCardModal(false);
         }
     }
 
-    function openSdCardModal() {
-        document.getElementById('fpSdCardModal').classList.remove('hidden');
+    function openSdCardModal(isRecce) {
+        const modal = document.getElementById('fpSdCardModal');
+        modal.classList.remove('hidden');
+        const recceSection = document.getElementById('fpRecceWorkflow');
+        const waypointSection = document.getElementById('fpWaypointWorkflow');
+        if (recceSection) recceSection.classList.toggle('hidden', !isRecce);
+        if (waypointSection) waypointSection.classList.toggle('hidden', !!isRecce);
     }
 
     function closeSdCardModal() {
@@ -754,6 +979,20 @@
 
     function init() {
         initMap();
+        setRecceMode(recceMode);
+
+        document.getElementById('fpRecceModeBtn').addEventListener('click', () => setRecceMode(true));
+        document.getElementById('fpWaypointModeBtn').addEventListener('click', () => setRecceMode(false));
+        document.getElementById('fpRecceTargetBtn').addEventListener('click', () => {
+            recceAddTargetMode = !recceAddTargetMode;
+            updateRecceUI();
+        });
+        const radiusInput = document.getElementById('fpRecceRadiusInput');
+        if (radiusInput) {
+            radiusInput.addEventListener('change', () => updateRecceRadius(parseInt(radiusInput.value, 10) || RECCE_DEFAULT_RADIUS));
+            radiusInput.addEventListener('input', () => updateRecceRadius(parseInt(radiusInput.value, 10) || RECCE_DEFAULT_RADIUS));
+        }
+        document.getElementById('fpExportRecceBtn').addEventListener('click', exportRecceKmz);
 
         document.getElementById('fpWaypointBtn').addEventListener('click', () => {
             if (waypointMode) stopWaypointMode();
@@ -767,7 +1006,7 @@
         });
         document.getElementById('fpClearBtn').addEventListener('click', clearAll);
         document.getElementById('fpExportBtn').addEventListener('click', exportKmz);
-        document.getElementById('fpSdCardHelpBtn').addEventListener('click', openSdCardModal);
+        document.getElementById('fpSdCardHelpBtn').addEventListener('click', () => openSdCardModal(recceMode));
         document.getElementById('fpBackBtn').addEventListener('click', () => {
             window.location.href = 'index.html';
         });
@@ -789,6 +1028,35 @@
 
         map.on('pm:drawstart', () => {
             stopWaypointMode();
+            recceAddTargetMode = false;
+            updateRecceUI();
+        });
+
+        /* Collapsible attribution on mobile only; larger screens use default Leaflet attribution */
+        requestAnimationFrame(function initCollapsibleAttribution() {
+            if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
+                const attrCtrl = document.querySelector('.leaflet-control-attribution');
+                if (attrCtrl) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'attribution-collapsible';
+                    attrCtrl.parentNode.insertBefore(wrapper, attrCtrl);
+                    wrapper.appendChild(attrCtrl);
+                    const toggle = document.createElement('button');
+                    toggle.type = 'button';
+                    toggle.className = 'attribution-collapsible-toggle';
+                    toggle.title = 'Map attribution';
+                    toggle.textContent = '\u00A9';
+                    toggle.setAttribute('aria-expanded', 'false');
+                    L.DomEvent.disableClickPropagation(toggle);
+                    L.DomEvent.on(toggle, 'click', function () {
+                        const collapsed = attrCtrl.classList.toggle('attribution-collapsible-collapsed');
+                        toggle.setAttribute('aria-expanded', String(!collapsed));
+                        toggle.textContent = collapsed ? '\u00A9' : '\u00D7';
+                    });
+                    wrapper.insertBefore(toggle, attrCtrl);
+                    attrCtrl.classList.add('attribution-collapsible-collapsed');
+                }
+            }
         });
     }
 

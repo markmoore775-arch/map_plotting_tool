@@ -488,6 +488,74 @@
         dropPointIconStrip = strip;
     }
 
+    function initCollapsibleControls() {
+        // Collapsible attribution (bottom-right) - mobile only; larger screens use default Leaflet attribution
+        if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
+            const attrCtrl = document.querySelector('.leaflet-control-attribution');
+            if (attrCtrl) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'attribution-collapsible';
+                attrCtrl.parentNode.insertBefore(wrapper, attrCtrl);
+                wrapper.appendChild(attrCtrl);
+
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'attribution-collapsible-toggle';
+                toggle.title = 'Map attribution';
+                toggle.textContent = '\u00A9';
+                toggle.setAttribute('aria-expanded', 'false');
+                L.DomEvent.disableClickPropagation(toggle);
+                L.DomEvent.on(toggle, 'click', function () {
+                    const collapsed = attrCtrl.classList.toggle('attribution-collapsible-collapsed');
+                    toggle.setAttribute('aria-expanded', String(!collapsed));
+                    toggle.textContent = collapsed ? '\u00A9' : '\u00D7';
+                });
+                wrapper.insertBefore(toggle, attrCtrl);
+
+                attrCtrl.classList.add('attribution-collapsible-collapsed');
+            }
+        }
+
+        // Collapsible tool menu (left toolbar) - mobile only
+        const leftPane = document.querySelector('.leaflet-top.leaflet-left');
+        if (leftPane && window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
+            const toolbarContainer = document.createElement('div');
+            toolbarContainer.className = 'toolbar-collapsible-container';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'toolbar-collapsible';
+            L.DomEvent.disableScrollPropagation(wrapper);
+            while (leftPane.firstChild) {
+                wrapper.appendChild(leftPane.firstChild);
+            }
+
+            const toggleWrap = document.createElement('div');
+            toggleWrap.className = 'leaflet-bar leaflet-control toolbar-collapsible-toggle-wrap';
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'toolbar-collapsible-toggle';
+            toggle.title = 'Tools';
+            toggle.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
+            toggle.setAttribute('aria-expanded', 'false');
+            toggleWrap.appendChild(toggle);
+            L.DomEvent.disableClickPropagation(toggleWrap);
+            L.DomEvent.disableScrollPropagation(toggleWrap);
+            function handleToggle(e) {
+                L.DomEvent.stop(e);
+                L.DomEvent.preventDefault(e);
+                const collapsed = wrapper.classList.toggle('toolbar-collapsible-collapsed');
+                toggle.setAttribute('aria-expanded', String(!collapsed));
+            }
+            L.DomEvent.on(toggle, 'click', handleToggle);
+
+            toolbarContainer.appendChild(toggleWrap);
+            toolbarContainer.appendChild(wrapper);
+            leftPane.appendChild(toolbarContainer);
+
+            wrapper.classList.add('toolbar-collapsible-collapsed');
+        }
+    }
+
     function refreshDropIconStrip() {
         if (!dropPointIconStrip) return;
         dropPointIconStrip.querySelectorAll('.drop-icon-strip-btn').forEach(btn => {
@@ -2979,6 +3047,7 @@
             // Defer toolbar setup to ensure Geoman has fully rendered
             requestAnimationFrame(() => {
                 initDropPointToolbarControl();
+                initCollapsibleControls();
                 initPointDetailsModal();
                 initSearchModal();
                 initGridOverlayModal();

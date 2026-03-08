@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>DJI Mission Planner | AirPlot</title>
     <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -29,7 +31,29 @@
 
     <!-- Floating toolbar -->
     <div class="fp-toolbar">
-        <div class="fp-toolbar-group">
+        <div class="fp-toolbar-group fp-mode-toggle">
+            <button type="button" class="fp-btn fp-btn-mode active" id="fpRecceModeBtn" title="Manual Recce - POI + fence overlay">
+                <span>Manual Recce</span>
+            </button>
+            <button type="button" class="fp-btn fp-btn-mode" id="fpWaypointModeBtn" title="Waypoint Mission - automated flight">
+                <span>Waypoint Mission</span>
+            </button>
+        </div>
+        <div class="fp-toolbar-group" id="fpRecceToolbar">
+            <button type="button" class="fp-btn" id="fpRecceTargetBtn" title="Click map to place target (POI)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+                <span>Add Target</span>
+            </button>
+            <div class="fp-recce-radius-wrap hidden" id="fpRecceRadiusWrap">
+                <label for="fpRecceRadiusInput">Radius (m)</label>
+                <input type="number" id="fpRecceRadiusInput" min="10" max="5000" value="300" />
+            </div>
+            <button type="button" class="fp-btn fp-btn-primary" id="fpExportRecceBtn" disabled title="Export Recce_Mission.kmz (POI + exclusion fence)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                <span>Export Recce KMZ</span>
+            </button>
+        </div>
+        <div class="fp-toolbar-group hidden" id="fpWaypointToolbar">
             <button type="button" class="fp-btn" id="fpWaypointBtn" title="Add waypoint (click map)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3"/></svg>
                 <span>Waypoint</span>
@@ -58,7 +82,7 @@
             </button>
         </div>
         <div class="fp-toolbar-group">
-            <button type="button" class="fp-btn fp-btn-primary" id="fpExportBtn" title="Export to KMZ for DJI Pilot 2">
+            <button type="button" class="fp-btn fp-btn-primary" id="fpExportBtn" title="Export waypoint mission to KMZ for DJI Pilot 2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
                 <span>Export KMZ</span>
             </button>
@@ -76,6 +100,7 @@
 
     <!-- Mission info overlay -->
     <div class="fp-info">
+        <span id="fpRecceInfo" class="hidden">1 target</span>
         <span id="fpWaypointCount">0 waypoints</span>
         <span id="fpExclusionCount">0 exclusion zones</span>
     </div>
@@ -95,14 +120,28 @@
             </div>
             <div class="modal-body">
                 <p>Copy your exported KMZ file onto an SD card and import it in DJI Pilot 2.</p>
-                <ol class="fp-sd-steps">
-                    <li>Click <strong>Export KMZ</strong> and save the file to your computer.</li>
-                    <li>Copy the <code>.kmz</code> file onto an SD card (root or a folder such as <code>DJI_Missions</code>).</li>
-                    <li>Insert the SD card into your controller.</li>
-                    <li>In DJI Pilot 2, go to <strong>Flight Route</strong> → <strong>Import Route (KMZ/KML)</strong>.</li>
-                    <li>Browse to the KMZ file and select it.</li>
-                    <li>The mission will appear in your mission library. Open it to review and fly.</li>
-                </ol>
+                <div id="fpRecceWorkflow" class="fp-recce-workflow">
+                    <h3>Manual Recce workflow</h3>
+                    <ol class="fp-sd-steps">
+                        <li>Click <strong>Export Recce KMZ</strong> and save <code>Recce_Mission.kmz</code> to your computer.</li>
+                        <li>Copy the <code>.kmz</code> file onto an SD card (root or a folder such as <code>DJI_Missions</code>).</li>
+                        <li>Insert the SD card into your controller.</li>
+                        <li>In DJI Pilot 2, go to <strong>Flight Route</strong> → <strong>Import Route (KMZ/KML)</strong>.</li>
+                        <li>Select the mission. Use it as an <strong>Overlay</strong> (do not press Start).</li>
+                        <li>Fly manually. The target pin appears in goggles/screen. The drone brakes at the fence boundary.</li>
+                    </ol>
+                </div>
+                <div id="fpWaypointWorkflow" class="fp-waypoint-workflow hidden">
+                    <h3>Waypoint mission workflow</h3>
+                    <ol class="fp-sd-steps">
+                        <li>Click <strong>Export KMZ</strong> and save the file to your computer.</li>
+                        <li>Copy the <code>.kmz</code> file onto an SD card (root or a folder such as <code>DJI_Missions</code>).</li>
+                        <li>Insert the SD card into your controller.</li>
+                        <li>In DJI Pilot 2, go to <strong>Flight Route</strong> → <strong>Import Route (KMZ/KML)</strong>.</li>
+                        <li>Browse to the KMZ file and select it.</li>
+                        <li>The mission will appear in your mission library. Open it to review and fly.</li>
+                    </ol>
+                </div>
                 <p class="fp-sd-note"><strong>Note:</strong> Use FAT32 formatting if the controller has trouble reading the SD card.</p>
             </div>
             <div class="modal-footer">

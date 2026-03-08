@@ -338,6 +338,14 @@
                         collapseBtn.textContent = isCollapsed ? '\u25B6' : '\u25BC';
                         collapseBtn.title = isCollapsed ? 'Expand' : 'Collapse';
                     });
+                    /* Start collapsed on small screens (phones) */
+                    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
+                        body.classList.add('airspace-legend-body-collapsed');
+                        container.classList.add('airspace-legend-collapsed');
+                        collapseBtn.setAttribute('aria-expanded', 'false');
+                        collapseBtn.textContent = '\u25B6';
+                        collapseBtn.title = 'Expand';
+                    }
                     L.DomEvent.on(refreshBtn, 'click', function () {
                         refreshBtn.disabled = true;
                         refreshBtn.classList.add('airspace-refreshing');

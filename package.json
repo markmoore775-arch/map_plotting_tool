@@ -6,6 +6,7 @@
     "serve": "python3 -m http.server 8080",
     "test": "node test_browser.js",
     "convert-airspace": "node scripts/convert-airspace-data.js",
+    "generate-pwa-icons": "node scripts/generate-pwa-icons.js",
     "convert-aip": "node scripts/convert-aip-aixm.js",
     "deploy": "node scripts/inject-cache-bust.js && npx wrangler deploy && git checkout index.html",
     "deploy:no-bust": "npx wrangler deploy"
@@ -17,6 +18,7 @@
   "devDependencies": {
     "@tmcw/togeojson": "^4.7.0",
     "@xmldom/xmldom": "^0.8.11",
-    "adm-zip": "^0.5.16"
+    "adm-zip": "^0.5.16",
+    "sharp": "^0.34.5"
   }
 }

@@ -159,6 +159,51 @@ body.flight-planning-mode #map {
     color: var(--sidebar-text-muted, #9999aa);
 }
 
+/* Manual Recce - POI diamond marker */
+.recce-poi-marker .recce-poi-diamond {
+    width: 24px;
+    height: 24px;
+    background: #0ea5e9;
+    transform: rotate(45deg);
+    border: 2px solid #0284c7;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.fp-recce-radius-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.fp-recce-radius-wrap.hidden {
+    display: none;
+}
+.fp-recce-radius-wrap label {
+    font-size: 12px;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+.fp-recce-radius-wrap input {
+    width: 64px;
+    padding: 6px 8px;
+    font-size: 13px;
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 6px;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.fp-btn-mode.active {
+    background: var(--primary, #5b8def);
+    border-color: var(--primary, #5b8def);
+    color: #fff;
+}
+
+.fp-recce-workflow h3,
+.fp-waypoint-workflow h3 {
+    font-size: 14px;
+    margin: 0 0 8px 0;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
 /* Hide Geoman's default toolbar - we use our own */
 body.flight-planning-mode .leaflet-pm-toolbar {
     display: none !important;
