@@ -258,6 +258,15 @@
         </div>
     </div>
 
+    <!-- Mobile: compact Style & Help buttons (shown on small screens only) -->
+    <div id="mobileStyleBackdrop" class="mobile-style-backdrop" aria-hidden="true"></div>
+    <div id="mobileMapActions" class="mobile-map-actions">
+        <button id="mobileStyleBtn" class="mobile-map-action-btn" title="Drawing Style" aria-label="Drawing Style">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/></svg>
+        </button>
+        <button id="mobileHelpBtn" class="mobile-map-action-btn" title="Help" aria-label="Help">?</button>
+    </div>
+
     <!-- Shape Edit Modal -->
     <div id="shapeEditModal" class="modal hidden">
         <div class="modal-backdrop"></div>
@@ -333,6 +342,7 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button class="btn btn-secondary" id="shapeEditFlightOverviewBtn" style="display:none;">Flight Overview</button>
                 <button class="btn btn-danger" id="shapeEditDeleteBtn">Delete</button>
                 <button class="btn btn-secondary modal-cancel">Cancel</button>
                 <button class="btn btn-primary" id="shapeEditSaveBtn">Save Changes</button>
@@ -433,6 +443,39 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary modal-cancel">Cancel</button>
                 <button class="btn btn-primary" id="bulkImportExecute">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid Overlay Modal -->
+    <div id="gridOverlayModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Grid Overlay</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="form-hint">Draw a rectangle on the map to define the grid area, then set rows and columns.</p>
+                <div class="form-group">
+                    <label for="gridRows">Rows</label>
+                    <input type="number" id="gridRows" min="1" max="50" value="3">
+                </div>
+                <div class="form-group">
+                    <label for="gridCols">Columns</label>
+                    <input type="number" id="gridCols" min="1" max="26" value="3">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="gridOverlayVisible" checked>
+                        Show grid
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="gridOverlayClearBtn">Clear Grid</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="gridOverlayApplyBtn">Apply</button>
             </div>
         </div>
     </div>
@@ -575,9 +618,9 @@
                     <p>Add points either via the form in the sidebar or by clicking the <strong>pin button</strong> on the map toolbar, then choose a type and click the map.</p>
                     <p><strong>Location formats supported:</strong> UK postcode, decimal lat/lng, Ordnance Survey grid reference, degrees/minutes/seconds (DMS), and What3Words (requires API key in Settings).</p>
                     <h3>Point Types</h3>
-                    <p>Address/Reference, Primary TOLA, Secondary TOLA, Custom TOLA, Emergency Landing Zone, No-Fly Marker, Hazard, Waypoint, and Custom Point. Custom points can use a 1–2 character symbol.</p>
+                    <p>Address/Reference, Primary TOLA, Secondary TOLA, Custom TOLA, Emergency Landing Zone, No-Fly Marker, Hazard, Waypoint, Custom Point, House, and TOLA. Custom points can use a 1–2 character symbol.</p>
                     <h3>Managing Points</h3>
-                    <p>Use the search box to filter points. Click a point in the list to pan to it and highlight it. Use the edit and delete buttons, or right-click a marker on the map. Drag markers to move them. Click a marker to see a <strong>quick-edit popup</strong> with label, elevation, and links to View Details or Edit. Double-click a marker or use &ldquo;View Details&rdquo; for coordinates in multiple formats (Decimal, DMS, OS Grid Ref, What3Words, Elevation) with copy-to-clipboard.</p>
+                    <p>Use the search box to filter points. Click a point in the list to pan to it and highlight it. Use the edit and delete buttons, or right-click a marker on the map. Drag markers to move them. Click a marker to see a <strong>quick-edit popup</strong> with label, elevation, and links to View Details or Edit. Double-click a marker or use &ldquo;View Details&rdquo; for coordinates in multiple formats (Decimal, DMS, OS Grid Ref, What3Words, Elevation) with copy-to-clipboard. Use <strong>Copy All</strong> in the Point Details modal to copy all coordinate formats at once.</p>
                     <h3>Elevation</h3>
                     <p>Points can display elevation (metres AMSL) when a Mapbox token is configured. Use the <strong>Always display elevation on map</strong> checkbox when adding or editing a point to show elevation in the quick-edit popup and point list.</p>
                 </div>
@@ -597,10 +640,14 @@
                     <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu (or the vertices button in the sidebar) to adjust polygon/line points. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path. <strong>Measurement labels</strong> on circles and flight paths can be dragged to reposition them.</p>
                     <h3>Copy &amp; Paste</h3>
                     <p>Right-click a shape to copy it (<strong>Ctrl+C</strong> when selected), then right-click elsewhere to paste (<strong>Ctrl+V</strong>). Press <strong>Esc</strong> to deselect.</p>
+                    <h3>Grid Overlay</h3>
+                    <p>Add a labelled grid over your map area for reference (e.g. search patterns, sector planning). Click the <strong>grid button</strong> on the map toolbar or choose <strong>Grid Overlay</strong> from the right-click context menu, then draw a rectangle to define the grid area. Set rows (1–50) and columns (1–26). Columns are labelled A–Z, rows 1–50. Right-click a grid cell to <strong>Edit Grid</strong> (change rows/columns or visibility) or <strong>Clear Grid</strong>.</p>
                     <h3>Drawing Style</h3>
                     <p>The floating panel shows colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. These apply to new shapes.</p>
                     <h3>Flight Overview</h3>
-                    <p>For flight paths and lines, right-click the path or line and choose <strong>Flight Overview</strong> to see altitude statistics. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>.</p>
+                    <p>For flight paths and lines, use <strong>Flight Overview</strong> to see altitude statistics. Click the altitude icon (▲) in the sidebar next to a flight path or line, or use the <strong>Flight Overview</strong> button when editing a shape. You can also right-click the path and choose Flight Overview. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>.</p>
+                    <h3>Flight Path Distance</h3>
+                    <p>Flight paths can show total distance on the map. Use the <strong>Show distance on map</strong> checkbox when editing a flight path, or enable <strong>Show flight path distance on map</strong> in Settings to apply to all flight paths by default.</p>
                 </div>
                 <div class="tab-panel" id="help-tab-import">
                     <h3>Bulk Import</h3>
@@ -614,13 +661,13 @@
                 </div>
                 <div class="tab-panel" id="help-tab-map">
                     <h3>Map Toolbar</h3>
-                    <p>The toolbar (top-left) includes: <strong>Search</strong> - open the Search Location modal; <strong>Hand/Pan</strong> - drag to move the map; <strong>Undo</strong> - revert last action; <strong>Drop Point</strong> - choose type and click map to add a point; plus drawing tools (circle, rectangle, polygon, line, arrow, flight path).</p>
+                    <p>The toolbar (top-left) includes: <strong>Search</strong> - open the Search Location modal; <strong>Hand/Pan</strong> - drag to move the map; <strong>Undo</strong> - revert last action; <strong>Drop Point</strong> - choose type and click map to add a point; drawing tools (circle, rectangle, polygon, line, arrow, flight path); and <strong>Grid Overlay</strong> - draw a rectangle to add a labelled grid.</p>
                     <h3>Search Location</h3>
                     <p>Click the search button on the map toolbar to open the Search Location modal. Enter a postcode, lat/long, OS Grid ref, DMS, or What3Words address. The map will pan and zoom to that location.</p>
                     <h3>Map Layers</h3>
                     <p>Use the layer control (top-right) to switch between OpenStreetMap, Topographic, Satellite, and optionally Mapbox or Ordnance Survey (OS Maps requires an API key in Settings).</p>
                     <h3>UK Airspace</h3>
-                    <p>The airspace key (bottom-right) shows all restriction types. Use the <strong>UK Airspace</strong> checkbox to show or hide all types, or tick individual types:</p>
+                    <p>The airspace key (bottom-right) shows all restriction types. Use <strong>Select all</strong> to show or hide all types, or tick individual types. Click the collapse button (▼) to minimise the panel.</p>
                     <ul>
                         <li><strong>Prohibited</strong> - No flying permitted</li>
                         <li><strong>Restricted</strong> - Flying limited under certain conditions</li>
@@ -771,6 +818,11 @@
             <button class="ctx-item ctx-danger" data-action="delete-shape">Delete Shape</button>
             <div class="ctx-separator"></div>
         </div>
+        <div class="ctx-grid-section" style="display:none;">
+            <button class="ctx-item" data-action="edit-grid">Edit Grid</button>
+            <button class="ctx-item ctx-danger" data-action="clear-grid">Clear Grid</button>
+            <div class="ctx-separator"></div>
+        </div>
         <button class="ctx-item" data-action="drop-point">Drop Point&hellip;</button>
         <button class="ctx-item" data-action="add-text">Add Text</button>
         <div class="ctx-separator"></div>
@@ -780,6 +832,7 @@
         <button class="ctx-item" data-action="draw-line">Draw Line</button>
         <button class="ctx-item" data-action="draw-arrow">Draw Arrow</button>
         <button class="ctx-item" data-action="draw-flightpath">Draw Flight Path</button>
+        <button class="ctx-item" data-action="grid-overlay">Grid Overlay</button>
         <div class="ctx-separator"></div>
         <button class="ctx-item" data-action="paste">Paste</button>
         <div class="ctx-separator"></div>
@@ -951,6 +1004,7 @@
 
     <!-- App Scripts -->
     <script src="js/config.js"></script>
+    <script src="js/grid.js"></script>
     <script src="js/airspace.js"></script>
     <script src="js/notam.js"></script>
     <script src="js/rat.js"></script>

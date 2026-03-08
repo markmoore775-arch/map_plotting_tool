@@ -1395,9 +1395,20 @@ const Drawings = (() => {
 
     function setupShapeEvents() {
         map.on('pm:create', (e) => {
-            pushUndoSnapshot();
             const layer = e.layer;
             const shapeType = e.shape;
+
+            // Intercept Rectangle creation when in grid overlay draw mode
+            if (typeof GridOverlay !== 'undefined' && GridOverlay.isGridDrawModeActive && GridOverlay.isGridDrawModeActive() && shapeType === 'Rectangle') {
+                map.removeLayer(layer);
+                GridOverlay.captureBoundsFromLayer(layer);
+                GridOverlay.exitGridDrawMode();
+                refreshInteractionCursor();
+                map.fire('grid:rectangleDrawn');
+                return;
+            }
+
+            pushUndoSnapshot();
 
             // Intercept Line creation when in flight path mode
             if (flightPathDrawState && shapeType === 'Line') {
@@ -2391,6 +2402,12 @@ const Drawings = (() => {
             flightPathDistanceGroup.classList.add('hidden');
         }
 
+        const flightOverviewBtn = document.getElementById('shapeEditFlightOverviewBtn');
+        if (flightOverviewBtn) {
+            const isPathOrLine = shape.type === 'flightpath' || shape.type === 'polyline';
+            flightOverviewBtn.style.display = isPathOrLine ? '' : 'none';
+        }
+
         document.getElementById('shapeEditModal').classList.remove('hidden');
     }
 
@@ -2570,6 +2587,9 @@ const Drawings = (() => {
             const verticesBtn = isLineShape
                 ? `<button class="btn-icon btn-edit-vertices" title="Edit vertices">&#9997;</button>`
                 : '';
+            const flightOverviewBtn = isLineShape
+                ? `<button class="btn-icon btn-flight-overview" title="Flight Overview">&#9650;</button>`
+                : '';
 
             li.innerHTML = `
                 ${colorDot}
@@ -2580,6 +2600,7 @@ const Drawings = (() => {
                 <div class="point-item-actions">
                     <button class="btn-icon btn-edit" title="Edit properties">&#9998;</button>
                     ${verticesBtn}
+                    ${flightOverviewBtn}
                     <button class="btn-icon btn-delete" title="Delete">&times;</button>
                 </div>
             `;
@@ -2589,6 +2610,8 @@ const Drawings = (() => {
                     openShapeEditModal(s.id);
                 } else if (e.target.closest('.btn-edit-vertices')) {
                     editVertices(s.id);
+                } else if (e.target.closest('.btn-flight-overview')) {
+                    if (map && map.fire) map.fire('flightoverviewrequest', { shapeId: s.id });
                 } else if (e.target.closest('.btn-delete')) {
                     removeShape(s.id);
                 } else {

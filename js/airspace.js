@@ -318,30 +318,25 @@
                 onAdd: function () {
                     const container = L.DomUtil.create('div', 'leaflet-control airspace-legend');
                     const header = L.DomUtil.create('div', 'airspace-legend-header', container);
-                    const label = L.DomUtil.create('label', 'airspace-toggle-label', header);
-                    const input = L.DomUtil.create('input', 'airspace-toggle-input', label);
-                    input.type = 'checkbox';
-                    input.checked = false;
-                    input.title = 'Show UK airspace restrictions (NATS UAS / UK AIP ENR 5.1)';
-                    const span = L.DomUtil.create('span', 'airspace-toggle-text', label);
-                    span.textContent = 'UK Airspace';
+                    const titleSpan = L.DomUtil.create('span', 'airspace-legend-title', header);
+                    titleSpan.textContent = 'UK Airspace';
+                    const collapseBtn = L.DomUtil.create('button', 'airspace-legend-collapse', header);
+                    collapseBtn.type = 'button';
+                    collapseBtn.title = 'Collapse';
+                    collapseBtn.textContent = '\u25BC';
+                    collapseBtn.setAttribute('aria-expanded', 'true');
                     const refreshBtn = L.DomUtil.create('button', 'airspace-legend-refresh', header);
                     refreshBtn.type = 'button';
                     refreshBtn.title = 'Refresh airspace data';
                     refreshBtn.textContent = '\u21BB';
                     L.DomEvent.disableClickPropagation(container);
-                    L.DomEvent.on(input, 'change', function () {
-                        const checkboxes = container.querySelectorAll('.airspace-legend-item-cb');
-                        checkboxes.forEach(function (cb) {
-                            const key = cb.dataset.type;
-                            if (key === 'notam' || key === 'rat') return;
-                            cb.checked = input.checked;
-                            if (input.checked) {
-                                addLayerToMap(key);
-                            } else {
-                                removeLayerFromMap(key);
-                            }
-                        });
+                    const body = L.DomUtil.create('div', 'airspace-legend-body', container);
+                    L.DomEvent.on(collapseBtn, 'click', function () {
+                        const isCollapsed = body.classList.toggle('airspace-legend-body-collapsed');
+                        container.classList.toggle('airspace-legend-collapsed', isCollapsed);
+                        collapseBtn.setAttribute('aria-expanded', String(!isCollapsed));
+                        collapseBtn.textContent = isCollapsed ? '\u25B6' : '\u25BC';
+                        collapseBtn.title = isCollapsed ? 'Expand' : 'Collapse';
                     });
                     L.DomEvent.on(refreshBtn, 'click', function () {
                         refreshBtn.disabled = true;
@@ -351,7 +346,7 @@
                             refreshBtn.classList.remove('airspace-refreshing');
                         });
                     });
-                    const validityEl = L.DomUtil.create('div', 'airspace-legend-validity', container);
+                    const validityEl = L.DomUtil.create('div', 'airspace-legend-validity', body);
                     validityEl.style.fontSize = '10px';
                     validityEl.style.color = '#9ca3af';
                     validityEl.style.marginBottom = '6px';
@@ -366,7 +361,39 @@
                     updateValidityDisplay();
                     setValidityUpdateCallback(updateValidityDisplay);
 
-                    const list = L.DomUtil.create('ul', 'airspace-legend-list', container);
+                    const list = L.DomUtil.create('ul', 'airspace-legend-list', body);
+                    const selectAllLi = L.DomUtil.create('li', 'airspace-legend-item airspace-legend-item-select-all', list);
+                    const selectAllLabel = L.DomUtil.create('label', 'airspace-legend-item-label', selectAllLi);
+                    selectAllLabel.style.cursor = 'pointer';
+                    const selectAllCb = L.DomUtil.create('input', 'airspace-legend-item-cb airspace-select-all-cb', selectAllLabel);
+                    selectAllCb.type = 'checkbox';
+                    selectAllCb.dataset.type = 'select-all';
+                    selectAllCb.title = 'Show UK airspace restrictions (NATS UAS / UK AIP ENR 5.1)';
+                    const selectAllLbl = L.DomUtil.create('span', 'airspace-legend-label', selectAllLabel);
+                    selectAllLbl.textContent = 'Select all';
+                    function updateSelectAllState() {
+                        const itemCbs = container.querySelectorAll('.airspace-legend-item-cb:not(.airspace-select-all-cb)');
+                        let allChecked = true;
+                        itemCbs.forEach(function (cb) {
+                            const key = cb.dataset.type;
+                            if (key === 'notam' || key === 'rat') return;
+                            if (!cb.checked) allChecked = false;
+                        });
+                        selectAllCb.checked = allChecked;
+                    }
+                    L.DomEvent.on(selectAllCb, 'change', function () {
+                        const itemCbs = container.querySelectorAll('.airspace-legend-item-cb:not(.airspace-select-all-cb)');
+                        itemCbs.forEach(function (cb) {
+                            const key = cb.dataset.type;
+                            if (key === 'notam' || key === 'rat') return;
+                            cb.checked = selectAllCb.checked;
+                            if (selectAllCb.checked) {
+                                addLayerToMap(key);
+                            } else {
+                                removeLayerFromMap(key);
+                            }
+                        });
+                    });
                     const types = ['prohibited', 'restricted', 'danger', 'frz', 'other'];
                     types.forEach(function (key) {
                         const info = AIRSPACE_TYPES[key];
@@ -386,6 +413,7 @@
                             } else {
                                 removeLayerFromMap(key);
                             }
+                            updateSelectAllState();
                         });
                     });
                     if (notamModule) {

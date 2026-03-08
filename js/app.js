@@ -17,6 +17,7 @@
     let dropPointToolbarButton = null;
     let dropPointIconStrip = null;
     let handToolbarButton = null;
+    let gridToolbarButton = null;
     let quickEditUpdating = false;
 
     const SETTINGS_STORAGE_KEY = 'airplot_settings';
@@ -222,6 +223,29 @@
             }).addTo(map);
         }
 
+        // Undo button (between Locate and Save/Load)
+        const UndoControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: function () {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-undo-wrap');
+                const btn = L.DomUtil.create('a', 'leaflet-control-undo leaflet-buttons-control-button disabled', container);
+                btn.href = '#';
+                btn.title = 'Undo last action (Ctrl+Z)';
+                btn.setAttribute('aria-disabled', 'true');
+                btn.innerHTML = '<span class="control-icon lucide-undo2-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-undo2-icon lucide-undo-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></span>';
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.on(btn, 'click', (e) => {
+                    L.DomEvent.stop(e);
+                    L.DomEvent.preventDefault(e);
+                    if (typeof UndoHistory !== 'undefined' && UndoHistory.undo()) {
+                        refreshHandToolState();
+                    }
+                });
+                return container;
+            }
+        });
+        map.addControl(new UndoControl());
+
         // Save / Load project buttons (toolbar)
         const SaveLoadControl = L.Control.extend({
             options: { position: 'topleft' },
@@ -251,6 +275,15 @@
         });
         map.addControl(new SaveLoadControl());
 
+        // Flight path slot - standalone between Save/Load and the rest of the toolbar (filled in initDropPointToolbarControl)
+        const FlightPathSlotControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: function () {
+                return L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-flight-path-slot');
+            }
+        });
+        map.addControl(new FlightPathSlotControl());
+
         // Click on map to place point (skip when drawing). No coordinate popup by default.
         map.on('click', function (e) {
             if (Drawings.isDrawingActive()) return;
@@ -273,35 +306,10 @@
         });
     }
 
-    function addStandaloneUndoControl() {
-        const UndoControl = L.Control.extend({
-            options: { position: 'topleft' },
-            onAdd: function () {
-                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                const btn = L.DomUtil.create('a', 'leaflet-control-undo leaflet-buttons-control-button disabled', container);
-                btn.href = '#';
-                btn.title = 'Undo last action (Ctrl+Z)';
-                btn.setAttribute('aria-disabled', 'true');
-                btn.innerHTML = '<span class="control-icon lucide-undo2-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-undo2-icon lucide-undo-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></span>';
-                L.DomEvent.disableClickPropagation(container);
-                L.DomEvent.on(btn, 'click', (e) => {
-                    L.DomEvent.stop(e);
-                    L.DomEvent.preventDefault(e);
-                    if (typeof UndoHistory !== 'undefined' && UndoHistory.undo()) {
-                        refreshHandToolState();
-                    }
-                });
-                return container;
-            }
-        });
-        map.addControl(new UndoControl());
-    }
-
     function initDropPointToolbarControl() {
         const toolbar = document.querySelector('.leaflet-pm-toolbar.leaflet-pm-draw')
             || document.querySelector('.leaflet-pm-toolbar');
         if (!toolbar) {
-            addStandaloneUndoControl();
             return;
         }
 
@@ -325,17 +333,49 @@
             }
         }
 
-        // Move the flight path button into the Geoman toolbar
+        // Move the flight path button into its own slot (between Save/Load and the rest of the toolbar)
         const flightPathBtn = document.querySelector('.leaflet-control-flight-path');
-        if (flightPathBtn) {
+        const flightPathSlot = document.querySelector('.leaflet-control-flight-path-slot');
+        if (flightPathBtn && flightPathSlot) {
             const oldContainer = flightPathBtn.closest('.leaflet-bar');
-            toolbar.appendChild(flightPathBtn);
+            flightPathSlot.appendChild(flightPathBtn);
             if (oldContainer && oldContainer !== toolbar && !oldContainer.children.length) {
                 oldContainer.remove();
             }
         }
 
-        // Create search button and prepend to toolbar (first button, above hand)
+        // Grid overlay button - insert between circle and text
+        const circleBtn = toolbar.querySelector('.leaflet-pm-icon-circle');
+        if (circleBtn && typeof GridOverlay !== 'undefined') {
+            const circleContainer = circleBtn.closest('.button-container');
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'button-container';
+            const gridBtn = document.createElement('a');
+            gridBtn.className = 'leaflet-control-grid-overlay leaflet-buttons-control-button';
+            gridBtn.href = '#';
+            gridBtn.title = 'Grid Overlay';
+            gridBtn.innerHTML = '<span class="control-icon lucide-grid2x2-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-grid-2x2"><path d="M12 3v18"/><path d="M3 12h18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg></span>';
+            gridContainer.appendChild(gridBtn);
+            circleContainer.insertAdjacentElement('afterend', gridContainer);
+
+            L.DomEvent.on(gridBtn, 'click', (e) => {
+                L.DomEvent.stop(e);
+                L.DomEvent.preventDefault(e);
+                if (typeof GridOverlay !== 'undefined') {
+                    if (GridOverlay.hasGrid()) {
+                        openGridOverlayModal();
+                    } else {
+                        GridOverlay.startGridDrawMode();
+                        refreshHandToolState();
+                        if (handToolbarButton) handToolbarButton.classList.remove('active');
+                        gridBtn.classList.add('active');
+                    }
+                }
+            });
+            gridToolbarButton = gridBtn;
+        }
+
+        // Create search button and prepend to toolbar (first button)
         const searchBtn = document.createElement('a');
         searchBtn.className = 'leaflet-control-search leaflet-buttons-control-button';
         searchBtn.href = '#';
@@ -356,7 +396,7 @@
             }
         });
 
-        // Create hand/pan button and prepend to toolbar (second button)
+        // Create hand/pan button (second button)
         const handBtn = document.createElement('a');
         handBtn.className = 'leaflet-control-hand-tool leaflet-buttons-control-button';
         handBtn.href = '#';
@@ -371,31 +411,11 @@
             setDropPointMode(false);
             setDropPointPickerOpen(false);
             Drawings.exitAllDrawingModes();
+            if (typeof GridOverlay !== 'undefined') GridOverlay.exitGridDrawMode();
             refreshHandToolState();
         });
 
         handToolbarButton = handBtn;
-
-        // Create undo button and insert after hand (wrap in button-container to match Geoman structure)
-        const undoContainer = document.createElement('div');
-        undoContainer.className = 'button-container';
-        const undoToolbarBtn = document.createElement('a');
-        undoToolbarBtn.className = 'leaflet-control-undo leaflet-buttons-control-button disabled';
-        undoToolbarBtn.href = '#';
-        undoToolbarBtn.title = 'Undo last action (Ctrl+Z)';
-        undoToolbarBtn.setAttribute('aria-disabled', 'true');
-        undoToolbarBtn.innerHTML = '<span class="control-icon lucide-undo2-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-undo2-icon lucide-undo-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></span>';
-        undoContainer.appendChild(undoToolbarBtn);
-        const insertBefore = handBtn.nextElementSibling || handBtn.nextSibling;
-        toolbar.insertBefore(undoContainer, insertBefore);
-
-        L.DomEvent.on(undoToolbarBtn, 'click', (e) => {
-            L.DomEvent.stop(e);
-            L.DomEvent.preventDefault(e);
-            if (typeof UndoHistory !== 'undefined' && UndoHistory.undo()) {
-                refreshHandToolState();
-            }
-        });
 
         // Create drop point wrapper (button + popup menu) and insert at top of toolbar (after hand)
         const dropPointWrapper = document.createElement('div');
@@ -1157,13 +1177,17 @@
     }
 
     function refreshHandToolState() {
-        const isPanMode = !dropPointMode && !dropPointPickerOpen && !Drawings.isDrawingActive();
+        const isGridDraw = typeof GridOverlay !== 'undefined' && GridOverlay.isGridDrawModeActive && GridOverlay.isGridDrawModeActive();
+        const isPanMode = !dropPointMode && !dropPointPickerOpen && !Drawings.isDrawingActive() && !isGridDraw;
         const mapEl = document.getElementById('map');
         if (mapEl) {
             mapEl.classList.toggle('pan-mode', isPanMode);
         }
         if (handToolbarButton) {
             handToolbarButton.classList.toggle('active', isPanMode);
+        }
+        if (gridToolbarButton) {
+            gridToolbarButton.classList.toggle('active', isGridDraw);
         }
     }
 
@@ -1340,11 +1364,82 @@
         });
     });
 
+    // ---- Grid Overlay Modal ----
+    function openGridOverlayModal() {
+        const rowsEl = document.getElementById('gridRows');
+        const colsEl = document.getElementById('gridCols');
+        const visibleEl = document.getElementById('gridOverlayVisible');
+        if (rowsEl) rowsEl.value = 3;
+        if (colsEl) colsEl.value = 3;
+        if (visibleEl) visibleEl.checked = true;
+        if (typeof GridOverlay !== 'undefined' && GridOverlay.hasGrid()) {
+            const params = GridOverlay.getParams();
+            if (rowsEl) rowsEl.value = params.rows;
+            if (colsEl) colsEl.value = params.cols;
+            if (visibleEl) visibleEl.checked = GridOverlay.isVisible();
+        }
+        openModal('gridOverlayModal');
+    }
+
+    function initGridOverlayModal() {
+        const modal = document.getElementById('gridOverlayModal');
+        if (!modal) return;
+
+        const applyBtn = document.getElementById('gridOverlayApplyBtn');
+        const clearBtn = document.getElementById('gridOverlayClearBtn');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                const rows = parseInt(document.getElementById('gridRows').value, 10) || 3;
+                const cols = parseInt(document.getElementById('gridCols').value, 10) || 3;
+                const visible = document.getElementById('gridOverlayVisible').checked;
+                if (typeof GridOverlay !== 'undefined') {
+                    GridOverlay.setParams(rows, cols);
+                    GridOverlay.toggle(visible);
+                    GridOverlay.render();
+                }
+                closeModal('gridOverlayModal');
+            });
+        }
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                if (typeof GridOverlay !== 'undefined') GridOverlay.clear();
+                closeModal('gridOverlayModal');
+            });
+        }
+    }
+
     // ---- Help Modal ----
 
     document.getElementById('helpBtn').addEventListener('click', () => {
         openModal('helpModal');
     });
+
+    // ---- Mobile FABs (Style & Help) ----
+    const mobileStyleBtn = document.getElementById('mobileStyleBtn');
+    const mobileHelpBtn = document.getElementById('mobileHelpBtn');
+    const mobileStyleBackdrop = document.getElementById('mobileStyleBackdrop');
+    const drawStylePanel = document.getElementById('drawStylePanel');
+    const drawStyleToggle = document.getElementById('drawStyleToggle');
+
+    if (mobileStyleBtn && drawStylePanel) {
+        mobileStyleBtn.addEventListener('click', () => {
+            document.body.classList.add('mobile-style-open');
+            drawStylePanel.classList.remove('collapsed');
+            if (drawStyleToggle) drawStyleToggle.innerHTML = '&minus;';
+        });
+    }
+
+    if (mobileStyleBackdrop) {
+        mobileStyleBackdrop.addEventListener('click', () => {
+            document.body.classList.remove('mobile-style-open');
+        });
+    }
+
+    if (mobileHelpBtn) {
+        mobileHelpBtn.addEventListener('click', () => {
+            openModal('helpModal');
+        });
+    }
 
     const footerDisclaimerBtn = document.getElementById('footerDisclaimerBtn');
     if (footerDisclaimerBtn) {
@@ -2384,6 +2479,25 @@
     // Init drawings after map is ready
     function initDrawings() {
         Drawings.init(map);
+        if (typeof GridOverlay !== 'undefined') GridOverlay.init(map);
+
+        map.on('grid:rectangleDrawn', () => {
+            if (gridToolbarButton) gridToolbarButton.classList.remove('active');
+            refreshHandToolState();
+            openGridOverlayModal();
+        });
+
+        map.on('grid:contextmenu', (e) => {
+            mapContextGridOverlay = true;
+            mapContextMenuLatLng = e.latlng;
+            mapContextShapeId = null;
+            mapContextPointId = null;
+            showMapContextMenu(e.originalEvent);
+        });
+
+        map.on('flightoverviewrequest', (e) => {
+            if (e.shapeId) openFlightOverviewModal(e.shapeId);
+        });
 
         // Undo history
         if (typeof UndoHistory !== 'undefined') {
@@ -2417,6 +2531,14 @@
 
         document.getElementById('shapeEditDeleteBtn').addEventListener('click', () => {
             Drawings.deleteShapeFromModal();
+        });
+
+        document.getElementById('shapeEditFlightOverviewBtn').addEventListener('click', () => {
+            const shapeId = parseInt(document.getElementById('editShapeId').value, 10);
+            if (shapeId) {
+                document.getElementById('shapeEditModal').classList.add('hidden');
+                openFlightOverviewModal(shapeId);
+            }
         });
 
         // Shape edit modal opacity slider live update
@@ -2459,6 +2581,7 @@
     let mapContextMenuLatLng = null;
     let mapContextShapeId = null;
     let mapContextPointId = null;
+    let mapContextGridOverlay = false;
 
     function initMapContextMenu() {
         const menuEl = document.getElementById('mapContextMenu');
@@ -2626,14 +2749,19 @@
 
         const pointSection = menuEl.querySelector('.ctx-point-section');
         if (pointSection) {
-            pointSection.style.display = mapContextPointId ? '' : 'none';
+            pointSection.style.display = (mapContextPointId && !mapContextGridOverlay) ? '' : 'none';
         }
 
         const shapeInfo = mapContextShapeId ? Drawings.getShapeInfo(mapContextShapeId) : null;
 
         const shapeSection = menuEl.querySelector('.ctx-shape-section');
         if (shapeSection) {
-            shapeSection.style.display = shapeInfo ? '' : 'none';
+            shapeSection.style.display = (shapeInfo && !mapContextGridOverlay) ? '' : 'none';
+        }
+
+        const gridSection = menuEl.querySelector('.ctx-grid-section');
+        if (gridSection) {
+            gridSection.style.display = mapContextGridOverlay ? '' : 'none';
         }
 
         if (shapeInfo) {
@@ -2672,6 +2800,7 @@
         mapContextMenuLatLng = null;
         mapContextShapeId = null;
         mapContextPointId = null;
+        mapContextGridOverlay = false;
     }
 
     function initMapPointTypePicker() {
@@ -2802,6 +2931,27 @@
             case 'draw-flightpath':
                 Drawings.enableDrawMode('FlightPath');
                 break;
+            case 'grid-overlay':
+                if (typeof GridOverlay !== 'undefined') {
+                    hideMapContextMenu();
+                    GridOverlay.startGridDrawMode();
+                    refreshHandToolState();
+                    if (handToolbarButton) handToolbarButton.classList.remove('active');
+                    if (gridToolbarButton) gridToolbarButton.classList.add('active');
+                }
+                break;
+            case 'edit-grid':
+                hideMapContextMenu();
+                if (typeof GridOverlay !== 'undefined' && GridOverlay.hasGrid()) {
+                    openGridOverlayModal();
+                }
+                break;
+            case 'clear-grid':
+                hideMapContextMenu();
+                if (typeof GridOverlay !== 'undefined') {
+                    GridOverlay.clear();
+                }
+                break;
             case 'paste':
                 Drawings.pasteShape(latlng);
                 break;
@@ -2831,6 +2981,7 @@
                 initDropPointToolbarControl();
                 initPointDetailsModal();
                 initSearchModal();
+                initGridOverlayModal();
                 refreshHandToolState();
                 if (typeof UndoHistory !== 'undefined') UndoHistory.updateUndoButtonState();
             });
