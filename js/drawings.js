@@ -155,6 +155,80 @@ const Drawings = (() => {
         return Math.max(0.02, Math.min(0.98, bestRatio));
     }
 
+    function calcPolygonPerimeter(latlngs) {
+        if (!latlngs || latlngs.length < 2) return 0;
+        let total = calcPolylineLength(latlngs);
+        const first = L.latLng(latlngs[0]);
+        const last = L.latLng(latlngs[latlngs.length - 1]);
+        if (first.distanceTo(last) > 1e-9) total += last.distanceTo(first);
+        return total;
+    }
+
+    function pointAlongPolygonPerimeter(latlngs, ratio) {
+        if (!latlngs || latlngs.length < 2) return latlngs[0];
+        const total = calcPolygonPerimeter(latlngs);
+        if (total <= 0) return latlngs[0];
+        let target = Math.max(0, Math.min(1, ratio)) * total;
+        let acc = 0;
+        const n = latlngs.length;
+        for (let i = 1; i <= n; i++) {
+            const a = L.latLng(latlngs[i - 1]);
+            const b = i < n ? L.latLng(latlngs[i]) : L.latLng(latlngs[0]);
+            const segLen = a.distanceTo(b);
+            if (acc + segLen >= target) {
+                const frac = segLen > 0 ? (target - acc) / segLen : 0;
+                const p = i < n ? latlngs[i] : latlngs[0];
+                return [
+                    latlngs[i - 1][0] + frac * (p[0] - latlngs[i - 1][0]),
+                    latlngs[i - 1][1] + frac * (p[1] - latlngs[i - 1][1])
+                ];
+            }
+            acc += segLen;
+        }
+        return latlngs[0];
+    }
+
+    function projectOntoPolygonPerimeter(latlngs, pos) {
+        if (!latlngs || latlngs.length < 2) return 0.25;
+        const total = calcPolygonPerimeter(latlngs);
+        if (total <= 0) return 0.25;
+        const p = L.latLng(pos);
+        let bestRatio = 0.25;
+        let bestDist = Infinity;
+        let acc = 0;
+        const n = latlngs.length;
+        for (let i = 1; i <= n; i++) {
+            const a = L.latLng(latlngs[i - 1]);
+            const b = i < n ? L.latLng(latlngs[i]) : L.latLng(latlngs[0]);
+            const segLen = a.distanceTo(b);
+            if (segLen <= 0) {
+                const d = p.distanceTo(a);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestRatio = acc / total;
+                }
+                acc += segLen;
+                continue;
+            }
+            const ax = a.lat; const ay = a.lng;
+            const bx = b.lat; const by = b.lng;
+            const dx = bx - ax; const dy = by - ay;
+            const t = Math.max(0, Math.min(1,
+                ((p.lat - ax) * dx + (p.lng - ay) * dy) / (dx * dx + dy * dy)
+            ));
+            const projLat = ax + t * dx;
+            const projLng = ay + t * dy;
+            const proj = L.latLng(projLat, projLng);
+            const d = p.distanceTo(proj);
+            if (d < bestDist) {
+                bestDist = d;
+                bestRatio = (acc + t * segLen) / total;
+            }
+            acc += segLen;
+        }
+        return Math.max(0.02, Math.min(0.98, bestRatio));
+    }
+
     // ---- Copy / Paste ----
     const PASTE_OFFSET_DEG = 0.0004; // ~44m offset so pasted shape doesn't overlap
 
@@ -168,6 +242,8 @@ const Drawings = (() => {
         if (shape.radius != null) data.radius = shape.radius;
         if (shape.measureAngle != null) data.measureAngle = shape.measureAngle;
         if (shape.measureLabelRatio != null) data.measureLabelRatio = shape.measureLabelRatio;
+        if (shape.labelAngle != null) data.labelAngle = shape.labelAngle;
+        if (shape.labelPerimeterRatio != null) data.labelPerimeterRatio = shape.labelPerimeterRatio;
         if (shape.latlngs) data.latlngs = shape.latlngs.map(ll => [...ll]);
         if (shape.tail) data.tail = [...shape.tail];
         if (shape.tip) data.tip = [...shape.tip];
@@ -236,6 +312,8 @@ const Drawings = (() => {
             radius: data.radius,
             measureAngle: data.measureAngle != null ? data.measureAngle : 45,
             measureLabelRatio: data.measureLabelRatio != null ? data.measureLabelRatio : 0.5,
+            labelAngle: data.labelAngle,
+            labelPerimeterRatio: data.labelPerimeterRatio,
             tail: data.tail,
             tip: data.tip,
             latlngs: data.latlngs,
@@ -297,15 +375,11 @@ const Drawings = (() => {
     }
 
     // ---- Flight path: small arrowhead at a point (for direction markers) ----
-    const FLIGHT_PATH_ARROW_SIZE_DEFAULT = 20; // metres (default size for new flight paths)
-    const FLIGHT_PATH_ARROW_INTERVAL = 100; // metres between arrows
-    const FLIGHT_PATH_ZOOM_REFERENCE = 15; // zoom level where base size/interval are used
+    const FLIGHT_PATH_ARROW_SIZE_DEFAULT = 30; // metres (default size for new flight paths)
+    const FLIGHT_PATH_ARROW_INTERVAL = 150; // metres between arrows
 
     function getFlightPathZoomScale() {
-        if (!map) return 1;
-        const zoom = map.getZoom();
-        const scale = Math.pow(2, FLIGHT_PATH_ZOOM_REFERENCE - zoom);
-        return Math.max(0.25, Math.min(16, scale));
+        return 1; // constant scale: arrow size and spacing stay fixed in metres at all zoom levels
     }
 
     function computeArrowheadVertices(center, bearing, sizeM) {
@@ -342,10 +416,10 @@ const Drawings = (() => {
 
     // Default style for flight paths
     const flightPathStyle = {
-        color: '#2196F3',
-        fillColor: '#2196F3',
+        color: '#22c55e',
+        fillColor: '#22c55e',
         fillOpacity: 0.9,
-        weight: 2.5,
+        weight: 4,
         dashArray: '10,6'
     };
 
@@ -1997,6 +2071,7 @@ const Drawings = (() => {
             line.setLatLngs([center, newEdge]);
             label.setLatLng(newLabelPt);
             label.setIcon(makeLabelIcon(getMeasurementText(shape) || '', true));
+            updateShapeLabelMarker(shape);
         });
 
         handle.on('dragend', () => {
@@ -2014,6 +2089,7 @@ const Drawings = (() => {
             label.setLatLng(pointAlongRadius(center, finalEdge, ratio));
             label.setIcon(makeLabelIcon(getMeasurementText(shape) || '', true));
 
+            updateShapeLabelMarker(shape);
             pushUndoSnapshot();
             const modal = document.getElementById('shapeEditModal');
             if (modal && !modal.classList.contains('hidden') && parseInt(document.getElementById('editShapeId').value, 10) === shape.id) {
@@ -2205,9 +2281,16 @@ const Drawings = (() => {
         if (shape.type === 'text') return null;
 
         if (shape.type === 'circle' && shape.center && shape.radius != null) {
-            const angle = shape.measureAngle != null ? shape.measureAngle : 45;
+            const angle = shape.labelAngle != null ? shape.labelAngle : (shape.measureAngle != null ? shape.measureAngle : 45);
             const edge = destinationPoint(shape.center[0], shape.center[1], angle, shape.radius);
             return projectOutwardPixels(edge, shape.center, 14);
+        }
+
+        if ((shape.type === 'polygon' || shape.type === 'rectangle') && shape.latlngs && shape.latlngs.length >= 3) {
+            const ratio = shape.labelPerimeterRatio != null ? shape.labelPerimeterRatio : 0.25;
+            const edge = pointAlongPolygonPerimeter(shape.latlngs, ratio);
+            const centroid = getShapeCentroid(shape);
+            return projectOutwardPixels(edge, centroid, 12);
         }
 
         if ((shape.type === 'polyline' || shape.type === 'flightpath') && shape.latlngs && shape.latlngs.length >= 2) {
@@ -2246,6 +2329,10 @@ const Drawings = (() => {
         return null;
     }
 
+    function isShapeLabelDraggable(shape) {
+        return (shape.type === 'circle' || shape.type === 'polygon' || shape.type === 'rectangle') && shape.label;
+    }
+
     function addShapeLabelMarker(shape) {
         if (!showShapeLabels || !shape.label || shape.type === 'text') return;
 
@@ -2257,8 +2344,9 @@ const Drawings = (() => {
         const anchor = getShapeLabelAnchor(shape);
         if (!anchor) return;
 
+        const draggable = isShapeLabelDraggable(shape);
         const icon = L.divIcon({
-            className: 'shape-label-marker',
+            className: 'shape-label-marker' + (draggable ? ' shape-label-draggable' : ''),
             html: `<div class="shape-label-text">${escapeHtml(shape.label)}</div>`,
             iconSize: null,
             iconAnchor: [0, 0]
@@ -2267,8 +2355,30 @@ const Drawings = (() => {
         const marker = L.marker(anchor, {
             icon: icon,
             interactive: true,
+            draggable: draggable,
             zIndexOffset: 800
         }).addTo(map);
+
+        if (draggable) {
+            marker.on('drag', (e) => {
+                const pos = e.target.getLatLng();
+                if (shape.type === 'circle' && shape.center && shape.radius != null) {
+                    const newAngle = bearingTo(shape.center[0], shape.center[1], pos.lat, pos.lng);
+                    shape.labelAngle = newAngle;
+                    const edge = destinationPoint(shape.center[0], shape.center[1], newAngle, shape.radius);
+                    e.target.setLatLng(projectOutwardPixels(edge, shape.center, 14));
+                } else if ((shape.type === 'polygon' || shape.type === 'rectangle') && shape.latlngs && shape.latlngs.length >= 3) {
+                    const newRatio = projectOntoPolygonPerimeter(shape.latlngs, pos);
+                    shape.labelPerimeterRatio = newRatio;
+                    const edge = pointAlongPolygonPerimeter(shape.latlngs, newRatio);
+                    const centroid = getShapeCentroid(shape);
+                    e.target.setLatLng(projectOutwardPixels(edge, centroid, 12));
+                }
+            });
+            marker.on('dragend', () => {
+                pushUndoSnapshot();
+            });
+        }
 
         marker.on('contextmenu', (e) => {
             e.originalEvent._contextShapeId = shape.id;
@@ -2677,6 +2787,8 @@ const Drawings = (() => {
                 radius: shapeData.radius,
                 measureAngle: shapeData.measureAngle != null ? shapeData.measureAngle : 45,
                 measureLabelRatio: shapeData.measureLabelRatio != null ? shapeData.measureLabelRatio : 0.5,
+                labelAngle: shapeData.labelAngle,
+                labelPerimeterRatio: shapeData.labelPerimeterRatio,
                 tail: shapeData.tail,
                 tip: shapeData.tip,
                 latlngs: shapeData.latlngs,

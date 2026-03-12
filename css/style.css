@@ -2882,6 +2882,15 @@ body.sidebar-collapsed .help-panel {
     white-space: nowrap;
 }
 
+.shape-label-marker.shape-label-draggable {
+    cursor: grab !important;
+    pointer-events: auto !important;
+}
+
+.shape-label-marker.shape-label-draggable:active {
+    cursor: grabbing !important;
+}
+
 .shape-label-text {
     display: inline-block;
     background: rgba(30, 30, 46, 0.78);
