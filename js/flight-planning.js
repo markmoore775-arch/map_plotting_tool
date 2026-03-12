@@ -176,26 +176,23 @@
     function buildRecceKml() {
         if (!recceTarget) return '';
         const latlngs = generateCircleLatlngs(recceTarget.lat, recceTarget.lng, recceRadius);
+        // DJI Pilot 2 requires altitude for each coordinate; use 0 for relativeToGround
         const coords = latlngs.map(ll => `${ll[1]},${ll[0]},0`).join(' ');
+        // Single polygon only - DJI rejects multiple placemarks (Point + Polygon)
+        // Structure matches DJI Pilot 2 expectations: tessellate, altitudeMode, coordinates with Z
         return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Recce Mission</name>
     <Placemark>
-      <name>Target Address</name>
-      <description>Recce target - appears as pin in DJI Pilot 2</description>
-      <Point>
-        <coordinates>${recceTarget.lng},${recceTarget.lat},0</coordinates>
-      </Point>
-    </Placemark>
-    <Placemark>
-      <name>${recceRadius}m Buffer</name>
+      <name>${recceRadius}m Exclusion Zone</name>
+      <description>Recce target at ${recceTarget.lat.toFixed(6)}, ${recceTarget.lng.toFixed(6)}. Use as overlay in DJI Pilot 2.</description>
       <Style>
         <LineStyle><color>ff0000ff</color><width>2</width></LineStyle>
         <PolyStyle><color>4dff0000</color><outline>1</outline></PolyStyle>
       </Style>
       <Polygon>
-        <extrude>1</extrude>
+        <tessellate>1</tessellate>
         <altitudeMode>relativeToGround</altitudeMode>
         <outerBoundaryIs>
           <LinearRing>
@@ -203,11 +200,6 @@
           </LinearRing>
         </outerBoundaryIs>
       </Polygon>
-      <ExtendedData>
-        <Data name="areaType">
-          <value>ExclusionZone</value>
-        </Data>
-      </ExtendedData>
     </Placemark>
   </Document>
 </kml>`;

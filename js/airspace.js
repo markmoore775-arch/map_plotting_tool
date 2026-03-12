@@ -46,7 +46,7 @@
             fillColor: '#6b7280',
             fillOpacity: 0.15,
             weight: 2,
-            description: 'Other airspace restriction'
+            description: 'Other airspace restriction (internal fallback, not shown in menu)'
         }
     };
 
@@ -243,7 +243,7 @@
         const ratModule = options.ratModule || null;
 
         const layersByType = {};
-        const typeKeys = ['prohibited', 'restricted', 'danger', 'frz', 'other'];
+        const typeKeys = ['prohibited', 'restricted', 'danger', 'frz'];
         typeKeys.forEach(function (key) {
             layersByType[key] = createLayerForType(key);
         });
@@ -402,7 +402,7 @@
                             }
                         });
                     });
-                    const types = ['prohibited', 'restricted', 'danger', 'frz', 'other'];
+                    const types = ['prohibited', 'restricted', 'danger', 'frz'];
                     types.forEach(function (key) {
                         const info = AIRSPACE_TYPES[key];
                         const li = L.DomUtil.create('li', 'airspace-legend-item', list);
