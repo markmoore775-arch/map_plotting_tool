@@ -900,7 +900,13 @@
         <div class="modal-content modal-large">
             <div class="modal-header">
                 <h2>Flight Overview</h2>
-                <button class="modal-close">&times;</button>
+                <div class="fo-header-actions">
+                    <label class="fo-theme-toggle" title="Light theme (better for copy/paste)">
+                        <input type="checkbox" id="foLightThemeToggle">
+                        <span class="fo-theme-toggle-label">&#9788; Light</span>
+                    </label>
+                    <button class="modal-close">&times;</button>
+                </div>
             </div>
             <div class="modal-body">
                 <div id="flightOverviewLoading" class="flight-overview-loading">
@@ -922,6 +928,10 @@
                         </div>
                         <div class="fo-agl-controls">
                             <div class="fo-agl-field">
+                                <label for="foSampleInterval">Sample interval (m)</label>
+                                <input type="number" id="foSampleInterval" value="20" min="5" max="500" step="5">
+                            </div>
+                            <div class="fo-agl-field">
                                 <label for="foAglLimit">AGL limit (m)</label>
                                 <input type="number" id="foAglLimit" value="120" min="10" max="500" step="10">
                             </div>
@@ -935,6 +945,10 @@
                     <div class="flight-overview-summary">
                         <h3>Summary</h3>
                         <div class="flight-overview-stats">
+                            <div class="flight-stat">
+                                <span class="flight-stat-label">Flight length</span>
+                                <span class="flight-stat-value" id="foFlightLength">—</span>
+                            </div>
                             <div class="flight-stat">
                                 <span class="flight-stat-label">Start altitude</span>
                                 <span class="flight-stat-value" id="foStartAlt">—</span>
@@ -974,12 +988,13 @@
                         </div>
                     </div>
                     <div class="flight-overview-waypoints">
-                        <h3>Waypoints</h3>
+                        <h3>Sample Points <span id="foSampleCount" class="fo-sample-count"></span></h3>
                         <div class="flight-overview-table-wrap">
                             <table class="flight-overview-table">
                                 <thead>
                                     <tr>
                                         <th>#</th>
+                                        <th>Dist (m)</th>
                                         <th>Lat</th>
                                         <th>Lng</th>
                                         <th>Altitude (m)</th>
@@ -993,6 +1008,7 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button class="btn btn-primary" id="foCopyBtn">&#128203; Copy to Clipboard</button>
                 <button class="btn btn-secondary modal-cancel">Close</button>
             </div>
         </div>

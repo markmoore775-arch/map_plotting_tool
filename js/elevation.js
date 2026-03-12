@@ -100,8 +100,87 @@ const Elevation = (() => {
         return results;
     }
 
+    /**
+     * Interpolate points along a path at a fixed interval (metres).
+     * Original waypoints are always included and flagged with isWaypoint: true.
+     * @param {Array<[number,number]>} latLngs - Array of [lat, lng] pairs
+     * @param {number} intervalM - Sample spacing in metres (default 20)
+     * @returns {Array<{lat:number, lng:number, isWaypoint:boolean, waypointIndex:number|null}>}
+     */
+    function interpolatePathAtInterval(latLngs, intervalM = 20) {
+        if (!latLngs || latLngs.length === 0) return [];
+
+        const toLL = (p) => {
+            const lat = Array.isArray(p) ? p[0] : p.lat;
+            const lng = Array.isArray(p) ? p[1] : p.lng;
+            return { lat, lng };
+        };
+
+        const points = [];
+        const first = toLL(latLngs[0]);
+        points.push({ lat: first.lat, lng: first.lng, isWaypoint: true, waypointIndex: 0 });
+
+        for (let seg = 1; seg < latLngs.length; seg++) {
+            const a = toLL(latLngs[seg - 1]);
+            const b = toLL(latLngs[seg]);
+            const segDist = L.latLng(a.lat, a.lng).distanceTo(L.latLng(b.lat, b.lng));
+
+            if (segDist <= intervalM) {
+                points.push({ lat: b.lat, lng: b.lng, isWaypoint: true, waypointIndex: seg });
+                continue;
+            }
+
+            const steps = Math.floor(segDist / intervalM);
+            for (let s = 1; s <= steps; s++) {
+                const t = s / Math.ceil(segDist / intervalM);
+                const lat = a.lat + (b.lat - a.lat) * t;
+                const lng = a.lng + (b.lng - a.lng) * t;
+                const isEnd = s === steps && Math.abs(t - 1) < 1e-9;
+                if (isEnd) {
+                    points.push({ lat: b.lat, lng: b.lng, isWaypoint: true, waypointIndex: seg });
+                } else {
+                    points.push({ lat, lng, isWaypoint: false, waypointIndex: null });
+                }
+            }
+
+            const last = points[points.length - 1];
+            if (Math.abs(last.lat - b.lat) > 1e-9 || Math.abs(last.lng - b.lng) > 1e-9) {
+                points.push({ lat: b.lat, lng: b.lng, isWaypoint: true, waypointIndex: seg });
+            }
+        }
+
+        return points;
+    }
+
+    /**
+     * Get elevations along an interpolated path at a given sample interval.
+     * @param {Array<[number,number]>} latLngs - Original waypoint pairs
+     * @param {string} accessToken - Mapbox access token
+     * @param {number} [intervalM=20] - Sample spacing in metres
+     * @returns {Promise<Array<{lat:number,lng:number,elevation:number|undefined,isWaypoint:boolean,waypointIndex:number|null}>>}
+     */
+    async function getElevationsAlongPathInterpolated(latLngs, accessToken, intervalM = 20) {
+        if (!accessToken || !accessToken.trim() || !latLngs || latLngs.length === 0) {
+            return [];
+        }
+        const samplePoints = interpolatePathAtInterval(latLngs, intervalM);
+        const results = [];
+        for (const pt of samplePoints) {
+            const elevation = await getElevationAtLatLng(pt.lat, pt.lng, accessToken);
+            results.push({
+                lat: pt.lat,
+                lng: pt.lng,
+                elevation: elevation !== null ? elevation : undefined,
+                isWaypoint: pt.isWaypoint,
+                waypointIndex: pt.waypointIndex
+            });
+        }
+        return results;
+    }
+
     return {
         getElevationAtLatLng,
-        getElevationsAlongPath
+        getElevationsAlongPath,
+        getElevationsAlongPathInterpolated
     };
 })();

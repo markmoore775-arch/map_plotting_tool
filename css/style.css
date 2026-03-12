@@ -1435,7 +1435,7 @@ select {
     .leaflet-control-undo .lucide-undo2-icon svg,
     .leaflet-control-drop-point .lucide-map-pin-icon svg,
     .leaflet-control-extra-draw .lucide-arrow-big-right-icon svg,
-    .leaflet-control-flight-path .lucide-drone-icon svg,
+    .leaflet-control-flight-path .lucide-plane-icon svg,
     .leaflet-control-line-draw .lucide-ruler-icon svg,
     .leaflet-control-grid-overlay .lucide-grid2x2-icon svg,
     .leaflet-control-save .lucide-save-icon svg,
@@ -2059,12 +2059,12 @@ select {
 .airspace-notam-opacity {
     flex: 1;
     max-width: 100px;
-    accent-color: #059669;
+    accent-color: #dc2626;
 }
 .airspace-notam-drone-cb {
     width: 12px;
     height: 12px;
-    accent-color: #059669;
+    accent-color: #dc2626;
 }
 
 /* ---- Drawing Style Panel ---- */
@@ -2394,13 +2394,13 @@ select {
     height: 100%;
 }
 
-.leaflet-control-flight-path .lucide-drone-icon {
+.leaflet-control-flight-path .lucide-plane-icon {
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.leaflet-control-flight-path .lucide-drone-icon svg {
+.leaflet-control-flight-path .lucide-plane-icon svg {
     width: 18px;
     height: 18px;
 }
@@ -3409,6 +3409,36 @@ body.sidebar-collapsed .help-panel {
     color: var(--danger);
 }
 
+.flight-overview-table tbody tr.fo-waypoint-row {
+    background: rgba(91, 141, 239, 0.08);
+}
+
+.flight-overview-table tbody tr.fo-waypoint-row td:first-child {
+    font-weight: 600;
+}
+
+.fo-wp-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--primary, #5b8def);
+    color: #fff;
+    padding: 1px 4px;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+
+.fo-sample-count {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--sidebar-text-muted);
+    margin-left: 6px;
+}
+
 /* ---- Flight Overview Elevation Profile ---- */
 
 .flight-overview-profile {
@@ -3523,4 +3553,225 @@ body.sidebar-collapsed .help-panel {
     height: 2px;
     border-top: 1px dashed #ff9800;
     background: none;
+}
+
+/* ---- Shape Action Popup (Flight Overview link on click) ---- */
+
+.shape-action-popup .leaflet-popup-content-wrapper {
+    background: var(--sidebar-bg, #1e1e2e);
+    border: 1px solid var(--sidebar-border, #333);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    padding: 0;
+}
+
+.shape-action-popup .leaflet-popup-content {
+    margin: 0;
+}
+
+.shape-action-popup .leaflet-popup-tip {
+    background: var(--sidebar-bg, #1e1e2e);
+    border: 1px solid var(--sidebar-border, #333);
+    border-top: none;
+    border-left: none;
+}
+
+.shape-popup-action {
+    display: block;
+    padding: 8px 16px;
+    color: var(--sidebar-text, #e0e0e0);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    border-radius: 8px;
+}
+
+.shape-popup-action:hover {
+    background: var(--primary, #5b8def);
+    color: #fff;
+}
+
+/* ---- Flight Overview Light Theme Toggle ---- */
+
+.fo-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.fo-theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.fo-theme-toggle input {
+    accent-color: var(--primary, #5b8def);
+    cursor: pointer;
+    width: 15px;
+    height: 15px;
+}
+
+.fo-theme-toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sidebar-text-muted, #9999aa);
+    white-space: nowrap;
+}
+
+.fo-light-theme .fo-theme-toggle-label {
+    color: #555;
+}
+
+/* Light theme overrides scoped to .fo-light-theme */
+
+.fo-light-theme {
+    background: #ffffff !important;
+    border-color: #d0d0d0 !important;
+    color: #1a1a1a !important;
+}
+
+.fo-light-theme .modal-header {
+    background: #f5f6f8;
+    border-bottom-color: #d0d0d0;
+}
+
+.fo-light-theme .modal-header h2 {
+    color: #1a1a1a;
+}
+
+.fo-light-theme .modal-close {
+    color: #666;
+}
+
+.fo-light-theme .modal-close:hover {
+    color: #1a1a1a;
+    background: #e0e0e0;
+}
+
+.fo-light-theme .modal-body {
+    background: #ffffff;
+    color: #1a1a1a;
+}
+
+.fo-light-theme .modal-footer {
+    background: #f5f6f8;
+    border-top-color: #d0d0d0;
+}
+
+.fo-light-theme .flight-overview-chart-wrap {
+    background: #f5f6f8;
+    border-color: #d0d0d0;
+}
+
+.fo-light-theme .flight-overview-stats {
+    color: #1a1a1a;
+}
+
+.fo-light-theme .flight-stat {
+    background: #f0f1f3;
+    border: 1px solid #d8d9dc;
+}
+
+.fo-light-theme .flight-stat-label {
+    color: #666;
+}
+
+.fo-light-theme .flight-stat-value {
+    color: #1a1a1a;
+}
+
+.fo-light-theme .flight-stat-value.positive {
+    color: #1a8a3f;
+}
+
+.fo-light-theme .flight-stat-value.negative {
+    color: #c0392b;
+}
+
+.fo-light-theme .flight-overview-table-wrap {
+    border-color: #d0d0d0;
+}
+
+.fo-light-theme .flight-overview-table th {
+    background: #f0f1f3;
+    color: #555;
+    border-bottom-color: #d0d0d0;
+}
+
+.fo-light-theme .flight-overview-table td {
+    color: #1a1a1a;
+    border-bottom-color: #e8e8e8;
+}
+
+.fo-light-theme .flight-overview-table .change-up {
+    color: #1a8a3f;
+}
+
+.fo-light-theme .flight-overview-table .change-down {
+    color: #c0392b;
+}
+
+.fo-light-theme .flight-overview-table tbody tr.fo-waypoint-row {
+    background: rgba(91, 141, 239, 0.08);
+}
+
+.fo-light-theme .flight-overview-table tbody tr.fo-row-highlight {
+    background: rgba(91, 141, 239, 0.12);
+}
+
+.fo-light-theme .fo-legend {
+    color: #666;
+}
+
+.fo-light-theme .fo-agl-field label {
+    color: #555;
+}
+
+.fo-light-theme .fo-agl-field input {
+    background: #f5f6f8;
+    border-color: #d0d0d0;
+    color: #1a1a1a;
+}
+
+.fo-light-theme .fo-sample-count {
+    color: #777;
+}
+
+.fo-light-theme h3 {
+    color: #1a1a1a;
+}
+
+.fo-light-theme .btn-secondary {
+    background: #e8e9ec;
+    color: #1a1a1a;
+    border-color: #d0d0d0;
+}
+
+.fo-light-theme .btn-secondary:hover {
+    background: #d8d9dc;
+}
+
+.fo-light-theme .flight-overview-tooltip {
+    background: #fff;
+    border-color: #d0d0d0;
+    color: #1a1a1a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fo-light-theme .flight-overview-loading p,
+.fo-light-theme .flight-overview-message p {
+    color: #555;
+}
+
+.fo-light-theme ::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+}
+
+.fo-light-theme ::-webkit-scrollbar-track {
+    background: #f0f0f0;
 }

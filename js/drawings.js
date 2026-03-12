@@ -615,7 +615,7 @@ const Drawings = (() => {
                 const btn = L.DomUtil.create('a', 'leaflet-control-flight-path leaflet-buttons-control-button', container);
                 btn.href = '#';
                 btn.title = 'Draw Flight Path';
-                btn.innerHTML = '<span class="control-icon lucide-drone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m3 7l6-3l6 3l6-3v13l-6 3l-6-3l-6 3zm6 5v.01M6 13v.01M17 15l-4-4m0 4l4-4"/></svg></span>';
+                btn.innerHTML = '<span class="control-icon lucide-plane-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plane-icon lucide-plane"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span>';
 
                 L.DomEvent.disableClickPropagation(container);
                 L.DomEvent.on(btn, 'click', (e) => {
@@ -1352,6 +1352,21 @@ const Drawings = (() => {
             selectShape(shape.id);
         });
 
+        if (shape.type === 'flightpath' || shape.type === 'polyline') {
+            layer.bindPopup(() => {
+                const container = L.DomUtil.create('div', 'shape-popup');
+                const link = L.DomUtil.create('a', 'shape-popup-action', container);
+                link.href = '#';
+                link.innerHTML = '&#9992; Flight Overview';
+                L.DomEvent.on(link, 'click', (e) => {
+                    L.DomEvent.preventDefault(e);
+                    layer.closePopup();
+                    map.fire('flightoverviewrequest', { shapeId: shape.id });
+                });
+                return container;
+            }, { closeButton: false, className: 'shape-action-popup' });
+        }
+
         layer.on('dblclick', (e) => {
             L.DomEvent.stop(e);
             openShapeEditModal(shape.id);
@@ -1435,6 +1450,9 @@ const Drawings = (() => {
                 shapes.push(shape);
                 addShapeToMap(shape);
                 refreshShapesList();
+                setTimeout(() => {
+                    map.fire('flightoverviewrequest', { shapeId: shape.id });
+                }, 300);
                 return;
             }
 

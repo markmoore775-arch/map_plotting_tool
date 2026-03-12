@@ -74,7 +74,7 @@ The converter maps NATS designators to AirPlot types:
 
 | NATS Designator | Type | Colour |
 |-----------------|------|--------|
-| EGP### (Prohibited) | Prohibited | Red |
+| EGP### (Prohibited) | Prohibited | Dark red |
 | EGR###, EGRU### (Restricted) | Restricted | Orange |
 | EGD### (Danger) | Danger | Yellow |
 | FRZ, RPZ, Aerodrome | FRZ / Aerodrome | Purple |

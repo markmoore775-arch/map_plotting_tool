@@ -106,11 +106,11 @@
 
         var style;
         if (radiusNm <= 3) {
-            style = { color: '#059669', weight: 2, fillColor: '#059669', fillOpacity: Math.min(fillOpacity * 1.5, 0.2) };
+            style = { color: '#dc2626', weight: 2, fillColor: '#dc2626', fillOpacity: Math.min(fillOpacity * 1.5, 0.2) };
         } else if (radiusNm <= 10) {
-            style = { color: '#059669', weight: 1.5, fillColor: '#059669', fillOpacity: fillOpacity };
+            style = { color: '#dc2626', weight: 1.5, fillColor: '#dc2626', fillOpacity: fillOpacity };
         } else {
-            style = { color: '#059669', weight: 1, fillColor: '#059669', fillOpacity: fillOpacity * 0.5 };
+            style = { color: '#dc2626', weight: 1, fillColor: '#dc2626', fillOpacity: fillOpacity * 0.5 };
         }
 
         const circle = L.circle([notam.lat, notam.lng], {
@@ -123,7 +123,7 @@
 
         let html = '<div class="airspace-popup"><div class="airspace-popup-header">';
         html += '<div class="airspace-popup-title">' + (notam.id || 'NOTAM') + '</div>';
-        html += '<span class="airspace-popup-badge" style="background:#059669;color:white">NOTAM</span></div>';
+        html += '<span class="airspace-popup-badge" style="background:#dc2626;color:white">NOTAM</span></div>';
         if (notam.startValidity || notam.endValidity) {
             const startReadable = formatNotamDate(notam.startValidity);
             const endReadable = formatNotamDate(notam.endValidity);

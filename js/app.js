@@ -1651,6 +1651,7 @@
     }
 
     let _foChartData = null;
+    let _foCurrentShapeId = null;
 
     function renderFlightOverviewChart(opts) {
         const { distances, elevations, totalDistKm, lowest, highest } = opts;
@@ -1702,10 +1703,24 @@
             return Number.isFinite(yy) ? yy : pad.top + h / 2;
         }
 
+        // --- Theme detection ---
+        const isLight = !!document.querySelector('#flightOverviewModal .fo-light-theme');
+        const theme = {
+            chartBg:    isLight ? 'rgba(0,0,0,0.02)' : 'rgba(0,0,0,0.04)',
+            grid:       isLight ? 'rgba(0,0,0,0.12)' : 'rgba(128,128,128,0.3)',
+            axisText:   isLight ? '#555' : '#888',
+            climbFill:  isLight ? 'rgba(76,175,80,0.20)' : 'rgba(76,175,80,0.15)',
+            descentFill:isLight ? 'rgba(224,85,85,0.20)' : 'rgba(224,85,85,0.15)',
+            flatFill:   isLight ? 'rgba(91,141,239,0.12)' : 'rgba(91,141,239,0.1)',
+            ceiling:    '#ff9800',
+            terrain:    isLight ? '#3670d6' : '#5b8def',
+            dot:        isLight ? '#3670d6' : '#5b8def'
+        };
+
         // --- Draw ---
         ctx.clearRect(0, 0, CW, CH);
 
-        ctx.fillStyle = 'rgba(0,0,0,0.04)';
+        ctx.fillStyle = theme.chartBg;
         ctx.fillRect(pad.left, pad.top, w, h);
 
         // Grid
@@ -1714,9 +1729,9 @@
         for (let a = altMin; a <= altMax; a += axisYStep) yTicks.push(a);
         if (yTicks[yTicks.length - 1] !== altMax) yTicks.push(altMax);
 
-        ctx.strokeStyle = 'rgba(128,128,128,0.3)';
+        ctx.strokeStyle = theme.grid;
         ctx.lineWidth = 1;
-        ctx.fillStyle = '#888';
+        ctx.fillStyle = theme.axisText;
         ctx.font = '10px "Courier New", monospace';
         ctx.textAlign = 'right';
         yTicks.forEach(a => {
@@ -1735,7 +1750,7 @@
         // Terrain fill segments (climb/descent)
         for (let i = 1; i < pts.length; i++) {
             const prev = pts[i - 1], curr = pts[i];
-            ctx.fillStyle = curr.alt > prev.alt ? 'rgba(76,175,80,0.15)' : curr.alt < prev.alt ? 'rgba(224,85,85,0.15)' : 'rgba(91,141,239,0.1)';
+            ctx.fillStyle = curr.alt > prev.alt ? theme.climbFill : curr.alt < prev.alt ? theme.descentFill : theme.flatFill;
             ctx.beginPath();
             ctx.moveTo(x(prev.dist), pad.top + h);
             ctx.lineTo(x(prev.dist), y(prev.alt));
@@ -1748,7 +1763,7 @@
         // AGL ceiling line (terrain + limit) -- dashed orange
         ctx.save();
         ctx.setLineDash([6, 4]);
-        ctx.strokeStyle = '#ff9800';
+        ctx.strokeStyle = theme.ceiling;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(x(pts[0].dist), y(pts[0].alt + aglLimit));
@@ -1759,14 +1774,14 @@
         ctx.restore();
 
         // Ceiling label
-        ctx.fillStyle = '#ff9800';
+        ctx.fillStyle = theme.ceiling;
         ctx.font = '10px "Courier New", monospace';
         ctx.textAlign = 'left';
         const lastPt = pts[pts.length - 1];
         ctx.fillText(aglLimit + 'm AGL', x(lastPt.dist) + 4, y(lastPt.alt + aglLimit) + 4);
 
         // Terrain profile line
-        ctx.strokeStyle = '#5b8def';
+        ctx.strokeStyle = theme.terrain;
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -1779,7 +1794,7 @@
         ctx.stroke();
 
         // Waypoint dots
-        ctx.fillStyle = '#5b8def';
+        ctx.fillStyle = theme.dot;
         pts.forEach(p => {
             ctx.beginPath();
             ctx.arc(x(p.dist), y(p.alt), 3, 0, Math.PI * 2);
@@ -1846,8 +1861,296 @@
         const refreshBtn = document.getElementById('foRefreshChart');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
+                if (_foCurrentShapeId != null) {
+                    fetchAndRenderFlightOverview(_foCurrentShapeId);
+                } else if (_foChartData) {
+                    renderFlightOverviewChart(_foChartData);
+                }
+            });
+        }
+
+        const lightToggle = document.getElementById('foLightThemeToggle');
+        if (lightToggle) {
+            lightToggle.addEventListener('change', () => {
+                const modalContent = document.querySelector('#flightOverviewModal .modal-content');
+                if (modalContent) {
+                    modalContent.classList.toggle('fo-light-theme', lightToggle.checked);
+                }
                 if (_foChartData) renderFlightOverviewChart(_foChartData);
             });
+        }
+
+        const copyBtn = document.getElementById('foCopyBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => copyFlightOverviewToClipboard(copyBtn));
+        }
+    }
+
+    function copyFlightOverviewToClipboard(btn) {
+        const canvas = document.getElementById('flightOverviewChart');
+        const chartDataUrl = canvas ? canvas.toDataURL('image/png') : '';
+
+        const stats = [
+            ['Flight length', 'foFlightLength'],
+            ['Start altitude', 'foStartAlt'],
+            ['End altitude', 'foEndAlt'],
+            ['Highest', 'foHighest'],
+            ['Lowest', 'foLowest'],
+            ['Total variation', 'foVariation'],
+            ['Net change', 'foNetChange'],
+            ['Total gain', 'foTotalGain'],
+            ['Total loss', 'foTotalLoss'],
+            ['Avg change / segment', 'foAvgChange']
+        ];
+
+        const cellStyle = 'padding:6px 10px;border:1px solid #d0d0d0;font-size:13px;';
+        const labelStyle = cellStyle + 'font-weight:600;color:#555;background:#f5f6f8;white-space:nowrap;';
+        const valueStyle = cellStyle + 'font-family:"Courier New",monospace;color:#1a1a1a;';
+
+        let summaryRows = '';
+        for (const [label, id] of stats) {
+            const el = document.getElementById(id);
+            const val = el ? el.textContent : '—';
+            const isPositive = el && el.classList.contains('positive');
+            const isNegative = el && el.classList.contains('negative');
+            const valColor = isPositive ? 'color:#1a8a3f;' : isNegative ? 'color:#c0392b;' : '';
+            summaryRows += `<tr><td style="${labelStyle}">${label}</td><td style="${valueStyle}${valColor}">${val}</td></tr>`;
+        }
+
+        const tbody = document.getElementById('flightOverviewWaypointsBody');
+        const thStyle = 'padding:6px 10px;border:1px solid #d0d0d0;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#555;background:#f0f1f3;text-align:left;';
+        const tdStyle = 'padding:5px 10px;border:1px solid #e0e0e0;font-size:12px;font-family:"Courier New",monospace;color:#1a1a1a;';
+        const wpTdStyle = tdStyle + 'font-weight:600;background:rgba(91,141,239,0.06);';
+
+        let sampleRows = '';
+        if (tbody) {
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                const isWp = tr.classList.contains('fo-waypoint-row');
+                const style = isWp ? wpTdStyle : tdStyle;
+                let rowHtml = '<tr>';
+                cells.forEach(td => {
+                    const cls = td.className || '';
+                    let extra = '';
+                    if (cls.includes('change-up')) extra = 'color:#1a8a3f;';
+                    else if (cls.includes('change-down')) extra = 'color:#c0392b;';
+                    rowHtml += `<td style="${style}${extra}">${td.innerHTML}</td>`;
+                });
+                rowHtml += '</tr>';
+                sampleRows += rowHtml;
+            });
+        }
+
+        const sampleCount = document.getElementById('foSampleCount');
+        const sampleInfo = sampleCount ? sampleCount.textContent : '';
+
+        const html = `
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;max-width:700px;">
+<h2 style="font-size:18px;margin:0 0 16px;">Flight Overview</h2>
+${chartDataUrl ? `<div style="margin-bottom:16px;"><img src="${chartDataUrl}" style="width:100%;max-width:600px;height:auto;border:1px solid #d0d0d0;border-radius:4px;" alt="Elevation Profile"></div>` : ''}
+<h3 style="font-size:14px;margin:0 0 8px;">Summary</h3>
+<table style="border-collapse:collapse;margin-bottom:16px;">
+${summaryRows}
+</table>
+<h3 style="font-size:14px;margin:0 0 8px;">Sample Points${sampleInfo ? ' <span style="font-weight:400;font-size:12px;color:#777;">' + sampleInfo + '</span>' : ''}</h3>
+<table style="border-collapse:collapse;width:100%;margin-bottom:8px;">
+<thead><tr>
+<th style="${thStyle}">#</th>
+<th style="${thStyle}">Dist (m)</th>
+<th style="${thStyle}">Lat</th>
+<th style="${thStyle}">Lng</th>
+<th style="${thStyle}">Altitude (m)</th>
+<th style="${thStyle}">Change</th>
+</tr></thead>
+<tbody>${sampleRows}</tbody>
+</table>
+</div>`;
+
+        const plainStats = stats.map(([label, id]) => {
+            const el = document.getElementById(id);
+            return `${label}: ${el ? el.textContent : '—'}`;
+        }).join('\n');
+
+        let plainTable = '#\tDist (m)\tLat\tLng\tAltitude (m)\tChange\n';
+        if (tbody) {
+            tbody.querySelectorAll('tr').forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                const vals = Array.from(cells).map(td => td.textContent.trim());
+                plainTable += vals.join('\t') + '\n';
+            });
+        }
+
+        const plainText = `Flight Overview\n\n${plainStats}\n\nSample Points${sampleInfo ? ' (' + sampleInfo + ')' : ''}\n${plainTable}`;
+
+        const clipboardItem = new ClipboardItem({
+            'text/html': new Blob([html], { type: 'text/html' }),
+            'text/plain': new Blob([plainText], { type: 'text/plain' })
+        });
+
+        navigator.clipboard.write([clipboardItem]).then(() => {
+            const orig = btn.innerHTML;
+            btn.innerHTML = '&#10003; Copied!';
+            setTimeout(() => { btn.innerHTML = orig; }, 1500);
+        }).catch(() => {
+            navigator.clipboard.writeText(plainText).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '&#10003; Copied (text)';
+                setTimeout(() => { btn.innerHTML = orig; }, 1500);
+            }).catch(() => {});
+        });
+    }
+
+    async function fetchAndRenderFlightOverview(shapeId) {
+        const loadingEl = document.getElementById('flightOverviewLoading');
+        const errorEl = document.getElementById('flightOverviewError');
+        const errorTextEl = document.getElementById('flightOverviewErrorText');
+        const contentEl = document.getElementById('flightOverviewContent');
+
+        const shape = Drawings.getShapes().find(s => s.id === shapeId);
+        if (!shape || !shape.latlngs || shape.latlngs.length < 2) return;
+
+        const MAX_PATH_LENGTH_M = 10000;
+        let pathLengthM = 0;
+        for (let i = 1; i < shape.latlngs.length; i++) {
+            pathLengthM += L.latLng(shape.latlngs[i - 1]).distanceTo(L.latLng(shape.latlngs[i]));
+        }
+        if (pathLengthM > MAX_PATH_LENGTH_M) {
+            const lengthKm = (pathLengthM / 1000).toFixed(1);
+            loadingEl.classList.add('hidden');
+            errorTextEl.textContent = `Path is ${lengthKm} km long, which exceeds the 10 km limit for elevation sampling. Shorten the path or reduce the number of waypoints.`;
+            errorEl.classList.remove('hidden');
+            contentEl.classList.add('hidden');
+            return;
+        }
+
+        const mapboxToken = (typeof AIRPLOT_CONFIG !== 'undefined' && AIRPLOT_CONFIG.mapboxAccessToken) || '';
+        if (!mapboxToken || !mapboxToken.trim()) return;
+
+        const intervalInput = document.getElementById('foSampleInterval');
+        const intervalM = intervalInput ? Math.max(5, Math.min(500, parseInt(intervalInput.value, 10) || 20)) : 20;
+
+        loadingEl.classList.remove('hidden');
+        errorEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+
+        try {
+            const results = typeof Elevation !== 'undefined'
+                ? await Elevation.getElevationsAlongPathInterpolated(shape.latlngs, mapboxToken, intervalM)
+                : [];
+
+            loadingEl.classList.add('hidden');
+
+            const elevations = results.map(r => r.elevation);
+            const hasData = elevations.some(e => e != null && !Number.isNaN(e));
+
+            if (!hasData) {
+                errorTextEl.textContent = 'Could not load elevation data for this path.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const validElevs = elevations.filter(e => e != null && !Number.isNaN(e));
+            const startAlt = elevations[0] != null ? elevations[0] : validElevs[0];
+            const endAlt = elevations[elevations.length - 1] != null ? elevations[elevations.length - 1] : validElevs[validElevs.length - 1];
+            const highest = Math.max(...validElevs);
+            const lowest = Math.min(...validElevs);
+            const variation = highest - lowest;
+            const netChange = endAlt - startAlt;
+
+            let totalGain = 0;
+            let totalLoss = 0;
+            for (let i = 1; i < elevations.length; i++) {
+                const prev = elevations[i - 1];
+                const curr = elevations[i];
+                if (prev != null && curr != null && !Number.isNaN(prev) && !Number.isNaN(curr)) {
+                    const d = curr - prev;
+                    if (d > 0) totalGain += d;
+                    else totalLoss += Math.abs(d);
+                }
+            }
+
+            const numSegments = Math.max(1, elevations.length - 1);
+            const avgChange = netChange / numSegments;
+
+            const distances = [0];
+            for (let i = 1; i < results.length; i++) {
+                const a = L.latLng(results[i - 1].lat, results[i - 1].lng);
+                const b = L.latLng(results[i].lat, results[i].lng);
+                distances.push(distances[i - 1] + a.distanceTo(b));
+            }
+            const totalDistM = distances[distances.length - 1];
+            const totalDistKm = totalDistM / 1000;
+
+            function fmtAlt(v) {
+                if (v == null || Number.isNaN(v)) return '—';
+                return `${v.toFixed(1)} m`;
+            }
+            function fmtChange(v) {
+                if (v == null || Number.isNaN(v) || v === 0) return '—';
+                const s = v > 0 ? '+' : '';
+                return `${s}${v.toFixed(1)} m`;
+            }
+
+            document.getElementById('foFlightLength').textContent = totalDistKm < 1
+                ? `${totalDistM.toFixed(0)} m`
+                : `${totalDistKm.toFixed(2)} km`;
+            document.getElementById('foStartAlt').textContent = fmtAlt(startAlt);
+            document.getElementById('foEndAlt').textContent = fmtAlt(endAlt);
+            document.getElementById('foHighest').textContent = fmtAlt(highest);
+            document.getElementById('foLowest').textContent = fmtAlt(lowest);
+            document.getElementById('foVariation').textContent = fmtAlt(variation);
+
+            const netChangeEl = document.getElementById('foNetChange');
+            netChangeEl.textContent = fmtChange(netChange);
+            netChangeEl.className = 'flight-stat-value' + (netChange > 0 ? ' positive' : netChange < 0 ? ' negative' : '');
+
+            document.getElementById('foTotalGain').textContent = fmtAlt(totalGain);
+            document.getElementById('foTotalLoss').textContent = fmtAlt(totalLoss);
+
+            const avgChangeEl = document.getElementById('foAvgChange');
+            avgChangeEl.textContent = fmtChange(avgChange);
+            avgChangeEl.className = 'flight-stat-value' + (avgChange > 0 ? ' positive' : avgChange < 0 ? ' negative' : '');
+
+            const sampleCountEl = document.getElementById('foSampleCount');
+            if (sampleCountEl) sampleCountEl.textContent = `${results.length} samples @ ${intervalM} m`;
+
+            const tbody = document.getElementById('flightOverviewWaypointsBody');
+            tbody.innerHTML = '';
+            for (let i = 0; i < results.length; i++) {
+                const pt = results[i];
+                const elev = pt.elevation;
+                const prevElev = i > 0 ? results[i - 1].elevation : null;
+                const change = (elev != null && prevElev != null) ? elev - prevElev : null;
+
+                const tr = document.createElement('tr');
+                if (pt.isWaypoint) tr.classList.add('fo-waypoint-row');
+                const changeClass = change != null && change !== 0 ? (change > 0 ? 'change-up' : 'change-down') : '';
+                tr.dataset.waypointIndex = String(i);
+                tr.innerHTML = `
+                    <td>${i + 1}${pt.isWaypoint ? ' <span class="fo-wp-badge">WP</span>' : ''}</td>
+                    <td>${distances[i].toFixed(0)}</td>
+                    <td>${pt.lat.toFixed(5)}</td>
+                    <td>${pt.lng.toFixed(5)}</td>
+                    <td>${elev != null ? elev.toFixed(1) : '—'}</td>
+                    <td class="${changeClass}">${change != null && change !== 0 ? (change > 0 ? '+' : '') + change.toFixed(1) + ' m' : '—'}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            contentEl.classList.remove('hidden');
+
+            renderFlightOverviewChart({
+                distances,
+                elevations,
+                totalDistKm,
+                lowest,
+                highest
+            });
+        } catch (err) {
+            loadingEl.classList.add('hidden');
+            errorTextEl.textContent = 'Error: ' + (err.message || String(err));
+            errorEl.classList.remove('hidden');
         }
     }
 
@@ -1856,7 +2159,6 @@
         const loadingEl = document.getElementById('flightOverviewLoading');
         const noTokenEl = document.getElementById('flightOverviewNoToken');
         const errorEl = document.getElementById('flightOverviewError');
-        const errorTextEl = document.getElementById('flightOverviewErrorText');
         const contentEl = document.getElementById('flightOverviewContent');
 
         if (!modal || !loadingEl || !contentEl) return;
@@ -1873,6 +2175,7 @@
         contentEl.classList.add('hidden');
 
         modal.classList.remove('hidden');
+        _foCurrentShapeId = shapeId;
 
         if (!mapboxToken || !mapboxToken.trim()) {
             loadingEl.classList.add('hidden');
@@ -1880,121 +2183,7 @@
             return;
         }
 
-        (async () => {
-            try {
-                const results = typeof Elevation !== 'undefined'
-                    ? await Elevation.getElevationsAlongPath(shape.latlngs, mapboxToken)
-                    : [];
-
-                loadingEl.classList.add('hidden');
-
-                const elevations = results.map(r => r.elevation);
-                const hasData = elevations.some(e => e != null && !Number.isNaN(e));
-
-                if (!hasData) {
-                    errorTextEl.textContent = 'Could not load elevation data for this path.';
-                    errorEl.classList.remove('hidden');
-                    return;
-                }
-
-                const validElevs = elevations.filter(e => e != null && !Number.isNaN(e));
-                const startAlt = elevations[0] != null ? elevations[0] : validElevs[0];
-                const endAlt = elevations[elevations.length - 1] != null ? elevations[elevations.length - 1] : validElevs[validElevs.length - 1];
-                const highest = Math.max(...validElevs);
-                const lowest = Math.min(...validElevs);
-                const variation = highest - lowest;
-                const netChange = endAlt - startAlt;
-
-                let totalGain = 0;
-                let totalLoss = 0;
-                for (let i = 1; i < elevations.length; i++) {
-                    const prev = elevations[i - 1];
-                    const curr = elevations[i];
-                    if (prev != null && curr != null && !Number.isNaN(prev) && !Number.isNaN(curr)) {
-                        const d = curr - prev;
-                        if (d > 0) totalGain += d;
-                        else totalLoss += Math.abs(d);
-                    }
-                }
-
-                const numSegments = Math.max(1, elevations.length - 1);
-                const avgChange = netChange / numSegments;
-
-                // Cumulative distances along path (metres)
-                const distances = [0];
-                for (let i = 1; i < shape.latlngs.length; i++) {
-                    const a = L.latLng(shape.latlngs[i - 1]);
-                    const b = L.latLng(shape.latlngs[i]);
-                    distances.push(distances[i - 1] + a.distanceTo(b));
-                }
-                const totalDistM = distances[distances.length - 1];
-                const totalDistKm = totalDistM / 1000;
-
-                function fmtAlt(v) {
-                    if (v == null || Number.isNaN(v)) return '—';
-                    return `${v.toFixed(1)} m`;
-                }
-                function fmtChange(v) {
-                    if (v == null || Number.isNaN(v) || v === 0) return '—';
-                    const s = v > 0 ? '+' : '';
-                    return `${s}${v.toFixed(1)} m`;
-                }
-
-                document.getElementById('foStartAlt').textContent = fmtAlt(startAlt);
-                document.getElementById('foEndAlt').textContent = fmtAlt(endAlt);
-                document.getElementById('foHighest').textContent = fmtAlt(highest);
-                document.getElementById('foLowest').textContent = fmtAlt(lowest);
-                document.getElementById('foVariation').textContent = fmtAlt(variation);
-
-                const netChangeEl = document.getElementById('foNetChange');
-                netChangeEl.textContent = fmtChange(netChange);
-                netChangeEl.className = 'flight-stat-value' + (netChange > 0 ? ' positive' : netChange < 0 ? ' negative' : '');
-
-                document.getElementById('foTotalGain').textContent = fmtAlt(totalGain);
-                document.getElementById('foTotalLoss').textContent = fmtAlt(totalLoss);
-
-                const avgChangeEl = document.getElementById('foAvgChange');
-                avgChangeEl.textContent = fmtChange(avgChange);
-                avgChangeEl.className = 'flight-stat-value' + (avgChange > 0 ? ' positive' : avgChange < 0 ? ' negative' : '');
-
-                const tbody = document.getElementById('flightOverviewWaypointsBody');
-                tbody.innerHTML = '';
-                for (let i = 0; i < shape.latlngs.length; i++) {
-                    const ll = shape.latlngs[i];
-                    const lat = Array.isArray(ll) ? ll[0] : ll.lat;
-                    const lng = Array.isArray(ll) ? ll[1] : ll.lng;
-                    const elev = results[i]?.elevation;
-                    const prevElev = i > 0 ? results[i - 1]?.elevation : null;
-                    const change = (elev != null && prevElev != null) ? elev - prevElev : null;
-
-                    const tr = document.createElement('tr');
-                    const changeClass = change != null && change !== 0 ? (change > 0 ? 'change-up' : 'change-down') : '';
-                    tr.dataset.waypointIndex = String(i);
-                    tr.innerHTML = `
-                        <td>${i + 1}</td>
-                        <td>${lat.toFixed(5)}</td>
-                        <td>${lng.toFixed(5)}</td>
-                        <td>${elev != null ? elev.toFixed(1) : '—'}</td>
-                        <td class="${changeClass}">${change != null && change !== 0 ? (change > 0 ? '+' : '') + change.toFixed(1) + ' m' : '—'}</td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-
-                contentEl.classList.remove('hidden');
-
-                renderFlightOverviewChart({
-                    distances,
-                    elevations,
-                    totalDistKm,
-                    lowest,
-                    highest
-                });
-            } catch (err) {
-                loadingEl.classList.add('hidden');
-                errorTextEl.textContent = 'Error: ' + (err.message || String(err));
-                errorEl.classList.remove('hidden');
-            }
-        })();
+        fetchAndRenderFlightOverview(shapeId);
     }
 
     function initSearchModal() {

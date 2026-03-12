@@ -10,8 +10,8 @@
     const AIRSPACE_TYPES = {
         prohibited: {
             label: 'Prohibited',
-            color: '#dc2626',
-            fillColor: '#dc2626',
+            color: '#991b1b',
+            fillColor: '#991b1b',
             fillOpacity: 0.2,
             weight: 2,
             description: 'No flying permitted'
@@ -432,7 +432,7 @@
                         cb.type = 'checkbox';
                         cb.dataset.type = 'notam';
                         const swatch = L.DomUtil.create('span', 'airspace-legend-swatch', itemLabel);
-                        swatch.style.backgroundColor = '#059669';
+                        swatch.style.backgroundColor = '#dc2626';
                         const lbl = L.DomUtil.create('span', 'airspace-legend-label', itemLabel);
                         lbl.textContent = 'NOTAM';
                         const expandBtn = L.DomUtil.create('button', 'airspace-notam-expand', itemLabel);
