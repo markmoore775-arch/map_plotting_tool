@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Flight Weather | AirPlot</title>
+    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="" />
+
+    <!-- Leaflet.Locate CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/weather.css">
+</head>
+<body class="weather-mode">
+    <div id="map"></div>
+
+    <!-- Floating toolbar -->
+    <div class="weather-toolbar">
+        <div class="weather-toolbar-group">
+            <button type="button" class="weather-btn" id="weatherSelectBtn" title="Click map to select location">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span>Select Location</span>
+            </button>
+        </div>
+        <div class="weather-toolbar-group">
+            <label for="weatherModel" class="weather-model-label">Model</label>
+            <select id="weatherModel" class="weather-model-select" title="Weather model / source">
+                <option value="auto">Best match</option>
+                <option value="ecmwf_ifs">ECMWF IFS</option>
+                <option value="gfs_seamless">GFS (NOAA)</option>
+                <option value="ukmo_seamless">UK Met Office</option>
+                <option value="gem_global">GEM (Canada)</option>
+            </select>
+        </div>
+        <div class="weather-toolbar-group weather-time-group">
+            <label class="weather-time-label">
+                <input type="radio" name="weatherTime" value="now" id="weatherTimeNow" checked>
+                <span>Now</span>
+            </label>
+            <label class="weather-time-label">
+                <input type="radio" name="weatherTime" value="future" id="weatherTimeFuture">
+                <span>Date &amp; Time</span>
+            </label>
+            <input type="datetime-local" id="weatherDateTime" class="weather-datetime hidden" min="" max="">
+        </div>
+        <div class="weather-toolbar-group">
+            <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Get weather for selected location">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                <span>Get Weather</span>
+            </button>
+        </div>
+        <div class="weather-toolbar-group">
+            <button type="button" class="weather-btn weather-btn-back weather-btn-icon-sm" id="weatherBackBtn" title="Return to welcome screen">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                <span class="weather-btn-text">Back</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Status / instructions -->
+    <div class="weather-status" id="weatherStatus">
+        Right-click map for <strong>Get Weather</strong>, or use <strong>Select Location</strong> then click the map.
+    </div>
+
+    <!-- Weather report panel -->
+    <div id="weatherReport" class="weather-report hidden">
+        <div class="weather-report-header">
+            <h2>Flight Weather Report</h2>
+            <button type="button" class="weather-report-close" id="weatherReportClose" aria-label="Close">&times;</button>
+        </div>
+        <div class="weather-report-body">
+            <div id="weatherReportLoading" class="weather-report-loading hidden">
+                <div class="spinner"></div>
+                <p>Fetching weather data…</p>
+            </div>
+            <div id="weatherReportError" class="weather-report-error hidden">
+                <p id="weatherReportErrorText"></p>
+            </div>
+            <div id="weatherReportContent" class="weather-report-content hidden">
+                <div class="weather-report-tabs">
+                    <button type="button" class="weather-tab active" data-tab="summary">Summary</button>
+                    <button type="button" class="weather-tab" data-tab="hourly">12-hour forecast</button>
+                </div>
+                <div class="weather-tab-panels">
+                    <div class="weather-tab-panel active" id="weatherTabSummary">
+                        <div class="weather-summary" id="weatherSummary"></div>
+                        <div class="weather-summary-text" id="weatherSummaryText"></div>
+                        <div class="weather-alt-section">
+                            <h3 class="weather-alt-heading">Wind by altitude</h3>
+                            <p class="weather-alt-note">Gusts are only measured at 10 m by the weather model. Gusts at 120 m are estimated (≈1.3× sustained).</p>
+                            <div class="weather-alt-grid">
+                                <div class="weather-alt-block">
+                                    <div class="weather-alt-title">Ground (10 m)</div>
+                                    <div class="weather-detail-row">
+                                        <span class="weather-detail-label">Sustained</span>
+                                        <span class="weather-detail-value" id="weatherWind10m">—</span>
+                                    </div>
+                                    <div class="weather-detail-row">
+                                        <span class="weather-detail-label">Gusts</span>
+                                        <span class="weather-detail-value" id="weatherGusts">—</span>
+                                    </div>
+                                </div>
+                                <div class="weather-alt-block">
+                                    <div class="weather-alt-title">120 m AGL</div>
+                                    <div class="weather-detail-row">
+                                        <span class="weather-detail-label">Sustained</span>
+                                        <span class="weather-detail-value" id="weatherWind120m">—</span>
+                                    </div>
+                                    <div class="weather-detail-row">
+                                        <span class="weather-detail-label">Gusts (est.)</span>
+                                        <span class="weather-detail-value" id="weatherGusts120m">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="weather-details">
+                            <div class="weather-detail-row">
+                                <span class="weather-detail-label">Visibility</span>
+                                <span class="weather-detail-value" id="weatherVisibility">—</span>
+                            </div>
+                            <div class="weather-detail-row">
+                                <span class="weather-detail-label">Cloud cover</span>
+                                <span class="weather-detail-value" id="weatherClouds">—</span>
+                            </div>
+                            <div class="weather-detail-row">
+                                <span class="weather-detail-label">Precipitation</span>
+                                <span class="weather-detail-value" id="weatherPrecip">—</span>
+                            </div>
+                            <div class="weather-detail-row">
+                                <span class="weather-detail-label">Temperature</span>
+                                <span class="weather-detail-value" id="weatherTemp">—</span>
+                            </div>
+                        </div>
+                        <p class="weather-attribution" id="weatherAttribution">Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
+                    </div>
+                    <div class="weather-tab-panel" id="weatherTabHourly">
+                        <div id="weatherHourlySection" class="weather-hourly-section">
+                            <div class="weather-hourly-table-wrap">
+                                <table class="weather-hourly-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Sust. 10m</th>
+                                            <th>Gusts 10m</th>
+                                            <th>Sust. 120m</th>
+                                            <th>Gusts 120m (est.)</th>
+                                            <th>Vis</th>
+                                            <th>Clouds</th>
+                                            <th>Precip</th>
+                                            <th>Temp</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="weatherHourlyBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="weatherHourlyEmpty" class="weather-hourly-empty hidden">
+                            <p>12-hour forecast is only available when <strong>Now</strong> is selected.</p>
+                        </div>
+                        <p class="weather-attribution" id="weatherAttributionHourly">Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map context menu (right-click) -->
+    <div id="weatherContextMenu" class="weather-context-menu hidden">
+        <button type="button" class="weather-ctx-item" data-action="get-weather">
+            Get Weather
+        </button>
+    </div>
+
+    <!-- App logo -->
+    <div class="weather-logo" aria-hidden="true">
+        <img src="assets/airplot-icon.svg" alt="AirPlot">
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+
+    <script src="js/weather.js"></script>
+</body>
+</html>
