@@ -120,6 +120,48 @@ body.weather-mode #map {
     }
 }
 
+/* Mobile: single-row toolbar, horizontal scroll instead of wrapping */
+@media (max-width: 600px) {
+    .weather-toolbar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding: 10px 12px;
+        padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+        bottom: max(12px, env(safe-area-inset-bottom, 12px));
+        left: 8px;
+        right: 8px;
+        transform: none;
+        min-width: 0;
+        max-width: none;
+        width: auto;
+        justify-content: flex-start;
+    }
+    .weather-toolbar-group {
+        flex-shrink: 0;
+        gap: 6px;
+    }
+    .weather-time-group {
+        flex-wrap: nowrap;
+    }
+    .weather-btn span:not(.weather-btn-text),
+    .weather-model-label {
+        display: none;
+    }
+    .weather-model-select {
+        min-width: 90px;
+    }
+    .weather-btn-primary span {
+        display: inline;
+    }
+    .weather-status {
+        bottom: 72px;
+        max-width: calc(100vw - 24px);
+    }
+}
+
 /* Time selection */
 .weather-time-label {
     display: inline-flex;

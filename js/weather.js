@@ -119,7 +119,7 @@
             selectedMarker = null;
         }
         document.getElementById('weatherFetchBtn').disabled = true;
-        document.getElementById('weatherStatus').innerHTML = 'Click <strong>Select Location</strong>, then click the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
+        document.getElementById('weatherStatus').innerHTML = 'Tap <strong>Select Location</strong>, then tap the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
     }
 
     function onMapClick(e) {
@@ -130,11 +130,46 @@
         }
     }
 
+    // Touch fallback: Leaflet's click can be unreliable on touch devices (pan/drag intercepts tap)
+    function setupTouchFallback() {
+        const container = map.getContainer();
+        let touchStartPos = null;
+
+        container.addEventListener('touchstart', function (e) {
+            if (selectMode && e.touches.length === 1) {
+                touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        }, { passive: true });
+
+        container.addEventListener('touchend', function (e) {
+            if (selectMode && touchStartPos && e.changedTouches.length === 1) {
+                const end = e.changedTouches[0];
+                const dx = end.clientX - touchStartPos.x;
+                const dy = end.clientY - touchStartPos.y;
+                if (dx * dx + dy * dy < 400) { // ~20px movement threshold (tap, not pan)
+                    const rect = container.getBoundingClientRect();
+                    const pt = L.point(end.clientX - rect.left, end.clientY - rect.top);
+                    const latLng = map.containerPointToLatLng(pt);
+                    setSelectedPoint(latLng.lat, latLng.lng);
+                    selectMode = false;
+                    document.getElementById('weatherSelectBtn').classList.remove('active');
+                }
+                touchStartPos = null;
+            }
+        }, { passive: true });
+    }
+
     function toggleSelectMode() {
         selectMode = !selectMode;
         document.getElementById('weatherSelectBtn').classList.toggle('active', selectMode);
+        const container = map.getContainer();
+        if (selectMode) {
+            container.style.touchAction = 'manipulation'; // faster tap response, no double-tap zoom delay
+        } else {
+            container.style.touchAction = '';
+        }
         if (!selectMode && !selectedPoint) {
-            document.getElementById('weatherStatus').innerHTML = 'Click <strong>Select Location</strong>, then click the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
+            document.getElementById('weatherStatus').innerHTML = 'Click <strong>Select Location</strong>, then tap the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
         }
     }
 
@@ -493,6 +528,8 @@
 
         map.on('click', onMapClick);
         map.on('click', hideWeatherContextMenu);
+        setupTouchFallback();
+
         map.on('contextmenu', (e) => {
             if (e.originalEvent.target.closest('.leaflet-control')) return;
             e.originalEvent.preventDefault();
