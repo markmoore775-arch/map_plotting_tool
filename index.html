@@ -914,6 +914,24 @@
                     <p id="flightOverviewErrorText">Failed to load elevation data.</p>
                 </div>
                 <div id="flightOverviewContent" class="flight-overview-content hidden">
+                    <div class="flight-overview-profile">
+                        <h3>Elevation Profile</h3>
+                        <div class="flight-overview-chart-wrap">
+                            <canvas id="flightOverviewChart" class="flight-overview-chart" width="600" height="220"></canvas>
+                            <div id="foChartTooltip" class="flight-overview-tooltip hidden"></div>
+                        </div>
+                        <div class="fo-agl-controls">
+                            <div class="fo-agl-field">
+                                <label for="foAglLimit">AGL limit (m)</label>
+                                <input type="number" id="foAglLimit" value="120" min="10" max="500" step="10">
+                            </div>
+                            <button class="btn btn-secondary btn-sm" id="foRefreshChart">Refresh</button>
+                        </div>
+                        <div class="fo-legend">
+                            <span class="fo-legend-item"><span class="fo-legend-swatch fo-swatch-terrain"></span>Ground elevation</span>
+                            <span class="fo-legend-item"><span class="fo-legend-swatch fo-swatch-ceiling"></span>AGL ceiling</span>
+                        </div>
+                    </div>
                     <div class="flight-overview-summary">
                         <h3>Summary</h3>
                         <div class="flight-overview-stats">

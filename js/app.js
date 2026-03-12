@@ -1650,6 +1650,207 @@
         });
     }
 
+    let _foChartData = null;
+
+    function renderFlightOverviewChart(opts) {
+        const { distances, elevations, totalDistKm, lowest, highest } = opts;
+        const canvas = document.getElementById('flightOverviewChart');
+        const tooltip = document.getElementById('foChartTooltip');
+        if (!canvas || !tooltip) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const CW = 600, CH = 220;
+        const pad = { left: 48, right: 16, top: 16, bottom: 30 };
+        const w = CW - pad.left - pad.right;
+        const h = CH - pad.top - pad.bottom;
+
+        const distKm = distances.map(d => d / 1000);
+        const totalKm = totalDistKm || 0.001;
+
+        const aglLimitEl = document.getElementById('foAglLimit');
+        const aglLimit = aglLimitEl ? parseFloat(aglLimitEl.value) || 120 : 120;
+
+        // Build points (interpolate missing elevations)
+        const pts = [];
+        for (let i = 0; i < elevations.length; i++) {
+            let alt = elevations[i];
+            if (alt == null || Number.isNaN(alt)) {
+                const prev = elevations.slice(0, i).filter(e => e != null && !Number.isNaN(e)).pop();
+                const next = elevations.slice(i + 1).find(e => e != null && !Number.isNaN(e));
+                alt = prev != null && next != null ? (prev + next) / 2 : prev ?? next ?? lowest;
+            }
+            pts.push({ dist: distKm[i], alt, i });
+        }
+        if (pts.length < 2) return;
+
+        // Y-axis range: accommodate terrain and ceiling
+        const ceilingMax = highest + aglLimit;
+        const altMin = Math.floor(lowest / 50) * 50;
+        const altMax = Math.ceil((ceilingMax + 20) / 50) * 50;
+        const altRange = Math.max(50, altMax - altMin);
+
+        _foChartData = { distances, elevations, totalDistKm, lowest, highest };
+
+        function x(d) {
+            const v = Number.isFinite(d) ? d : 0;
+            return pad.left + (v / totalKm) * w;
+        }
+        function y(alt) {
+            const v = alt != null && !Number.isNaN(alt) ? alt : lowest;
+            const yy = pad.top + h - ((v - altMin) / altRange) * h;
+            return Number.isFinite(yy) ? yy : pad.top + h / 2;
+        }
+
+        // --- Draw ---
+        ctx.clearRect(0, 0, CW, CH);
+
+        ctx.fillStyle = 'rgba(0,0,0,0.04)';
+        ctx.fillRect(pad.left, pad.top, w, h);
+
+        // Grid
+        const axisYStep = altRange <= 100 ? 25 : altRange <= 300 ? 50 : altRange <= 600 ? 100 : 200;
+        const yTicks = [];
+        for (let a = altMin; a <= altMax; a += axisYStep) yTicks.push(a);
+        if (yTicks[yTicks.length - 1] !== altMax) yTicks.push(altMax);
+
+        ctx.strokeStyle = 'rgba(128,128,128,0.3)';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#888';
+        ctx.font = '10px "Courier New", monospace';
+        ctx.textAlign = 'right';
+        yTicks.forEach(a => {
+            const yy = y(a);
+            ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(pad.left + w, yy); ctx.stroke();
+            ctx.fillText(String(a), pad.left - 6, yy + 4);
+        });
+        const xStep = totalKm <= 2 ? 0.5 : totalKm <= 5 ? 1 : totalKm <= 20 ? 5 : 10;
+        ctx.textAlign = 'center';
+        for (let d = 0; d <= totalKm; d += xStep) {
+            const xx = x(d);
+            ctx.beginPath(); ctx.moveTo(xx, pad.top + h); ctx.lineTo(xx, pad.top); ctx.stroke();
+            ctx.fillText(d.toFixed(d < 10 ? 1 : 0), xx, pad.top + h + 16);
+        }
+
+        // Terrain fill segments (climb/descent)
+        for (let i = 1; i < pts.length; i++) {
+            const prev = pts[i - 1], curr = pts[i];
+            ctx.fillStyle = curr.alt > prev.alt ? 'rgba(76,175,80,0.15)' : curr.alt < prev.alt ? 'rgba(224,85,85,0.15)' : 'rgba(91,141,239,0.1)';
+            ctx.beginPath();
+            ctx.moveTo(x(prev.dist), pad.top + h);
+            ctx.lineTo(x(prev.dist), y(prev.alt));
+            ctx.lineTo(x(curr.dist), y(curr.alt));
+            ctx.lineTo(x(curr.dist), pad.top + h);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // AGL ceiling line (terrain + limit) -- dashed orange
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = '#ff9800';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x(pts[0].dist), y(pts[0].alt + aglLimit));
+        for (let i = 1; i < pts.length; i++) {
+            ctx.lineTo(x(pts[i].dist), y(pts[i].alt + aglLimit));
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Ceiling label
+        ctx.fillStyle = '#ff9800';
+        ctx.font = '10px "Courier New", monospace';
+        ctx.textAlign = 'left';
+        const lastPt = pts[pts.length - 1];
+        ctx.fillText(aglLimit + 'm AGL', x(lastPt.dist) + 4, y(lastPt.alt + aglLimit) + 4);
+
+        // Terrain profile line
+        ctx.strokeStyle = '#5b8def';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(x(pts[0].dist), y(pts[0].alt));
+        for (let i = 1; i < pts.length; i++) {
+            ctx.lineTo(x(pts[i].dist), y(pts[i].alt));
+        }
+        ctx.stroke();
+
+        // Waypoint dots
+        ctx.fillStyle = '#5b8def';
+        pts.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(x(p.dist), y(p.alt), 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // --- Hover/tooltip ---
+        function onMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = CW / rect.width;
+            const scaleY = CH / rect.height;
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleY;
+            let nearest = -1, nearestD = 25;
+            pts.forEach((p, i) => {
+                const dx = mx - x(p.dist);
+                const dy = my - y(p.alt);
+                const d = Math.sqrt(dx * dx + dy * dy);
+                if (d < nearestD) { nearestD = d; nearest = i; }
+            });
+            if (nearest >= 0) {
+                const p = pts[nearest];
+                const ceiling = p.alt + aglLimit;
+                tooltip.textContent = `#${nearest + 1}: ${p.dist.toFixed(2)} km | Ground: ${p.alt.toFixed(0)} m | Ceiling: ${ceiling.toFixed(0)} m`;
+                tooltip.classList.remove('hidden');
+                tooltip.style.left = Math.min(e.clientX - rect.left, rect.width - 200) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - 30) + 'px';
+                document.querySelectorAll('.flight-overview-table tbody tr').forEach(tr => {
+                    tr.classList.toggle('fo-row-highlight', Number(tr.dataset.waypointIndex) === nearest);
+                });
+            } else {
+                tooltip.classList.add('hidden');
+                document.querySelectorAll('.flight-overview-table tbody tr').forEach(tr => tr.classList.remove('fo-row-highlight'));
+            }
+        }
+        function onMouseLeave() {
+            tooltip.classList.add('hidden');
+            document.querySelectorAll('.flight-overview-table tbody tr').forEach(tr => tr.classList.remove('fo-row-highlight'));
+        }
+        canvas.removeEventListener('mousemove', onMouseMove);
+        canvas.removeEventListener('mouseleave', onMouseLeave);
+        canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('mouseleave', onMouseLeave);
+
+        document.querySelectorAll('.flight-overview-table tbody tr').forEach(tr => {
+            tr.addEventListener('mouseenter', () => {
+                const idx = Number(tr.dataset.waypointIndex);
+                if (pts[idx]) {
+                    const p = pts[idx];
+                    const ceiling = p.alt + aglLimit;
+                    tooltip.textContent = `#${idx + 1}: ${p.dist.toFixed(2)} km | Ground: ${p.alt.toFixed(0)} m | Ceiling: ${ceiling.toFixed(0)} m`;
+                    tooltip.classList.remove('hidden');
+                    const rect = canvas.getBoundingClientRect();
+                    tooltip.style.left = (rect.width / 2 - 80) + 'px';
+                    tooltip.style.top = '0';
+                    document.querySelectorAll('.flight-overview-table tbody tr').forEach(r => r.classList.toggle('fo-row-highlight', Number(r.dataset.waypointIndex) === idx));
+                }
+            });
+            tr.addEventListener('mouseleave', onMouseLeave);
+        });
+    }
+
+    function initFlightOverviewControls() {
+        const refreshBtn = document.getElementById('foRefreshChart');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                if (_foChartData) renderFlightOverviewChart(_foChartData);
+            });
+        }
+    }
+
     function openFlightOverviewModal(shapeId) {
         const modal = document.getElementById('flightOverviewModal');
         const loadingEl = document.getElementById('flightOverviewLoading');
@@ -1719,6 +1920,16 @@
                 const numSegments = Math.max(1, elevations.length - 1);
                 const avgChange = netChange / numSegments;
 
+                // Cumulative distances along path (metres)
+                const distances = [0];
+                for (let i = 1; i < shape.latlngs.length; i++) {
+                    const a = L.latLng(shape.latlngs[i - 1]);
+                    const b = L.latLng(shape.latlngs[i]);
+                    distances.push(distances[i - 1] + a.distanceTo(b));
+                }
+                const totalDistM = distances[distances.length - 1];
+                const totalDistKm = totalDistM / 1000;
+
                 function fmtAlt(v) {
                     if (v == null || Number.isNaN(v)) return '—';
                     return `${v.toFixed(1)} m`;
@@ -1758,6 +1969,7 @@
 
                     const tr = document.createElement('tr');
                     const changeClass = change != null && change !== 0 ? (change > 0 ? 'change-up' : 'change-down') : '';
+                    tr.dataset.waypointIndex = String(i);
                     tr.innerHTML = `
                         <td>${i + 1}</td>
                         <td>${lat.toFixed(5)}</td>
@@ -1769,6 +1981,14 @@
                 }
 
                 contentEl.classList.remove('hidden');
+
+                renderFlightOverviewChart({
+                    distances,
+                    elevations,
+                    totalDistKm,
+                    lowest,
+                    highest
+                });
             } catch (err) {
                 loadingEl.classList.add('hidden');
                 errorTextEl.textContent = 'Error: ' + (err.message || String(err));
@@ -3049,6 +3269,7 @@
                 initDropPointToolbarControl();
                 initCollapsibleControls();
                 initPointDetailsModal();
+                initFlightOverviewControls();
                 initSearchModal();
                 initGridOverlayModal();
                 refreshHandToolState();

@@ -3408,3 +3408,119 @@ body.sidebar-collapsed .help-panel {
 .flight-overview-table .change-down {
     color: var(--danger);
 }
+
+/* ---- Flight Overview Elevation Profile ---- */
+
+.flight-overview-profile {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.flight-overview-chart-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 660px;
+    min-height: 220px;
+    background: var(--sidebar-surface);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.flight-overview-chart {
+    display: block;
+    width: 100%;
+    max-width: 600px;
+    height: 220px;
+}
+
+.flight-overview-tooltip {
+    position: absolute;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-sm);
+    color: var(--sidebar-text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.flight-overview-table tbody tr.fo-row-highlight {
+    background: rgba(91, 141, 239, 0.15);
+}
+
+/* ---- AGL Controls & Legend ---- */
+
+.fo-agl-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.fo-agl-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.fo-agl-field label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--sidebar-text-muted);
+}
+
+.fo-agl-field input {
+    width: 80px;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-sm);
+    background: var(--sidebar-surface);
+    color: var(--sidebar-text);
+}
+
+.fo-agl-controls .btn-sm {
+    padding: 5px 14px;
+    font-size: 12px;
+}
+
+.fo-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--sidebar-text-muted);
+}
+
+.fo-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.fo-legend-swatch {
+    display: inline-block;
+    width: 16px;
+    height: 3px;
+    border-radius: 1px;
+}
+
+.fo-swatch-terrain {
+    background: #5b8def;
+    height: 3px;
+}
+
+.fo-swatch-ceiling {
+    background: #ff9800;
+    height: 2px;
+    border-top: 1px dashed #ff9800;
+    background: none;
+}
