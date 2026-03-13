@@ -20,6 +20,10 @@ export default {
       return handleUnlock(request, env);
     }
 
+    if (path === '/api/aviation') {
+      return handleAviationApi(request);
+    }
+
     const protectedRoute = isProtectedRoute(path);
     if (protectedRoute) {
       const cookieHeader = request.headers.get('Cookie') || '';
@@ -75,6 +79,43 @@ function normalizeNextPath(nextRaw) {
   if (nextRaw.startsWith('//')) return '/app';
   if (nextRaw.startsWith('/unlock')) return '/app';
   return nextRaw;
+}
+
+async function handleAviationApi(request) {
+  if (request.method.toUpperCase() !== 'GET') {
+    return jsonResponse({ error: 'Method not allowed' }, 405);
+  }
+
+  const url = new URL(request.url);
+  const type = String(url.searchParams.get('type') || '').toLowerCase();
+  const idsRaw = String(url.searchParams.get('ids') || '').toUpperCase();
+  const ids = idsRaw
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v) => /^[A-Z0-9]{3,6}$/.test(v))
+    .slice(0, 20);
+
+  if ((type !== 'metar' && type !== 'taf') || ids.length === 0) {
+    return jsonResponse({ error: 'Invalid query. Expected type=metar|taf and ids=ICAO,ICAO...' }, 400);
+  }
+
+  const endpoint = `https://aviationweather.gov/api/data/${type}?ids=${encodeURIComponent(ids.join(','))}&format=json`;
+  const upstream = await fetch(endpoint, {
+    headers: { Accept: 'application/json' }
+  });
+
+  if (!upstream.ok) {
+    return jsonResponse({ error: `Upstream returned HTTP ${upstream.status}` }, 502);
+  }
+
+  const body = await upstream.text();
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'public, max-age=60'
+    }
+  });
 }
 
 function redirectToUnlock(nextPath) {
@@ -229,6 +270,16 @@ function htmlResponse(html, status = 200) {
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store'
+    }
+  });
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'no-store'
     }
   });

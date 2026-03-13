@@ -10,6 +10,7 @@
     const HOURLY_PARAMS = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_120m,wind_direction_120m,visibility,cloud_cover,cloud_cover_low,precipitation,precipitation_probability,temperature_2m';
     const AVIATION_RADIUS_NM = 50;
     const AVIATION_STATIONS_URL = 'assets/aviation-stations.json';
+    const AVIATION_PROXY_URL = '/api/aviation';
     const AWC_METAR_URL = 'https://aviationweather.gov/api/data/metar';
     const AWC_TAF_URL = 'https://aviationweather.gov/api/data/taf';
     const CORS_PROXY = 'https://corsproxy.io/?';
@@ -297,12 +298,21 @@
         return body;
     }
 
-    async function fetchAviationJson(url) {
-        const attempts = [
-            { name: 'direct', url: url, kind: 'json' },
-            { name: 'corsproxy', url: CORS_PROXY + encodeURIComponent(url), kind: 'json' },
-            { name: 'jina', url: JINA_PROXY_PREFIX + url.replace(/^https?:\/\//i, ''), kind: 'jina-text' }
-        ];
+    function isLocalDevHost() {
+        const host = (window.location.hostname || '').toLowerCase();
+        return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    }
+
+    async function fetchAviationJson(url, type, ids) {
+        const params = new URLSearchParams({ type: type, ids: ids });
+        const attempts = [{ name: 'worker-proxy', url: AVIATION_PROXY_URL + '?' + params.toString(), kind: 'json' }];
+        if (isLocalDevHost()) {
+            attempts.push(
+                { name: 'direct', url: url, kind: 'json' },
+                { name: 'corsproxy', url: CORS_PROXY + encodeURIComponent(url), kind: 'json' },
+                { name: 'jina', url: JINA_PROXY_PREFIX + url.replace(/^https?:\/\//i, ''), kind: 'jina-text' }
+            );
+        }
         let lastError = null;
         for (const attempt of attempts) {
             try {
@@ -332,8 +342,8 @@
         const metarUrl = AWC_METAR_URL + '?ids=' + encodeURIComponent(ids) + '&format=json';
         const tafUrl = AWC_TAF_URL + '?ids=' + encodeURIComponent(ids) + '&format=json';
         const [metarResult, tafResult] = await Promise.allSettled([
-            fetchAviationJson(metarUrl),
-            fetchAviationJson(tafUrl)
+            fetchAviationJson(metarUrl, 'metar', ids),
+            fetchAviationJson(tafUrl, 'taf', ids)
         ]);
         const metars = metarResult.status === 'fulfilled' ? metarResult.value : [];
         const tafs = tafResult.status === 'fulfilled' ? tafResult.value : [];
