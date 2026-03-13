@@ -145,11 +145,21 @@
         document.getElementById('weatherStatus').innerHTML = 'Tap <strong>Select Location</strong>, then tap the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
     }
 
+    function exitSelectMode() {
+        selectMode = false;
+        const btn = document.getElementById('weatherSelectBtn');
+        if (btn) btn.classList.remove('active');
+        if (map && map.dragging) map.dragging.enable();
+        if (map && map.touchZoom) map.touchZoom.enable();
+        if (map && map.doubleClickZoom) map.doubleClickZoom.enable();
+        const container = map ? map.getContainer() : null;
+        if (container) container.style.touchAction = '';
+    }
+
     function onMapClick(e) {
         if (selectMode) {
             setSelectedPoint(e.latlng.lat, e.latlng.lng);
-            selectMode = false;
-            document.getElementById('weatherSelectBtn').classList.remove('active');
+            exitSelectMode();
         }
     }
 
@@ -158,6 +168,18 @@
     function setupTouchFallback() {
         const container = map.getContainer();
         let pointerStartPos = null;
+        let touchStartPos = null;
+
+        function placeFromClientPoint(clientX, clientY, targetEl) {
+            if (!selectMode) return false;
+            if (targetEl && targetEl.closest && targetEl.closest('.leaflet-control')) return false;
+            const rect = container.getBoundingClientRect();
+            const pt = L.point(clientX - rect.left, clientY - rect.top);
+            const latLng = map.containerPointToLatLng(pt);
+            setSelectedPoint(latLng.lat, latLng.lng);
+            exitSelectMode();
+            return true;
+        }
 
         function onPointerDown(e) {
             if (selectMode && (e.pointerType === 'touch' || e.pointerType === 'pen') && e.isPrimary) {
@@ -170,21 +192,34 @@
                 const dx = e.clientX - pointerStartPos.x;
                 const dy = e.clientY - pointerStartPos.y;
                 if (dx * dx + dy * dy < 400) {
-                    const rect = container.getBoundingClientRect();
-                    const pt = L.point(e.clientX - rect.left, e.clientY - rect.top);
-                    const latLng = map.containerPointToLatLng(pt);
-                    setSelectedPoint(latLng.lat, latLng.lng);
-                    selectMode = false;
-                    document.getElementById('weatherSelectBtn').classList.remove('active');
-                    map.dragging.enable();
-                    container.style.touchAction = '';
+                    placeFromClientPoint(e.clientX, e.clientY, e.target);
                 }
                 pointerStartPos = null;
             }
         }
 
+        function onTouchStart(e) {
+            if (!selectMode || !e.touches || e.touches.length !== 1) return;
+            const t = e.touches[0];
+            touchStartPos = { x: t.clientX, y: t.clientY };
+        }
+
+        function onTouchEnd(e) {
+            if (!selectMode || !touchStartPos || !e.changedTouches || e.changedTouches.length === 0) return;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - touchStartPos.x;
+            const dy = t.clientY - touchStartPos.y;
+            if (dx * dx + dy * dy < 400) {
+                const placed = placeFromClientPoint(t.clientX, t.clientY, e.target);
+                if (placed) e.preventDefault();
+            }
+            touchStartPos = null;
+        }
+
         container.addEventListener('pointerdown', onPointerDown, { passive: true, capture: true });
         container.addEventListener('pointerup', onPointerUp, { passive: true, capture: true });
+        container.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+        container.addEventListener('touchend', onTouchEnd, { passive: false, capture: true });
     }
 
     function toggleSelectMode() {
@@ -193,10 +228,11 @@
         const container = map.getContainer();
         if (selectMode) {
             map.dragging.disable();
-            container.style.touchAction = 'manipulation';
+            if (map.touchZoom) map.touchZoom.disable();
+            if (map.doubleClickZoom) map.doubleClickZoom.disable();
+            container.style.touchAction = 'none';
         } else {
-            map.dragging.enable();
-            container.style.touchAction = '';
+            exitSelectMode();
         }
         if (!selectMode && !selectedPoint) {
             document.getElementById('weatherStatus').innerHTML = 'Tap <strong>Select Location</strong>, then tap the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
