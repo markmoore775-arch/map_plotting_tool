@@ -2,6 +2,16 @@
   "name": "airplot",
   "main": "worker.js",
   "compatibility_date": "2026-02-19",
+  "routes": [
+    {
+      "pattern": "airplot.app",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.airplot.app",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": "."
