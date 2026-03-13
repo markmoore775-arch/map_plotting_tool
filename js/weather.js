@@ -92,6 +92,21 @@
                 locateOptions: { enableHighAccuracy: true }
             }).addTo(map);
         }
+
+        const InfoControl = L.Control.extend({
+            onAdd: function () {
+                const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-weather-info');
+                const link = L.DomUtil.create('a', '', div);
+                link.href = '#';
+                link.title = 'Instructions';
+                link.setAttribute('aria-label', 'Show instructions');
+                link.id = 'weatherHelpToggle';
+                link.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+                L.DomEvent.on(link, 'click', L.DomEvent.stop);
+                return div;
+            }
+        });
+        new InfoControl({ position: 'topleft' }).addTo(map);
     }
 
     // ---- Point selection ----
@@ -130,33 +145,38 @@
         }
     }
 
-    // Touch fallback: Leaflet's click can be unreliable on touch devices (pan/drag intercepts tap)
+    // Touch/pointer fallback: when dragging is disabled in select mode, use pointer events
+    // (more reliable than click on touch devices)
     function setupTouchFallback() {
         const container = map.getContainer();
-        let touchStartPos = null;
+        let pointerStartPos = null;
 
-        container.addEventListener('touchstart', function (e) {
-            if (selectMode && e.touches.length === 1) {
-                touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        function onPointerDown(e) {
+            if (selectMode && (e.pointerType === 'touch' || e.pointerType === 'pen') && e.isPrimary) {
+                pointerStartPos = { x: e.clientX, y: e.clientY };
             }
-        }, { passive: true });
+        }
 
-        container.addEventListener('touchend', function (e) {
-            if (selectMode && touchStartPos && e.changedTouches.length === 1) {
-                const end = e.changedTouches[0];
-                const dx = end.clientX - touchStartPos.x;
-                const dy = end.clientY - touchStartPos.y;
-                if (dx * dx + dy * dy < 400) { // ~20px movement threshold (tap, not pan)
+        function onPointerUp(e) {
+            if (selectMode && (e.pointerType === 'touch' || e.pointerType === 'pen') && pointerStartPos && e.isPrimary) {
+                const dx = e.clientX - pointerStartPos.x;
+                const dy = e.clientY - pointerStartPos.y;
+                if (dx * dx + dy * dy < 400) {
                     const rect = container.getBoundingClientRect();
-                    const pt = L.point(end.clientX - rect.left, end.clientY - rect.top);
+                    const pt = L.point(e.clientX - rect.left, e.clientY - rect.top);
                     const latLng = map.containerPointToLatLng(pt);
                     setSelectedPoint(latLng.lat, latLng.lng);
                     selectMode = false;
                     document.getElementById('weatherSelectBtn').classList.remove('active');
+                    map.dragging.enable();
+                    container.style.touchAction = '';
                 }
-                touchStartPos = null;
+                pointerStartPos = null;
             }
-        }, { passive: true });
+        }
+
+        container.addEventListener('pointerdown', onPointerDown, { passive: true, capture: true });
+        container.addEventListener('pointerup', onPointerUp, { passive: true, capture: true });
     }
 
     function toggleSelectMode() {
@@ -164,12 +184,14 @@
         document.getElementById('weatherSelectBtn').classList.toggle('active', selectMode);
         const container = map.getContainer();
         if (selectMode) {
-            container.style.touchAction = 'manipulation'; // faster tap response, no double-tap zoom delay
+            map.dragging.disable();
+            container.style.touchAction = 'manipulation';
         } else {
+            map.dragging.enable();
             container.style.touchAction = '';
         }
         if (!selectMode && !selectedPoint) {
-            document.getElementById('weatherStatus').innerHTML = 'Click <strong>Select Location</strong>, then tap the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
+            document.getElementById('weatherStatus').innerHTML = 'Tap <strong>Select Location</strong>, then tap the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
         }
     }
 
@@ -483,6 +505,25 @@
             window.location.href = 'index.html';
         });
         document.getElementById('weatherReportClose').addEventListener('click', hideReport);
+
+        const helpToggle = document.getElementById('weatherHelpToggle');
+        const helpClose = document.getElementById('weatherHelpClose');
+        const sideToolbar = document.getElementById('weatherHelpPanelWrap');
+        if (helpToggle && sideToolbar) {
+            const infoControl = helpToggle.closest('.leaflet-control-weather-info');
+            L.DomEvent.addListener(helpToggle, 'click', () => {
+                const isOpen = sideToolbar.classList.toggle('weather-side-open');
+                if (infoControl) infoControl.classList.toggle('active', isOpen);
+                helpToggle.setAttribute('aria-expanded', isOpen);
+            });
+            if (helpClose) {
+                helpClose.addEventListener('click', () => {
+                    sideToolbar.classList.remove('weather-side-open');
+                    if (infoControl) infoControl.classList.remove('active');
+                    helpToggle.setAttribute('aria-expanded', 'false');
+                });
+            }
+        }
 
         document.getElementById('weatherTimeNow').addEventListener('change', onTimeModeChange);
         document.getElementById('weatherTimeFuture').addEventListener('change', onTimeModeChange);

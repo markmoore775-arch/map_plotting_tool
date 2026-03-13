@@ -69,9 +69,17 @@
         </div>
     </div>
 
-    <!-- Status / instructions -->
-    <div class="weather-status" id="weatherStatus">
-        Right-click map for <strong>Get Weather</strong>, or tap <strong>Select Location</strong> then tap the map.
+    <!-- Side panel - collapsible help -->
+    <div class="weather-side-toolbar" id="weatherHelpPanelWrap">
+        <div class="weather-side-panel" id="weatherHelpPanel">
+            <div class="weather-side-panel-header">
+                <span>Instructions</span>
+                <button type="button" class="weather-side-panel-close" id="weatherHelpClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="weather-side-panel-body" id="weatherStatus">
+                Right-click map for <strong>Get Weather</strong>, or tap <strong>Select Location</strong> then tap the map.
+            </div>
+        </div>
     </div>
 
     <!-- Weather report panel -->

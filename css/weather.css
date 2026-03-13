@@ -156,10 +156,6 @@ body.weather-mode #map {
     .weather-btn-primary span {
         display: inline;
     }
-    .weather-status {
-        bottom: 72px;
-        max-width: calc(100vw - 24px);
-    }
 }
 
 /* Time selection */
@@ -206,19 +202,105 @@ body.weather-mode #map {
     min-width: 120px;
 }
 
-/* Status / instructions - bottom left */
-.weather-status {
+/* Info control - side toolbar (zoom, locate, info) */
+.leaflet-control-weather-info {
+    margin-top: 5px;
+}
+
+.leaflet-control-weather-info a {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    text-decoration: none;
+    color: #333;
+    cursor: pointer;
+}
+
+.leaflet-control-weather-info a:hover {
+    background: #f4f4f4;
+}
+
+.leaflet-control-weather-info.active a {
+    background: var(--primary, #5b8def);
+    color: #fff;
+}
+
+.leaflet-control-weather-info svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Side panel - collapsible help */
+.weather-side-toolbar {
     position: fixed;
-    bottom: 24px;
-    left: 12px;
+    top: 60px;
+    left: 0;
     z-index: 1000;
-    font-size: 12px;
-    color: var(--sidebar-text-muted, #9999aa);
-    background: rgba(30, 30, 46, 0.9);
-    padding: 8px 12px;
-    border-radius: 6px;
+}
+
+.weather-side-panel {
+    display: none;
+    width: 280px;
+    max-height: calc(100vh - 140px);
+    background: var(--sidebar-bg, #1e1e2e);
     border: 1px solid var(--sidebar-border, #3a3a50);
-    max-width: 280px;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 2px 2px 12px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    flex-direction: column;
+}
+
+.weather-side-toolbar.weather-side-open .weather-side-panel {
+    display: flex;
+}
+
+.weather-side-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--sidebar-border, #3a3a50);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sidebar-text, #e0e0e8);
+    flex-shrink: 0;
+}
+
+.weather-side-panel-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--sidebar-text-muted, #9999aa);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.weather-side-panel-close:hover {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-side-panel-body {
+    padding: 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--sidebar-text-muted, #9999aa);
+    overflow-y: auto;
+}
+
+.weather-side-panel-body strong {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+@media (max-width: 600px) {
+    .weather-side-toolbar {
+        top: max(12px, env(safe-area-inset-top, 12px));
+    }
+    .weather-side-panel {
+        width: min(280px, calc(100vw - 60px));
+    }
 }
 
 /* Weather report panel */
