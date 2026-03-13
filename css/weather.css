@@ -14,6 +14,8 @@ body.weather-mode #map {
     right: 0;
     bottom: 0;
     z-index: 1;
+    touch-action: none;
+    pointer-events: auto;
 }
 
 /* Floating toolbar - bottom centre */
