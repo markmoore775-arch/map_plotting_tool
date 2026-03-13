@@ -3447,6 +3447,8 @@ ${summaryRows}
     window.addEventListener('load', () => {
         const introOverlay = document.getElementById('introOverlay');
         const introProceedBtn = document.getElementById('introProceedBtn');
+        const params = new URLSearchParams(window.location.search);
+        const shouldAutoLaunch = params.get('autostart') === '1';
 
         function dismissIntro() {
             if (introOverlay) introOverlay.classList.add('hidden');
@@ -3467,9 +3469,20 @@ ${summaryRows}
         }
 
         if (introProceedBtn) {
-            introProceedBtn.addEventListener('click', dismissIntro);
+            introProceedBtn.addEventListener('click', () => {
+                window.location.assign('/app');
+            });
         } else {
             dismissIntro();
+        }
+
+        if (shouldAutoLaunch) {
+            dismissIntro();
+            // Remove autostart query after init so copy/paste URLs stay clean.
+            if (window.history && window.history.replaceState) {
+                const cleanUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
         }
 
         const introHelpBtn = document.getElementById('introHelpBtn');
