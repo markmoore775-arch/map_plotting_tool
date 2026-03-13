@@ -13,6 +13,7 @@
     const AWC_METAR_URL = 'https://aviationweather.gov/api/data/metar';
     const AWC_TAF_URL = 'https://aviationweather.gov/api/data/taf';
     const CORS_PROXY = 'https://corsproxy.io/?';
+    const JINA_PROXY_PREFIX = 'https://r.jina.ai/http://';
 
     let aviationStationsCache = null;
 
@@ -245,8 +246,48 @@
             .slice(0, 10);
     }
 
-    function fetchViaProxy(url) {
-        return fetch(CORS_PROXY + encodeURIComponent(url), { headers: { 'Accept': 'application/json' } });
+    function parseAviationJsonPayload(payload) {
+        return Array.isArray(payload) ? payload : (payload && payload.data ? payload.data : []);
+    }
+
+    function extractJsonFromJinaProxy(text) {
+        if (!text) return '';
+        const marker = 'Markdown Content:';
+        const markerIdx = text.indexOf(marker);
+        let body = markerIdx >= 0 ? text.slice(markerIdx + marker.length).trim() : text.trim();
+        if (body.startsWith('```')) {
+            body = body.replace(/^```[a-zA-Z]*\s*/, '').replace(/\s*```$/, '').trim();
+        }
+        return body;
+    }
+
+    async function fetchAviationJson(url) {
+        const attempts = [
+            { name: 'direct', url: url, kind: 'json' },
+            { name: 'corsproxy', url: CORS_PROXY + encodeURIComponent(url), kind: 'json' },
+            { name: 'jina', url: JINA_PROXY_PREFIX + url.replace(/^https?:\/\//i, ''), kind: 'jina-text' }
+        ];
+        let lastError = null;
+        for (const attempt of attempts) {
+            try {
+                const resp = await fetch(attempt.url, { headers: { 'Accept': 'application/json' } });
+                if (!resp.ok) throw new Error(attempt.name + ' returned HTTP ' + resp.status);
+                if (resp.status === 204) return [];
+
+                if (attempt.kind === 'jina-text') {
+                    const text = await resp.text();
+                    const jsonText = extractJsonFromJinaProxy(text);
+                    const parsed = JSON.parse(jsonText);
+                    return parseAviationJsonPayload(parsed);
+                }
+
+                const parsed = await resp.json();
+                return parseAviationJsonPayload(parsed);
+            } catch (err) {
+                lastError = err;
+            }
+        }
+        throw new Error('Could not fetch aviation JSON (' + (lastError && lastError.message ? lastError.message : 'unknown error') + ')');
     }
 
     async function fetchAviationWeather(icaoIds) {
@@ -254,19 +295,16 @@
         const ids = icaoIds.join(',');
         const metarUrl = AWC_METAR_URL + '?ids=' + encodeURIComponent(ids) + '&format=json';
         const tafUrl = AWC_TAF_URL + '?ids=' + encodeURIComponent(ids) + '&format=json';
-        const [metarResp, tafResp] = await Promise.all([
-            fetchViaProxy(metarUrl),
-            fetchViaProxy(tafUrl)
+        const [metarResult, tafResult] = await Promise.allSettled([
+            fetchAviationJson(metarUrl),
+            fetchAviationJson(tafUrl)
         ]);
-        let metars = [];
-        let tafs = [];
-        if (metarResp.ok && metarResp.status !== 204) {
-            const m = await metarResp.json().catch(() => []);
-            metars = Array.isArray(m) ? m : (m && m.data ? m.data : []);
-        }
-        if (tafResp.ok && tafResp.status !== 204) {
-            const t = await tafResp.json().catch(() => []);
-            tafs = Array.isArray(t) ? t : (t && t.data ? t.data : []);
+        const metars = metarResult.status === 'fulfilled' ? metarResult.value : [];
+        const tafs = tafResult.status === 'fulfilled' ? tafResult.value : [];
+        if (metarResult.status !== 'fulfilled' && tafResult.status !== 'fulfilled') {
+            const metarErr = metarResult.reason && metarResult.reason.message ? metarResult.reason.message : 'METAR failed';
+            const tafErr = tafResult.reason && tafResult.reason.message ? tafResult.reason.message : 'TAF failed';
+            throw new Error(metarErr + '; ' + tafErr);
         }
         return { metars, tafs };
     }
