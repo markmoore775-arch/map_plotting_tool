@@ -3470,7 +3470,13 @@ ${summaryRows}
 
         if (introProceedBtn) {
             introProceedBtn.addEventListener('click', () => {
-                window.location.assign('/app');
+                const host = (window.location.hostname || '').toLowerCase();
+                const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+                if (isLocal || window.location.protocol === 'file:') {
+                    dismissIntro();
+                } else {
+                    window.location.assign('/app');
+                }
             });
         } else {
             dismissIntro();

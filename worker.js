@@ -4,7 +4,7 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12; // 12 hours
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const path = url.pathname;
+    const path = normalizePath(url.pathname);
 
     if (path === '/logout') {
       return new Response(null, {
@@ -44,11 +44,17 @@ export default {
 };
 
 function isProtectedRoute(pathname) {
-  return pathname === '/app'
-    || pathname === '/weather'
-    || pathname === '/weather.html'
-    || pathname === '/flight-planning'
-    || pathname === '/flight-planning.html';
+  const path = normalizePath(pathname);
+  return path === '/app'
+    || path === '/weather'
+    || path === '/weather.html'
+    || path === '/flight-planning'
+    || path === '/flight-planning.html';
+}
+
+function normalizePath(pathname) {
+  if (!pathname || pathname === '/') return '/';
+  return pathname.replace(/\/+$/, '') || '/';
 }
 
 function parseCookies(cookieHeader) {
