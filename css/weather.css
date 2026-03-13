@@ -339,6 +339,34 @@ body.weather-mode #map {
     flex-shrink: 0;
 }
 
+.weather-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.weather-theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.weather-theme-toggle input {
+    accent-color: var(--primary, #5b8def);
+    cursor: pointer;
+    width: 15px;
+    height: 15px;
+}
+
+.weather-theme-toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sidebar-text-muted, #9999aa);
+    white-space: nowrap;
+}
+
 .weather-report-header h2 {
     font-size: 16px;
     font-weight: 600;
@@ -584,6 +612,147 @@ body.weather-mode #map {
     background: rgba(255, 255, 255, 0.03);
 }
 
+/* Aviation (METAR/TAF) tab */
+.weather-aviation-intro {
+    font-size: 12px;
+    color: var(--sidebar-text-muted, #9999aa);
+    margin-bottom: 16px;
+}
+
+.weather-aviation-intro p {
+    margin: 0;
+}
+
+.weather-aviation-toggle {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.weather-aviation-toggle-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-family: var(--font-family, 'Inter', sans-serif);
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 4px;
+    color: var(--sidebar-text-muted, #9999aa);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.weather-aviation-toggle-btn:hover {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-aviation-toggle-btn.active {
+    background: var(--primary, #5b8def);
+    border-color: var(--primary, #5b8def);
+    color: #fff;
+}
+
+.weather-aviation-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.weather-aviation-station {
+    padding: 12px;
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 6px;
+}
+
+.weather-aviation-station-header {
+    font-size: 13px;
+    margin-bottom: 10px;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-aviation-icao {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--primary, #5b8def);
+    margin-left: 6px;
+}
+
+.weather-aviation-dist {
+    font-size: 11px;
+    color: var(--sidebar-text-muted, #9999aa);
+    margin-left: 8px;
+}
+
+.weather-aviation-block {
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.weather-aviation-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sidebar-text-muted, #9999aa);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.weather-aviation-validity {
+    display: block;
+    font-size: 11px;
+    color: var(--sidebar-text-muted, #9999aa);
+    margin-bottom: 6px;
+}
+
+.weather-aviation-decoded {
+    display: block;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--sidebar-text, #e0e0e8);
+    padding: 8px 10px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.weather-aviation-raw {
+    display: none;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--sidebar-text, #e0e0e8);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.weather-aviation-raw-mode .weather-aviation-decoded {
+    display: none;
+}
+
+.weather-aviation-raw-mode .weather-aviation-raw {
+    display: block;
+}
+
+.weather-aviation-missing {
+    color: var(--sidebar-text-muted, #9999aa);
+    font-style: italic;
+}
+
+.weather-aviation-error,
+.weather-aviation-empty {
+    font-size: 13px;
+    color: var(--sidebar-text-muted, #9999aa);
+    padding: 16px 0;
+}
+
+.weather-aviation-error {
+    color: var(--danger, #e05555);
+}
+
 /* Weather details */
 .weather-details {
     display: flex;
@@ -682,4 +851,171 @@ body.weather-mode #map {
     border: 2px solid #fff;
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ---- Weather Report Light Theme Toggle ---- */
+
+.weather-light-theme .weather-theme-toggle-label {
+    color: #555;
+}
+
+/* Light theme overrides scoped to .weather-light-theme */
+
+.weather-light-theme {
+    background: #ffffff !important;
+    border-color: #d0d0d0 !important;
+    color: #1a1a1a !important;
+}
+
+.weather-light-theme .weather-report-header {
+    background: #f5f6f8;
+    border-bottom-color: #d0d0d0;
+}
+
+.weather-light-theme .weather-report-header h2 {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-report-close {
+    color: #666;
+}
+
+.weather-light-theme .weather-report-close:hover {
+    color: #1a1a1a;
+    background: #e0e0e0;
+    border-radius: 4px;
+}
+
+.weather-light-theme .weather-report-body {
+    background: #ffffff;
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-report-loading,
+.weather-light-theme .weather-report-error {
+    color: #555;
+}
+
+.weather-light-theme .weather-report-tabs {
+    border-bottom-color: #d0d0d0;
+}
+
+.weather-light-theme .weather-tab {
+    color: #666;
+}
+
+.weather-light-theme .weather-tab:hover {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-tab.active {
+    color: var(--primary, #5b8def);
+}
+
+.weather-light-theme .weather-summary-text,
+.weather-light-theme .weather-alt-heading,
+.weather-light-theme .weather-alt-note,
+.weather-light-theme .weather-alt-title {
+    color: #666;
+}
+
+.weather-light-theme .weather-alt-section {
+    background: #f0f1f3;
+    border-color: #d8d9dc;
+}
+
+.weather-light-theme .weather-hourly-table th {
+    color: #555;
+}
+
+.weather-light-theme .weather-hourly-table td {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-hourly-table th,
+.weather-light-theme .weather-hourly-table td {
+    border-bottom-color: #e8e8e8;
+}
+
+.weather-light-theme .weather-hourly-table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.weather-light-theme .weather-hourly-empty {
+    color: #666;
+}
+
+.weather-light-theme .weather-aviation-intro,
+.weather-light-theme .weather-aviation-label,
+.weather-light-theme .weather-aviation-validity,
+.weather-light-theme .weather-aviation-dist {
+    color: #666;
+}
+
+.weather-light-theme .weather-aviation-station {
+    background: #f0f1f3;
+    border-color: #d8d9dc;
+}
+
+.weather-light-theme .weather-aviation-station-header {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-aviation-decoded,
+.weather-light-theme .weather-aviation-raw {
+    background: #e8e9ec;
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-aviation-toggle-btn {
+    background: #e8e9ec;
+    border-color: #d0d0d0;
+    color: #555;
+}
+
+.weather-light-theme .weather-aviation-toggle-btn:hover {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-aviation-toggle-btn.active {
+    background: var(--primary, #5b8def);
+    border-color: var(--primary, #5b8def);
+    color: #fff;
+}
+
+.weather-light-theme .weather-detail-label {
+    color: #666;
+}
+
+.weather-light-theme .weather-detail-value {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-attribution {
+    color: #777;
+}
+
+.weather-light-theme .weather-attribution a {
+    color: var(--primary, #5b8def);
+}
+
+.weather-light-theme .weather-aviation-missing {
+    color: #777;
+}
+
+.weather-light-theme .weather-aviation-error,
+.weather-light-theme .weather-aviation-empty {
+    color: #666;
+}
+
+.weather-light-theme .weather-aviation-error {
+    color: var(--danger, #e05555);
+}
+
+.weather-light-theme ::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+}
+
+.weather-light-theme ::-webkit-scrollbar-track {
+    background: #f0f0f0;
 }

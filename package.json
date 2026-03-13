@@ -8,6 +8,7 @@
     "convert-airspace": "node scripts/convert-airspace-data.js",
     "generate-pwa-icons": "node scripts/generate-pwa-icons.js",
     "convert-aip": "node scripts/convert-aip-aixm.js",
+    "fetch-aviation-stations": "node scripts/fetch-aviation-stations.js",
     "deploy": "node scripts/inject-cache-bust.js && npx wrangler deploy && git checkout index.html",
     "deploy:no-bust": "npx wrangler deploy"
   },

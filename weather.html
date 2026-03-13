@@ -86,7 +86,13 @@
     <div id="weatherReport" class="weather-report hidden">
         <div class="weather-report-header">
             <h2>Flight Weather Report</h2>
-            <button type="button" class="weather-report-close" id="weatherReportClose" aria-label="Close">&times;</button>
+            <div class="weather-header-actions">
+                <label class="weather-theme-toggle" title="Light theme (better for copy/paste)">
+                    <input type="checkbox" id="weatherLightThemeToggle">
+                    <span class="weather-theme-toggle-label">&#9788; Light</span>
+                </label>
+                <button type="button" class="weather-report-close" id="weatherReportClose" aria-label="Close">&times;</button>
+            </div>
         </div>
         <div class="weather-report-body">
             <div id="weatherReportLoading" class="weather-report-loading hidden">
@@ -100,6 +106,7 @@
                 <div class="weather-report-tabs">
                     <button type="button" class="weather-tab active" data-tab="summary">Summary</button>
                     <button type="button" class="weather-tab" data-tab="hourly">12-hour forecast</button>
+                    <button type="button" class="weather-tab" data-tab="aviation">METAR / TAF</button>
                 </div>
                 <div class="weather-tab-panels">
                     <div class="weather-tab-panel active" id="weatherTabSummary">
@@ -178,6 +185,17 @@
                             <p>12-hour forecast is only available when <strong>Now</strong> is selected.</p>
                         </div>
                         <p class="weather-attribution" id="weatherAttributionHourly">Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
+                    </div>
+                    <div class="weather-tab-panel" id="weatherTabAviation">
+                        <div class="weather-aviation-intro">
+                            <p>METAR and TAF from aerodromes within 50 NM of the selected location.</p>
+                            <div class="weather-aviation-toggle">
+                                <button type="button" class="weather-aviation-toggle-btn active" data-view="decoded">Plain English</button>
+                                <button type="button" class="weather-aviation-toggle-btn" data-view="raw">Raw</button>
+                            </div>
+                        </div>
+                        <div id="weatherAviationContent" class="weather-aviation-content"></div>
+                        <p class="weather-attribution" id="weatherAttributionAviation">METAR/TAF from <a href="https://aviationweather.gov/" target="_blank" rel="noopener">Aviation Weather Center</a></p>
                     </div>
                 </div>
             </div>

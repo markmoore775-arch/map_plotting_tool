@@ -8,6 +8,13 @@
 
     const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
     const HOURLY_PARAMS = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_120m,wind_direction_120m,visibility,cloud_cover,cloud_cover_low,precipitation,precipitation_probability,temperature_2m';
+    const AVIATION_RADIUS_NM = 50;
+    const AVIATION_STATIONS_URL = 'assets/aviation-stations.json';
+    const AWC_METAR_URL = 'https://aviationweather.gov/api/data/metar';
+    const AWC_TAF_URL = 'https://aviationweather.gov/api/data/taf';
+    const CORS_PROXY = 'https://corsproxy.io/?';
+
+    let aviationStationsCache = null;
 
     const MODEL_LABELS = {
         auto: 'Best match',
@@ -216,6 +223,54 @@
         return new Date(val).getTime();
     }
 
+    // ---- Aviation (METAR/TAF) ----
+    async function loadAviationStations() {
+        if (aviationStationsCache) return aviationStationsCache;
+        const resp = await fetch(AVIATION_STATIONS_URL + '?t=' + Date.now());
+        if (!resp.ok) throw new Error('Could not load aviation stations');
+        aviationStationsCache = await resp.json();
+        return aviationStationsCache;
+    }
+
+    function findNearbyStations(lat, lng, radiusNm) {
+        const radiusM = radiusNm * 1852;
+        const point = L.latLng(lat, lng);
+        return aviationStationsCache
+            .map(function (s) {
+                const dist = point.distanceTo(L.latLng(s.lat, s.lon));
+                return { ...s, distM: dist, distNm: dist / 1852 };
+            })
+            .filter(function (s) { return s.distM <= radiusM; })
+            .sort(function (a, b) { return a.distM - b.distM; })
+            .slice(0, 10);
+    }
+
+    function fetchViaProxy(url) {
+        return fetch(CORS_PROXY + encodeURIComponent(url), { headers: { 'Accept': 'application/json' } });
+    }
+
+    async function fetchAviationWeather(icaoIds) {
+        if (!icaoIds || icaoIds.length === 0) return { metars: [], tafs: [] };
+        const ids = icaoIds.join(',');
+        const metarUrl = AWC_METAR_URL + '?ids=' + encodeURIComponent(ids) + '&format=json';
+        const tafUrl = AWC_TAF_URL + '?ids=' + encodeURIComponent(ids) + '&format=json';
+        const [metarResp, tafResp] = await Promise.all([
+            fetchViaProxy(metarUrl),
+            fetchViaProxy(tafUrl)
+        ]);
+        let metars = [];
+        let tafs = [];
+        if (metarResp.ok && metarResp.status !== 204) {
+            const m = await metarResp.json().catch(() => []);
+            metars = Array.isArray(m) ? m : (m && m.data ? m.data : []);
+        }
+        if (tafResp.ok && tafResp.status !== 204) {
+            const t = await tafResp.json().catch(() => []);
+            tafs = Array.isArray(t) ? t : (t && t.data ? t.data : []);
+        }
+        return { metars, tafs };
+    }
+
     // ---- API fetch ----
     async function fetchWeather() {
         if (!selectedPoint) return;
@@ -245,9 +300,23 @@
         }
 
         try {
-            const resp = await fetch(OPEN_METEO_BASE + '?' + params.toString());
-            if (!resp.ok) throw new Error('Weather service unavailable');
-            const data = await resp.json();
+            const [data, aviationData] = await Promise.all([
+                fetch(OPEN_METEO_BASE + '?' + params.toString()).then(function (r) {
+                    if (!r.ok) throw new Error('Weather service unavailable');
+                    return r.json();
+                }),
+                (async function () {
+                    try {
+                        await loadAviationStations();
+                        const nearby = findNearbyStations(selectedPoint.lat, selectedPoint.lng, AVIATION_RADIUS_NM);
+                        const icaoIds = nearby.map(function (s) { return s.icao; });
+                        const { metars, tafs } = await fetchAviationWeather(icaoIds);
+                        return { nearby, metars, tafs };
+                    } catch (e) {
+                        return { nearby: [], metars: [], tafs: [], error: e.message };
+                    }
+                })()
+            ]);
 
             let weatherData;
             let displayTime;
@@ -293,7 +362,7 @@
                 throw new Error('No weather data returned');
             }
 
-            renderReport(weatherData, displayTime, hourlySlice, model);
+            renderReport(weatherData, displayTime, hourlySlice, model, aviationData);
             loading.classList.add('hidden');
             content.classList.remove('hidden');
         } catch (err) {
@@ -353,7 +422,7 @@
     }
 
     // ---- Report rendering ----
-    function renderReport(data, displayTime, hourlySlice, model) {
+    function renderReport(data, displayTime, hourlySlice, model, aviationData) {
         const suitability = deriveSuitability(data);
         const summaryText = deriveSummaryText(hourlySlice, suitability);
 
@@ -439,6 +508,188 @@
         const attrHourlyEl = document.getElementById('weatherAttributionHourly');
         if (attrEl) attrEl.innerHTML = attrHtml;
         if (attrHourlyEl) attrHourlyEl.innerHTML = attrHtml;
+
+        renderAviationSection(aviationData || { nearby: [], metars: [], tafs: [], error: null });
+    }
+
+    const WX_CODES = {
+        RA: 'rain', SN: 'snow', DZ: 'drizzle', GR: 'hail', GS: 'snow pellets',
+        PL: 'ice pellets', SG: 'snow grains', IC: 'ice crystals', UP: 'unknown precipitation',
+        BR: 'mist', FG: 'fog', FU: 'smoke', VA: 'volcanic ash', DU: 'dust',
+        SA: 'sand', HZ: 'haze', PY: 'spray', PO: 'dust/sand whirls', SQ: 'squalls',
+        FC: 'funnel cloud', DS: 'dust storm', SS: 'sandstorm', SH: 'showers',
+        TS: 'thunderstorm', FZ: 'freezing', BL: 'blowing', DR: 'low drifting',
+        MI: 'shallow', PR: 'partial', BC: 'patches', VC: 'vicinity'
+    };
+    const WX_COMBINED = { SHRA: 'rain showers', TSRA: 'thunderstorms with rain', TSSN: 'thunderstorms with snow', '-RA': 'light rain', '-SN': 'light snow', RA: 'rain', SN: 'snow' };
+
+    function decodeWxString(wx) {
+        if (!wx) return '';
+        const s = String(wx).trim();
+        if (WX_COMBINED[s]) return WX_COMBINED[s];
+        let intensity = '';
+        let rest = s;
+        if (s.startsWith('-')) { intensity = 'light '; rest = s.slice(1); }
+        else if (s.startsWith('+')) { intensity = 'heavy '; rest = s.slice(1); }
+        const parts = [];
+        for (let i = 0; i < rest.length; i += 2) {
+            const code = rest.slice(i, i + 2);
+            if (WX_CODES[code]) parts.push(WX_CODES[code]);
+        }
+        return intensity + (parts.length ? parts.join(' ') : s.toLowerCase());
+    }
+
+    function formatVisib(v) {
+        if (v == null) return '—';
+        if (typeof v === 'string') {
+            if (v === '6+' || v === 'P6SM') return '6 statute miles or more';
+            if (v === '9999' || v === '10+') return '10 km or more';
+            if (v.endsWith('SM')) return v.slice(0, -2) + ' statute miles';
+            return v;
+        }
+        if (typeof v === 'number') {
+            if (v >= 10) return v + ' km';
+            return v + ' statute miles';
+        }
+        return String(v);
+    }
+
+    function formatClouds(clouds) {
+        if (!clouds || !clouds.length) return '';
+        const coverNames = { FEW: 'few', SCT: 'scattered', BKN: 'broken', OVC: 'overcast' };
+        return clouds.map(function (c) {
+            const name = coverNames[c.cover] || c.cover;
+            const base = c.base != null ? Math.round(c.base) + ' ft' : '';
+            return name + (base ? ' at ' + base : '');
+        }).join(', ');
+    }
+
+    function decodeMetar(m) {
+        if (!m) return '';
+        const parts = [];
+        if (m.wdir != null && m.wspd != null) {
+            let wind = 'Wind ' + (m.wspd >= 7 ? directionToCardinal(m.wdir) + ' at ' + m.wspd : 'calm');
+            if (m.wdir === 0 && m.wspd === 0) wind = 'Wind calm';
+            else if (m.wspd < 7) wind = 'Wind variable at ' + m.wspd + ' kt';
+            if (m.wgst != null && m.wgst > m.wspd) wind += ' gusting ' + m.wgst;
+            wind += ' kt';
+            parts.push(wind);
+        }
+        parts.push('Visibility ' + formatVisib(m.visib));
+        if (m.clouds && m.clouds.length) parts.push('Clouds: ' + formatClouds(m.clouds));
+        if (m.temp != null) parts.push('Temperature ' + m.temp + '°C' + (m.dewp != null ? ', dewpoint ' + m.dewp + '°C' : ''));
+        if (m.altim != null) {
+            const inHg = (m.altim >= 900 && m.altim <= 1100) ? (m.altim * 0.02953).toFixed(2) : (m.altim / 100).toFixed(2);
+            parts.push('Altimeter ' + inHg + ' inHg');
+        }
+        if (m.fltCat) parts.push('Flight category: ' + m.fltCat);
+        return parts.join('. ');
+    }
+
+    function decodeTaf(t) {
+        if (!t || !t.fcsts || !t.fcsts.length) return '';
+        const lines = [];
+        t.fcsts.forEach(function (f, i) {
+            const from = f.timeFrom ? formatAviationTime(f.timeFrom) : '';
+            const to = f.timeTo ? formatAviationTime(f.timeTo) : '';
+            const change = f.fcstChange ? ' (' + f.fcstChange + (f.probability ? ' ' + f.probability + '%' : '') + ')' : '';
+            const parts = [];
+            if (from && to) parts.push(from + ' – ' + to + change);
+            if (f.wdir != null && f.wspd != null) {
+                let w = 'Wind ' + directionToCardinal(f.wdir) + ' ' + f.wspd + ' kt';
+                if (f.wgst) w += ' gusting ' + f.wgst + ' kt';
+                parts.push(w);
+            }
+            if (f.visib != null) parts.push('Visibility ' + formatVisib(f.visib));
+            if (f.wxString) parts.push(decodeWxString(f.wxString));
+            if (f.clouds && f.clouds.length) parts.push('Clouds: ' + formatClouds(f.clouds));
+            if (parts.length) lines.push(parts.join('. '));
+        });
+        return lines.join('\n\n');
+    }
+
+    function formatAviationTime(val) {
+        if (val == null) return '';
+        let d;
+        if (typeof val === 'number') {
+            d = new Date(val * 1000);
+        } else if (typeof val === 'string') {
+            d = new Date(val);
+        } else {
+            return '';
+        }
+        if (isNaN(d.getTime())) return '';
+        const day = d.getUTCDate();
+        const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
+        const year = d.getUTCFullYear();
+        const h = String(d.getUTCHours()).padStart(2, '0');
+        const m = String(d.getUTCMinutes()).padStart(2, '0');
+        return day + ' ' + month + ' ' + year + ' ' + h + ':' + m + ' UTC';
+    }
+
+    function renderAviationSection(aviationData) {
+        const container = document.getElementById('weatherAviationContent');
+        if (!container) return;
+        const { nearby, metars, tafs, error } = aviationData;
+        const metarByIcao = {};
+        (metars || []).forEach(function (m) {
+            const icao = (m.icaoId || m.stationId || m.icao || '').toUpperCase();
+            if (icao) metarByIcao[icao] = m;
+        });
+        const tafByIcao = {};
+        (tafs || []).forEach(function (t) {
+            const icao = (t.icaoId || t.stationId || t.icao || '').toUpperCase();
+            if (icao) tafByIcao[icao] = t;
+        });
+
+        let html = '';
+        if (error) {
+            html = '<div class="weather-aviation-error">Could not load aviation data: ' + (error || 'Unknown error') + '</div>';
+        } else if (!nearby || nearby.length === 0) {
+            html = '<div class="weather-aviation-empty">No aerodromes with METAR/TAF within 50 NM of the selected location.</div>';
+        } else {
+            nearby.forEach(function (s) {
+                const metar = metarByIcao[s.icao];
+                const taf = tafByIcao[s.icao];
+                const rawMetar = metar && (metar.rawOb || metar.raw || metar.report);
+                const rawTaf = taf && (taf.rawTAF || taf.raw || taf.report);
+                const metarTime = metar && (metar.reportTime || metar.obsTime);
+                const tafIssue = taf && (taf.issueTime || taf.bulletinTime);
+                const tafValidFrom = taf && taf.validTimeFrom;
+                const tafValidTo = taf && taf.validTimeTo;
+
+                html += '<div class="weather-aviation-station">';
+                html += '<div class="weather-aviation-station-header">';
+                html += '<strong>' + (s.name || s.icao) + '</strong> <span class="weather-aviation-icao">' + s.icao + '</span>';
+                html += ' <span class="weather-aviation-dist">' + s.distNm.toFixed(1) + ' NM</span>';
+                html += '</div>';
+                if (rawMetar) {
+                    const decodedMetar = decodeMetar(metar);
+                    html += '<div class="weather-aviation-block"><span class="weather-aviation-label">METAR</span>';
+                    if (metarTime) html += '<span class="weather-aviation-validity">Observed: ' + formatAviationTime(metarTime) + '</span>';
+                    html += '<div class="weather-aviation-decoded" data-view="decoded">' + (decodedMetar || '—').replace(/</g, '&lt;') + '</div>';
+                    html += '<code class="weather-aviation-raw" data-view="raw">' + (rawMetar || '').replace(/</g, '&lt;') + '</code></div>';
+                } else {
+                    html += '<div class="weather-aviation-block"><span class="weather-aviation-label">METAR</span><span class="weather-aviation-missing">—</span></div>';
+                }
+                if (rawTaf) {
+                    const decodedTaf = decodeTaf(taf);
+                    html += '<div class="weather-aviation-block"><span class="weather-aviation-label">TAF</span>';
+                    if (tafIssue || tafValidFrom || tafValidTo) {
+                        const parts = [];
+                        if (tafIssue) parts.push('Issued: ' + formatAviationTime(tafIssue));
+                        if (tafValidFrom && tafValidTo) parts.push('Valid: ' + formatAviationTime(tafValidFrom) + ' – ' + formatAviationTime(tafValidTo));
+                        html += '<span class="weather-aviation-validity">' + parts.join(' · ') + '</span>';
+                    }
+                    html += '<div class="weather-aviation-decoded" data-view="decoded">' + (decodedTaf || '—').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</div>';
+                    html += '<code class="weather-aviation-raw" data-view="raw">' + (rawTaf || '').replace(/</g, '&lt;') + '</code></div>';
+                } else {
+                    html += '<div class="weather-aviation-block"><span class="weather-aviation-label">TAF</span><span class="weather-aviation-missing">—</span></div>';
+                }
+                html += '</div>';
+            });
+        }
+        container.innerHTML = html;
     }
 
     // ---- Report panel ----
@@ -506,6 +757,14 @@
         });
         document.getElementById('weatherReportClose').addEventListener('click', hideReport);
 
+        const weatherLightToggle = document.getElementById('weatherLightThemeToggle');
+        if (weatherLightToggle) {
+            weatherLightToggle.addEventListener('change', () => {
+                const report = document.getElementById('weatherReport');
+                if (report) report.classList.toggle('weather-light-theme', weatherLightToggle.checked);
+            });
+        }
+
         const helpToggle = document.getElementById('weatherHelpToggle');
         const helpClose = document.getElementById('weatherHelpClose');
         const sideToolbar = document.getElementById('weatherHelpPanelWrap');
@@ -540,8 +799,18 @@
                 document.querySelectorAll('.weather-tab').forEach(function (t) { t.classList.remove('active'); });
                 document.querySelectorAll('.weather-tab-panel').forEach(function (p) { p.classList.remove('active'); });
                 this.classList.add('active');
-                const panel = document.getElementById('weatherTab' + (tabName === 'summary' ? 'Summary' : 'Hourly'));
+                const panel = document.getElementById('weatherTab' + (tabName.charAt(0).toUpperCase() + tabName.slice(1)));
                 if (panel) panel.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.weather-aviation-toggle-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const view = this.dataset.view;
+                document.querySelectorAll('.weather-aviation-toggle-btn').forEach(function (b) { b.classList.remove('active'); });
+                this.classList.add('active');
+                const content = document.getElementById('weatherAviationContent');
+                if (content) content.classList.toggle('weather-aviation-raw-mode', view === 'raw');
             });
         });
 
