@@ -87,6 +87,10 @@
         <div class="weather-report-header">
             <h2>Flight Weather Report</h2>
             <div class="weather-header-actions">
+                <button type="button" class="weather-btn weather-btn-export" id="weatherExportPptxBtn" title="Export report as PowerPoint">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                    <span>Export PPTX</span>
+                </button>
                 <label class="weather-theme-toggle" title="Light theme (better for copy/paste)">
                     <input type="checkbox" id="weatherLightThemeToggle">
                     <span class="weather-theme-toggle-label">&#9788; Light</span>
@@ -220,6 +224,12 @@
             crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
 
+    <!-- html2canvas for map screenshots -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- PptxGenJS for PowerPoint export -->
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
+    <script src="js/pptx-theme.js"></script>
     <script src="js/weather.js"></script>
 </body>
 </html>

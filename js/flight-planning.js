@@ -962,6 +962,187 @@
         document.getElementById('fpSdCardModal').classList.add('hidden');
     }
 
+    // ---- PPTX Report Export ----
+    async function captureMapImage() {
+        const mapEl = document.getElementById('map');
+        const canvas = await html2canvas(mapEl, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#1a1a2e',
+            scale: 2,
+            logging: false
+        });
+        return canvas.toDataURL('image/png');
+    }
+
+    async function exportFlightPlanPptx() {
+        const hasRecce = recceMode && recceTarget;
+        const hasWaypoints = !recceMode && waypoints.length > 0;
+        const hasExclusions = !recceMode && exclusions.length > 0;
+
+        if (!hasRecce && !hasWaypoints && !hasExclusions) {
+            alert('Add a target, waypoints, or exclusion zones before exporting a report.');
+            return;
+        }
+
+        const btn = document.getElementById('fpExportReportBtn');
+        const origText = btn.querySelector('span').textContent;
+        btn.disabled = true;
+        btn.querySelector('span').textContent = 'Exporting…';
+
+        try {
+            const pptx = new PptxGenJS();
+            pptx.layout = 'LAYOUT_WIDE';
+            pptx.author = 'AirPlot';
+            pptx.subject = 'Flight Plan Report';
+
+            const logo = await PptxTheme.loadLogo();
+            PptxTheme.applyTheme(pptx, logo);
+
+            const C = PptxTheme.COLORS;
+            const headerOpts = PptxTheme.tableHeaderOpts();
+            const cellOpts = PptxTheme.tableCellOpts();
+            const labelOpts = PptxTheme.tableLabelOpts();
+            const border = PptxTheme.tableBorder();
+
+            const modeLabel = recceMode ? 'Manual Recce' : 'Waypoint Mission';
+            const dateLabel = new Date().toLocaleString();
+
+            const mapImg = await captureMapImage();
+
+            // --- Slide 1: Title + Map ---
+            let slide = pptx.addSlide({ masterName: 'TITLE_SLIDE' });
+            slide.addText('Flight Plan Report', { x: 1.1, y: 0.15, w: 8, h: 0.6, fontSize: 26, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+            slide.addText(modeLabel + '  |  ' + dateLabel, { x: 0.5, y: 0.85, w: 12, h: 0.35, fontSize: 12, color: C.textMuted, fontFace: 'Arial' });
+            slide.addImage({ data: mapImg, x: 0.5, y: 1.35, w: 9.5, h: 5.3, rounding: true });
+
+            if (hasRecce) {
+                // --- Slide 2: Recce Mission Details ---
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('Manual Recce — Mission Details', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                const recceRows = [
+                    [{ text: 'Parameter', options: headerOpts }, { text: 'Value', options: headerOpts }],
+                    [{ text: 'Target (POI)', options: labelOpts }, { text: recceTarget.lat.toFixed(6) + ', ' + recceTarget.lng.toFixed(6), options: cellOpts }],
+                    [{ text: 'Exclusion zone radius', options: labelOpts }, { text: getRadiusText(recceRadius), options: cellOpts }],
+                    [{ text: 'Flight mode', options: labelOpts }, { text: 'Manual — overlay only (no auto-flight)', options: cellOpts }],
+                    [{ text: 'Export format', options: labelOpts }, { text: 'KMZ for DJI Pilot 2', options: cellOpts }]
+                ];
+                slide.addTable(recceRows, { x: 0.5, y: 0.9, w: 8, colW: [3.5, 4.5], border: border, rowH: 0.4 });
+
+                slide.addText(
+                    'Workflow: Export the KMZ, copy to SD card, import in DJI Pilot 2 as an overlay. ' +
+                    'The exclusion zone will appear on the map. The drone brakes at the fence boundary.',
+                    { x: 0.5, y: 3.4, w: 10, h: 0.7, fontSize: 11, color: C.textMuted, fontFace: 'Arial', valign: 'top' }
+                );
+            }
+
+            if (hasWaypoints || hasExclusions) {
+                // --- Slide 2: Mission Parameters ---
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('Waypoint Mission — Parameters', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                const paramRows = [
+                    [{ text: 'Parameter', options: headerOpts }, { text: 'Value', options: headerOpts }],
+                    [{ text: 'Waypoints', options: labelOpts }, { text: String(waypoints.length), options: cellOpts }],
+                    [{ text: 'Exclusion zones', options: labelOpts }, { text: String(exclusions.length), options: cellOpts }],
+                    [{ text: 'Execute height', options: labelOpts }, { text: MISSION_DEFAULTS.executeHeight + ' m', options: cellOpts }],
+                    [{ text: 'Waypoint speed', options: labelOpts }, { text: MISSION_DEFAULTS.waypointSpeed + ' m/s', options: cellOpts }],
+                    [{ text: 'Take-off security height', options: labelOpts }, { text: MISSION_DEFAULTS.takeOffSecurityHeight + ' m', options: cellOpts }],
+                    [{ text: 'Transit speed', options: labelOpts }, { text: MISSION_DEFAULTS.globalTransitionalSpeed + ' m/s', options: cellOpts }],
+                    [{ text: 'Finish action', options: labelOpts }, { text: 'Go Home', options: cellOpts }],
+                    [{ text: 'RC Lost action', options: labelOpts }, { text: 'Hover', options: cellOpts }]
+                ];
+                slide.addTable(paramRows, { x: 0.5, y: 0.9, w: 8, colW: [3.5, 4.5], border: border, rowH: 0.4 });
+            }
+
+            if (hasWaypoints) {
+                // --- Slide 3: Waypoint Table ---
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('Waypoints', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                const wpHeader = [
+                    { text: '#', options: headerOpts },
+                    { text: 'Latitude', options: headerOpts },
+                    { text: 'Longitude', options: headerOpts },
+                    { text: 'Height (m)', options: headerOpts },
+                    { text: 'Speed (m/s)', options: headerOpts }
+                ];
+                const wpRows = [wpHeader];
+                const pageSize = 14;
+
+                waypoints.forEach(function (w, i) {
+                    if (i > 0 && i % pageSize === 0) {
+                        slide.addTable(wpRows.splice(0), { x: 0.5, y: 0.85, w: 10, colW: [1, 2.5, 2.5, 2, 2], border: border, rowH: 0.38 });
+                        slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                        slide.addText('Waypoints (continued)', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                        wpRows.push(wpHeader);
+                    }
+                    wpRows.push([
+                        { text: 'WP' + i, options: cellOpts },
+                        { text: w.lat.toFixed(6), options: cellOpts },
+                        { text: w.lng.toFixed(6), options: cellOpts },
+                        { text: String(MISSION_DEFAULTS.executeHeight), options: cellOpts },
+                        { text: String(MISSION_DEFAULTS.waypointSpeed), options: cellOpts }
+                    ]);
+                });
+                if (wpRows.length > 0) {
+                    slide.addTable(wpRows, { x: 0.5, y: 0.85, w: 10, colW: [1, 2.5, 2.5, 2, 2], border: border, rowH: 0.38 });
+                }
+            }
+
+            if (hasExclusions) {
+                // --- Exclusion Zones Slide ---
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('Exclusion Zones', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                const exHeader = [
+                    { text: '#', options: headerOpts },
+                    { text: 'Type', options: headerOpts },
+                    { text: 'Centre / Bounds', options: headerOpts },
+                    { text: 'Radius / Size', options: headerOpts }
+                ];
+                const exRows = [exHeader];
+
+                exclusions.forEach(function (exc, i) {
+                    let typeStr = exc.type.charAt(0).toUpperCase() + exc.type.slice(1);
+                    let centreStr = '—';
+                    let sizeStr = '—';
+
+                    if (exc.type === 'circle' && exc.center) {
+                        centreStr = exc.center[0].toFixed(6) + ', ' + exc.center[1].toFixed(6);
+                        sizeStr = getRadiusText(exc.radius);
+                    } else if (exc.latlngs && exc.latlngs.length > 0) {
+                        const lats = exc.latlngs.map(function (ll) { return ll[0]; });
+                        const lngs = exc.latlngs.map(function (ll) { return ll[1]; });
+                        centreStr = ((Math.min.apply(null, lats) + Math.max.apply(null, lats)) / 2).toFixed(6) + ', ' +
+                                    ((Math.min.apply(null, lngs) + Math.max.apply(null, lngs)) / 2).toFixed(6);
+                        sizeStr = exc.latlngs.length + ' vertices';
+                    }
+
+                    exRows.push([
+                        { text: String(i + 1), options: cellOpts },
+                        { text: typeStr, options: cellOpts },
+                        { text: centreStr, options: cellOpts },
+                        { text: sizeStr, options: cellOpts }
+                    ]);
+                });
+
+                slide.addTable(exRows, { x: 0.5, y: 0.85, w: 10, colW: [1, 2, 4, 3], border: border, rowH: 0.4 });
+            }
+
+            const fileName = 'Flight_Plan_' + new Date().toISOString().slice(0, 10) + '.pptx';
+            await pptx.writeFile({ fileName: fileName });
+
+        } catch (err) {
+            console.error('PPTX export failed:', err);
+            alert('Failed to export PowerPoint: ' + (err.message || 'Unknown error'));
+        } finally {
+            btn.disabled = false;
+            btn.querySelector('span').textContent = origText;
+        }
+    }
+
     // ---- UI ----
     function updateCounts() {
         document.getElementById('fpWaypointCount').textContent = `${waypoints.length} waypoint${waypoints.length !== 1 ? 's' : ''}`;
@@ -999,6 +1180,7 @@
         document.getElementById('fpClearBtn').addEventListener('click', clearAll);
         document.getElementById('fpExportBtn').addEventListener('click', exportKmz);
         document.getElementById('fpSdCardHelpBtn').addEventListener('click', () => openSdCardModal(recceMode));
+        document.getElementById('fpExportReportBtn').addEventListener('click', exportFlightPlanPptx);
         document.getElementById('fpBackBtn').addEventListener('click', () => {
             window.location.href = 'index.html';
         });

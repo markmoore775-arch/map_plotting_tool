@@ -33,6 +33,12 @@
     let selectMode = false;
     let contextMenuLatLng = null;
 
+    let lastReportData = null;
+    let lastHourlySlice = null;
+    let lastModel = null;
+    let lastAviationData = null;
+    let lastDisplayTime = null;
+
     // ---- Helpers ----
     function directionToCardinal(deg) {
         if (deg == null || isNaN(deg)) return '—';
@@ -446,6 +452,12 @@
                 throw new Error('No weather data returned');
             }
 
+            lastReportData = weatherData;
+            lastHourlySlice = hourlySlice;
+            lastModel = model;
+            lastAviationData = aviationData;
+            lastDisplayTime = displayTime;
+
             renderReport(weatherData, displayTime, hourlySlice, model, aviationData);
             loading.classList.add('hidden');
             content.classList.remove('hidden');
@@ -776,6 +788,223 @@
         container.innerHTML = html;
     }
 
+    // ---- PPTX Export ----
+    async function captureMapImage() {
+        const mapEl = document.getElementById('map');
+        const canvas = await html2canvas(mapEl, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#1a1a2e',
+            scale: 2,
+            logging: false
+        });
+        return canvas.toDataURL('image/png');
+    }
+
+    function suitabilityColor(level) {
+        if (level === 'good') return { bg: '4CAF50', text: 'FFFFFF' };
+        if (level === 'caution') return { bg: 'FF9800', text: 'FFFFFF' };
+        return { bg: 'E05555', text: 'FFFFFF' };
+    }
+
+    async function exportWeatherPptx() {
+        if (!lastReportData || !selectedPoint) {
+            alert('Fetch weather data first before exporting.');
+            return;
+        }
+        const btn = document.getElementById('weatherExportPptxBtn');
+        const origText = btn.querySelector('span').textContent;
+        btn.disabled = true;
+        btn.querySelector('span').textContent = 'Exporting…';
+
+        try {
+            const pptx = new PptxGenJS();
+            pptx.layout = 'LAYOUT_WIDE';
+            pptx.author = 'AirPlot';
+            pptx.subject = 'Flight Weather Report';
+
+            const logo = await PptxTheme.loadLogo();
+            PptxTheme.applyTheme(pptx, logo);
+
+            const C = PptxTheme.COLORS;
+            const headerOpts = PptxTheme.tableHeaderOpts();
+            const cellOpts = PptxTheme.tableCellOpts();
+            const labelOpts = PptxTheme.tableLabelOpts();
+            const border = PptxTheme.tableBorder();
+
+            const data = lastReportData;
+            const suitability = deriveSuitability(data);
+            const suitColor = suitabilityColor(suitability.level);
+            const modelLabel = MODEL_LABELS[lastModel] || lastModel;
+            const locLabel = selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5);
+            const timeLabel = lastDisplayTime ? new Date(lastDisplayTime).toLocaleString() : new Date().toLocaleString();
+
+            const mapImg = await captureMapImage();
+
+            // --- Slide 1: Title + Map ---
+            let slide = pptx.addSlide({ masterName: 'TITLE_SLIDE' });
+            slide.addText('Flight Weather Report', { x: 1.1, y: 0.15, w: 8, h: 0.6, fontSize: 26, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+            slide.addText(locLabel + '  |  ' + timeLabel + '  |  Model: ' + modelLabel, { x: 0.5, y: 0.85, w: 12, h: 0.35, fontSize: 12, color: C.textMuted, fontFace: 'Arial' });
+            slide.addImage({ data: mapImg, x: 0.5, y: 1.35, w: 9.5, h: 5.3, rounding: true });
+
+            // --- Slide 2: Weather Summary ---
+            slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+            slide.addText('Weather Summary', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+            slide.addText(suitability.text, { x: 0.5, y: 0.85, w: 5, h: 0.45, fontSize: 14, bold: true, color: suitColor.text, fontFace: 'Arial', fill: { color: suitColor.bg }, shape: pptx.ShapeType.roundRect, rectRadius: 0.05 });
+
+            const summaryText = deriveSummaryText(lastHourlySlice, suitability);
+            if (summaryText) {
+                slide.addText(summaryText, { x: 0.5, y: 1.45, w: 12, h: 0.5, fontSize: 11, color: C.textMuted, fontFace: 'Arial' });
+            }
+
+            const gusts120 = data.wind_speed_120m != null ? Math.round(data.wind_speed_120m * GUST_120M_MULTIPLIER) + ' km/h' : '—';
+            const cloudTotal = data.cloud_cover;
+            const cloudLow = data.cloud_cover_low;
+            let cloudStr = '—';
+            if (cloudTotal != null) {
+                cloudStr = cloudLow != null ? Math.round(cloudTotal) + '% total, ' + Math.round(cloudLow) + '% low' : Math.round(cloudTotal) + '%';
+            }
+            const precip = data.precipitation;
+            const precipProb = data.precipitation_probability;
+            let precipStr = '—';
+            if (precip != null) {
+                precipStr = precipProb != null ? (Math.round(precip * 10) / 10) + ' mm (' + Math.round(precipProb) + '% chance)' : (Math.round(precip * 10) / 10) + ' mm';
+            }
+
+            const summaryRows = [
+                [{ text: 'Parameter', options: headerOpts }, { text: 'Value', options: headerOpts }],
+                [{ text: 'Wind 10 m (sustained)', options: labelOpts }, { text: formatWindRow(data.wind_speed_10m, data.wind_direction_10m), options: cellOpts }],
+                [{ text: 'Gusts 10 m', options: labelOpts }, { text: data.wind_gusts_10m != null ? Math.round(data.wind_gusts_10m) + ' km/h' : '—', options: cellOpts }],
+                [{ text: 'Wind 120 m (sustained)', options: labelOpts }, { text: formatWindRow(data.wind_speed_120m, data.wind_direction_120m), options: cellOpts }],
+                [{ text: 'Gusts 120 m (est.)', options: labelOpts }, { text: gusts120, options: cellOpts }],
+                [{ text: 'Visibility', options: labelOpts }, { text: formatVisibility(data.visibility), options: cellOpts }],
+                [{ text: 'Cloud cover', options: labelOpts }, { text: cloudStr, options: cellOpts }],
+                [{ text: 'Precipitation', options: labelOpts }, { text: precipStr, options: cellOpts }],
+                [{ text: 'Temperature', options: labelOpts }, { text: data.temperature_2m != null ? Math.round(data.temperature_2m) + ' °C' : '—', options: cellOpts }]
+            ];
+            slide.addTable(summaryRows, { x: 0.5, y: 2.05, w: 8, colW: [3.5, 4.5], border: border, rowH: 0.4 });
+            slide.addText('Data from Open-Meteo (' + modelLabel + ')', { x: 0.5, y: 6.7, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+
+            // --- Slide 3: 12-Hour Forecast (if available) ---
+            if (lastHourlySlice && lastHourlySlice.hourly) {
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('12-Hour Forecast', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                const h = lastHourlySlice.hourly;
+                const start = lastHourlySlice.startIdx;
+                const count = Math.min(12, (h.time?.length || 0) - start);
+
+                const forecastHeader = [
+                    { text: 'Time', options: headerOpts },
+                    { text: 'Sust. 10m', options: headerOpts },
+                    { text: 'Gusts 10m', options: headerOpts },
+                    { text: 'Sust. 120m', options: headerOpts },
+                    { text: 'Gusts 120m', options: headerOpts },
+                    { text: 'Vis', options: headerOpts },
+                    { text: 'Cloud', options: headerOpts },
+                    { text: 'Precip', options: headerOpts },
+                    { text: 'Temp', options: headerOpts }
+                ];
+                const forecastRows = [forecastHeader];
+
+                for (let i = 0; i < count; i++) {
+                    const idx = start + i;
+                    const timeStr = h.time[idx] ? new Date(h.time[idx]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                    const w10 = h.wind_speed_10m?.[idx];
+                    const g10 = h.wind_gusts_10m?.[idx];
+                    const w120 = h.wind_speed_120m?.[idx];
+                    const g120Est = w120 != null ? Math.round(w120 * GUST_120M_MULTIPLIER) : null;
+                    const vis = h.visibility?.[idx];
+                    const cloud = h.cloud_cover?.[idx];
+                    const p = h.precipitation?.[idx];
+                    const t = h.temperature_2m?.[idx];
+
+                    forecastRows.push([
+                        { text: timeStr, options: cellOpts },
+                        { text: w10 != null ? Math.round(w10) + '' : '—', options: cellOpts },
+                        { text: g10 != null ? Math.round(g10) + '' : '—', options: cellOpts },
+                        { text: w120 != null ? Math.round(w120) + '' : '—', options: cellOpts },
+                        { text: g120Est != null ? g120Est + '' : '—', options: cellOpts },
+                        { text: formatVisibility(vis), options: cellOpts },
+                        { text: cloud != null ? Math.round(cloud) + '%' : '—', options: cellOpts },
+                        { text: p != null ? (Math.round(p * 10) / 10) + ' mm' : '0', options: cellOpts },
+                        { text: t != null ? Math.round(t) + '°C' : '—', options: cellOpts }
+                    ]);
+                }
+
+                slide.addText('All wind speeds in km/h', { x: 0.5, y: 0.7, w: 8, h: 0.3, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
+                slide.addTable(forecastRows, { x: 0.3, y: 1.05, w: 12.6, colW: [1.2, 1.3, 1.3, 1.3, 1.3, 1.5, 1.2, 1.3, 1.2], border: border, rowH: 0.4, fontSize: 9 });
+            }
+
+            // --- Slide 4: METAR / TAF (if available) ---
+            if (lastAviationData && lastAviationData.nearby && lastAviationData.nearby.length > 0) {
+                const metarByIcao = {};
+                (lastAviationData.metars || []).forEach(function (m) {
+                    const icao = (m.icaoId || m.stationId || m.icao || '').toUpperCase();
+                    if (icao) metarByIcao[icao] = m;
+                });
+                const tafByIcao = {};
+                (lastAviationData.tafs || []).forEach(function (t) {
+                    const icao = (t.icaoId || t.stationId || t.icao || '').toUpperCase();
+                    if (icao) tafByIcao[icao] = t;
+                });
+
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('METAR / TAF — Aerodromes within 50 NM', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                let yPos = 0.85;
+                lastAviationData.nearby.forEach(function (s) {
+                    if (yPos > 6.2) {
+                        slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                        slide.addText('METAR / TAF (continued)', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                        yPos = 0.85;
+                    }
+
+                    const metar = metarByIcao[s.icao];
+                    const taf = tafByIcao[s.icao];
+                    const rawMetar = metar && (metar.rawOb || metar.raw || metar.report);
+                    const rawTaf = taf && (taf.rawTAF || taf.raw || taf.report);
+
+                    slide.addText(
+                        [
+                            { text: (s.name || s.icao), options: { bold: true, fontSize: 12, color: C.textPrimary } },
+                            { text: '  ' + s.icao + '  (' + s.distNm.toFixed(1) + ' NM)', options: { fontSize: 10, color: C.accent } }
+                        ],
+                        { x: 0.5, y: yPos, w: 12, h: 0.35, fontFace: 'Arial' }
+                    );
+                    yPos += 0.4;
+
+                    if (rawMetar) {
+                        const decoded = decodeMetar(metar);
+                        slide.addText('METAR: ' + (decoded || rawMetar), { x: 0.7, y: yPos, w: 11.5, h: 0.6, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
+                        yPos += 0.7;
+                    }
+                    if (rawTaf) {
+                        const decoded = decodeTaf(taf);
+                        const tafText = decoded || rawTaf;
+                        const lineCount = (tafText.match(/\n/g) || []).length + 1;
+                        const boxH = Math.max(0.6, Math.min(2.0, lineCount * 0.22));
+                        slide.addText('TAF: ' + tafText, { x: 0.7, y: yPos, w: 11.5, h: boxH, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
+                        yPos += boxH + 0.1;
+                    }
+                    yPos += 0.2;
+                });
+
+                slide.addText('Data from Aviation Weather Center (aviationweather.gov)', { x: 0.5, y: 6.9, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+            }
+
+            const fileName = 'Weather_Report_' + new Date().toISOString().slice(0, 10) + '.pptx';
+            await pptx.writeFile({ fileName: fileName });
+
+        } catch (err) {
+            console.error('PPTX export failed:', err);
+            alert('Failed to export PowerPoint: ' + (err.message || 'Unknown error'));
+        } finally {
+            btn.disabled = false;
+            btn.querySelector('span').textContent = origText;
+        }
+    }
+
     // ---- Report panel ----
     function showReport() {
         document.getElementById('weatherReport').classList.remove('hidden');
@@ -840,6 +1069,7 @@
             window.location.href = 'index.html';
         });
         document.getElementById('weatherReportClose').addEventListener('click', hideReport);
+        document.getElementById('weatherExportPptxBtn').addEventListener('click', exportWeatherPptx);
 
         const weatherLightToggle = document.getElementById('weatherLightThemeToggle');
         if (weatherLightToggle) {

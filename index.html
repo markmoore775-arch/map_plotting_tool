@@ -507,6 +507,10 @@
                         <span class="export-icon">&#128247;</span>
                         Screenshot Map
                     </button>
+                    <button class="btn btn-primary export-option" id="exportPptx">
+                        <span class="export-icon">&#128202;</span>
+                        Export as PowerPoint
+                    </button>
                 </div>
             </div>
             <div class="modal-footer">
@@ -658,7 +662,7 @@
                     <h3>Bulk Import</h3>
                     <p>Import many points at once via <strong>Upload CSV</strong>, <strong>Paste Data</strong> (tabular), or <strong>Paste List</strong> (one location per line). Map columns to your data fields. UK postcodes are supported with bulk lookup.</p>
                     <h3>Export</h3>
-                    <p>Export points as <strong>CSV</strong>, or points and shapes as <strong>KML</strong> for use in other mapping tools. <strong>Screenshot Map</strong> captures the current map view as an image.</p>
+                    <p>Export points as <strong>CSV</strong>, or points and shapes as <strong>KML</strong> for use in other mapping tools. <strong>Screenshot Map</strong> captures the current map view as an image. <strong>Export as PowerPoint</strong> generates a PPTX report with a map screenshot, points table, and shapes summary.</p>
                     <h3>Save &amp; Load Project</h3>
                     <p>Save your entire project (points, shapes, settings) as a JSON file. Load it later to restore your work.</p>
                     <h3>Undo</h3>
@@ -1030,6 +1034,8 @@
 
     <!-- html2canvas for screenshots -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- PptxGenJS for PowerPoint export -->
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 
     <!-- Leaflet-Geoman -->
     <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.16.0/dist/leaflet-geoman.min.js"></script>
@@ -1051,6 +1057,7 @@
     <script src="js/elevation.js"></script>
     <script src="js/converters.js"></script>
     <script src="js/drawings.js"></script>
+    <script src="js/pptx-theme.js"></script>
     <script src="js/exporters.js"></script>
     <script src="js/io.js"></script>
     <script src="js/app.js"></script>

@@ -192,6 +192,132 @@ const Exporters = (() => {
         }
     }
 
+    // ---- PowerPoint Export ----
+
+    async function exportPptx(mapElement, points, shapes) {
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_WIDE';
+        pptx.author = 'AirPlot';
+        pptx.subject = 'Map Report';
+
+        const logo = await PptxTheme.loadLogo();
+        PptxTheme.applyTheme(pptx, logo);
+
+        const C = PptxTheme.COLORS;
+        const headerOpts = PptxTheme.tableHeaderOpts();
+        const cellOpts = PptxTheme.tableCellOpts();
+        const border = PptxTheme.tableBorder();
+
+        const canvas = await html2canvas(mapElement, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#1a1a2e',
+            scale: 2,
+            logging: false
+        });
+        const mapImg = canvas.toDataURL('image/png');
+        const dateLabel = new Date().toLocaleString();
+
+        // --- Slide 1: Title + Map ---
+        let slide = pptx.addSlide({ masterName: 'TITLE_SLIDE' });
+        slide.addText('Map Report', { x: 1.1, y: 0.15, w: 8, h: 0.6, fontSize: 26, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+        slide.addText(dateLabel + '  |  ' + points.length + ' points, ' + shapes.length + ' shapes', { x: 0.5, y: 0.85, w: 12, h: 0.35, fontSize: 12, color: C.textMuted, fontFace: 'Arial' });
+        slide.addImage({ data: mapImg, x: 0.5, y: 1.35, w: 9.5, h: 5.3, rounding: true });
+
+        // --- Slide 2+: Points table ---
+        if (points.length > 0) {
+            const pageSize = 14;
+            const ptHeader = [
+                { text: '#', options: headerOpts },
+                { text: 'Name', options: headerOpts },
+                { text: 'Latitude', options: headerOpts },
+                { text: 'Longitude', options: headerOpts },
+                { text: 'Notes', options: headerOpts }
+            ];
+            const colW = [0.6, 3, 2, 2, 4.6];
+
+            let rows = [ptHeader];
+            for (let i = 0; i < points.length; i++) {
+                if (i > 0 && i % pageSize === 0) {
+                    slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                    slide.addText('Points (continued)', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                    slide.addTable(rows, { x: 0.3, y: 0.85, w: 12.6, colW: colW, border: border, rowH: 0.38 });
+                    rows = [ptHeader];
+                }
+                const p = points[i];
+                const notes = (p.notes || '').replace(/\n/g, ' ');
+                const truncNotes = notes.length > 80 ? notes.slice(0, 77) + '…' : notes;
+                rows.push([
+                    { text: String(i + 1), options: cellOpts },
+                    { text: p.name || 'Unnamed', options: cellOpts },
+                    { text: p.lat.toFixed(6), options: cellOpts },
+                    { text: p.lng.toFixed(6), options: cellOpts },
+                    { text: truncNotes, options: cellOpts }
+                ]);
+            }
+            if (rows.length > 1) {
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText(points.length === rows.length - 1 ? 'Points' : 'Points (continued)', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addTable(rows, { x: 0.3, y: 0.85, w: 12.6, colW: colW, border: border, rowH: 0.38 });
+            }
+        }
+
+        // --- Shapes slide ---
+        if (shapes.length > 0) {
+            slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+            slide.addText('Shapes & Drawings', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+            const shHeader = [
+                { text: '#', options: headerOpts },
+                { text: 'Type', options: headerOpts },
+                { text: 'Label', options: headerOpts },
+                { text: 'Details', options: headerOpts }
+            ];
+            const shColW = [0.6, 2.5, 3, 6.1];
+            const shRows = [shHeader];
+
+            shapes.forEach(function (s, i) {
+                const typeStr = (s.type || 'unknown').charAt(0).toUpperCase() + (s.type || 'unknown').slice(1);
+                const label = s.label || s.text || '—';
+                let details = '';
+
+                if (s.type === 'circle' && s.center) {
+                    const r = s.radius >= 1000 ? (s.radius / 1000).toFixed(2) + ' km' : Math.round(s.radius) + ' m';
+                    details = 'Centre: ' + s.center[0].toFixed(5) + ', ' + s.center[1].toFixed(5) + ' | Radius: ' + r;
+                } else if ((s.type === 'polygon' || s.type === 'rectangle') && s.latlngs) {
+                    details = s.latlngs.length + ' vertices';
+                } else if ((s.type === 'polyline' || s.type === 'flightpath') && s.latlngs) {
+                    details = s.latlngs.length + ' points';
+                } else if (s.type === 'arrow' && s.tail && s.tip) {
+                    details = 'From ' + s.tail[0].toFixed(5) + ',' + s.tail[1].toFixed(5) + ' → ' + s.tip[0].toFixed(5) + ',' + s.tip[1].toFixed(5);
+                } else if (s.type === 'text' && s.position) {
+                    details = 'At ' + s.position[0].toFixed(5) + ', ' + s.position[1].toFixed(5);
+                }
+
+                shRows.push([
+                    { text: String(i + 1), options: cellOpts },
+                    { text: typeStr, options: cellOpts },
+                    { text: label, options: cellOpts },
+                    { text: details || '—', options: cellOpts }
+                ]);
+
+                if (shRows.length > 15 && i < shapes.length - 1) {
+                    slide.addTable(shRows.splice(0), { x: 0.3, y: 0.85, w: 12.6, colW: shColW, border: border, rowH: 0.38 });
+                    slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                    slide.addText('Shapes & Drawings (continued)', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                    shRows.push(shHeader);
+                }
+            });
+
+            if (shRows.length > 1) {
+                slide.addTable(shRows, { x: 0.3, y: 0.85, w: 12.6, colW: shColW, border: border, rowH: 0.38 });
+            }
+        }
+
+        const fileName = 'Map_Report_' + new Date().toISOString().slice(0, 10) + '.pptx';
+        await pptx.writeFile({ fileName: fileName });
+    }
+
     // ---- Download helper ----
 
     function downloadFile(content, filename, mimeType) {
@@ -210,6 +336,7 @@ const Exporters = (() => {
         exportCSV,
         exportKML,
         exportScreenshot,
+        exportPptx,
         downloadFile
     };
 

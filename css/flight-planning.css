@@ -204,6 +204,15 @@ body.flight-planning-mode #map {
     color: var(--sidebar-text, #e0e0e8);
 }
 
+/* Report export button */
+.fp-btn-report {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.fp-btn-report:hover {
+    color: #fff;
+}
+
 /* Hide Geoman's default toolbar - we use our own */
 body.flight-planning-mode .leaflet-pm-toolbar {
     display: none !important;

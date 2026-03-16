@@ -2784,6 +2784,24 @@ ${summaryRows}
         }
     });
 
+    document.getElementById('exportPptx').addEventListener('click', async () => {
+        closeModal('exportModal');
+        const shapesData = Drawings.serializeShapes();
+        if (points.length === 0 && shapesData.length === 0) {
+            alert('No points or shapes to export.');
+            return;
+        }
+        showLoading('Generating PowerPoint report...');
+        try {
+            await Exporters.exportPptx(document.getElementById('map'), points, shapesData);
+        } catch (err) {
+            console.error('PPTX export failed:', err);
+            alert('Failed to export PowerPoint: ' + (err.message || 'Unknown error'));
+        } finally {
+            hideLoading();
+        }
+    });
+
     // ---- Save / Load Project ----
 
     document.getElementById('saveProjectBtn').addEventListener('click', () => {
