@@ -15,7 +15,7 @@ const WRONG_PASSWORD = '__airplot_guard_wrong_password__';
 async function main() {
   const body = new URLSearchParams({
     password: WRONG_PASSWORD,
-    next: '/app'
+    next: '/index.html?autostart=1'
   });
 
   const res = await fetch(BASE_URL + '/unlock', {

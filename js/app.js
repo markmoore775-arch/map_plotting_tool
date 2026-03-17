@@ -3493,7 +3493,7 @@ ${summaryRows}
                 if (isLocal || window.location.protocol === 'file:') {
                     dismissIntro();
                 } else {
-                    window.location.assign('/app');
+                    window.location.assign('/index.html?autostart=1');
                 }
             });
         } else {

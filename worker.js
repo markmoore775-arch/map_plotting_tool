@@ -1,41 +1,28 @@
 const SESSION_COOKIE = 'airplot_session';
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12; // 12 hours
+const DEFAULT_NEXT_PATH = '/index.html?autostart=1';
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = normalizePath(url.pathname);
 
-    if (path === '/logout') {
+    if (path === '/api/aviation') {
+      return handleAviationApi(request);
+    }
+
+    // Temporary test mode: disable all password protection.
+    if (path === '/unlock' || path === '/logout') {
       return new Response(null, {
         status: 302,
         headers: {
-          Location: '/index.html',
+          Location: DEFAULT_NEXT_PATH,
           'Set-Cookie': `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
         }
       });
     }
 
-    if (path === '/unlock') {
-      return handleUnlock(request, env);
-    }
-
-    if (path === '/api/aviation') {
-      return handleAviationApi(request);
-    }
-
-    const protectedRoute = isProtectedRoute(path);
-    if (protectedRoute) {
-      const cookieHeader = request.headers.get('Cookie') || '';
-      const cookies = parseCookies(cookieHeader);
-      const sessionToken = cookies[SESSION_COOKIE] || '';
-      const authenticated = await verifySessionToken(sessionToken, env.AUTH_SECRET || '');
-      if (!authenticated) {
-        const next = normalizeNextPath(url.pathname + url.search);
-        return redirectToUnlock(next);
-      }
-    }
-
+    // Backwards compatibility: old launch links may still target /app.
     if (path === '/app') {
       const targetUrl = new URL(request.url);
       targetUrl.pathname = '/index.html';
@@ -74,10 +61,10 @@ function parseCookies(cookieHeader) {
 }
 
 function normalizeNextPath(nextRaw) {
-  if (!nextRaw || typeof nextRaw !== 'string') return '/app';
-  if (!nextRaw.startsWith('/')) return '/app';
-  if (nextRaw.startsWith('//')) return '/app';
-  if (nextRaw.startsWith('/unlock')) return '/app';
+  if (!nextRaw || typeof nextRaw !== 'string') return DEFAULT_NEXT_PATH;
+  if (!nextRaw.startsWith('/')) return DEFAULT_NEXT_PATH;
+  if (nextRaw.startsWith('//')) return DEFAULT_NEXT_PATH;
+  if (nextRaw.startsWith('/unlock')) return DEFAULT_NEXT_PATH;
   return nextRaw;
 }
 
@@ -128,7 +115,7 @@ function redirectToUnlock(nextPath) {
 
 async function handleUnlock(request, env) {
   const url = new URL(request.url);
-  const next = normalizeNextPath(url.searchParams.get('next') || '/app');
+  const next = normalizeNextPath(url.searchParams.get('next') || DEFAULT_NEXT_PATH);
   const isPost = request.method.toUpperCase() === 'POST';
 
   const cookieHeader = request.headers.get('Cookie') || '';
@@ -183,7 +170,7 @@ async function handleUnlock(request, env) {
 }
 
 function renderUnlockPage({ next, error }) {
-  const safeNext = escapeHtml(next || '/app');
+  const safeNext = escapeHtml(next || DEFAULT_NEXT_PATH);
   const safeError = error ? `<p class="error">${escapeHtml(error)}</p>` : '';
 
   return `<!doctype html>

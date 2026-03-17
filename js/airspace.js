@@ -62,7 +62,7 @@
         const description = (props.description || '').toUpperCase();
         const aixmType = (props.type || '').toUpperCase();
 
-        if (description.includes('FRZ') || designator.includes('FRZ') || designator.includes('RPZ') || name.includes('FRZ') || name.includes('AERODROME') || name.includes('FLIGHT RESTRICTION')) {
+        if (designator.startsWith('EGRU') || description.includes('FRZ') || designator.includes('FRZ') || designator.includes('RPZ') || name.includes('FRZ') || name.includes('AERODROME') || name.includes('FLIGHT RESTRICTION')) {
             return 'frz';
         }
         if (designator.startsWith('EG-P') || designator.startsWith('EGP') || designator.startsWith('P') || name.includes('PROHIBITED') || aixmType === 'P') {
