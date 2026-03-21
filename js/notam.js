@@ -140,7 +140,11 @@
         }
         html += '<div class="airspace-popup-body"><div class="airspace-popup-detail">' + (notam.text || '').replace(/</g, '&lt;') + '</div>';
         html += '<div class="airspace-popup-source">UK NOTAM Archive · NATS AIS</div></div></div>';
-        circle.bindPopup(html, { maxWidth: 420, maxHeight: 400 });
+        circle.bindPopup(html, {
+            maxWidth: 420,
+            maxHeight: 400,
+            autoPan: false
+        });
         circle._notamData = notam;
         return circle;
     }
@@ -162,6 +166,8 @@
         let allNotams = [];
         let allCircles = [];
         let isVisible = false;
+        /** Skip viewport refreshes while a NOTAM popup is open (avoids clearLayers removing the popup). */
+        let notamPopupOpen = false;
 
         var config = {
             maxRadius: 12,
@@ -202,8 +208,10 @@
             return toShow;
         }
 
-        function updateDisplay() {
+        function updateDisplay(force) {
             if (!notamLayer || !isVisible) return;
+            if (force) notamPopupOpen = false;
+            else if (notamPopupOpen) return;
             notamLayer.clearLayers();
             const toShow = applyFilters();
             toShow.forEach(function (c) { notamLayer.addLayer(c); });
@@ -237,7 +245,7 @@
                     }
                     allNotams = parsePIBXml(xmlText);
                     buildCircles();
-                    if (isVisible) updateDisplay();
+                    if (isVisible) updateDisplay(true);
                     if (callback) callback({ notams: allNotams, count: allCircles.length, validity: lastValidity });
                 })
                 .catch(function (err) {
@@ -248,8 +256,18 @@
         notamLayer = L.layerGroup();
 
         if (map) {
-            map.on('moveend', updateDisplay);
-            map.on('zoomend', updateDisplay);
+            map.on('popupopen', function (e) {
+                const src = e.popup && e.popup._source;
+                if (src && src._notamData) notamPopupOpen = true;
+            });
+            map.on('popupclose', function (e) {
+                const src = e.popup && e.popup._source;
+                if (!(src && src._notamData) || !notamPopupOpen) return;
+                notamPopupOpen = false;
+                updateDisplay(false);
+            });
+            map.on('moveend', function () { updateDisplay(false); });
+            map.on('zoomend', function () { updateDisplay(false); });
         }
 
         return {
@@ -260,7 +278,7 @@
                 isVisible = true;
                 if (map && notamLayer) {
                     map.addLayer(notamLayer);
-                    updateDisplay();
+                    updateDisplay(true);
                 }
             },
             removeFromMap: function () {
@@ -274,7 +292,7 @@
                 if (opts.fillOpacity != null) config.fillOpacity = opts.fillOpacity;
                 if (opts.zoomFilterRadius != null) config.zoomFilterRadius = opts.zoomFilterRadius;
                 buildCircles();
-                updateDisplay();
+                updateDisplay(true);
             },
             getOptions: function () { return Object.assign({}, config); },
             updateDisplay: updateDisplay
