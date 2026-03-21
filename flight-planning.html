@@ -29,6 +29,18 @@
 <body class="flight-planning-mode">
     <div id="map"></div>
 
+    <!-- Welcome / home — always visible top-left -->
+    <nav class="fp-welcome-bar" aria-label="AirPlot home">
+        <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
+            <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+            <span class="fp-welcome-title">AirPlot</span>
+            <span class="fp-welcome-cta">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                Welcome
+            </span>
+        </a>
+    </nav>
+
     <!-- Floating toolbar -->
     <div class="fp-toolbar">
         <div class="fp-toolbar-group fp-mode-toggle">
@@ -93,13 +105,16 @@
         <div class="fp-toolbar-group">
             <button type="button" class="fp-btn fp-btn-report" id="fpExportReportBtn" title="Export mission report as PowerPoint">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-                <span>Report</span>
+                <span>PPTX</span>
+            </button>
+            <button type="button" class="fp-btn fp-btn-report" id="fpExportPdfBtn" title="Export mission report as PDF">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                <span>PDF</span>
             </button>
         </div>
         <div class="fp-toolbar-group">
-            <button type="button" class="fp-btn fp-btn-back" id="fpBackBtn" title="Return to welcome screen to choose another mode">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-                <span>Back to Welcome</span>
+            <button type="button" class="fp-btn fp-btn-icon" id="fpHelpBtn" title="Help">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
             </button>
         </div>
     </div>
@@ -111,9 +126,36 @@
         <span id="fpExclusionCount">0 exclusion zones</span>
     </div>
 
-    <!-- App logo -->
-    <div class="fp-logo" aria-hidden="true">
-        <img src="assets/airplot-icon.svg" alt="AirPlot">
+    <!-- App logo — secondary link home -->
+    <a href="index.html" class="fp-logo" title="Return to welcome screen" aria-label="Return to AirPlot welcome screen">
+        <img src="assets/airplot-icon.svg" alt="">
+    </a>
+
+    <!-- Help modal -->
+    <div id="fpHelpModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>DJI Mission Planner Help</h2>
+                <button type="button" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="fp-help-lead">Build missions for DJI Pilot 2 (AirPlot v2.0). Switch modes with the toggles at the top of the toolbar.</p>
+                <h3>Manual Recce</h3>
+                <p>For overlay flight with a POI and exclusion fence (no automated route). Tap <strong>Add Target</strong> and click the map to place the point of interest. Adjust <strong>Radius (m)</strong> for the circular exclusion zone. <strong>Export Recce KMZ</strong> saves <code>Recce_Mission.kmz</code> for import as an overlay in DJI Pilot 2—fly manually; the aircraft brakes at the fence.</p>
+                <h3>Waypoint Mission</h3>
+                <p>Tap <strong>Waypoint</strong> and click the map to add waypoints in order. Use <strong>Rectangle</strong>, <strong>Circle</strong>, or <strong>Polygon</strong> to draw exclusion zones (no-fly areas). <strong>Export KMZ</strong> produces a WPML mission file for automated flight. <strong>Undo</strong> reverts the last change; <strong>Clear</strong> removes everything.</p>
+                <h3>Exports &amp; reports</h3>
+                <p><strong>Export KMZ</strong> / <strong>Export Recce KMZ</strong> — mission files for the controller. <strong>PPTX</strong> and <strong>PDF</strong> — branded mission reports with a map capture. The <strong>SD card</strong> (?) button opens detailed import steps for DJI Pilot 2.</p>
+                <h3>SD card &amp; DJI Pilot 2</h3>
+                <p>Use the <strong>SD card</strong> (?) button for step-by-step import: copy the KMZ to the card, insert into the controller, <strong>Flight Route</strong> → <strong>Import Route (KMZ/KML)</strong>. FAT32 is recommended if the card is not read reliably.</p>
+                <h3>Related</h3>
+                <p><a href="index.html">AirPlot map</a> for general planning; <a href="weather.html">Flight Weather</a> for forecasts and METAR/TAF. Use <strong>Welcome</strong> (top-left) or the logo (bottom-right) to return to the AirPlot home screen.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary modal-cancel">Close</button>
+            </div>
+        </div>
     </div>
 
     <!-- SD card instructions modal -->
@@ -168,9 +210,13 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <!-- PptxGenJS for PowerPoint export -->
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-    <script src="js/pptx-theme.js"></script>
+    <script src="js/pptx-theme.js?v=7"></script>
+    <script src="js/pdf-theme.js?v=1"></script>
     <script src="js/config.js"></script>
-    <script src="js/flight-planning.js"></script>
+    <script src="js/flight-planning.js?v=7"></script>
 </body>
 </html>

@@ -26,6 +26,18 @@
 <body class="weather-mode">
     <div id="map"></div>
 
+    <!-- Welcome / home — top-left (same pattern as flight planning) -->
+    <nav class="fp-welcome-bar" aria-label="AirPlot home">
+        <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
+            <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+            <span class="fp-welcome-title">AirPlot</span>
+            <span class="fp-welcome-cta">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                Welcome
+            </span>
+        </a>
+    </nav>
+
     <!-- Floating toolbar -->
     <div class="weather-toolbar">
         <div class="weather-toolbar-group">
@@ -61,12 +73,6 @@
                 <span>Get Weather</span>
             </button>
         </div>
-        <div class="weather-toolbar-group">
-            <button type="button" class="weather-btn weather-btn-back weather-btn-icon-sm" id="weatherBackBtn" title="Return to welcome screen">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-                <span class="weather-btn-text">Back</span>
-            </button>
-        </div>
     </div>
 
     <!-- Side panel - collapsible help -->
@@ -76,9 +82,7 @@
                 <span>Instructions</span>
                 <button type="button" class="weather-side-panel-close" id="weatherHelpClose" aria-label="Close">&times;</button>
             </div>
-            <div class="weather-side-panel-body" id="weatherStatus">
-                Right-click map for <strong>Get Weather</strong>, or tap <strong>Select Location</strong> then tap the map.
-            </div>
+            <div class="weather-side-panel-body" id="weatherStatus"></div>
         </div>
     </div>
 
@@ -89,7 +93,11 @@
             <div class="weather-header-actions">
                 <button type="button" class="weather-btn weather-btn-export" id="weatherExportPptxBtn" title="Export report as PowerPoint">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-                    <span>Export PPTX</span>
+                    <span>PPTX</span>
+                </button>
+                <button type="button" class="weather-btn weather-btn-export" id="weatherExportPdfBtn" title="Export report as PDF">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                    <span>PDF</span>
                 </button>
                 <label class="weather-theme-toggle" title="Light theme (better for copy/paste)">
                     <input type="checkbox" id="weatherLightThemeToggle">
@@ -111,6 +119,7 @@
                     <button type="button" class="weather-tab active" data-tab="summary">Summary</button>
                     <button type="button" class="weather-tab" data-tab="hourly">12-hour forecast</button>
                     <button type="button" class="weather-tab" data-tab="aviation">METAR / TAF</button>
+                    <button type="button" class="weather-tab" data-tab="airspace">Airspace</button>
                 </div>
                 <div class="weather-tab-panels">
                     <div class="weather-tab-panel active" id="weatherTabSummary">
@@ -163,6 +172,10 @@
                             </div>
                         </div>
                         <p class="weather-attribution" id="weatherAttribution">Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
+                        <details class="weather-model-explainer" id="weatherModelExplainer">
+                            <summary>About this forecast model</summary>
+                            <div class="weather-model-explainer-body" id="weatherModelExplainerBody"></div>
+                        </details>
                     </div>
                     <div class="weather-tab-panel" id="weatherTabHourly">
                         <div id="weatherHourlySection" class="weather-hourly-section">
@@ -201,6 +214,17 @@
                         <div id="weatherAviationContent" class="weather-aviation-content"></div>
                         <p class="weather-attribution" id="weatherAttributionAviation">METAR/TAF from <a href="https://aviationweather.gov/" target="_blank" rel="noopener">Aviation Weather Center</a></p>
                     </div>
+                    <div class="weather-tab-panel" id="weatherTabAirspace">
+                        <div class="weather-airspace-intro">
+                            <p>NOTAMs, FRZs, and restricted airspace within <strong>10 km</strong> of the selected location.</p>
+                        </div>
+                        <div id="weatherAirspaceLoading" class="weather-airspace-loading hidden">
+                            <div class="spinner"></div>
+                            <p>Loading airspace data…</p>
+                        </div>
+                        <div id="weatherAirspaceContent" class="weather-airspace-content hidden"></div>
+                        <p class="weather-attribution" id="weatherAttributionAirspace">NOTAMs: <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS) · Airspace: UK AIP / NATS</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -228,8 +252,12 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <!-- PptxGenJS for PowerPoint export -->
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-    <script src="js/pptx-theme.js"></script>
-    <script src="js/weather.js"></script>
+    <script src="js/pptx-theme.js?v=7"></script>
+    <script src="js/pdf-theme.js?v=1"></script>
+    <script src="js/weather.js?v=7"></script>
 </body>
 </html>

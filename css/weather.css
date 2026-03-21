@@ -18,6 +18,13 @@ body.weather-mode #map {
     pointer-events: auto;
 }
 
+/* Welcome pill: shared in css/style.css (.fp-welcome-*). */
+
+/* Zoom + locate + info — below welcome bar */
+body.weather-mode .leaflet-top.leaflet-left {
+    top: calc(64px + env(safe-area-inset-top, 0px));
+}
+
 /* Floating toolbar - bottom centre */
 .weather-toolbar {
     position: fixed;
@@ -93,33 +100,6 @@ body.weather-mode #map {
 .weather-btn-primary:hover:not(:disabled) {
     background: var(--primary-hover, #4a7de0);
     border-color: var(--primary-hover, #4a7de0);
-}
-
-.weather-btn-back {
-    color: var(--sidebar-text-muted, #9999aa);
-}
-
-.weather-btn-back:hover {
-    color: var(--sidebar-text, #e0e0e8);
-}
-
-.weather-btn-icon-sm {
-    padding: 8px 10px;
-    min-height: 36px;
-}
-
-.weather-btn-icon-sm .weather-btn-text {
-    font-size: 12px;
-}
-
-@media (max-width: 700px) {
-    .weather-btn-icon-sm .weather-btn-text {
-        display: none;
-    }
-    .weather-btn-icon-sm {
-        padding: 8px 10px;
-        min-width: 36px;
-    }
 }
 
 /* Mobile: single-row toolbar, horizontal scroll instead of wrapping */
@@ -234,17 +214,17 @@ body.weather-mode #map {
     height: 18px;
 }
 
-/* Side panel - collapsible help */
+/* Side panel - collapsible help (below welcome bar, not under it) */
 .weather-side-toolbar {
     position: fixed;
-    top: 60px;
+    top: calc(64px + env(safe-area-inset-top, 0px));
     left: 0;
     z-index: 1000;
 }
 
 .weather-side-panel {
     display: none;
-    width: 280px;
+    width: min(300px, 92vw);
     max-height: calc(100vh - 140px);
     background: var(--sidebar-bg, #1e1e2e);
     border: 1px solid var(--sidebar-border, #3a3a50);
@@ -296,9 +276,27 @@ body.weather-mode #map {
     color: var(--sidebar-text, #e0e0e8);
 }
 
+.weather-side-panel-body .weather-help-lead {
+    margin-bottom: 10px;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-side-panel-body .weather-help-list {
+    margin: 6px 0 12px 0;
+    padding-left: 18px;
+}
+
+.weather-side-panel-body .weather-help-list li {
+    margin-bottom: 6px;
+}
+
+.weather-side-panel-body a {
+    color: var(--primary, #5b8def);
+}
+
 @media (max-width: 600px) {
     .weather-side-toolbar {
-        top: max(12px, env(safe-area-inset-top, 12px));
+        top: calc(64px + env(safe-area-inset-top, 0px));
     }
     .weather-side-panel {
         width: min(280px, calc(100vw - 60px));
@@ -778,6 +776,108 @@ body.weather-mode #map {
     font-weight: 500;
 }
 
+/* Airspace tab */
+.weather-airspace-intro {
+    font-size: 12px;
+    color: var(--sidebar-text-muted, #9999aa);
+    margin-bottom: 16px;
+}
+
+.weather-airspace-intro p {
+    margin: 0;
+}
+
+.weather-airspace-loading {
+    text-align: center;
+    padding: 24px 0;
+    color: var(--sidebar-text-muted, #9999aa);
+    font-size: 12px;
+}
+
+.weather-airspace-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.weather-airspace-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sidebar-text, #e0e0e8);
+    margin: 8px 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.weather-airspace-section-title .airspace-count {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.weather-airspace-item {
+    padding: 10px 12px;
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 6px;
+    border-left: 3px solid var(--primary, #5b8def);
+}
+
+.weather-airspace-item.category-frz { border-left-color: #9333ea; }
+.weather-airspace-item.category-prohibited { border-left-color: #991b1b; }
+.weather-airspace-item.category-restricted { border-left-color: #dc2626; }
+.weather-airspace-item.category-danger { border-left-color: #ca8a04; }
+.weather-airspace-item.category-notam { border-left-color: #dc2626; }
+
+.weather-airspace-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.weather-airspace-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.weather-airspace-badge.badge-frz { background: #9333ea; }
+.weather-airspace-badge.badge-prohibited { background: #991b1b; }
+.weather-airspace-badge.badge-restricted { background: #dc2626; }
+.weather-airspace-badge.badge-danger { background: #ca8a04; }
+.weather-airspace-badge.badge-notam { background: #dc2626; }
+
+.weather-airspace-item-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-airspace-item-detail {
+    font-size: 11px;
+    color: var(--sidebar-text-muted, #9999aa);
+    line-height: 1.5;
+}
+
+.weather-airspace-item-detail strong {
+    color: var(--sidebar-text, #e0e0e8);
+    font-weight: 500;
+}
+
+.weather-airspace-empty {
+    text-align: center;
+    padding: 24px 0;
+    color: var(--sidebar-text-muted, #9999aa);
+    font-size: 12px;
+}
+
 .weather-attribution {
     margin-top: 16px;
     font-size: 11px;
@@ -791,6 +891,102 @@ body.weather-mode #map {
 
 .weather-attribution a:hover {
     text-decoration: underline;
+}
+
+.weather-model-explainer {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--sidebar-text-muted, #9999aa);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 6px;
+    padding: 0;
+}
+
+.weather-model-explainer summary {
+    cursor: pointer;
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--primary, #5b8def);
+    user-select: none;
+    list-style: none;
+}
+
+.weather-model-explainer summary::before {
+    content: '▸ ';
+}
+
+.weather-model-explainer[open] summary::before {
+    content: '▾ ';
+}
+
+.weather-model-explainer summary::-webkit-details-marker {
+    display: none;
+}
+
+.weather-model-explainer-body {
+    padding: 4px 12px 12px;
+    line-height: 1.6;
+}
+
+.weather-model-explainer-body p {
+    margin: 0 0 8px;
+}
+
+.weather-model-explainer-body p:last-child {
+    margin-bottom: 0;
+}
+
+.weather-model-explainer-body strong {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-model-explainer-body .model-equiv-table {
+    width: 100%;
+    margin-top: 8px;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.weather-model-explainer-body .model-equiv-table th,
+.weather-model-explainer-body .model-equiv-table td {
+    padding: 5px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--sidebar-border, #3a3a50);
+}
+
+.weather-model-explainer-body .model-equiv-table th {
+    color: var(--sidebar-text-muted, #9999aa);
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.weather-model-explainer-body .model-equiv-table td {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-model-explainer-body .model-equiv-table .equiv-highlight {
+    color: var(--primary, #5b8def);
+    font-weight: 600;
+}
+
+.weather-light-theme .weather-model-explainer {
+    border-color: #d0d0d0;
+}
+
+.weather-light-theme .weather-model-explainer-body strong {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-model-explainer-body .model-equiv-table th,
+.weather-light-theme .weather-model-explainer-body .model-equiv-table td {
+    border-bottom-color: #e0e0e0;
+}
+
+.weather-light-theme .weather-model-explainer-body .model-equiv-table td {
+    color: #1a1a1a;
 }
 
 /* App logo - bottom right */
@@ -991,6 +1187,24 @@ body.weather-mode #map {
 .weather-light-theme .weather-aviation-validity,
 .weather-light-theme .weather-aviation-dist {
     color: #666;
+}
+
+.weather-light-theme .weather-airspace-intro,
+.weather-light-theme .weather-airspace-item-detail,
+.weather-light-theme .weather-airspace-empty,
+.weather-light-theme .weather-airspace-loading {
+    color: #666;
+}
+
+.weather-light-theme .weather-airspace-section-title,
+.weather-light-theme .weather-airspace-item-name,
+.weather-light-theme .weather-airspace-item-detail strong {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-airspace-item {
+    background: #f0f1f3;
+    border-color: #d0d0d0;
 }
 
 .weather-light-theme .weather-aviation-station {

@@ -59,7 +59,7 @@
             </p>
             <div class="intro-cta-stack">
                 <button type="button" class="intro-cta" id="introProceedBtn">
-                    Launch App
+                    Flight Planning
                     <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                 </button>
                 <a href="weather.html" class="intro-cta intro-cta-secondary" id="introWeatherBtn">
@@ -80,7 +80,7 @@
             <div class="intro-disclaimer">
                 <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in Help.
             </div>
-            <p class="intro-version">v1.0</p>
+            <p class="intro-version">v2.0</p>
             <p class="intro-copyright">&copy; Mark Moore</p>
         </div>
     </div>
@@ -168,6 +168,46 @@
             </div>
         </section>
 
+        <!-- Drawing style (default + selected shape); merged from floating panel -->
+        <section class="sidebar-section sidebar-section-draw-style">
+            <div id="drawStylePanel" class="draw-style-panel">
+                <div class="draw-style-header">
+                    <span>Drawing Style</span>
+                    <button type="button" id="drawStyleToggle" class="btn-icon" title="Expand or collapse">&plus;</button>
+                </div>
+                <div class="draw-style-body">
+                    <div class="draw-style-row">
+                        <label>Colour</label>
+                        <input type="color" id="drawColor" value="#e05555">
+                    </div>
+                    <div class="draw-style-row">
+                        <label>Fill Opacity</label>
+                        <div class="slider-row">
+                            <input type="range" id="drawFillOpacity" min="0" max="0.8" step="0.05" value="0.15">
+                            <span id="drawFillOpacityVal">0.15</span>
+                        </div>
+                    </div>
+                    <div class="draw-style-row">
+                        <label>Stroke Width</label>
+                        <input type="number" id="drawWeight" min="1" max="8" value="2" style="width:60px;">
+                    </div>
+                    <div class="draw-style-row">
+                        <label>Stroke Style</label>
+                        <select id="drawDash">
+                            <option value="">Solid</option>
+                            <option value="10,6">Dashed</option>
+                            <option value="3,4">Dotted</option>
+                            <option value="15,6,3,6">Dash-Dot</option>
+                        </select>
+                    </div>
+                    <div class="draw-style-row hidden" id="drawFlightPathArrowSizeRow">
+                        <label for="drawFlightPathArrowSize">Arrow head size (m)</label>
+                        <input type="number" id="drawFlightPathArrowSize" min="1" max="100" value="30" style="width:60px;">
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Points & Shapes combined scrollable area -->
         <section class="sidebar-section points-section">
             <!-- Points -->
@@ -198,11 +238,31 @@
         </div>
     </aside>
 
-    <!-- Sidebar collapsed toggle -->
-    <button id="sidebarOpen" class="sidebar-open" title="Open sidebar">&raquo;</button>
-
     <!-- Map -->
     <div id="map"></div>
+
+    <!-- Top row: open sidebar + Welcome + Help (same height, one row) -->
+    <div class="map-top-chrome" id="mapTopChrome">
+        <button type="button" id="sidebarOpen" class="sidebar-open" title="Open sidebar">&raquo;</button>
+        <nav class="fp-welcome-bar" aria-label="AirPlot home">
+            <a href="index.html" class="fp-welcome-home-link" id="mainWelcomeLink" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
+                <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+                <span class="fp-welcome-title">AirPlot</span>
+                <span class="fp-welcome-cta">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                    Welcome
+                </span>
+            </a>
+        </nav>
+        <div class="map-top-actions">
+            <div id="helpPanel" class="help-panel">
+                <div class="draw-style-header">
+                    <span>Help</span>
+                    <button id="helpBtn" class="btn-icon" title="Open help">?</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Map logo (always visible when using the app) -->
     <div class="map-logo" aria-hidden="true">
@@ -217,58 +277,8 @@
         <button type="button" class="app-footer-disclaimer-link" id="footerDisclaimerBtn" title="View disclaimer">Disclaimer</button>
     </footer>
 
-    <!-- Drawing Style Panel (floating on map) -->
-    <div id="drawStylePanel" class="draw-style-panel">
-        <div class="draw-style-header">
-            <span>Drawing Style</span>
-            <button id="drawStyleToggle" class="btn-icon" title="Toggle">&plus;</button>
-        </div>
-        <div class="draw-style-body">
-            <div class="draw-style-row">
-                <label>Colour</label>
-                <input type="color" id="drawColor" value="#e05555">
-            </div>
-            <div class="draw-style-row">
-                <label>Fill Opacity</label>
-                <div class="slider-row">
-                    <input type="range" id="drawFillOpacity" min="0" max="0.8" step="0.05" value="0.15">
-                    <span id="drawFillOpacityVal">0.15</span>
-                </div>
-            </div>
-            <div class="draw-style-row">
-                <label>Stroke Width</label>
-                <input type="number" id="drawWeight" min="1" max="8" value="2" style="width:60px;">
-            </div>
-            <div class="draw-style-row">
-                <label>Stroke Style</label>
-                <select id="drawDash">
-                    <option value="">Solid</option>
-                    <option value="10,6">Dashed</option>
-                    <option value="3,4">Dotted</option>
-                    <option value="15,6,3,6">Dash-Dot</option>
-                </select>
-            </div>
-            <div class="draw-style-row hidden" id="drawFlightPathArrowSizeRow">
-                <label for="drawFlightPathArrowSize">Arrow head size (m)</label>
-                <input type="number" id="drawFlightPathArrowSize" min="1" max="100" value="30" style="width:60px;">
-            </div>
-        </div>
-    </div>
-
-    <!-- Help Panel (floating on map, next to Drawing Style) -->
-    <div id="helpPanel" class="help-panel">
-        <div class="draw-style-header">
-            <span>Help</span>
-            <button id="helpBtn" class="btn-icon" title="Open help">?</button>
-        </div>
-    </div>
-
-    <!-- Mobile: compact Style & Help buttons (shown on small screens only) -->
-    <div id="mobileStyleBackdrop" class="mobile-style-backdrop" aria-hidden="true"></div>
+    <!-- Mobile: Help FAB (Drawing Style is in sidebar; chrome row has Welcome + open sidebar) -->
     <div id="mobileMapActions" class="mobile-map-actions">
-        <button id="mobileStyleBtn" class="mobile-map-action-btn" title="Drawing Style" aria-label="Drawing Style">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/></svg>
-        </button>
         <button id="mobileHelpBtn" class="mobile-map-action-btn" title="Help" aria-label="Help">?</button>
     </div>
 
@@ -511,6 +521,10 @@
                         <span class="export-icon">&#128202;</span>
                         Export as PowerPoint
                     </button>
+                    <button class="btn btn-primary export-option" id="exportPdf">
+                        <span class="export-icon">&#128196;</span>
+                        Export as PDF
+                    </button>
                 </div>
             </div>
             <div class="modal-footer">
@@ -612,7 +626,8 @@
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p><strong>AirPlot</strong> lets you plan and visualise drone flights on an interactive map. Draw flight areas, mark no-fly zones, and place key locations such as take-off and landing points.</p>
+                    <p><strong>AirPlot</strong> (v2.0) lets you plan and visualise drone flights on an interactive map. Draw flight areas, mark no-fly zones, and place key locations such as take-off and landing points.</p>
+                    <p><strong>Related tools:</strong> <a href="weather.html">Flight Weather</a> — forecast, METAR/TAF, and exportable reports for a chosen location. <a href="flight-planning.html">DJI Mission Planner</a> — waypoint missions and recce overlays exported as KMZ for DJI Pilot 2. You can also install AirPlot from the browser (&ldquo;Add to Home Screen&rdquo; / install app) for a standalone experience.</p>
                 </div>
                 <div class="tabs help-tabs">
                     <button class="tab active" data-tab="points">Points</button>
@@ -624,10 +639,10 @@
                 </div>
                 <div class="tab-panel active" id="help-tab-points">
                     <h3>Adding Points</h3>
-                    <p>Add points either via the form in the sidebar or by clicking the <strong>pin button</strong> on the map toolbar, then choose a type and click the map.</p>
+                    <p>Add points via the sidebar form, or use the <strong>pin (Drop Point)</strong> control on the map toolbar: open it, pick a point type from the <strong>icon strip</strong>, then click the map once to place. Optional <strong>Notes</strong> are stored with each point and appear when you edit the point.</p>
                     <p><strong>Location formats supported:</strong> UK postcode, decimal lat/lng, Ordnance Survey grid reference, degrees/minutes/seconds (DMS), and What3Words (requires API key in Settings).</p>
-                    <h3>Point Types</h3>
-                    <p>Address/Reference, Primary TOLA, Secondary TOLA, Custom TOLA, Emergency Landing Zone, No-Fly Marker, Hazard, Waypoint, Custom Point, House, and TOLA. Custom points can use a 1–2 character symbol.</p>
+                    <h3>Point Types &amp; Icons</h3>
+                    <p>Address/Reference, Primary TOLA, Secondary TOLA, Custom TOLA, Emergency Landing Zone, No-Fly Marker, Hazard, Waypoint, Custom Point, House, and TOLA. <strong>Custom Point</strong> can use a 1–2 character symbol. Many types support <strong>icon colour</strong> (colour picker or palette) so you can distinguish markers on the map.</p>
                     <h3>Managing Points</h3>
                     <p>Use the search box to filter points. Click a point in the list to pan to it and highlight it. Use the edit and delete buttons, or right-click a marker on the map. Drag markers to move them. Click a marker to see a <strong>quick-edit popup</strong> with label, elevation, and links to View Details or Edit. Double-click a marker or use &ldquo;View Details&rdquo; for coordinates in multiple formats (Decimal, DMS, OS Grid Ref, What3Words, Elevation) with copy-to-clipboard. Use <strong>Copy All</strong> in the Point Details modal to copy all coordinate formats at once.</p>
                     <h3>Elevation</h3>
@@ -643,16 +658,18 @@
                         <li><strong>Line</strong> - click start and end points</li>
                         <li><strong>Arrow</strong> - click tail, then tip</li>
                         <li><strong>Flight Path</strong> - multi-point path with direction arrows</li>
-                        <li><strong>Text</strong> - add text labels on the map</li>
+                        <li><strong>Text</strong> - add text on the map</li>
                     </ul>
+                    <h3>Text on the map</h3>
+                    <p>For text shapes, the edit modal has <strong>Text on map</strong> (what is drawn), an optional <strong>Label</strong> for the sidebar list, and <strong>Text style</strong>: <em>Label</em> (dark pill, white text), <em>Highlight</em> (coloured text, no background), or <em>Custom</em> with your own text and background colours. You can set <strong>font size</strong> (px) for readability.</p>
                     <h3>Editing Shapes</h3>
-                    <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu (or the vertices button in the sidebar) to adjust polygon/line points. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path. <strong>Measurement labels</strong> on circles and flight paths can be dragged to reposition them.</p>
+                    <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu (or the vertices button in the sidebar) to adjust polygon/line points. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path. <strong>Measurement labels</strong> on circles and flight paths can be dragged to reposition them; you can also set <strong>label angle</strong> in the edit modal where shown.</p>
                     <h3>Copy &amp; Paste</h3>
                     <p>Right-click a shape to copy it (<strong>Ctrl+C</strong> when selected), then right-click elsewhere to paste (<strong>Ctrl+V</strong>). Press <strong>Esc</strong> to deselect.</p>
                     <h3>Grid Overlay</h3>
                     <p>Add a labelled grid over your map area for reference (e.g. search patterns, sector planning). Click the <strong>grid button</strong> on the map toolbar or choose <strong>Grid Overlay</strong> from the right-click context menu, then draw a rectangle to define the grid area. Set rows (1–50) and columns (1–26). Columns are labelled A–Z, rows 1–50. Right-click a grid cell to <strong>Edit Grid</strong> (change rows/columns or visibility) or <strong>Clear Grid</strong>.</p>
                     <h3>Drawing Style</h3>
-                    <p>The floating panel shows colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. These apply to new shapes.</p>
+                    <p>The <strong>Drawing Style</strong> section in the sidebar sets colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. Values apply to new shapes; when a shape is selected, they apply to that shape.</p>
                     <h3>Flight Overview</h3>
                     <p>For flight paths and lines, use <strong>Flight Overview</strong> to see altitude statistics. Click the altitude icon (▲) in the sidebar next to a flight path or line, or use the <strong>Flight Overview</strong> button when editing a shape. You can also right-click the path and choose Flight Overview. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>.</p>
                     <h3>Flight Path Distance</h3>
@@ -660,9 +677,9 @@
                 </div>
                 <div class="tab-panel" id="help-tab-import">
                     <h3>Bulk Import</h3>
-                    <p>Import many points at once via <strong>Upload CSV</strong>, <strong>Paste Data</strong> (tabular), or <strong>Paste List</strong> (one location per line). Map columns to your data fields. UK postcodes are supported with bulk lookup.</p>
+                    <p>Import many points at once via <strong>Upload CSV</strong>, <strong>Paste Data</strong> (tabular), or <strong>Paste List</strong> (one location per line). After parsing, map columns to: <strong>Latitude / Northing</strong>, <strong>Longitude / Easting</strong>, or a single <strong>Location</strong> column; plus optional <strong>Name / Label</strong>, <strong>Notes</strong>, <strong>Icon Type</strong>, <strong>Icon Color</strong>, and <strong>Icon Symbol</strong>. UK postcodes are supported with bulk lookup.</p>
                     <h3>Export</h3>
-                    <p>Export points as <strong>CSV</strong>, or points and shapes as <strong>KML</strong> for use in other mapping tools. <strong>Screenshot Map</strong> captures the current map view as an image. <strong>Export as PowerPoint</strong> generates a PPTX report with a map screenshot, points table, and shapes summary.</p>
+                    <p>Export points as <strong>CSV</strong>, or points and shapes as <strong>KML</strong> for use in other mapping tools. <strong>Screenshot Map</strong> captures the current map view as an image. <strong>Export as PowerPoint</strong> or <strong>Export as PDF</strong> generates a branded report with a map screenshot, points table, and shapes summary.</p>
                     <h3>Save &amp; Load Project</h3>
                     <p>Save your entire project (points, shapes, settings) as a JSON file. Load it later to restore your work.</p>
                     <h3>Undo</h3>
@@ -670,7 +687,7 @@
                 </div>
                 <div class="tab-panel" id="help-tab-map">
                     <h3>Map Toolbar</h3>
-                    <p>The toolbar (top-left) includes: <strong>Search</strong> - open the Search Location modal; <strong>Hand/Pan</strong> - drag to move the map; <strong>Undo</strong> - revert last action; <strong>Drop Point</strong> - choose type and click map to add a point; drawing tools (circle, rectangle, polygon, line, arrow, flight path); and <strong>Grid Overlay</strong> - draw a rectangle to add a labelled grid.</p>
+                    <p>Along the top-left (several Leaflet controls): <strong>Locate</strong> (GPS position), <strong>Undo</strong>, <strong>Save Project</strong>, <strong>Load Project</strong>, <strong>Flight Path</strong> (dedicated draw control), then the main draw bar with <strong>Search</strong> (opens Search Location), <strong>Hand/Pan</strong> (exit draw modes and drag the map), <strong>Drop Point</strong> (opens the icon strip—pick a type, then click the map once), then Geoman tools: <strong>Circle</strong>, <strong>Grid Overlay</strong>, <strong>Rectangle</strong>, <strong>Polygon</strong>, <strong>Line</strong>, <strong>Arrow</strong>, and <strong>Text</strong>.</p>
                     <h3>Search Location</h3>
                     <p>Click the search button on the map toolbar to open the Search Location modal. Enter a postcode, lat/long, OS Grid ref, DMS, or What3Words address. The map will pan and zoom to that location.</p>
                     <h3>Map Layers</h3>
@@ -689,8 +706,10 @@
                     <p>To use real NATS data, see <code>docs/AIRSPACE_DATA.md</code> for download and conversion instructions.</p>
                     <h3>Geolocation</h3>
                     <p>Use the locate button to show your current position on the map.</p>
-                    <h3>Sidebar</h3>
-                    <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points.</p>
+                    <h3>Sidebar &amp; footer</h3>
+                    <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes a <strong>Disclaimer</strong> link (same content as the Disclaimer tab).</p>
+                    <h3>Small screens</h3>
+                    <p>On narrow viewports the left toolbar may collapse behind a <strong>Tools</strong> (☰) button—tap to expand. The <strong>Welcome</strong> control (top-left, same as Flight Weather and DJI Mission Planner) returns to the start screen. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window.</p>
                     <h3>Settings</h3>
                     <p>Configure optional API keys (What3Words, OS Maps, BGA Airspace for RA(T)), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
                     <h3>Keyboard Shortcuts</h3>
@@ -708,6 +727,7 @@
                         <li><strong>UK Airspace</strong> - UK AIP ENR 5.1 / <a href="https://nats-uk.ead-it.com/" target="_blank" rel="noopener">NATS UAS</a> (Prohibited, Restricted, Danger, FRZ)</li>
                         <li><strong>UK NOTAM</strong> - <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS Contingency PIB, hourly updated)</li>
                         <li><strong>RA(T) Airspace</strong> - <a href="https://airspace.bgaladder.net/" target="_blank" rel="noopener">BGA Airspace Service</a> (requires username/password)</li>
+                        <li><strong>Open-Meteo</strong> - <a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a> (weather forecast data for the <a href="weather.html">Flight Weather</a> page)</li>
                     </ul>
                     <h3>Libraries &amp; Tools</h3>
                     <ul>
@@ -717,6 +737,8 @@
                         <li><strong>Leaflet.Curve</strong> 0.9.2 - <a href="https://github.com/elfalem/Leaflet.curve" target="_blank" rel="noopener">GitHub</a> - bezier curves</li>
                         <li><strong>Lucide Icons</strong> 0.468.0 - <a href="https://lucide.dev/" target="_blank" rel="noopener">lucide.dev</a> - icons</li>
                         <li><strong>html2canvas</strong> 1.4.1 - <a href="https://html2canvas.hertzen.com/" target="_blank" rel="noopener">html2canvas</a> - map screenshots</li>
+                        <li><strong>PptxGenJS</strong> 3.12.0 - <a href="https://gitbrent.github.io/PptxGenJS/" target="_blank" rel="noopener">PptxGenJS</a> - PowerPoint export</li>
+                        <li><strong>jsPDF</strong> 2.5.1 &amp; <strong>jsPDF-AutoTable</strong> 3.8.2 - <a href="https://github.com/parallax/jsPDF" target="_blank" rel="noopener">jsPDF</a> - PDF export</li>
                         <li><strong>Google Fonts</strong> - <a href="https://fonts.google.com/" target="_blank" rel="noopener">fonts.google.com</a> - Inter font</li>
                     </ul>
                     <h3>Coordinate Systems</h3>
@@ -1036,6 +1058,9 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <!-- PptxGenJS for PowerPoint export -->
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
     <!-- Leaflet-Geoman -->
     <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.16.0/dist/leaflet-geoman.min.js"></script>
@@ -1057,8 +1082,9 @@
     <script src="js/elevation.js"></script>
     <script src="js/converters.js"></script>
     <script src="js/drawings.js"></script>
-    <script src="js/pptx-theme.js"></script>
-    <script src="js/exporters.js"></script>
+    <script src="js/pptx-theme.js?v=7"></script>
+    <script src="js/pdf-theme.js?v=1"></script>
+    <script src="js/exporters.js?v=7"></script>
     <script src="js/io.js"></script>
     <script src="js/app.js"></script>
 </body>

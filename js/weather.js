@@ -6,6 +6,21 @@
 (function () {
     'use strict';
 
+    const WEATHER_STATUS_HTML_DEFAULT = [
+        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlot v2.0) shows forecast and aviation information for a point on the map.</p>',
+        '<p><strong>Steps</strong></p>',
+        '<ol class="weather-help-list">',
+        '<li>Choose a <strong>Model</strong> (e.g. Best match, ECMWF, GFS) and time: <strong>Now</strong> or <strong>Date &amp; Time</strong>.</li>',
+        '<li>Set a location: tap <strong>Select Location</strong> then tap the map, or <strong>right-click</strong> the map and choose <strong>Get Weather</strong>.</li>',
+        '<li>Tap <strong>Get Weather</strong> to open the report panel.</li>',
+        '</ol>',
+        '<p><strong>Report tabs</strong> — <strong>Summary</strong> (wind by altitude, visibility, clouds, precipitation, temperature), <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>, <strong>Airspace</strong>. Expand <strong>About this forecast model</strong> on the Summary tab for model notes.</p>',
+        '<p><strong>Export</strong> — <strong>PPTX</strong> or <strong>PDF</strong> downloads a branded report. <strong>Light</strong> switches the report to a light theme (e.g. for screenshots or copy/paste). The map <strong>ⓘ</strong> button opens or closes this instructions panel.</p>',
+        '<p>Use <strong>Welcome</strong> (top-left) to return to the AirPlot home screen. Attribution and data sources are shown in the report.</p>'
+    ].join('');
+
+    const WEATHER_STATUS_HTML_SELECTED = 'Location selected. Set time and tap <strong>Get Weather</strong>.';
+
     const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
     const HOURLY_PARAMS = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_120m,wind_direction_120m,visibility,cloud_cover,cloud_cover_low,precipitation,precipitation_probability,temperature_2m';
     const AVIATION_RADIUS_NM = 50;
@@ -25,6 +40,45 @@
         ukmo_seamless: 'UK Met Office',
         gem_global: 'GEM (Canada)'
     };
+
+    const MODEL_EXPLAINERS = {
+        ecmwf_ifs: {
+            name: 'ECMWF IFS',
+            fullName: 'European Centre for Medium-Range Weather Forecasts — Integrated Forecasting System',
+            resolution: '9 km',
+            provider: 'ECMWF (Reading, UK)',
+            equiv: 'This is the <strong>primary model behind BBC Weather</strong> (via MeteoGroup/DTN) and the <strong>default model on Windy.com</strong>. ECMWF IFS is widely regarded as the most accurate global forecast model and is the standard reference across European aviation and meteorology.'
+        },
+        gfs_seamless: {
+            name: 'GFS',
+            fullName: 'Global Forecast System — National Centers for Environmental Prediction',
+            resolution: '13–27 km',
+            provider: 'NOAA / NWS (USA)',
+            equiv: 'GFS is a <strong>secondary model used by BBC Weather</strong> (MeteoGroup blends it with ECMWF) and is <strong>available on Windy.com</strong> as an alternative view. It is the primary model for US domestic forecasts and is freely available worldwide.'
+        },
+        ukmo_seamless: {
+            name: 'UK Met Office (Global + UKV)',
+            fullName: 'Met Office Unified Model — Global (10 km) with UKV high-resolution (2 km) for the UK',
+            resolution: '2 km (UK) / 10 km (global)',
+            provider: 'Met Office (Exeter, UK)',
+            equiv: 'This is the <strong>same model that powers the Met Office website and app</strong>. For UK locations it uses the UKV at 2 km resolution — the highest-resolution operational model available for the British Isles. MeteoGroup also incorporates Met Office data into BBC Weather forecasts.'
+        },
+        gem_global: {
+            name: 'GEM',
+            fullName: 'Global Environmental Multiscale Model',
+            resolution: '15 km',
+            provider: 'Environment and Climate Change Canada',
+            equiv: 'GEM is the <strong>primary model for Canadian forecasts</strong>. It provides an independent global perspective and is useful as a comparison against the European (ECMWF) and American (GFS) models.'
+        },
+        auto: {
+            name: 'Best Match (Auto)',
+            fullName: 'Automatic model selection by Open-Meteo',
+            resolution: 'Varies',
+            provider: 'Open-Meteo (multi-model blend)',
+            equiv: 'Open-Meteo selects the best-performing model for your location. This typically blends data from <strong>ECMWF IFS</strong> (BBC Weather / Windy.com default), <strong>Met Office UKV</strong> (Met Office website), and other regional models to produce the most accurate local forecast.'
+        }
+    };
+
     const GUST_120M_MULTIPLIER = 1.3;
 
     let map;
@@ -38,6 +92,119 @@
     let lastModel = null;
     let lastAviationData = null;
     let lastDisplayTime = null;
+    let lastNotamData = null;
+    let lastAirspaceData = null;
+
+    const AIRSPACE_SEARCH_RADIUS_KM = 10;
+
+    function haversineKm(lat1, lng1, lat2, lng2) {
+        var R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLng = (lng2 - lng1) * Math.PI / 180;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function classifyAirspaceFeature(f) {
+        var props = f.properties || {};
+        var desig = (props.designator || props.type || props.id || '').toUpperCase();
+        var name = (props.name || '').toUpperCase();
+        var desc = (props.description || '').toUpperCase();
+        var aType = (props.type || '').toUpperCase();
+        if (desig.startsWith('EGRU') || desc.includes('FRZ') || desig.includes('FRZ') || desig.includes('RPZ') || name.includes('FRZ') || name.includes('AERODROME') || name.includes('FLIGHT RESTRICTION')) return 'FRZ';
+        if (desig.startsWith('EG-P') || desig.startsWith('EGP') || desig.startsWith('P') || name.includes('PROHIBITED') || aType === 'P') return 'Prohibited';
+        if (desig.startsWith('EG-R') || desig.startsWith('EGR') || desig.startsWith('R') || name.includes('RESTRICTED') || aType === 'R') return 'Restricted';
+        if (desig.startsWith('EG-D') || desig.startsWith('EGD') || desig.startsWith('D') || name.includes('DANGER') || aType === 'D') return 'Danger';
+        return null;
+    }
+
+    async function fetchNearbyNotams(lat, lng, radiusKm) {
+        try {
+            var resp = await fetch('https://jonty.github.io/uk-notam-archive/data/PIB.xml?t=' + Date.now());
+            if (!resp.ok) return [];
+            var xmlText = await resp.text();
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(xmlText, 'text/xml');
+            var notamEls = doc.querySelectorAll('Notam');
+            var all = [];
+            notamEls.forEach(function (el) {
+                var coords = el.querySelector('Coordinates');
+                var radius = el.querySelector('Radius');
+                var itemE = el.querySelector('ItemE');
+                var startVal = el.querySelector('StartValidity');
+                var endVal = el.querySelector('EndValidity');
+                var nof = el.querySelector('NOF');
+                var series = el.querySelector('Series');
+                var number = el.querySelector('Number');
+                var year = el.querySelector('Year');
+                if (!coords || !coords.textContent) return;
+                var cStr = coords.textContent.trim();
+                var m = cStr.match(/^(\d{4})([NS])(\d{5})([EW])$/);
+                if (!m) return;
+                var nLat = parseInt(m[1].slice(0, 2), 10) + parseInt(m[1].slice(2, 4), 10) / 60;
+                if (m[2] === 'S') nLat = -nLat;
+                var nLng = parseInt(m[3].slice(0, 3), 10) + parseInt(m[3].slice(3, 5), 10) / 60;
+                if (m[4] === 'W') nLng = -nLng;
+                var radiusNm = radius && radius.textContent ? parseInt(radius.textContent.trim(), 10) || 0 : 0;
+                var id = (nof ? nof.textContent : '') + (series ? series.textContent : '') + (number ? number.textContent : '') + '/' + (year ? year.textContent : '');
+                all.push({
+                    id: id.trim(), lat: nLat, lng: nLng, radiusNm: radiusNm,
+                    text: itemE ? itemE.textContent.trim() : '',
+                    startValidity: startVal ? startVal.textContent : '',
+                    endValidity: endVal ? endVal.textContent : ''
+                });
+            });
+            return all.filter(function (n) {
+                var dist = haversineKm(lat, lng, n.lat, n.lng);
+                var notamRadiusKm = (n.radiusNm > 0 && n.radiusNm < 999) ? n.radiusNm * 1.852 : 0;
+                return (dist - notamRadiusKm) <= radiusKm;
+            });
+        } catch (e) {
+            console.warn('NOTAM fetch failed:', e);
+            return [];
+        }
+    }
+
+    async function fetchNearbyAirspace(lat, lng, radiusKm) {
+        try {
+            var results = await Promise.all([
+                fetch('assets/uk-airspace.geojson?t=' + Date.now()).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+                fetch('assets/uk-aip-airspace.geojson?t=' + Date.now()).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+            ]);
+            var features = [];
+            results.forEach(function (data) {
+                if (data && data.features) features = features.concat(data.features);
+            });
+            return features.filter(function (f) {
+                var category = classifyAirspaceFeature(f);
+                if (!category) return false;
+                var geom = f.geometry;
+                if (!geom || !geom.coordinates) return false;
+                var coords = geom.type === 'MultiPolygon' ? geom.coordinates.flat(2) : (geom.type === 'Polygon' ? geom.coordinates.flat() : []);
+                return coords.some(function (c) {
+                    return haversineKm(lat, lng, c[1], c[0]) <= radiusKm;
+                });
+            }).map(function (f) {
+                var props = f.properties || {};
+                return {
+                    category: classifyAirspaceFeature(f),
+                    designator: props.designator || props.id || '—',
+                    name: props.name || '—',
+                    lower: props.lowerLimit || props.lower || '—',
+                    upper: props.upperLimit || props.upper || '—',
+                    geometry: f.geometry
+                };
+            }).sort(function (a, b) {
+                var order = { 'FRZ': 0, 'Prohibited': 1, 'Restricted': 2, 'Danger': 3 };
+                return (order[a.category] || 4) - (order[b.category] || 4);
+            });
+        } catch (e) {
+            console.warn('Airspace fetch failed:', e);
+            return [];
+        }
+    }
 
     // ---- Helpers ----
     function directionToCardinal(deg) {
@@ -139,7 +306,7 @@
             .addTo(map)
             .bindTooltip(`Selected: ${lat.toFixed(5)}, ${lng.toFixed(5)}`, { permanent: false, direction: 'top' });
         document.getElementById('weatherFetchBtn').disabled = false;
-        document.getElementById('weatherStatus').innerHTML = 'Location selected. Set time and tap <strong>Get Weather</strong>.';
+        document.getElementById('weatherStatus').innerHTML = WEATHER_STATUS_HTML_SELECTED;
     }
 
     function clearSelectedPoint() {
@@ -149,7 +316,7 @@
             selectedMarker = null;
         }
         document.getElementById('weatherFetchBtn').disabled = true;
-        document.getElementById('weatherStatus').innerHTML = 'Tap <strong>Select Location</strong>, then tap the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
+        document.getElementById('weatherStatus').innerHTML = WEATHER_STATUS_HTML_DEFAULT;
     }
 
     function exitSelectMode() {
@@ -242,7 +409,7 @@
             exitSelectMode();
         }
         if (!selectMode && !selectedPoint) {
-            document.getElementById('weatherStatus').innerHTML = 'Tap <strong>Select Location</strong>, then tap the map to choose a point. Set time and tap <strong>Get Weather</strong>.';
+            document.getElementById('weatherStatus').innerHTML = WEATHER_STATUS_HTML_DEFAULT;
         }
     }
 
@@ -605,7 +772,141 @@
         if (attrEl) attrEl.innerHTML = attrHtml;
         if (attrHourlyEl) attrHourlyEl.innerHTML = attrHtml;
 
+        updateModelExplainer(model);
+
         renderAviationSection(aviationData || { nearby: [], metars: [], tafs: [], error: null });
+
+        if (selectedPoint) {
+            loadAirspaceTab(selectedPoint.lat, selectedPoint.lng);
+        }
+    }
+
+    function updateModelExplainer(model) {
+        var body = document.getElementById('weatherModelExplainerBody');
+        if (!body) return;
+        var info = MODEL_EXPLAINERS[model] || MODEL_EXPLAINERS['auto'];
+
+        body.innerHTML =
+            '<p><strong>' + info.name + '</strong> — ' + info.fullName + '</p>' +
+            '<table class="model-equiv-table">' +
+            '<tr><th>Resolution</th><th>Provider</th></tr>' +
+            '<tr><td>' + info.resolution + '</td><td>' + info.provider + '</td></tr>' +
+            '</table>' +
+            '<p style="margin-top:10px">' + info.equiv + '</p>' +
+            '<table class="model-equiv-table" style="margin-top:10px">' +
+            '<tr><th>Service</th><th>Primary Model</th><th>AirPlot Equivalent</th></tr>' +
+            '<tr><td>BBC Weather</td><td>ECMWF IFS (via MeteoGroup/DTN)</td><td class="equiv-highlight">ECMWF IFS</td></tr>' +
+            '<tr><td>Met Office</td><td>Met Office UKV (2 km) + Global</td><td class="equiv-highlight">UK Met Office</td></tr>' +
+            '<tr><td>Windy.com</td><td>ECMWF IFS (default), GFS, ICON</td><td class="equiv-highlight">ECMWF IFS / GFS</td></tr>' +
+            '</table>';
+    }
+
+    function formatNotamDate(str) {
+        if (!str) return '';
+        var raw = String(str).trim();
+        var up = raw.toUpperCase();
+        if (up === 'PERM' || up === 'UFN') return up;
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var fmt = function (d) {
+            return d.getUTCDate() + ' ' + months[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ' ' +
+                String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0') + ' UTC';
+        };
+        var m = raw.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+        if (m) { var d = new Date(Date.UTC(+m[1], parseInt(m[2],10)-1, +m[3], +m[4], +m[5])); if (!isNaN(d.getTime())) return fmt(d); }
+        m = raw.match(/\d{10}/);
+        if (!m) return raw;
+        var s = m[0];
+        var yy = parseInt(s.slice(0,2),10); var mm = parseInt(s.slice(2,4),10)-1; var dd = parseInt(s.slice(4,6),10);
+        var hh = parseInt(s.slice(6,8),10); var min = parseInt(s.slice(8,10),10);
+        var year = yy >= 50 ? 1900 + yy : 2000 + yy;
+        if (mm < 0 || mm > 11 || dd < 1 || dd > 31) return raw;
+        return fmt(new Date(Date.UTC(year, mm, dd, hh, min)));
+    }
+
+    async function loadAirspaceTab(lat, lng) {
+        var loading = document.getElementById('weatherAirspaceLoading');
+        var content = document.getElementById('weatherAirspaceContent');
+        if (!loading || !content) return;
+        loading.classList.remove('hidden');
+        content.classList.add('hidden');
+        content.innerHTML = '';
+
+        var results = await Promise.all([
+            fetchNearbyNotams(lat, lng, AIRSPACE_SEARCH_RADIUS_KM),
+            fetchNearbyAirspace(lat, lng, AIRSPACE_SEARCH_RADIUS_KM)
+        ]);
+        lastNotamData = results[0];
+        lastAirspaceData = results[1];
+
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+        renderAirspaceTab(lastNotamData, lastAirspaceData, lat, lng);
+    }
+
+    function renderAirspaceTab(notams, airspace, lat, lng) {
+        var content = document.getElementById('weatherAirspaceContent');
+        if (!content) return;
+        content.innerHTML = '';
+
+        if (notams.length === 0 && airspace.length === 0) {
+            content.innerHTML = '<div class="weather-airspace-empty"><p>No NOTAMs or airspace restrictions found within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km.</p></div>';
+            return;
+        }
+
+        if (airspace.length > 0) {
+            var catColors = { FRZ: 'frz', Prohibited: 'prohibited', Restricted: 'restricted', Danger: 'danger' };
+            content.insertAdjacentHTML('beforeend',
+                '<div class="weather-airspace-section-title">Airspace Restrictions <span class="airspace-count">(' + airspace.length + ')</span></div>'
+            );
+            airspace.forEach(function (a) {
+                var cls = catColors[a.category] || 'danger';
+                var distKm = '';
+                if (a.geometry) {
+                    var coords = a.geometry.type === 'MultiPolygon' ? a.geometry.coordinates.flat(2) : (a.geometry.type === 'Polygon' ? a.geometry.coordinates.flat() : []);
+                    var minDist = Infinity;
+                    coords.forEach(function (c) { var d = haversineKm(lat, lng, c[1], c[0]); if (d < minDist) minDist = d; });
+                    if (isFinite(minDist)) distKm = ' · ' + minDist.toFixed(1) + ' km away';
+                }
+                content.insertAdjacentHTML('beforeend',
+                    '<div class="weather-airspace-item category-' + cls + '">' +
+                    '<div class="weather-airspace-item-header">' +
+                    '<span class="weather-airspace-badge badge-' + cls + '">' + a.category + '</span>' +
+                    '<span class="weather-airspace-item-name">' + (a.name || a.designator) + '</span>' +
+                    '</div>' +
+                    '<div class="weather-airspace-item-detail">' +
+                    '<strong>' + a.designator + '</strong>' + distKm +
+                    ' · Lower: ' + a.lower + ' · Upper: ' + a.upper +
+                    '</div></div>'
+                );
+            });
+        }
+
+        if (notams.length > 0) {
+            content.insertAdjacentHTML('beforeend',
+                '<div class="weather-airspace-section-title">NOTAMs <span class="airspace-count">(' + notams.length + ')</span></div>'
+            );
+            notams.forEach(function (n) {
+                var dist = haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
+                var validStart = formatNotamDate(n.startValidity);
+                var validEnd = formatNotamDate(n.endValidity);
+                var validStr = validStart + ' – ' + validEnd;
+                var descText = (n.text || '').replace(/\s+/g, ' ');
+                if (descText.length > 300) descText = descText.slice(0, 297) + '…';
+                content.insertAdjacentHTML('beforeend',
+                    '<div class="weather-airspace-item category-notam">' +
+                    '<div class="weather-airspace-item-header">' +
+                    '<span class="weather-airspace-badge badge-notam">NOTAM</span>' +
+                    '<span class="weather-airspace-item-name">' + (n.id || 'NOTAM') + '</span>' +
+                    '</div>' +
+                    '<div class="weather-airspace-item-detail">' +
+                    dist + ' km away' +
+                    (n.radiusNm > 0 && n.radiusNm < 999 ? ' · Radius: ' + n.radiusNm + ' NM' : '') +
+                    '<br>Valid: ' + validStr +
+                    '<br>' + descText +
+                    '</div></div>'
+                );
+            });
+        }
     }
 
     const WX_CODES = {
@@ -635,17 +936,50 @@
         return intensity + (parts.length ? parts.join(' ') : s.toLowerCase());
     }
 
+    const MI_TO_KM = 1.609344;
+
+    function kmBracketFromMiles(mi) {
+        const km = mi * MI_TO_KM;
+        if (km < 1) {
+            const rounded = Math.round(km * 10) / 10;
+            return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
+        }
+        return String(Math.round(km));
+    }
+
+    function milesWithKm(mi) {
+        return mi + ' miles (' + kmBracketFromMiles(mi) + ' km)';
+    }
+
+    function parseMilesFromVisibPrefix(prefix) {
+        const s = String(prefix).trim();
+        if (!s) return null;
+        const frac = /^(\d+)\s*\/\s*(\d+)$/.exec(s);
+        if (frac) {
+            const a = parseInt(frac[1], 10);
+            const b = parseInt(frac[2], 10);
+            if (b > 0) return a / b;
+        }
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : null;
+    }
+
     function formatVisib(v) {
         if (v == null) return '—';
         if (typeof v === 'string') {
-            if (v === '6+' || v === 'P6SM') return '6 statute miles or more';
+            if (v === '6+' || v === 'P6SM') return '6 miles or more (' + kmBracketFromMiles(6) + ' km)';
             if (v === '9999' || v === '10+') return '10 km or more';
-            if (v.endsWith('SM')) return v.slice(0, -2) + ' statute miles';
+            if (v.endsWith('SM')) {
+                const prefix = v.slice(0, -2);
+                const mi = parseMilesFromVisibPrefix(prefix);
+                if (mi != null) return milesWithKm(mi);
+                return prefix.trim() + ' miles';
+            }
             return v;
         }
         if (typeof v === 'number') {
             if (v >= 10) return v + ' km';
-            return v + ' statute miles';
+            return milesWithKm(v);
         }
         return String(v);
     }
@@ -818,6 +1152,9 @@
         btn.querySelector('span').textContent = 'Exporting…';
 
         try {
+            const lightToggle = document.getElementById('weatherLightThemeToggle');
+            PptxTheme.setLight(lightToggle && lightToggle.checked);
+
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';
             pptx.author = 'AirPlot';
@@ -826,7 +1163,7 @@
             const logo = await PptxTheme.loadLogo();
             PptxTheme.applyTheme(pptx, logo);
 
-            const C = PptxTheme.COLORS;
+            const C = PptxTheme.colors();
             const headerOpts = PptxTheme.tableHeaderOpts();
             const cellOpts = PptxTheme.tableCellOpts();
             const labelOpts = PptxTheme.tableLabelOpts();
@@ -839,13 +1176,27 @@
             const locLabel = selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5);
             const timeLabel = lastDisplayTime ? new Date(lastDisplayTime).toLocaleString() : new Date().toLocaleString();
 
-            const mapImg = await captureMapImage();
+            const mapContainer = document.getElementById('weatherMap') || document.getElementById('map');
+            const mapImg = await PptxTheme.captureSquareMap(mapContainer);
 
             // --- Slide 1: Title + Map ---
             let slide = pptx.addSlide({ masterName: 'TITLE_SLIDE' });
             slide.addText('Flight Weather Report', { x: 1.1, y: 0.15, w: 8, h: 0.6, fontSize: 26, bold: true, color: C.textPrimary, fontFace: 'Arial' });
-            slide.addText(locLabel + '  |  ' + timeLabel + '  |  Model: ' + modelLabel, { x: 0.5, y: 0.85, w: 12, h: 0.35, fontSize: 12, color: C.textMuted, fontFace: 'Arial' });
-            slide.addImage({ data: mapImg, x: 0.5, y: 1.35, w: 9.5, h: 5.3, rounding: true });
+
+            var mapSize = 5.6;
+            slide.addShape('roundRect', { x: 0.42, y: 1.02, w: mapSize + 0.16, h: mapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
+            slide.addImage({ data: mapImg, x: 0.5, y: 1.1, w: mapSize, h: mapSize, rounding: false });
+
+            var panelX = 6.5;
+            var panelW = 6.3;
+            PptxTheme.addInfoPanel(slide, panelX, 1.0, panelW, 5.7, [
+                { label: 'LOCATION', value: locLabel, divider: true },
+                { label: 'DATE & TIME', value: timeLabel, divider: true },
+                { label: 'WEATHER MODEL', value: modelLabel, divider: true },
+                { label: 'FLIGHT SUITABILITY', value: suitability.text, color: suitColor.bg === '4CAF50' ? '66BB6A' : (suitColor.bg === 'FF9800' ? 'FFB74D' : 'EF5350'), bold: true, fontSize: 15, divider: true },
+                { label: 'COORDINATES', value: selectedPoint.lat.toFixed(6) + '°N   ' + Math.abs(selectedPoint.lng).toFixed(6) + '°' + (selectedPoint.lng >= 0 ? 'E' : 'W'), divider: true },
+                { label: 'GENERATED', value: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '  at  ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) }
+            ]);
 
             // --- Slide 2: Weather Summary ---
             slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
@@ -952,18 +1303,34 @@
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
                 slide.addText('METAR / TAF — Aerodromes within 50 NM', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
+                var maxY = 6.6;
                 let yPos = 0.85;
-                lastAviationData.nearby.forEach(function (s) {
-                    if (yPos > 6.2) {
-                        slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                        slide.addText('METAR / TAF (continued)', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
-                        yPos = 0.85;
-                    }
 
+                function newMetarSlide(title) {
+                    slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                    slide.addText(title, { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                    yPos = 0.85;
+                }
+
+                lastAviationData.nearby.forEach(function (s) {
                     const metar = metarByIcao[s.icao];
                     const taf = tafByIcao[s.icao];
                     const rawMetar = metar && (metar.rawOb || metar.raw || metar.report);
                     const rawTaf = taf && (taf.rawTAF || taf.raw || taf.report);
+
+                    var metarH = rawMetar ? 0.7 : 0;
+                    var tafH = 0;
+                    if (rawTaf) {
+                        var decoded = decodeTaf(taf);
+                        var tafText = decoded || rawTaf;
+                        var lineCount = (tafText.match(/\n/g) || []).length + 1;
+                        tafH = Math.max(0.6, Math.min(2.0, lineCount * 0.22)) + 0.1;
+                    }
+                    var blockH = 0.4 + metarH + tafH + 0.2;
+
+                    if (yPos + blockH > maxY) {
+                        newMetarSlide('METAR / TAF (continued)');
+                    }
 
                     slide.addText(
                         [
@@ -975,23 +1342,248 @@
                     yPos += 0.4;
 
                     if (rawMetar) {
-                        const decoded = decodeMetar(metar);
-                        slide.addText('METAR: ' + (decoded || rawMetar), { x: 0.7, y: yPos, w: 11.5, h: 0.6, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
+                        var decodedMetar = decodeMetar(metar);
+                        slide.addText('METAR: ' + (decodedMetar || rawMetar), { x: 0.7, y: yPos, w: 11.5, h: 0.6, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
                         yPos += 0.7;
                     }
                     if (rawTaf) {
-                        const decoded = decodeTaf(taf);
-                        const tafText = decoded || rawTaf;
-                        const lineCount = (tafText.match(/\n/g) || []).length + 1;
-                        const boxH = Math.max(0.6, Math.min(2.0, lineCount * 0.22));
+                        var boxH = tafH - 0.1;
                         slide.addText('TAF: ' + tafText, { x: 0.7, y: yPos, w: 11.5, h: boxH, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
                         yPos += boxH + 0.1;
                     }
                     yPos += 0.2;
                 });
 
-                slide.addText('Data from Aviation Weather Center (aviationweather.gov)', { x: 0.5, y: 6.9, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+                slide.addText('Data from Aviation Weather Center (aviationweather.gov)', { x: 0.5, y: maxY + 0.1, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
             }
+
+            // --- NOTAMs & Airspace within 10 km ---
+            var notamSlides = lastNotamData || await fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, AIRSPACE_SEARCH_RADIUS_KM);
+            var airspaceFeatures = lastAirspaceData || await fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, AIRSPACE_SEARCH_RADIUS_KM);
+
+            if (notamSlides.length > 0 || airspaceFeatures.length > 0) {
+                var tempLayers = [];
+                var catMapColors = { FRZ: '#9333ea', Prohibited: '#991b1b', Restricted: '#dc2626', Danger: '#ca8a04' };
+                var origView = { center: map.getCenter(), zoom: map.getZoom() };
+
+                airspaceFeatures.forEach(function (af) {
+                    if (af.geometry) {
+                        var layer = L.geoJSON(af.geometry, {
+                            style: { color: catMapColors[af.category] || '#dc2626', weight: 2, fillColor: catMapColors[af.category] || '#dc2626', fillOpacity: 0.15 }
+                        });
+                        layer.addTo(map);
+                        tempLayers.push(layer);
+                    }
+                });
+                notamSlides.forEach(function (n) {
+                    if (n.radiusNm > 0 && n.radiusNm < 999) {
+                        var c = L.circle([n.lat, n.lng], { radius: n.radiusNm * 1852, color: '#dc2626', weight: 1.5, fillColor: '#dc2626', fillOpacity: 0.1 });
+                        c.addTo(map);
+                        tempLayers.push(c);
+                    }
+                });
+
+                var radiusDeg = AIRSPACE_SEARCH_RADIUS_KM / 111.32;
+                map.fitBounds([
+                    [selectedPoint.lat - radiusDeg, selectedPoint.lng - radiusDeg * 1.5],
+                    [selectedPoint.lat + radiusDeg, selectedPoint.lng + radiusDeg * 1.5]
+                ], { animate: false, padding: [10, 10] });
+                await new Promise(function (r) { setTimeout(r, 600); });
+
+                var airspaceMapImg = await PptxTheme.captureSquareMap(mapContainer);
+
+                tempLayers.forEach(function (l) { map.removeLayer(l); });
+                map.setView(origView.center, origView.zoom, { animate: false });
+
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('Airspace & NOTAMs — ' + AIRSPACE_SEARCH_RADIUS_KM + ' km radius', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                var amapSize = 5.6;
+                slide.addShape('roundRect', { x: 0.42, y: 0.82, w: amapSize + 0.16, h: amapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
+                slide.addImage({ data: airspaceMapImg, x: 0.5, y: 0.9, w: amapSize, h: amapSize, rounding: false });
+
+                var legendY = 0.9;
+                var legendX = 6.5;
+                slide.addText('Legend', { x: legendX, y: legendY, w: 4, h: 0.3, fontSize: 12, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                legendY += 0.4;
+                var legendItems = [
+                    { color: '9333EA', label: 'FRZ / Aerodrome' },
+                    { color: '991B1B', label: 'Prohibited' },
+                    { color: 'DC2626', label: 'Restricted / NOTAM' },
+                    { color: 'CA8A04', label: 'Danger Area' }
+                ];
+                legendItems.forEach(function (item) {
+                    slide.addShape('rect', { x: legendX, y: legendY + 0.05, w: 0.2, h: 0.2, fill: { color: item.color } });
+                    slide.addText(item.label, { x: legendX + 0.35, y: legendY, w: 4, h: 0.3, fontSize: 10, color: C.textPrimary, fontFace: 'Arial' });
+                    legendY += 0.35;
+                });
+
+                legendY += 0.2;
+                slide.addText(notamSlides.length + ' NOTAM' + (notamSlides.length !== 1 ? 's' : '') + ', ' + airspaceFeatures.length + ' airspace zone' + (airspaceFeatures.length !== 1 ? 's' : ''), { x: legendX, y: legendY, w: 6, h: 0.3, fontSize: 11, bold: true, color: C.accent, fontFace: 'Arial' });
+                legendY += 0.4;
+                slide.addText('Search radius: ' + AIRSPACE_SEARCH_RADIUS_KM + ' km from ' + selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5), { x: legendX, y: legendY, w: 6, h: 0.25, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+            }
+
+            if (notamSlides.length > 0) {
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('NOTAMs within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km (' + notamSlides.length + ')', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                var nRows = [[
+                    { text: 'NOTAM ID', options: headerOpts },
+                    { text: 'Distance', options: headerOpts },
+                    { text: 'Radius', options: headerOpts },
+                    { text: 'Validity', options: headerOpts },
+                    { text: 'Description', options: headerOpts }
+                ]];
+                var nPageSize = 10;
+                for (var ni = 0; ni < notamSlides.length; ni++) {
+                    if (ni > 0 && ni % nPageSize === 0) {
+                        slide.addTable(nRows, { x: 0.3, y: 0.85, w: 12.6, colW: [1.6, 1.3, 1.0, 2.7, 6.0], border: border, rowH: 0.45, fontSize: 8 });
+                        slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                        slide.addText('NOTAMs (continued)', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                        nRows = [[
+                            { text: 'NOTAM ID', options: headerOpts },
+                            { text: 'Distance', options: headerOpts },
+                            { text: 'Radius', options: headerOpts },
+                            { text: 'Validity', options: headerOpts },
+                            { text: 'Description', options: headerOpts }
+                        ]];
+                    }
+                    var ntm = notamSlides[ni];
+                    var ntmDist = haversineKm(selectedPoint.lat, selectedPoint.lng, ntm.lat, ntm.lng).toFixed(1) + ' km';
+                    var validStart = formatNotamDate(ntm.startValidity);
+                    var validEnd = formatNotamDate(ntm.endValidity);
+                    var validStr = (validStart || ntm.startValidity || '?') + ' – ' + (validEnd || ntm.endValidity || '?');
+                    var descText = (ntm.text || '').replace(/\s+/g, ' ');
+                    if (descText.length > 120) descText = descText.slice(0, 117) + '…';
+                    nRows.push([
+                        { text: ntm.id || '—', options: cellOpts },
+                        { text: ntmDist, options: cellOpts },
+                        { text: ntm.radiusNm > 0 && ntm.radiusNm < 999 ? ntm.radiusNm + ' NM' : '—', options: cellOpts },
+                        { text: validStr, options: cellOpts },
+                        { text: descText, options: cellOpts }
+                    ]);
+                }
+                slide.addTable(nRows, { x: 0.3, y: 0.85, w: 12.6, colW: [1.6, 1.3, 1.0, 2.7, 6.0], border: border, rowH: 0.45, fontSize: 8 });
+                slide.addText('UK NOTAMs from NATS AIS via UK NOTAM Archive', { x: 0.5, y: 6.8, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+            }
+
+            if (airspaceFeatures.length > 0) {
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('Airspace Restrictions within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km (' + airspaceFeatures.length + ')', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                var catColors = { 'FRZ': '9333EA', 'Prohibited': '991B1B', 'Restricted': 'DC2626', 'Danger': 'CA8A04' };
+                var aRows = [[
+                    { text: 'Type', options: headerOpts },
+                    { text: 'Designator', options: headerOpts },
+                    { text: 'Name', options: headerOpts },
+                    { text: 'Lower', options: headerOpts },
+                    { text: 'Upper', options: headerOpts }
+                ]];
+                var aPageSize = 12;
+                for (var ai = 0; ai < airspaceFeatures.length; ai++) {
+                    if (ai > 0 && ai % aPageSize === 0) {
+                        slide.addTable(aRows, { x: 0.3, y: 0.85, w: 12.6, colW: [1.8, 2.2, 4.8, 1.9, 1.9], border: border, rowH: 0.4 });
+                        slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                        slide.addText('Airspace Restrictions (continued)', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                        aRows = [[
+                            { text: 'Type', options: headerOpts },
+                            { text: 'Designator', options: headerOpts },
+                            { text: 'Name', options: headerOpts },
+                            { text: 'Lower', options: headerOpts },
+                            { text: 'Upper', options: headerOpts }
+                        ]];
+                    }
+                    var af = airspaceFeatures[ai];
+                    var catColor = catColors[af.category] || C.textPrimary;
+                    aRows.push([
+                        { text: af.category, options: { fill: { color: C.surface }, color: catColor, fontSize: 10, fontFace: 'Arial', bold: true } },
+                        { text: af.designator, options: cellOpts },
+                        { text: af.name, options: cellOpts },
+                        { text: af.lower, options: cellOpts },
+                        { text: af.upper, options: cellOpts }
+                    ]);
+                }
+                slide.addTable(aRows, { x: 0.3, y: 0.85, w: 12.6, colW: [1.8, 2.2, 4.8, 1.9, 1.9], border: border, rowH: 0.4 });
+                slide.addText('UK airspace data from NATS AIS (ENR 5.1) and UK AIP', { x: 0.5, y: 6.8, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+            }
+
+            // --- Airspace & NOTAM Data Sources explainer ---
+            if (notamSlides.length > 0 || airspaceFeatures.length > 0) {
+                slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+                slide.addText('Airspace & NOTAM Data Sources', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+                var srcY = 0.85;
+
+                if (notamSlides.length > 0) {
+                    slide.addText('NOTAMs', { x: 0.5, y: srcY, w: 5, h: 0.3, fontSize: 14, bold: true, color: C.accent, fontFace: 'Arial' });
+                    srcY += 0.35;
+                    slide.addShape('roundRect', { x: 0.5, y: srcY, w: 12.2, h: 1.55, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
+                    slide.addText([
+                        { text: 'Source: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
+                        { text: 'UK NOTAM Archive (jonty.github.io/uk-notam-archive), mirroring the NATS AIS Contingency Pre-flight Information Bulletin (PIB).', options: { color: C.textPrimary, fontSize: 10 } }
+                    ], { x: 0.7, y: srcY + 0.08, w: 11.8, h: 0.3, fontFace: 'Arial' });
+                    slide.addText([
+                        { text: 'Authority: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
+                        { text: 'NOTAMs are issued by NATS (National Air Traffic Services) on behalf of the UK Civil Aviation Authority (CAA). They are the official mechanism for communicating temporary airspace restrictions, hazards, and aeronautical changes.', options: { color: C.textPrimary, fontSize: 10 } }
+                    ], { x: 0.7, y: srcY + 0.38, w: 11.8, h: 0.45, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    slide.addText([
+                        { text: 'Reliability: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
+                        { text: 'Data is updated hourly from the official NATS PIB. However, this report uses an unofficial open-data mirror. For flight-critical decisions, always verify against the official NATS AIS PIB (pibs.nats.aero) or the Drone Assist app.', options: { color: C.textPrimary, fontSize: 10 } }
+                    ], { x: 0.7, y: srcY + 0.85, w: 11.8, h: 0.6, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    srcY += 1.7;
+                }
+
+                if (airspaceFeatures.length > 0) {
+                    slide.addText('FRZ, Restricted & Danger Areas', { x: 0.5, y: srcY, w: 8, h: 0.3, fontSize: 14, bold: true, color: C.accent, fontFace: 'Arial' });
+                    srcY += 0.35;
+                    slide.addShape('roundRect', { x: 0.5, y: srcY, w: 12.2, h: 2.15, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
+                    slide.addText([
+                        { text: 'Source: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
+                        { text: 'UK Aeronautical Information Publication (AIP) ENR 5.1 and NATS UAS airspace boundaries. Data includes Flight Restriction Zones (FRZ), Prohibited (EG P), Restricted (EG R), and Danger (EG D) areas.', options: { color: C.textPrimary, fontSize: 10 } }
+                    ], { x: 0.7, y: srcY + 0.08, w: 11.8, h: 0.45, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    slide.addText([
+                        { text: 'Authority: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
+                        { text: 'Airspace boundaries are defined by the UK CAA and published through the AIP, managed by NATS Aeronautical Information Service. FRZs are mandated under the Air Navigation Order (ANO) Article 94A for drone operations near aerodromes.', options: { color: C.textPrimary, fontSize: 10 } }
+                    ], { x: 0.7, y: srcY + 0.55, w: 11.8, h: 0.55, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    slide.addText([
+                        { text: 'Reliability: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
+                        { text: 'These are official published boundaries and are considered authoritative for planning purposes. However, Danger and Restricted areas may be temporarily activated or deactivated — always cross-reference with current NOTAMs. This data does not include temporary airspace reservations (RA(T)) which require a separate check.', options: { color: C.textPrimary, fontSize: 10 } }
+                    ], { x: 0.7, y: srcY + 1.15, w: 11.8, h: 0.85, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    srcY += 2.3;
+                }
+
+                slide.addText('This report is for planning purposes only and does not replace the obligation to conduct a formal pre-flight assessment using official sources.', { x: 0.5, y: Math.max(srcY + 0.15, 6.5), w: 12, h: 0.4, fontSize: 9, bold: true, color: C.textMuted, fontFace: 'Arial', italic: true });
+            }
+
+            // --- Final Slide: Data Sources & Model Explainer ---
+            var info = MODEL_EXPLAINERS[lastModel] || MODEL_EXPLAINERS['auto'];
+            slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
+            slide.addText('Data Sources & Forecast Model', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+
+            slide.addText([
+                { text: 'Model: ', options: { fontSize: 12, color: C.textMuted, fontFace: 'Arial' } },
+                { text: info.name, options: { fontSize: 12, color: C.textPrimary, fontFace: 'Arial', bold: true } }
+            ], { x: 0.5, y: 0.85, w: 12, h: 0.3 });
+            slide.addText(info.fullName, { x: 0.5, y: 1.15, w: 12, h: 0.3, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
+            slide.addText('Resolution: ' + info.resolution + '   |   Provider: ' + info.provider, { x: 0.5, y: 1.45, w: 12, h: 0.3, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
+
+            slide.addShape('roundRect', { x: 0.5, y: 1.9, w: 12.2, h: 1.2, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
+            slide.addText(info.equiv.replace(/<\/?strong>/g, ''), { x: 0.7, y: 2.0, w: 11.8, h: 1.0, fontSize: 11, color: C.textPrimary, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.3 });
+
+            var equivHeader = [
+                { text: 'Service', options: headerOpts },
+                { text: 'Primary Model', options: headerOpts },
+                { text: 'AirPlot Equivalent', options: headerOpts },
+                { text: 'Match', options: headerOpts }
+            ];
+            var equivRows = [equivHeader,
+                [{ text: 'BBC Weather', options: cellOpts }, { text: 'ECMWF IFS (via MeteoGroup/DTN)', options: cellOpts }, { text: 'ECMWF IFS', options: cellOpts }, { text: 'Direct equivalent', options: { fill: { color: C.surface }, color: '66BB6A', fontSize: 10, fontFace: 'Arial' } }],
+                [{ text: 'Met Office', options: cellOpts }, { text: 'Met Office UKV (2 km) + Global', options: cellOpts }, { text: 'UK Met Office', options: cellOpts }, { text: 'Direct equivalent', options: { fill: { color: C.surface }, color: '66BB6A', fontSize: 10, fontFace: 'Arial' } }],
+                [{ text: 'Windy.com', options: cellOpts }, { text: 'ECMWF IFS (default) / GFS / ICON', options: cellOpts }, { text: 'ECMWF IFS / GFS', options: cellOpts }, { text: 'Direct equivalent', options: { fill: { color: C.surface }, color: '66BB6A', fontSize: 10, fontFace: 'Arial' } }]
+            ];
+            slide.addTable(equivRows, { x: 0.3, y: 3.35, w: 12.6, colW: [2.5, 4.2, 3.2, 2.7], border: border, rowH: 0.42 });
+
+            slide.addText('Forecast data: Open-Meteo (open-meteo.com) CC BY 4.0. METAR/TAF: Aviation Weather Center (aviationweather.gov). NOTAMs: NATS AIS via UK NOTAM Archive. Airspace: UK AIP / NATS.', { x: 0.5, y: 5.6, w: 12, h: 0.5, fontSize: 9, color: C.textMuted, fontFace: 'Arial', lineSpacingMultiple: 1.3 });
 
             const fileName = 'Weather_Report_' + new Date().toISOString().slice(0, 10) + '.pptx';
             await pptx.writeFile({ fileName: fileName });
@@ -999,6 +1591,478 @@
         } catch (err) {
             console.error('PPTX export failed:', err);
             alert('Failed to export PowerPoint: ' + (err.message || 'Unknown error'));
+        } finally {
+            btn.disabled = false;
+            btn.querySelector('span').textContent = origText;
+        }
+    }
+
+    async function exportWeatherPdf() {
+        if (!lastReportData || !selectedPoint) {
+            alert('Fetch weather data first before exporting.');
+            return;
+        }
+        const btn = document.getElementById('weatherExportPdfBtn');
+        const origText = btn.querySelector('span').textContent;
+        btn.disabled = true;
+        btn.querySelector('span').textContent = 'Exporting…';
+
+        try {
+            const lightToggle = document.getElementById('weatherLightThemeToggle');
+            PdfTheme.setLight(lightToggle && lightToggle.checked);
+
+            const logo = await PdfTheme.loadLogo();
+            const c = PdfTheme.colors();
+            const ts = PdfTheme.tableStyles();
+
+            const data = lastReportData;
+            const suitability = deriveSuitability(data);
+            const suitColor = suitabilityColor(suitability.level);
+            const modelLabel = MODEL_LABELS[lastModel] || lastModel;
+            const locLabel = selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5);
+            const timeLabel = lastDisplayTime ? new Date(lastDisplayTime).toLocaleString() : new Date().toLocaleString();
+
+            const mapContainer = document.getElementById('weatherMap') || document.getElementById('map');
+            const mapImg = await PdfTheme.captureSquareMap(mapContainer);
+
+            const doc = PdfTheme.createDoc();
+
+            // Page 1: Title + Map + Info Panel
+            PdfTheme.addHeader(doc, 'Flight Weather Report', true);
+            doc.addImage(mapImg, 'PNG', 10, 25, 120, 120);
+            var suitRgb = suitColor.bg === '4CAF50' ? [102,187,106] : (suitColor.bg === 'FF9800' ? [255,183,77] : [239,83,80]);
+            PdfTheme.addInfoPanel(doc, 140, 25, 147, [
+                { label: 'LOCATION', value: locLabel, divider: true },
+                { label: 'DATE & TIME', value: timeLabel, divider: true },
+                { label: 'WEATHER MODEL', value: modelLabel, divider: true },
+                { label: 'FLIGHT SUITABILITY', value: suitability.text, color: suitRgb, bold: true, fontSize: 11, divider: true },
+                { label: 'COORDINATES', value: selectedPoint.lat.toFixed(6) + '°N   ' + Math.abs(selectedPoint.lng).toFixed(6) + '°' + (selectedPoint.lng >= 0 ? 'E' : 'W'), divider: true },
+                { label: 'GENERATED', value: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '  at  ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) }
+            ]);
+
+            // Page 2: Weather Summary
+            PdfTheme.newPage(doc);
+            PdfTheme.addHeader(doc, 'Weather Summary');
+
+            var windDir = data.wind_direction_10m != null ? Math.round(data.wind_direction_10m) + '° (' + directionToCardinal(data.wind_direction_10m) + ')' : '—';
+            var w10 = data.wind_speed_10m != null ? Math.round(data.wind_speed_10m) + ' km/h' : '—';
+            var g10 = data.wind_gusts_10m != null ? Math.round(data.wind_gusts_10m) + ' km/h' : '—';
+            var w120 = data.wind_speed_120m != null ? Math.round(data.wind_speed_120m) + ' km/h' : '—';
+            var g120 = data.wind_gusts_10m != null ? Math.round(data.wind_gusts_10m * GUST_120M_MULTIPLIER) + ' km/h (est.)' : '—';
+            var visStr = data.visibility != null ? formatVisibility(data.visibility) : '—';
+            var cloudStr = data.cloud_cover != null ? Math.round(data.cloud_cover) + '%' + (data.cloud_cover_low != null ? ' (low: ' + Math.round(data.cloud_cover_low) + '%)' : '') : '—';
+            var precipStr = data.precipitation != null ? (data.precipitation > 0 ? (Math.round(data.precipitation * 10) / 10) + ' mm' : 'None') : '—';
+            var tempStr = data.temperature_2m != null ? Math.round(data.temperature_2m) + ' °C' : '—';
+
+            doc.autoTable({
+                startY: 18,
+                head: [['Parameter', 'Value']],
+                body: [
+                    ['Suitability', suitability.text],
+                    ['Wind Direction', windDir],
+                    ['Wind 10m (sustained)', w10],
+                    ['Gusts 10m', g10],
+                    ['Wind 120m (sustained)', w120],
+                    ['Gusts 120m', g120],
+                    ['Visibility', visStr],
+                    ['Cloud Cover', cloudStr],
+                    ['Precipitation', precipStr],
+                    ['Temperature', tempStr]
+                ],
+                columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } },
+                ...ts
+            });
+
+            // Page 3: 12-Hour Forecast (limited to 12 rows from startIdx, matching PPTX)
+            if (lastHourlySlice && lastHourlySlice.hourly) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, '12-Hour Forecast');
+
+                var hourly = lastHourlySlice.hourly;
+                var startIdx = lastHourlySlice.startIdx || 0;
+                var forecastCount = Math.min(12, (hourly.time ? hourly.time.length : 0) - startIdx);
+                var fRows = [];
+                for (var hi = 0; hi < forecastCount; hi++) {
+                    var idx = startIdx + hi;
+                    var tDate = new Date(hourly.time[idx]);
+                    var timeStr = String(tDate.getHours()).padStart(2, '0') + ':' + String(tDate.getMinutes()).padStart(2, '0');
+                    var hw10 = hourly.wind_speed_10m ? hourly.wind_speed_10m[idx] : null;
+                    var hg10 = hourly.wind_gusts_10m ? hourly.wind_gusts_10m[idx] : null;
+                    var hw120 = hourly.wind_speed_120m ? hourly.wind_speed_120m[idx] : null;
+                    var hg120Est = hg10 != null ? Math.round(hg10 * GUST_120M_MULTIPLIER) : null;
+                    var hvis = hourly.visibility ? hourly.visibility[idx] : null;
+                    var hcloud = hourly.cloud_cover ? hourly.cloud_cover[idx] : null;
+                    var hp = hourly.precipitation ? hourly.precipitation[idx] : null;
+                    var ht = hourly.temperature_2m ? hourly.temperature_2m[idx] : null;
+                    fRows.push([
+                        timeStr,
+                        hw10 != null ? Math.round(hw10) + '' : '—',
+                        hg10 != null ? Math.round(hg10) + '' : '—',
+                        hw120 != null ? Math.round(hw120) + '' : '—',
+                        hg120Est != null ? hg120Est + '' : '—',
+                        hvis != null ? formatVisibility(hvis) : '—',
+                        hcloud != null ? Math.round(hcloud) + '%' : '—',
+                        hp != null ? (Math.round(hp * 10) / 10) + ' mm' : '0',
+                        ht != null ? Math.round(ht) + '°C' : '—'
+                    ]);
+                }
+                doc.autoTable({
+                    startY: 18,
+                    head: [['Time', 'Wind 10m', 'Gusts 10m', 'Wind 120m', 'Gusts 120m', 'Vis', 'Cloud', 'Precip', 'Temp']],
+                    body: fRows,
+                    ...ts,
+                    styles: { ...ts.styles, fontSize: 6.5 },
+                    headStyles: { ...ts.headStyles, fontSize: 6.5 }
+                });
+                doc.setFontSize(7);
+                doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                doc.text('All wind speeds in km/h', 10, doc.lastAutoTable.finalY + 5);
+            }
+
+            // Page 4: METAR / TAF
+            if (lastAviationData && lastAviationData.nearby && lastAviationData.nearby.length > 0) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'METAR / TAF — Aerodromes within 50 NM');
+
+                var metarByIcao = {};
+                (lastAviationData.metars || []).forEach(function (m) {
+                    var icao = (m.icaoId || m.stationId || m.icao || '').toUpperCase();
+                    if (icao) metarByIcao[icao] = m;
+                });
+                var tafByIcao = {};
+                (lastAviationData.tafs || []).forEach(function (t) {
+                    var icao = (t.icaoId || t.stationId || t.icao || '').toUpperCase();
+                    if (icao) tafByIcao[icao] = t;
+                });
+
+                var yPos = 18;
+                lastAviationData.nearby.forEach(function (s) {
+                    var metar = metarByIcao[s.icao];
+                    var taf = tafByIcao[s.icao];
+                    var rawMetar = metar && (metar.rawOb || metar.raw || metar.report);
+                    var rawTaf = taf && (taf.rawTAF || taf.raw || taf.report);
+
+                    var decodedMetar = rawMetar ? decodeMetar(metar) : null;
+                    var decodedTaf = rawTaf ? decodeTaf(taf) : null;
+                    var metarStr = rawMetar ? 'METAR: ' + (decodedMetar || rawMetar) : '';
+                    var tafStr = rawTaf ? 'TAF: ' + (decodedTaf || rawTaf) : '';
+
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(6.5);
+                    var metarLines = metarStr ? doc.splitTextToSize(metarStr, 260) : [];
+                    var tafLines = tafStr ? doc.splitTextToSize(tafStr, 260) : [];
+                    var metarBoxH = metarLines.length > 0 ? metarLines.length * 3.2 + 4 : 0;
+                    var tafBoxH = tafLines.length > 0 ? tafLines.length * 3.2 + 4 : 0;
+                    var blockH = 8 + metarBoxH + tafBoxH + 3;
+
+                    if (yPos + blockH > 195) {
+                        PdfTheme.newPage(doc);
+                        PdfTheme.addHeader(doc, 'METAR / TAF (continued)');
+                        yPos = 18;
+                    }
+
+                    var nameText = (s.name || s.icao);
+                    var icaoText = '  ' + s.icao + '  (' + s.distNm.toFixed(1) + ' NM)';
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(10);
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                    doc.text(nameText, 10, yPos);
+                    var nameWidth = doc.getTextWidth(nameText);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(8);
+                    doc.setTextColor(c.accent[0], c.accent[1], c.accent[2]);
+                    doc.text(icaoText, 10 + nameWidth + 1, yPos);
+                    yPos += 6;
+
+                    if (metarLines.length > 0) {
+                        doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
+                        doc.roundedRect(12, yPos - 3, 273, metarBoxH, 1, 1, 'F');
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(6.5);
+                        doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                        doc.text(metarLines, 14, yPos + 1);
+                        yPos += metarBoxH + 2;
+                    }
+                    if (tafLines.length > 0) {
+                        if (yPos + tafBoxH > 195) {
+                            PdfTheme.newPage(doc);
+                            PdfTheme.addHeader(doc, 'METAR / TAF (continued)');
+                            yPos = 18;
+                        }
+                        doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
+                        doc.roundedRect(12, yPos - 3, 273, tafBoxH, 1, 1, 'F');
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(6.5);
+                        doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                        doc.text(tafLines, 14, yPos + 1);
+                        yPos += tafBoxH + 2;
+                    }
+                    yPos += 4;
+                });
+            }
+
+            // Page 5+: NOTAMs & Airspace (with map visualisation matching PPTX)
+            var notams = lastNotamData || await fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, AIRSPACE_SEARCH_RADIUS_KM);
+            var airspace = lastAirspaceData || await fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, AIRSPACE_SEARCH_RADIUS_KM);
+
+            if (notams.length > 0 || airspace.length > 0) {
+                var catMapColorsHex = { FRZ: '#9333ea', Prohibited: '#991b1b', Restricted: '#dc2626', Danger: '#ca8a04' };
+                var tempLayers = [];
+                var origView = { center: map.getCenter(), zoom: map.getZoom() };
+
+                airspace.forEach(function (af) {
+                    if (af.geometry) {
+                        var layer = L.geoJSON(af.geometry, {
+                            style: { color: catMapColorsHex[af.category] || '#dc2626', weight: 2, fillColor: catMapColorsHex[af.category] || '#dc2626', fillOpacity: 0.15 }
+                        });
+                        layer.addTo(map);
+                        tempLayers.push(layer);
+                    }
+                });
+                notams.forEach(function (n) {
+                    if (n.radiusNm > 0 && n.radiusNm < 999) {
+                        var circle = L.circle([n.lat, n.lng], { radius: n.radiusNm * 1852, color: '#dc2626', weight: 1.5, fillColor: '#dc2626', fillOpacity: 0.1 });
+                        circle.addTo(map);
+                        tempLayers.push(circle);
+                    }
+                });
+
+                var radiusDeg = AIRSPACE_SEARCH_RADIUS_KM / 111.32;
+                map.fitBounds([
+                    [selectedPoint.lat - radiusDeg, selectedPoint.lng - radiusDeg * 1.5],
+                    [selectedPoint.lat + radiusDeg, selectedPoint.lng + radiusDeg * 1.5]
+                ], { animate: false, padding: [10, 10] });
+                await new Promise(function (r) { setTimeout(r, 600); });
+
+                var airspaceMapImg = await PdfTheme.captureSquareMap(mapContainer);
+
+                tempLayers.forEach(function (l) { map.removeLayer(l); });
+                map.setView(origView.center, origView.zoom, { animate: false });
+
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'Airspace & NOTAMs — ' + AIRSPACE_SEARCH_RADIUS_KM + ' km radius');
+                doc.addImage(airspaceMapImg, 'PNG', 10, 16, 120, 120);
+
+                var legX = 140;
+                var legY = 20;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(11);
+                doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                doc.text('Legend', legX, legY);
+                legY += 6;
+
+                var legendItems = [
+                    { rgb: [147, 51, 234], label: 'FRZ / Aerodrome' },
+                    { rgb: [153, 27, 27], label: 'Prohibited' },
+                    { rgb: [220, 38, 38], label: 'Restricted / NOTAM' },
+                    { rgb: [202, 138, 4], label: 'Danger Area' }
+                ];
+                legendItems.forEach(function (item) {
+                    doc.setFillColor(item.rgb[0], item.rgb[1], item.rgb[2]);
+                    doc.rect(legX, legY - 2.5, 5, 4, 'F');
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(9);
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                    doc.text(item.label, legX + 8, legY + 0.5);
+                    legY += 7;
+                });
+
+                legY += 4;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
+                doc.setTextColor(c.accent[0], c.accent[1], c.accent[2]);
+                doc.text(notams.length + ' NOTAM' + (notams.length !== 1 ? 's' : '') + ', ' + airspace.length + ' airspace zone' + (airspace.length !== 1 ? 's' : ''), legX, legY);
+                legY += 6;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                doc.text('Search radius: ' + AIRSPACE_SEARCH_RADIUS_KM + ' km from ' + selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5), legX, legY);
+            }
+
+            if (notams.length > 0) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'NOTAMs within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km (' + notams.length + ')');
+                var nBody = notams.map(function (n) {
+                    var dist = haversineKm(selectedPoint.lat, selectedPoint.lng, n.lat, n.lng).toFixed(1) + ' km';
+                    var validStart = formatNotamDate(n.startValidity);
+                    var validEnd = formatNotamDate(n.endValidity);
+                    var desc = (n.text || '').replace(/\s+/g, ' ');
+                    if (desc.length > 150) desc = desc.slice(0, 147) + '…';
+                    return [n.id || '—', dist, n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm + ' NM' : '—', (validStart || '?') + ' – ' + (validEnd || '?'), desc];
+                });
+                doc.autoTable({
+                    startY: 18,
+                    head: [['NOTAM ID', 'Distance', 'Radius', 'Validity', 'Description']],
+                    body: nBody,
+                    columnStyles: { 4: { cellWidth: 80 } },
+                    ...ts
+                });
+            }
+
+            if (airspace.length > 0) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'Airspace Restrictions within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km (' + airspace.length + ')');
+                var catRgb = { FRZ: [147,51,234], Prohibited: [153,27,27], Restricted: [220,38,38], Danger: [202,138,4] };
+                var aBody = airspace.map(function (a) {
+                    return [a.category, a.designator, a.name, a.lower, a.upper];
+                });
+                doc.autoTable({
+                    startY: 18,
+                    head: [['Type', 'Designator', 'Name', 'Lower', 'Upper']],
+                    body: aBody,
+                    ...ts,
+                    didParseCell: function (data) {
+                        if (data.section === 'body' && data.column.index === 0) {
+                            var rgb = catRgb[data.cell.raw];
+                            if (rgb) data.cell.styles.textColor = rgb;
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    }
+                });
+            }
+
+            // Airspace & NOTAM Data Sources explainer
+            if (notams.length > 0 || airspace.length > 0) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'Airspace & NOTAM Data Sources');
+
+                var srcY = 18;
+
+                if (notams.length > 0) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(12);
+                    doc.setTextColor(c.accent[0], c.accent[1], c.accent[2]);
+                    doc.text('NOTAMs', 10, srcY);
+                    srcY += 4;
+
+                    doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
+                    doc.roundedRect(10, srcY, 277, 28, 1, 1, 'F');
+                    doc.setDrawColor(c.border[0], c.border[1], c.border[2]);
+                    doc.setLineWidth(0.2);
+                    doc.roundedRect(10, srcY, 277, 28, 1, 1, 'S');
+
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(8);
+                    doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                    doc.text('Source:', 14, srcY + 5);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                    doc.text('UK NOTAM Archive (jonty.github.io/uk-notam-archive), mirroring the NATS AIS Contingency Pre-flight Information Bulletin (PIB).', 30, srcY + 5);
+
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                    doc.text('Authority:', 14, srcY + 12);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                    var authLines = doc.splitTextToSize('NOTAMs are issued by NATS (National Air Traffic Services) on behalf of the UK Civil Aviation Authority (CAA). They are the official mechanism for communicating temporary airspace restrictions, hazards, and aeronautical changes.', 250);
+                    doc.text(authLines, 30, srcY + 12);
+
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                    doc.text('Reliability:', 14, srcY + 21);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                    var relLines = doc.splitTextToSize('Data is updated hourly from the official NATS PIB. However, this report uses an unofficial open-data mirror. For flight-critical decisions, always verify against the official NATS AIS PIB (pibs.nats.aero) or the Drone Assist app.', 250);
+                    doc.text(relLines, 30, srcY + 21);
+                    srcY += 33;
+                }
+
+                if (airspace.length > 0) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(12);
+                    doc.setTextColor(c.accent[0], c.accent[1], c.accent[2]);
+                    doc.text('FRZ, Restricted & Danger Areas', 10, srcY);
+                    srcY += 4;
+
+                    doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
+                    doc.roundedRect(10, srcY, 277, 35, 1, 1, 'F');
+                    doc.setDrawColor(c.border[0], c.border[1], c.border[2]);
+                    doc.setLineWidth(0.2);
+                    doc.roundedRect(10, srcY, 277, 35, 1, 1, 'S');
+
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(8);
+                    doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                    doc.text('Source:', 14, srcY + 5);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                    var srcLines = doc.splitTextToSize('UK Aeronautical Information Publication (AIP) ENR 5.1 and NATS UAS airspace boundaries. Data includes Flight Restriction Zones (FRZ), Prohibited (EG P), Restricted (EG R), and Danger (EG D) areas.', 250);
+                    doc.text(srcLines, 30, srcY + 5);
+
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                    doc.text('Authority:', 14, srcY + 14);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                    var authLines2 = doc.splitTextToSize('Airspace boundaries are defined by the UK CAA and published through the AIP, managed by NATS Aeronautical Information Service. FRZs are mandated under the Air Navigation Order (ANO) Article 94A for drone operations near aerodromes.', 250);
+                    doc.text(authLines2, 30, srcY + 14);
+
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                    doc.text('Reliability:', 14, srcY + 24);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                    var relLines2 = doc.splitTextToSize('These are official published boundaries and are considered authoritative for planning purposes. However, Danger and Restricted areas may be temporarily activated or deactivated — always cross-reference with current NOTAMs. This data does not include temporary airspace reservations (RA(T)) which require a separate check.', 250);
+                    doc.text(relLines2, 30, srcY + 24);
+                    srcY += 40;
+                }
+
+                doc.setFont('helvetica', 'bolditalic');
+                doc.setFontSize(7.5);
+                doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                doc.text('This report is for planning purposes only and does not replace the obligation to conduct a formal pre-flight assessment using official sources.', 10, Math.min(srcY + 5, 195));
+            }
+
+            // Final Page: Data Sources
+            var info = MODEL_EXPLAINERS[lastModel] || MODEL_EXPLAINERS['auto'];
+            PdfTheme.newPage(doc);
+            PdfTheme.addHeader(doc, 'Data Sources & Forecast Model');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+            doc.text('Model: ' + info.name, 10, 20);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+            doc.text(info.fullName, 10, 26);
+            doc.text('Resolution: ' + info.resolution + '   |   Provider: ' + info.provider, 10, 31);
+
+            doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
+            doc.roundedRect(10, 35, 277, 18, 1, 1, 'F');
+            doc.setFontSize(7.5);
+            doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+            var equivLines = doc.splitTextToSize(info.equiv.replace(/<\/?strong>/g, ''), 270);
+            doc.text(equivLines, 14, 40);
+
+            doc.autoTable({
+                startY: 58,
+                head: [['Service', 'Primary Model', 'AirPlot Equivalent', 'Match']],
+                body: [
+                    ['BBC Weather', 'ECMWF IFS (via MeteoGroup/DTN)', 'ECMWF IFS', 'Direct equivalent'],
+                    ['Met Office', 'Met Office UKV (2 km) + Global', 'UK Met Office', 'Direct equivalent'],
+                    ['Windy.com', 'ECMWF IFS (default) / GFS / ICON', 'ECMWF IFS / GFS', 'Direct equivalent']
+                ],
+                ...ts,
+                didParseCell: function (data) {
+                    if (data.section === 'body' && data.column.index === 3) {
+                        data.cell.styles.textColor = [102, 187, 106];
+                    }
+                }
+            });
+
+            doc.setFontSize(6.5);
+            doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+            doc.text('Forecast data: Open-Meteo (open-meteo.com) CC BY 4.0. METAR/TAF: Aviation Weather Center. NOTAMs: NATS AIS via UK NOTAM Archive. Airspace: UK AIP / NATS.', 10, doc.lastAutoTable.finalY + 8);
+            doc.text('This report is for planning purposes only and does not replace the obligation to conduct a formal pre-flight assessment using official sources.', 10, doc.lastAutoTable.finalY + 13);
+
+            PdfTheme.addAllFooters(doc);
+
+            doc.save('Weather_Report_' + new Date().toISOString().slice(0, 10) + '.pdf');
+
+        } catch (err) {
+            console.error('PDF export failed:', err);
+            alert('Failed to export PDF: ' + (err.message || 'Unknown error'));
         } finally {
             btn.disabled = false;
             btn.querySelector('span').textContent = origText;
@@ -1065,11 +2129,9 @@
 
         document.getElementById('weatherSelectBtn').addEventListener('click', toggleSelectMode);
         document.getElementById('weatherFetchBtn').addEventListener('click', fetchWeather);
-        document.getElementById('weatherBackBtn').addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
         document.getElementById('weatherReportClose').addEventListener('click', hideReport);
         document.getElementById('weatherExportPptxBtn').addEventListener('click', exportWeatherPptx);
+        document.getElementById('weatherExportPdfBtn').addEventListener('click', exportWeatherPdf);
 
         const weatherLightToggle = document.getElementById('weatherLightThemeToggle');
         if (weatherLightToggle) {
@@ -1077,6 +2139,11 @@
                 const report = document.getElementById('weatherReport');
                 if (report) report.classList.toggle('weather-light-theme', weatherLightToggle.checked);
             });
+        }
+
+        const weatherStatusEl = document.getElementById('weatherStatus');
+        if (weatherStatusEl) {
+            weatherStatusEl.innerHTML = WEATHER_STATUS_HTML_DEFAULT;
         }
 
         const helpToggle = document.getElementById('weatherHelpToggle');

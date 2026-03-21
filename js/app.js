@@ -7,6 +7,8 @@
 
     // ---- State ----
     let map;
+    /** True after first successful dismiss of intro (map + drawings initialised). */
+    let mainAppInitialized = false;
     let points = [];
     let markerLayers = {};   // pointId -> { marker, fans, label }
     let nextId = 1;
@@ -1482,26 +1484,22 @@
         openModal('helpModal');
     });
 
-    // ---- Mobile FABs (Style & Help) ----
-    const mobileStyleBtn = document.getElementById('mobileStyleBtn');
+    function showWelcomeScreen() {
+        const introOverlay = document.getElementById('introOverlay');
+        if (introOverlay) introOverlay.classList.remove('hidden');
+        document.body.classList.remove('mobile-style-open');
+    }
+
+    const mainWelcomeLink = document.getElementById('mainWelcomeLink');
+    if (mainWelcomeLink) {
+        mainWelcomeLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showWelcomeScreen();
+        });
+    }
+
+    // ---- Mobile FAB (Help; Drawing Style lives in sidebar) ----
     const mobileHelpBtn = document.getElementById('mobileHelpBtn');
-    const mobileStyleBackdrop = document.getElementById('mobileStyleBackdrop');
-    const drawStylePanel = document.getElementById('drawStylePanel');
-    const drawStyleToggle = document.getElementById('drawStyleToggle');
-
-    if (mobileStyleBtn && drawStylePanel) {
-        mobileStyleBtn.addEventListener('click', () => {
-            document.body.classList.add('mobile-style-open');
-            drawStylePanel.classList.remove('collapsed');
-            if (drawStyleToggle) drawStyleToggle.innerHTML = '&minus;';
-        });
-    }
-
-    if (mobileStyleBackdrop) {
-        mobileStyleBackdrop.addEventListener('click', () => {
-            document.body.classList.remove('mobile-style-open');
-        });
-    }
 
     if (mobileHelpBtn) {
         mobileHelpBtn.addEventListener('click', () => {
@@ -2802,6 +2800,24 @@ ${summaryRows}
         }
     });
 
+    document.getElementById('exportPdf').addEventListener('click', async () => {
+        closeModal('exportModal');
+        const shapesData = Drawings.serializeShapes();
+        if (points.length === 0 && shapesData.length === 0) {
+            alert('No points or shapes to export.');
+            return;
+        }
+        showLoading('Generating PDF report...');
+        try {
+            await Exporters.exportPdf(document.getElementById('map'), points, shapesData);
+        } catch (err) {
+            console.error('PDF export failed:', err);
+            alert('Failed to export PDF: ' + (err.message || 'Unknown error'));
+        } finally {
+            hideLoading();
+        }
+    });
+
     // ---- Save / Load Project ----
 
     document.getElementById('saveProjectBtn').addEventListener('click', () => {
@@ -3470,6 +3486,8 @@ ${summaryRows}
 
         function dismissIntro() {
             if (introOverlay) introOverlay.classList.add('hidden');
+            if (mainAppInitialized) return;
+            mainAppInitialized = true;
             initMap();
             initDrawings();
             map.on('drawingmodechange', refreshHandToolState);

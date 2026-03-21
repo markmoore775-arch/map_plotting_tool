@@ -962,6 +962,14 @@
         document.getElementById('fpSdCardModal').classList.add('hidden');
     }
 
+    function openHelpModal() {
+        document.getElementById('fpHelpModal').classList.remove('hidden');
+    }
+
+    function closeHelpModal() {
+        document.getElementById('fpHelpModal').classList.add('hidden');
+    }
+
     // ---- PPTX Report Export ----
     async function captureMapImage() {
         const mapEl = document.getElementById('map');
@@ -991,6 +999,8 @@
         btn.querySelector('span').textContent = 'Exporting…';
 
         try {
+            PptxTheme.setLight(false);
+
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';
             pptx.author = 'AirPlot';
@@ -999,7 +1009,7 @@
             const logo = await PptxTheme.loadLogo();
             PptxTheme.applyTheme(pptx, logo);
 
-            const C = PptxTheme.COLORS;
+            const C = PptxTheme.colors();
             const headerOpts = PptxTheme.tableHeaderOpts();
             const cellOpts = PptxTheme.tableCellOpts();
             const labelOpts = PptxTheme.tableLabelOpts();
@@ -1008,13 +1018,35 @@
             const modeLabel = recceMode ? 'Manual Recce' : 'Waypoint Mission';
             const dateLabel = new Date().toLocaleString();
 
-            const mapImg = await captureMapImage();
+            const mapEl = document.getElementById('map');
+            const mapImg = await PptxTheme.captureSquareMap(mapEl);
 
             // --- Slide 1: Title + Map ---
             let slide = pptx.addSlide({ masterName: 'TITLE_SLIDE' });
             slide.addText('Flight Plan Report', { x: 1.1, y: 0.15, w: 8, h: 0.6, fontSize: 26, bold: true, color: C.textPrimary, fontFace: 'Arial' });
-            slide.addText(modeLabel + '  |  ' + dateLabel, { x: 0.5, y: 0.85, w: 12, h: 0.35, fontSize: 12, color: C.textMuted, fontFace: 'Arial' });
-            slide.addImage({ data: mapImg, x: 0.5, y: 1.35, w: 9.5, h: 5.3, rounding: true });
+
+            var mapSize = 5.6;
+            slide.addShape('roundRect', { x: 0.42, y: 1.02, w: mapSize + 0.16, h: mapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
+            slide.addImage({ data: mapImg, x: 0.5, y: 1.1, w: mapSize, h: mapSize, rounding: false });
+
+            var panelX = 6.5;
+            var panelW = 6.3;
+            var panelRows = [
+                { label: 'MISSION TYPE', value: modeLabel, bold: true, fontSize: 15, divider: true },
+                { label: 'DATE & TIME', value: dateLabel, divider: true }
+            ];
+            if (hasRecce && recceTarget) {
+                panelRows.push({ label: 'TARGET (POI)', value: recceTarget.lat.toFixed(6) + '°N   ' + Math.abs(recceTarget.lng).toFixed(6) + '°' + (recceTarget.lng >= 0 ? 'E' : 'W'), divider: true });
+                panelRows.push({ label: 'EXCLUSION RADIUS', value: getRadiusText(recceRadius), divider: true });
+            }
+            if (hasWaypoints) {
+                panelRows.push({ label: 'WAYPOINTS', value: waypoints.length + ' waypoint' + (waypoints.length !== 1 ? 's' : '') + ' defined', divider: true });
+            }
+            if (hasExclusions) {
+                panelRows.push({ label: 'EXCLUSION ZONES', value: exclusions.length + ' zone' + (exclusions.length !== 1 ? 's' : '') + ' defined', divider: true });
+            }
+            panelRows.push({ label: 'GENERATED', value: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '  at  ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) });
+            PptxTheme.addInfoPanel(slide, panelX, 1.0, panelW, 5.7, panelRows);
 
             if (hasRecce) {
                 // --- Slide 2: Recce Mission Details ---
@@ -1143,6 +1175,149 @@
         }
     }
 
+    async function exportFlightPlanPdf() {
+        var hasRecce = recceMode && recceTarget;
+        var hasWp = !recceMode && waypoints.length > 0;
+        var hasExc = !recceMode && exclusions.length > 0;
+
+        if (!hasRecce && !hasWp && !hasExc) {
+            alert('Add a target, waypoints, or exclusion zones before exporting a report.');
+            return;
+        }
+
+        var btn = document.getElementById('fpExportPdfBtn');
+        var origText = btn.querySelector('span').textContent;
+        btn.disabled = true;
+        btn.querySelector('span').textContent = 'Exporting…';
+
+        try {
+            PdfTheme.setLight(false);
+            var logo = await PdfTheme.loadLogo();
+            var c = PdfTheme.colors();
+            var ts = PdfTheme.tableStyles();
+
+            var modeLabel = recceMode ? 'Manual Recce' : 'Waypoint Mission';
+            var dateLabel = new Date().toLocaleString();
+
+            var mapEl = document.getElementById('map');
+            var mapImg = await PdfTheme.captureSquareMap(mapEl);
+
+            var doc = PdfTheme.createDoc();
+
+            PdfTheme.addHeader(doc, 'Flight Plan Report', true);
+            doc.addImage(mapImg, 'PNG', 10, 25, 120, 120);
+
+            var panelRows = [
+                { label: 'MISSION TYPE', value: modeLabel, bold: true, fontSize: 11, divider: true },
+                { label: 'DATE & TIME', value: dateLabel, divider: true }
+            ];
+            if (hasRecce && recceTarget) {
+                panelRows.push({ label: 'TARGET (POI)', value: recceTarget.lat.toFixed(6) + '°N   ' + Math.abs(recceTarget.lng).toFixed(6) + '°' + (recceTarget.lng >= 0 ? 'E' : 'W'), divider: true });
+                panelRows.push({ label: 'EXCLUSION RADIUS', value: getRadiusText(recceRadius), divider: true });
+            }
+            if (hasWp) {
+                panelRows.push({ label: 'WAYPOINTS', value: waypoints.length + ' waypoint' + (waypoints.length !== 1 ? 's' : ''), divider: true });
+            }
+            if (hasExc) {
+                panelRows.push({ label: 'EXCLUSION ZONES', value: exclusions.length + ' zone' + (exclusions.length !== 1 ? 's' : ''), divider: true });
+            }
+            panelRows.push({ label: 'GENERATED', value: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '  at  ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) });
+            PdfTheme.addInfoPanel(doc, 140, 25, 147, panelRows);
+
+            if (hasRecce) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'Manual Recce — Mission Details');
+                doc.autoTable({
+                    startY: 18,
+                    head: [['Parameter', 'Value']],
+                    body: [
+                        ['Target (POI)', recceTarget.lat.toFixed(6) + ', ' + recceTarget.lng.toFixed(6)],
+                        ['Exclusion zone radius', getRadiusText(recceRadius)],
+                        ['Flight mode', 'Manual — overlay only (no auto-flight)'],
+                        ['Export format', 'KMZ for DJI Pilot 2']
+                    ],
+                    columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } },
+                    ...ts
+                });
+                doc.setFontSize(8);
+                doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                doc.text('Workflow: Export the KMZ, copy to SD card, import in DJI Pilot 2 as an overlay.', 10, doc.lastAutoTable.finalY + 8);
+            }
+
+            if (hasWp || hasExc) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'Waypoint Mission — Parameters');
+                doc.autoTable({
+                    startY: 18,
+                    head: [['Parameter', 'Value']],
+                    body: [
+                        ['Waypoints', String(waypoints.length)],
+                        ['Exclusion zones', String(exclusions.length)],
+                        ['Execute height', MISSION_DEFAULTS.executeHeight + ' m'],
+                        ['Waypoint speed', MISSION_DEFAULTS.waypointSpeed + ' m/s'],
+                        ['Take-off security height', MISSION_DEFAULTS.takeOffSecurityHeight + ' m'],
+                        ['Transit speed', MISSION_DEFAULTS.globalTransitionalSpeed + ' m/s'],
+                        ['Finish action', 'Go Home'],
+                        ['RC Lost action', 'Hover']
+                    ],
+                    columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } },
+                    ...ts
+                });
+            }
+
+            if (hasWp) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'Waypoints');
+                var wpBody = waypoints.map(function (w, i) {
+                    return ['WP' + i, w.lat.toFixed(6), w.lng.toFixed(6), String(MISSION_DEFAULTS.executeHeight), String(MISSION_DEFAULTS.waypointSpeed)];
+                });
+                doc.autoTable({
+                    startY: 18,
+                    head: [['#', 'Latitude', 'Longitude', 'Height (m)', 'Speed (m/s)']],
+                    body: wpBody,
+                    ...ts
+                });
+            }
+
+            if (hasExc) {
+                PdfTheme.newPage(doc);
+                PdfTheme.addHeader(doc, 'Exclusion Zones');
+                var exBody = exclusions.map(function (exc, i) {
+                    var typeStr = exc.type.charAt(0).toUpperCase() + exc.type.slice(1);
+                    var centreStr = '—';
+                    var sizeStr = '—';
+                    if (exc.type === 'circle' && exc.center) {
+                        centreStr = exc.center[0].toFixed(6) + ', ' + exc.center[1].toFixed(6);
+                        sizeStr = getRadiusText(exc.radius);
+                    } else if (exc.latlngs && exc.latlngs.length > 0) {
+                        var lats = exc.latlngs.map(function (ll) { return ll[0]; });
+                        var lngs = exc.latlngs.map(function (ll) { return ll[1]; });
+                        centreStr = ((Math.min.apply(null, lats) + Math.max.apply(null, lats)) / 2).toFixed(6) + ', ' +
+                                    ((Math.min.apply(null, lngs) + Math.max.apply(null, lngs)) / 2).toFixed(6);
+                        sizeStr = exc.latlngs.length + ' vertices';
+                    }
+                    return [String(i + 1), typeStr, centreStr, sizeStr];
+                });
+                doc.autoTable({
+                    startY: 18,
+                    head: [['#', 'Type', 'Centre / Bounds', 'Radius / Size']],
+                    body: exBody,
+                    ...ts
+                });
+            }
+
+            PdfTheme.addAllFooters(doc);
+            doc.save('Flight_Plan_' + new Date().toISOString().slice(0, 10) + '.pdf');
+
+        } catch (err) {
+            console.error('PDF export failed:', err);
+            alert('Failed to export PDF: ' + (err.message || 'Unknown error'));
+        } finally {
+            btn.disabled = false;
+            btn.querySelector('span').textContent = origText;
+        }
+    }
+
     // ---- UI ----
     function updateCounts() {
         document.getElementById('fpWaypointCount').textContent = `${waypoints.length} waypoint${waypoints.length !== 1 ? 's' : ''}`;
@@ -1181,9 +1356,16 @@
         document.getElementById('fpExportBtn').addEventListener('click', exportKmz);
         document.getElementById('fpSdCardHelpBtn').addEventListener('click', () => openSdCardModal(recceMode));
         document.getElementById('fpExportReportBtn').addEventListener('click', exportFlightPlanPptx);
-        document.getElementById('fpBackBtn').addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
+        document.getElementById('fpExportPdfBtn').addEventListener('click', exportFlightPlanPdf);
+
+        document.getElementById('fpHelpBtn').addEventListener('click', openHelpModal);
+
+        const helpModal = document.getElementById('fpHelpModal');
+        if (helpModal) {
+            helpModal.querySelector('.modal-backdrop').addEventListener('click', closeHelpModal);
+            helpModal.querySelector('.modal-close').addEventListener('click', closeHelpModal);
+            helpModal.querySelector('.modal-cancel').addEventListener('click', closeHelpModal);
+        }
 
         const sdModal = document.getElementById('fpSdCardModal');
         if (sdModal) {
@@ -1193,7 +1375,12 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && sdModal && !sdModal.classList.contains('hidden')) {
+            if (e.key !== 'Escape') return;
+            if (helpModal && !helpModal.classList.contains('hidden')) {
+                closeHelpModal();
+                return;
+            }
+            if (sdModal && !sdModal.classList.contains('hidden')) {
                 closeSdCardModal();
             }
         });

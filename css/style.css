@@ -242,7 +242,7 @@ body.sidebar-collapsed #map {
     margin-bottom: 32px;
 }
 
-/* CTA button stack (Launch App, View Instructions) */
+/* CTA button stack (Flight Planning, View Instructions, etc.) */
 .intro-cta-stack {
     display: flex;
     flex-direction: row;
@@ -361,7 +361,7 @@ body.sidebar-collapsed #map {
 
 .map-logo {
     position: absolute;
-    top: 10px;
+    top: calc(64px + env(safe-area-inset-top, 0px));
     left: calc(var(--sidebar-width) + 12px);
     z-index: 500;
     opacity: 0.5;
@@ -377,12 +377,186 @@ body.sidebar-collapsed #map {
 
 body.sidebar-collapsed .map-logo {
     left: 52px;
-    top: 52px;
+    top: calc(64px + env(safe-area-inset-top, 0px));
 }
 
 /* Hide map logo when intro overlay is visible */
 .intro-overlay:not(.hidden) ~ .map-logo {
     visibility: hidden;
+}
+
+/* Hide top chrome (sidebar + welcome + help) when intro overlay is visible */
+.intro-overlay:not(.hidden) ~ .map-top-chrome {
+    visibility: hidden;
+}
+
+/* ---- Shared welcome pill (index map, flight-planning, weather) ---- */
+.fp-welcome-bar {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top, 12px));
+    left: max(12px, env(safe-area-inset-left, 12px));
+    z-index: 1002;
+    max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+}
+
+.fp-welcome-home-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    font-family: var(--font-family);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.fp-welcome-home-link:hover {
+    background: #252538;
+    border-color: var(--primary-hover);
+    color: #fff;
+}
+
+.fp-welcome-home-link:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.fp-welcome-logo {
+    flex-shrink: 0;
+    display: block;
+}
+
+.fp-welcome-title {
+    letter-spacing: 0.02em;
+}
+
+.fp-welcome-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 4px;
+    padding-left: 12px;
+    border-left: 1px solid var(--sidebar-border);
+    font-weight: 500;
+    color: var(--primary);
+}
+
+.fp-welcome-home-link:hover .fp-welcome-cta {
+    color: #8eb4f5;
+}
+
+@media (max-width: 520px) {
+    .fp-welcome-title {
+        display: none;
+    }
+    .fp-welcome-cta {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+    }
+}
+
+/* Main map: top row — open sidebar + Welcome + Help (one line, matched heights) */
+body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top, 12px));
+    left: max(12px, env(safe-area-inset-left, 12px));
+    z-index: 1002;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+    max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    pointer-events: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome > * {
+    pointer-events: auto;
+}
+
+body:not(.sidebar-collapsed):not(.weather-mode):not(.flight-planning-mode) .map-top-chrome {
+    left: calc(var(--sidebar-width) + max(12px, env(safe-area-inset-left, 12px)));
+}
+
+body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .fp-welcome-bar {
+    position: relative;
+    left: auto;
+    top: auto;
+    max-width: min(420px, calc(100vw - 120px));
+    flex: 0 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+}
+
+body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .fp-welcome-home-link {
+    align-items: center;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .sidebar-open {
+    position: relative;
+    top: auto;
+    left: auto;
+    flex-shrink: 0;
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    font-size: 18px;
+    line-height: 1;
+    border-radius: 10px;
+    box-sizing: border-box;
+    border: 1px solid var(--primary);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+}
+
+body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .map-top-actions {
+    position: relative;
+    left: auto;
+    top: auto;
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+    max-width: none;
+}
+
+body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .help-panel {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+    min-height: 100%;
+}
+
+body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .help-panel .draw-style-header {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-bottom: none;
+}
+
+/* Leaflet sits below top chrome row */
+body:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-left {
+    top: calc(64px + env(safe-area-inset-top, 0px));
 }
 
 /* ---- App Footer ---- */
@@ -518,11 +692,6 @@ body.sidebar-collapsed .sidebar {
 
 .sidebar-open:hover {
     background: var(--sidebar-surface);
-}
-
-/* Prevent overlap between the sidebar-open button and map toolbar controls */
-body.sidebar-collapsed .leaflet-top.leaflet-left {
-    top: 52px;
 }
 
 /* ---- Sections ---- */
@@ -1251,8 +1420,7 @@ select {
 }
 
 /* Mobile FABs - hidden on desktop */
-.mobile-map-actions,
-.mobile-style-backdrop {
+.mobile-map-actions {
     display: none;
 }
 
@@ -1277,15 +1445,15 @@ select {
         pointer-events: none;
     }
 
-    /* Map logo - position below toolbar when sidebar collapsed */
+    /* Map logo - below welcome pill when sidebar collapsed */
     .map-logo {
         left: 8px;
-        top: 52px;
+        top: calc(64px + env(safe-area-inset-top, 0px));
     }
 
     body.sidebar-collapsed .map-logo {
         left: 8px;
-        top: 52px;
+        top: calc(64px + env(safe-area-inset-top, 0px));
     }
 
     body:not(.sidebar-collapsed) .map-logo {
@@ -1312,26 +1480,6 @@ select {
         font-size: 0.9rem;
     }
 
-    /* Draw style panel - position below toolbar when sidebar collapsed */
-    .draw-style-panel {
-        left: 52px !important;
-        top: 52px;
-        max-width: calc(100vw - 70px);
-    }
-
-    body.sidebar-collapsed .draw-style-panel {
-        left: 52px !important;
-    }
-
-    .help-panel {
-        left: 260px !important;
-        top: 52px;
-    }
-
-    body.sidebar-collapsed .help-panel {
-        left: 260px !important;
-    }
-
     /* Footer - safe area and compact */
     .app-footer {
         left: 0;
@@ -1339,9 +1487,9 @@ select {
         font-size: 10px;
     }
 
-    /* Leaflet controls - avoid overlap with locate button */
-    .leaflet-top.leaflet-left {
-        top: 52px;
+    /* Leaflet controls - below welcome pill (main map; flight/weather use page CSS) */
+    body:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-left {
+        top: calc(64px + env(safe-area-inset-top, 0px));
         pointer-events: auto;
     }
 
@@ -1492,8 +1640,8 @@ select {
         flex-direction: column;
         gap: 8px;
         position: fixed;
-        top: 60px;
-        right: 8px;
+        top: max(52px, env(safe-area-inset-top, 0px) + 8px);
+        right: max(8px, env(safe-area-inset-right, 0px));
         z-index: 1000;
     }
 
@@ -1526,52 +1674,9 @@ select {
         flex-shrink: 0;
     }
 
-    /* Hide default panels on mobile - replaced by FABs */
-    .draw-style-panel,
-    .help-panel {
+    /* Hide Help chip on mobile — use FAB */
+    .map-top-actions {
         display: none !important;
-    }
-
-    /* Style panel as bottom sheet when opened from FAB */
-    body.mobile-style-open .draw-style-panel {
-        display: block !important;
-        position: fixed !important;
-        left: 8px !important;
-        right: 8px !important;
-        top: auto !important;
-        bottom: max(8px, env(safe-area-inset-bottom, 8px)) !important;
-        width: auto !important;
-        max-width: none !important;
-        max-height: 50vh;
-        overflow-y: auto;
-        border-radius: 12px 12px 0 0;
-        box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
-        z-index: 2500 !important;
-        animation: slideUpDrawer 0.25s ease-out;
-    }
-
-    body.mobile-style-open .mobile-style-backdrop {
-        display: block;
-    }
-
-    .mobile-style-backdrop {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.35);
-        z-index: 2499;
-    }
-
-    .draw-style-body {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .draw-style-row {
-        flex: 1 1 45%;
-        min-width: 0;
-        margin-bottom: 0;
     }
 
     /* ---- Mobile flight path floating controls ---- */
@@ -2592,30 +2697,56 @@ select {
     color: #3a6dd0;
 }
 
-.draw-style-panel {
-    position: absolute;
-    top: 10px;
-    left: calc(var(--sidebar-width) + 52px);
-    z-index: 1000;
-    background: var(--sidebar-bg);
-    border: 1px solid var(--sidebar-border);
-    border-radius: var(--radius);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    width: 200px;
+/* Drawing style — lives in sidebar (see .sidebar .draw-style-panel) */
+
+/* map-top-actions only used inside .map-top-chrome on index (main map) */
+
+.sidebar .draw-style-panel {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    z-index: auto;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
     font-family: var(--font-family);
-    transition: left var(--transition);
 }
 
-body.sidebar-collapsed .draw-style-panel {
-    left: 52px;
+.sidebar-section-draw-style {
+    padding-top: 12px;
+    padding-bottom: 12px;
 }
 
-/* Help panel - matches drawing style, positioned to the right */
+.sidebar .draw-style-panel .draw-style-header {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.sidebar .draw-style-panel .draw-style-body {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.sidebar .draw-style-panel.editing-shape {
+    box-shadow: none;
+    background: rgba(91, 141, 239, 0.07);
+    border-radius: var(--radius);
+    outline: 1px solid var(--primary);
+    outline-offset: 0;
+}
+
+.sidebar .draw-style-panel.editing-shape .draw-style-header {
+    color: var(--primary);
+    border-bottom-color: rgba(91, 141, 239, 0.35);
+}
+
 .help-panel {
-    position: absolute;
-    top: 10px;
-    left: calc(var(--sidebar-width) + 52px + 200px + 8px);
-    z-index: 1000;
+    position: relative;
+    flex: 0 0 auto;
     background: var(--sidebar-bg);
     border: 1px solid var(--sidebar-border);
     border-radius: var(--radius);
@@ -2626,7 +2757,6 @@ body.sidebar-collapsed .draw-style-panel {
     color: var(--sidebar-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    transition: left var(--transition);
 }
 
 .help-panel .draw-style-header {
@@ -2634,8 +2764,22 @@ body.sidebar-collapsed .draw-style-panel {
     border-bottom: none;
 }
 
-body.sidebar-collapsed .help-panel {
-    left: 260px;
+/* Welcome / Help header buttons — match Drawing Style toggle (same .btn-icon metrics) */
+.map-top-actions .draw-style-header .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    font-size: 14px;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.map-top-actions .draw-style-header .btn-icon svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: block;
 }
 
 .draw-style-header {
@@ -3055,17 +3199,6 @@ body.sidebar-collapsed .help-panel {
     line-height: 1.4;
     margin-bottom: 6px;
     padding: 0 2px;
-}
-
-/* ---- Style Panel Editing Indicator ---- */
-
-.draw-style-panel.editing-shape {
-    border-color: var(--primary);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px var(--primary);
-}
-
-.draw-style-panel.editing-shape .draw-style-header {
-    color: var(--primary);
 }
 
 /* ---- Geoman toolbar overrides ---- */

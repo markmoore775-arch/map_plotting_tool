@@ -194,7 +194,9 @@ const Exporters = (() => {
 
     // ---- PowerPoint Export ----
 
-    async function exportPptx(mapElement, points, shapes) {
+    async function exportPptx(mapElement, points, shapes, light) {
+        PptxTheme.setLight(!!light);
+
         const pptx = new PptxGenJS();
         pptx.layout = 'LAYOUT_WIDE';
         pptx.author = 'AirPlot';
@@ -203,26 +205,35 @@ const Exporters = (() => {
         const logo = await PptxTheme.loadLogo();
         PptxTheme.applyTheme(pptx, logo);
 
-        const C = PptxTheme.COLORS;
+        const C = PptxTheme.colors();
         const headerOpts = PptxTheme.tableHeaderOpts();
         const cellOpts = PptxTheme.tableCellOpts();
         const border = PptxTheme.tableBorder();
 
-        const canvas = await html2canvas(mapElement, {
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#1a1a2e',
-            scale: 2,
-            logging: false
-        });
-        const mapImg = canvas.toDataURL('image/png');
+        const mapImg = await PptxTheme.captureSquareMap(mapElement);
         const dateLabel = new Date().toLocaleString();
 
         // --- Slide 1: Title + Map ---
         let slide = pptx.addSlide({ masterName: 'TITLE_SLIDE' });
         slide.addText('Map Report', { x: 1.1, y: 0.15, w: 8, h: 0.6, fontSize: 26, bold: true, color: C.textPrimary, fontFace: 'Arial' });
-        slide.addText(dateLabel + '  |  ' + points.length + ' points, ' + shapes.length + ' shapes', { x: 0.5, y: 0.85, w: 12, h: 0.35, fontSize: 12, color: C.textMuted, fontFace: 'Arial' });
-        slide.addImage({ data: mapImg, x: 0.5, y: 1.35, w: 9.5, h: 5.3, rounding: true });
+
+        var mapSize = 5.6;
+        slide.addShape('roundRect', { x: 0.42, y: 1.02, w: mapSize + 0.16, h: mapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
+        slide.addImage({ data: mapImg, x: 0.5, y: 1.1, w: mapSize, h: mapSize, rounding: false });
+
+        var panelX = 6.5;
+        var panelW = 6.3;
+        var panelRows = [
+            { label: 'DATE & TIME', value: dateLabel, divider: true },
+            { label: 'POINTS', value: points.length + ' point' + (points.length !== 1 ? 's' : '') + ' plotted', bold: true, fontSize: 15, divider: true },
+            { label: 'SHAPES & DRAWINGS', value: shapes.length + ' shape' + (shapes.length !== 1 ? 's' : '') + ' defined', bold: true, fontSize: 15, divider: true }
+        ];
+        if (points.length > 0) {
+            var firstPt = points[0];
+            panelRows.push({ label: 'FIRST POINT', value: (firstPt.name || 'Unnamed') + '  (' + firstPt.lat.toFixed(5) + ', ' + firstPt.lng.toFixed(5) + ')', divider: true });
+        }
+        panelRows.push({ label: 'GENERATED', value: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '  at  ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) });
+        PptxTheme.addInfoPanel(slide, panelX, 1.0, panelW, 5.7, panelRows);
 
         // --- Slide 2+: Points table ---
         if (points.length > 0) {
@@ -318,6 +329,84 @@ const Exporters = (() => {
         await pptx.writeFile({ fileName: fileName });
     }
 
+    // ---- PDF Export ----
+
+    async function exportPdf(mapElement, points, shapes, light) {
+        PdfTheme.setLight(!!light);
+        var logo = await PdfTheme.loadLogo();
+        var c = PdfTheme.colors();
+        var ts = PdfTheme.tableStyles();
+
+        var mapImg = await PdfTheme.captureSquareMap(mapElement);
+        var dateLabel = new Date().toLocaleString();
+
+        var doc = PdfTheme.createDoc();
+
+        PdfTheme.addHeader(doc, 'Map Report', true);
+        doc.addImage(mapImg, 'PNG', 10, 25, 120, 120);
+
+        var panelRows = [
+            { label: 'DATE & TIME', value: dateLabel, divider: true },
+            { label: 'POINTS', value: points.length + ' point' + (points.length !== 1 ? 's' : '') + ' plotted', bold: true, fontSize: 11, divider: true },
+            { label: 'SHAPES & DRAWINGS', value: shapes.length + ' shape' + (shapes.length !== 1 ? 's' : '') + ' defined', bold: true, fontSize: 11, divider: true }
+        ];
+        if (points.length > 0) {
+            var firstPt = points[0];
+            panelRows.push({ label: 'FIRST POINT', value: (firstPt.name || 'Unnamed') + '  (' + firstPt.lat.toFixed(5) + ', ' + firstPt.lng.toFixed(5) + ')', divider: true });
+        }
+        panelRows.push({ label: 'GENERATED', value: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '  at  ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) });
+        PdfTheme.addInfoPanel(doc, 140, 25, 147, panelRows);
+
+        if (points.length > 0) {
+            PdfTheme.newPage(doc);
+            PdfTheme.addHeader(doc, 'Points');
+            var ptBody = points.map(function (p, i) {
+                var notes = (p.notes || '').replace(/\n/g, ' ');
+                if (notes.length > 80) notes = notes.slice(0, 77) + '…';
+                return [String(i + 1), p.name || 'Unnamed', p.lat.toFixed(6), p.lng.toFixed(6), notes];
+            });
+            doc.autoTable({
+                startY: 18,
+                head: [['#', 'Name', 'Latitude', 'Longitude', 'Notes']],
+                body: ptBody,
+                columnStyles: { 4: { cellWidth: 70 } },
+                ...ts
+            });
+        }
+
+        if (shapes.length > 0) {
+            PdfTheme.newPage(doc);
+            PdfTheme.addHeader(doc, 'Shapes & Drawings');
+            var shBody = shapes.map(function (s, i) {
+                var typeStr = (s.type || 'unknown').charAt(0).toUpperCase() + (s.type || 'unknown').slice(1);
+                var label = s.label || s.text || '—';
+                var details = '';
+                if (s.type === 'circle' && s.center) {
+                    var r = s.radius >= 1000 ? (s.radius / 1000).toFixed(2) + ' km' : Math.round(s.radius) + ' m';
+                    details = 'Centre: ' + s.center[0].toFixed(5) + ', ' + s.center[1].toFixed(5) + ' | Radius: ' + r;
+                } else if ((s.type === 'polygon' || s.type === 'rectangle') && s.latlngs) {
+                    details = s.latlngs.length + ' vertices';
+                } else if ((s.type === 'polyline' || s.type === 'flightpath') && s.latlngs) {
+                    details = s.latlngs.length + ' points';
+                } else if (s.type === 'arrow' && s.tail && s.tip) {
+                    details = 'From ' + s.tail[0].toFixed(5) + ',' + s.tail[1].toFixed(5) + ' → ' + s.tip[0].toFixed(5) + ',' + s.tip[1].toFixed(5);
+                } else if (s.type === 'text' && s.position) {
+                    details = 'At ' + s.position[0].toFixed(5) + ', ' + s.position[1].toFixed(5);
+                }
+                return [String(i + 1), typeStr, label, details || '—'];
+            });
+            doc.autoTable({
+                startY: 18,
+                head: [['#', 'Type', 'Label', 'Details']],
+                body: shBody,
+                ...ts
+            });
+        }
+
+        PdfTheme.addAllFooters(doc);
+        doc.save('Map_Report_' + new Date().toISOString().slice(0, 10) + '.pdf');
+    }
+
     // ---- Download helper ----
 
     function downloadFile(content, filename, mimeType) {
@@ -337,6 +426,7 @@ const Exporters = (() => {
         exportKML,
         exportScreenshot,
         exportPptx,
+        exportPdf,
         downloadFile
     };
 
