@@ -4,6 +4,76 @@
 (function () {
     'use strict';
 
+    /** Draft form fields — local only, same origin; cleared when user clears the form. */
+    var FN_DRAFT_STORAGE_KEY = 'airplotFlightNotesDraft_v1';
+    var FN_DRAFT_FIELD_IDS = [
+        'fnDate',
+        'fnTime',
+        'fnLocation',
+        'fnReference',
+        'fnDeconflictions',
+        'fnRp1',
+        'fnRp2',
+        'fnUas',
+        'fnBattery1',
+        'fnBattery1Time',
+        'fnBattery2',
+        'fnBattery2Time',
+        'fnBattery3',
+        'fnBattery3Time',
+        'fnBattery4',
+        'fnBattery4Time',
+        'fnWeather',
+        'fnNotes'
+    ];
+
+    var fnDraftSaveTimer = null;
+
+    function saveFlightNotesDraft() {
+        try {
+            var fields = {};
+            for (var i = 0; i < FN_DRAFT_FIELD_IDS.length; i++) {
+                var id = FN_DRAFT_FIELD_IDS[i];
+                var el = document.getElementById(id);
+                if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+                    fields[id] = el.value || '';
+                }
+            }
+            localStorage.setItem(FN_DRAFT_STORAGE_KEY, JSON.stringify({ v: 1, fields: fields }));
+        } catch (e) {}
+    }
+
+    function scheduleFlightNotesDraftSave() {
+        if (fnDraftSaveTimer) clearTimeout(fnDraftSaveTimer);
+        fnDraftSaveTimer = setTimeout(function () {
+            fnDraftSaveTimer = null;
+            saveFlightNotesDraft();
+        }, 250);
+    }
+
+    function loadFlightNotesDraft() {
+        try {
+            var raw = localStorage.getItem(FN_DRAFT_STORAGE_KEY);
+            if (!raw) return;
+            var data = JSON.parse(raw);
+            if (!data || data.v !== 1 || !data.fields) return;
+            var id;
+            for (id in data.fields) {
+                if (!Object.prototype.hasOwnProperty.call(data.fields, id)) continue;
+                var el = document.getElementById(id);
+                if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+                    el.value = data.fields[id];
+                }
+            }
+        } catch (e) {}
+    }
+
+    function clearFlightNotesDraftStorage() {
+        try {
+            localStorage.removeItem(FN_DRAFT_STORAGE_KEY);
+        } catch (e) {}
+    }
+
     var MAILTO_BODY_MAX = 1800;
     var GPS_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
@@ -416,6 +486,7 @@
             }
             setWeatherFetchStatus('Report added to Conditions.', 'ok');
             autoResizeConditionsTextarea();
+            saveFlightNotesDraft();
         } catch (err) {
             console.error('Flight Notes weather fetch failed:', err);
             setWeatherFetchStatus(err && err.message ? err.message : 'Failed to fetch weather.', 'error');
@@ -435,6 +506,7 @@
         var mm = String(now.getMinutes()).padStart(2, '0');
         if (dateEl) dateEl.value = y + '-' + m + '-' + d;
         if (timeEl) timeEl.value = hh + ':' + mm;
+        saveFlightNotesDraft();
     }
 
     function setTimeInputNow(inputId) {
@@ -444,6 +516,7 @@
         var hh = String(now.getHours()).padStart(2, '0');
         var mm = String(now.getMinutes()).padStart(2, '0');
         el.value = hh + ':' + mm;
+        saveFlightNotesDraft();
     }
 
     function setGpsStatus(message, kind) {
@@ -567,6 +640,7 @@
         if (input) {
             input.value = postcodeHint != null ? loc + ' · Postcode: ' + postcodeHint : loc;
         }
+        saveFlightNotesDraft();
         setTimeout(function () {
             initMiniMap(lat, lng);
         }, 0);
@@ -580,6 +654,7 @@
                     input.value = loc + ' · Postcode: ' + pc;
                 }
                 setGpsStatus(okMessage, 'ok');
+                saveFlightNotesDraft();
             });
         }
     }
@@ -811,6 +886,7 @@
         hideLocationResult();
         setGpsStatus('', '');
         clearWeatherFetchStatus();
+        clearFlightNotesDraftStorage();
         closeClearModal();
         autoResizeConditionsTextarea();
     }
@@ -831,6 +907,8 @@
                 } catch (e) {}
             });
         }
+
+        loadFlightNotesDraft();
 
         var nowBtn = document.getElementById('fnNowBtn');
         var searchLocationBtn = document.getElementById('fnSearchLocationBtn');
@@ -881,6 +959,12 @@
                 closeClearModal();
             }
         });
+
+        var fnForm = document.getElementById('flightNotesForm');
+        if (fnForm) {
+            fnForm.addEventListener('input', scheduleFlightNotesDraftSave);
+            fnForm.addEventListener('change', scheduleFlightNotesDraftSave);
+        }
     }
 
     if (document.readyState === 'loading') {

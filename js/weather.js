@@ -16,7 +16,7 @@
         '</ol>',
         '<p><strong>Report tabs</strong> — <strong>Summary</strong> (wind by altitude, visibility, clouds, precipitation, temperature), <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>, <strong>Airspace</strong>. Expand <strong>About this forecast model</strong> on the Summary tab for model notes.</p>',
         '<p><strong>Export</strong> — <strong>PPTX</strong> or <strong>PDF</strong> downloads a branded report. <strong>Light</strong> switches the report to a light theme (e.g. for screenshots or copy/paste). The map <strong>ⓘ</strong> button opens or closes this instructions panel.</p>',
-        '<p>Use <strong>Welcome</strong> (top-left) to return to the AirPlot home screen. Attribution and data sources are shown in the report.</p>'
+        '<p>From here you can also open <a href="flight-notes.html">Flight Notes</a> or the <a href="checklist.html">M4T / TD Checklist</a> from the welcome screen; those pages link to each other in the header so you can move between notes and checklist without returning home. Use <strong>Welcome</strong> (top-left) to return to the AirPlot home screen. Attribution and data sources are shown in the report.</p>'
     ].join('');
 
     const WEATHER_STATUS_HTML_SELECTED = 'Location selected. Set time and tap <strong>Get Weather</strong>.';

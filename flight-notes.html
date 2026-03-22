@@ -21,16 +21,19 @@
 </head>
 <body class="flight-notes-mode">
     <header class="fn-top-bar">
-        <nav class="fp-welcome-bar" aria-label="AirPlot home">
-            <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
-                <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
-                <span class="fp-welcome-title">AirPlot</span>
-                <span class="fp-welcome-cta">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-                    Welcome
-                </span>
-            </a>
-        </nav>
+        <div class="fn-top-bar-start">
+            <nav class="fp-welcome-bar" aria-label="AirPlot home">
+                <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
+                    <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+                    <span class="fp-welcome-title">AirPlot</span>
+                    <span class="fp-welcome-cta">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                        Welcome
+                    </span>
+                </a>
+            </nav>
+            <a href="checklist.html" class="fn-nav-link" title="Open M4T / TD checklist">Checklist</a>
+        </div>
         <div class="fn-top-bar-actions">
             <label class="fn-theme-toggle" title="Light theme (better for copy/paste)">
                 <input type="checkbox" id="fnLightThemeToggle">
@@ -42,14 +45,15 @@
     <main class="fn-main">
         <aside class="fn-disclaimer" role="note" aria-label="Privacy and data">
             <p>
-                <strong>Privacy:</strong> AirPlot does not save your flight notes on our servers. What you enter stays in this browser only and is not uploaded to us.
-                It is cleared when you close the browser (or this tab may be discarded). So <strong>export to PDF</strong> or <strong>send by email</strong> if you need a copy.
+                <strong>Privacy:</strong> AirPlot does not save your flight notes on our servers. What you enter stays in this browser on this device and is not uploaded to us.
+                Your draft is saved locally so you can leave this page and return later; use <strong>Clear form</strong> to wipe it from this browser.
+                For a portable copy, use <strong>export to PDF</strong> or <strong>send by email</strong>.
                 Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch weather report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed notes are not sent to those services.
             </p>
         </aside>
         <header class="fn-header">
             <h1 class="fn-title">Flight Notes</h1>
-            <p class="fn-lead">Record key details from your flight. Export to PDF or send by email.</p>
+            <p class="fn-lead">Record key details from your flight. Export to PDF or send by email. Use <strong>Checklist</strong> in the header to open the M4T / TD checklist in this tab without returning to the welcome screen.</p>
         </header>
 
         <form id="flightNotesForm" class="fn-form" autocomplete="on">
@@ -226,6 +230,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="js/pdf-theme.js?v=1"></script>
-    <script src="js/flight-notes.js?v=10"></script>
+    <script src="js/flight-notes.js?v=11"></script>
 </body>
 </html>
