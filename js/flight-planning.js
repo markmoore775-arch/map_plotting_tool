@@ -641,25 +641,32 @@
         const hasRecce = recceTarget !== null;
         const hasWaypoint = waypoints.length > 0 || exclusions.length > 0;
         if (!hasRecce && !hasWaypoint) return;
-        const msg = recceMode && hasRecce
-            ? 'Clear the recce target and exclusion zone?'
-            : 'Clear all waypoints and exclusion zones?';
-        if (!confirm(msg)) return;
-        pushUndo();
-        if (recceMode && recceTarget) {
-            clearRecceTarget();
-        }
-        waypoints = [];
-        waypointMarkers.forEach(m => map.removeLayer(m));
-        waypointMarkers = [];
-        exclusions.forEach((_, i) => {
-            removeCircleRadialMeasurement(i);
-            map.removeLayer(exclusionLayers[i]);
+        const title = recceMode && hasRecce ? 'Clear recce target?' : 'Clear waypoint mission?';
+        const message = recceMode && hasRecce
+            ? 'Clear the recce target and exclusion zone? This cannot be undone.'
+            : 'Clear all waypoints and exclusion zones? This cannot be undone.';
+        showConfirmModal({
+            title,
+            message,
+            confirmLabel: 'Clear'
+        }).then(ok => {
+            if (!ok) return;
+            pushUndo();
+            if (recceMode && recceTarget) {
+                clearRecceTarget();
+            }
+            waypoints = [];
+            waypointMarkers.forEach(m => map.removeLayer(m));
+            waypointMarkers = [];
+            exclusions.forEach((_, i) => {
+                removeCircleRadialMeasurement(i);
+                map.removeLayer(exclusionLayers[i]);
+            });
+            exclusions = [];
+            exclusionLayers = [];
+            exclusionRadialGroups = [];
+            updateCounts();
         });
-        exclusions = [];
-        exclusionLayers = [];
-        exclusionRadialGroups = [];
-        updateCounts();
     }
 
     function undo() {

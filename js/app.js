@@ -1180,9 +1180,13 @@
                 if (e.target.closest('.btn-edit')) {
                     openEditModal(p.id);
                 } else if (e.target.closest('.btn-delete')) {
-                    if (confirm(`Delete "${p.name || 'Unnamed'}"?`)) {
-                        deletePoint(p.id);
-                    }
+                    showConfirmModal({
+                        title: 'Delete point?',
+                        message: `Delete "${p.name || 'Unnamed'}"? This cannot be undone.`,
+                        confirmLabel: 'Delete'
+                    }).then(ok => {
+                        if (ok) deletePoint(p.id);
+                    });
                 } else {
                     panToPoint(p.id);
                     highlightPoint(p.id);
@@ -1404,9 +1408,13 @@
 
     document.getElementById('clearAllBtn').addEventListener('click', () => {
         if (points.length === 0) return;
-        if (confirm(`Clear all ${points.length} points?`)) {
-            clearAllPoints();
-        }
+        showConfirmModal({
+            title: 'Clear all points?',
+            message: `This will remove all ${points.length} points from the map. This cannot be undone.`,
+            confirmLabel: 'Clear all'
+        }).then(ok => {
+            if (ok) clearAllPoints();
+        });
     });
 
     document.getElementById('fitAllBtn').addEventListener('click', fitAllPoints);
@@ -1891,10 +1899,16 @@
                 const shapes = Drawings.getShapes();
                 const shape = shapes.find(s => s.id === id);
                 const typeName = shape && shape.type === 'polyline' ? 'line' : 'flight path';
-                if (!confirm(`Delete this ${typeName}? This cannot be undone.`)) return;
-                Drawings.removeShape(id);
-                _foCurrentShapeId = null;
-                closeModal('flightOverviewModal');
+                showConfirmModal({
+                    title: 'Delete route?',
+                    message: `Delete this ${typeName}? This cannot be undone.`,
+                    confirmLabel: 'Delete'
+                }).then(ok => {
+                    if (!ok) return;
+                    Drawings.removeShape(id);
+                    _foCurrentShapeId = null;
+                    closeModal('flightOverviewModal');
+                });
             });
         }
     }
@@ -2357,10 +2371,15 @@ ${summaryRows}
     document.getElementById('editDeleteBtn').addEventListener('click', () => {
         const id = parseInt(document.getElementById('editPointId').value);
         const point = points.find(p => p.id === id);
-        if (confirm(`Delete "${point ? point.name || 'Unnamed' : ''}"?`)) {
+        showConfirmModal({
+            title: 'Delete point?',
+            message: `Delete "${point ? point.name || 'Unnamed' : ''}"? This cannot be undone.`,
+            confirmLabel: 'Delete'
+        }).then(ok => {
+            if (!ok) return;
             deletePoint(id);
             closeModal('editModal');
-        }
+        });
     });
 
     // ---- Bulk Import ----
@@ -3056,7 +3075,16 @@ ${summaryRows}
         });
 
         document.getElementById('shapeEditDeleteBtn').addEventListener('click', () => {
-            Drawings.deleteShapeFromModal();
+            const id = parseInt(document.getElementById('editShapeId').value, 10);
+            const shape = Drawings.getShapes().find(s => s.id === id);
+            const label = shape ? (shape.label || Drawings.getShapeTypeLabel(shape.type)) : 'shape';
+            showConfirmModal({
+                title: 'Delete shape?',
+                message: `Delete this ${label}? This cannot be undone.`,
+                confirmLabel: 'Delete'
+            }).then(ok => {
+                if (ok) Drawings.deleteShapeFromModal();
+            });
         });
 
         document.getElementById('shapeEditFlightOverviewBtn').addEventListener('click', () => {
@@ -3093,10 +3121,15 @@ ${summaryRows}
         document.getElementById('clearShapesBtn').addEventListener('click', () => {
             const count = Drawings.getShapes().length;
             if (count === 0) return;
-            if (confirm(`Clear all ${count} shapes?`)) {
+            showConfirmModal({
+                title: 'Clear all shapes?',
+                message: `This will remove all ${count} shapes from the map. This cannot be undone.`,
+                confirmLabel: 'Clear all'
+            }).then(ok => {
+                if (!ok) return;
                 pushUndoSnapshot();
                 Drawings.clearAllShapes();
-            }
+            });
         });
 
         initMapContextMenu();
@@ -3405,8 +3438,14 @@ ${summaryRows}
             case 'delete-point':
                 if (pointId) {
                     const point = points.find(p => p.id === pointId);
-                    if (point && confirm(`Delete "${point.name || 'Unnamed'}"?`)) {
-                        deletePoint(pointId);
+                    if (point) {
+                        showConfirmModal({
+                            title: 'Delete point?',
+                            message: `Delete "${point.name || 'Unnamed'}"? This cannot be undone.`,
+                            confirmLabel: 'Delete'
+                        }).then(ok => {
+                            if (ok) deletePoint(pointId);
+                        });
                     }
                 }
                 break;
@@ -3426,7 +3465,17 @@ ${summaryRows}
                 if (shapeId) Drawings.copyShape(shapeId);
                 break;
             case 'delete-shape':
-                if (shapeId) Drawings.removeShape(shapeId);
+                if (shapeId) {
+                    const shape = Drawings.getShapes().find(s => s.id === shapeId);
+                    const label = shape ? (shape.label || Drawings.getShapeTypeLabel(shape.type)) : 'shape';
+                    showConfirmModal({
+                        title: 'Delete shape?',
+                        message: `Delete this ${label}? This cannot be undone.`,
+                        confirmLabel: 'Delete'
+                    }).then(ok => {
+                        if (ok) Drawings.removeShape(shapeId);
+                    });
+                }
                 break;
             case 'drop-point':
                 if (latlng) {

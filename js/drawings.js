@@ -1579,9 +1579,13 @@ const Drawings = (() => {
                     L.DomEvent.preventDefault(e);
                     layer.closePopup();
                     const label = shape.label || getShapeTypeLabel(shape.type);
-                    if (confirm(`Delete this ${label}? This cannot be undone.`)) {
-                        removeShape(shape.id);
-                    }
+                    showConfirmModal({
+                        title: 'Delete route?',
+                        message: `Delete this ${label}? This cannot be undone.`,
+                        confirmLabel: 'Delete'
+                    }).then(ok => {
+                        if (ok) removeShape(shape.id);
+                    });
                 });
                 return container;
             }, { closeButton: false, className: 'shape-action-popup' });
@@ -2887,7 +2891,14 @@ const Drawings = (() => {
                 } else if (e.target.closest('.btn-flight-overview')) {
                     if (map && map.fire) map.fire('flightoverviewrequest', { shapeId: s.id });
                 } else if (e.target.closest('.btn-delete')) {
-                    removeShape(s.id);
+                    const label = s.label || getShapeTypeLabel(s.type);
+                    showConfirmModal({
+                        title: 'Delete shape?',
+                        message: `Delete this ${label}? This cannot be undone.`,
+                        confirmLabel: 'Delete'
+                    }).then(ok => {
+                        if (ok) removeShape(s.id);
+                    });
                 } else {
                     selectShape(s.id);
                     panToShape(s.id);
@@ -3095,6 +3106,7 @@ const Drawings = (() => {
         getShapes,
         getShowMeasurements,
         getShapeInfo,
+        getShapeTypeLabel,
         saveShapeEdit,
         deleteShapeFromModal,
         openShapeEditModal,

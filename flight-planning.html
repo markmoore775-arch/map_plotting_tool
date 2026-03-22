@@ -198,6 +198,24 @@
         </div>
     </div>
 
+    <!-- Destructive action confirmation (replaces browser confirm) -->
+    <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="confirmModalTitle">Confirm</h2>
+                <button type="button" class="modal-close" id="confirmModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmModalBody"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="confirmModalCancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmModalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -217,6 +235,7 @@
     <script src="js/pptx-theme.js?v=7"></script>
     <script src="js/pdf-theme.js?v=1"></script>
     <script src="js/config.js"></script>
-    <script src="js/flight-planning.js?v=7"></script>
+    <script src="js/confirm-modal.js"></script>
+    <script src="js/flight-planning.js?v=8"></script>
 </body>
 </html>

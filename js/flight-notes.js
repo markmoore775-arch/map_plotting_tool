@@ -682,6 +682,37 @@
         }
     }
 
+    function clearWeatherFetchStatus() {
+        var wfs = document.getElementById('fnWeatherFetchStatus');
+        if (!wfs) return;
+        wfs.textContent = '';
+        wfs.className = 'fn-weather-fetch-status';
+    }
+
+    function openClearModal() {
+        var m = document.getElementById('fnClearModal');
+        if (!m) return;
+        m.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        var confirmBtn = document.getElementById('fnClearModalConfirm');
+        if (confirmBtn) confirmBtn.focus();
+    }
+
+    function closeClearModal() {
+        var m = document.getElementById('fnClearModal');
+        if (m) m.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function clearEntireForm() {
+        var form = document.getElementById('flightNotesForm');
+        if (form) form.reset();
+        hideLocationResult();
+        setGpsStatus('', '');
+        clearWeatherFetchStatus();
+        closeClearModal();
+    }
+
     function init() {
         var lightToggle = document.getElementById('fnLightThemeToggle');
         if (lightToggle) {
@@ -705,12 +736,29 @@
         var pdfBtn = document.getElementById('fnPdfBtn');
 
         var weatherFetchBtn = document.getElementById('fnWeatherFetchBtn');
+        var clearFormBtn = document.getElementById('fnClearFormBtn');
+        var clearModal = document.getElementById('fnClearModal');
+        var clearBackdrop = document.getElementById('fnClearModalBackdrop');
+        var clearCancel = document.getElementById('fnClearModalCancel');
+        var clearClose = document.getElementById('fnClearModalClose');
+        var clearConfirm = document.getElementById('fnClearModalConfirm');
 
         if (nowBtn) nowBtn.addEventListener('click', setNowDateTime);
         if (gpsBtn) gpsBtn.addEventListener('click', onGpsClick);
         if (weatherFetchBtn) weatherFetchBtn.addEventListener('click', onWeatherFetchClick);
         if (emailBtn) emailBtn.addEventListener('click', onEmailClick);
         if (pdfBtn) pdfBtn.addEventListener('click', onPdfClick);
+
+        if (clearFormBtn) clearFormBtn.addEventListener('click', openClearModal);
+        if (clearCancel) clearCancel.addEventListener('click', closeClearModal);
+        if (clearClose) clearClose.addEventListener('click', closeClearModal);
+        if (clearBackdrop) clearBackdrop.addEventListener('click', closeClearModal);
+        if (clearConfirm) clearConfirm.addEventListener('click', clearEntireForm);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && clearModal && !clearModal.classList.contains('hidden')) {
+                closeClearModal();
+            }
+        });
     }
 
     if (document.readyState === 'loading') {

@@ -40,6 +40,13 @@
     </header>
 
     <main class="fn-main">
+        <aside class="fn-disclaimer" role="note" aria-label="Privacy and data">
+            <p>
+                <strong>Privacy:</strong> AirPlot does not save your flight notes on our servers. What you enter stays in this browser only and is not uploaded to us.
+                It is cleared when you close the browser (or this tab may be discarded). So <strong>export to PDF</strong> or <strong>send by email</strong> if you need a copy.
+                Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch weather report</strong>, map tiles for the preview map, or address details for postcode lookup). Your typed notes are not sent to those services.
+            </p>
+        </aside>
         <header class="fn-header">
             <h1 class="fn-title">Flight Notes</h1>
             <p class="fn-lead">Record key details from your flight. Export to PDF or send by email.</p>
@@ -172,9 +179,29 @@
                 <button type="button" class="fn-btn fn-btn-primary" id="fnPdfBtn">
                     Export PDF
                 </button>
+                <button type="button" class="fn-btn fn-btn-danger" id="fnClearFormBtn">
+                    Clear form
+                </button>
             </div>
         </form>
     </main>
+
+    <div id="fnClearModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="fnClearModalTitle">
+        <div class="modal-backdrop" id="fnClearModalBackdrop" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="fnClearModalTitle">Clear form?</h2>
+                <button type="button" class="modal-close" id="fnClearModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>This will remove everything you have entered in Flight Notes. This cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="fnClearModalCancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="fnClearModalConfirm">Clear form</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -183,6 +210,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="js/pdf-theme.js?v=1"></script>
-    <script src="js/flight-notes.js?v=7"></script>
+    <script src="js/flight-notes.js?v=8"></script>
 </body>
 </html>

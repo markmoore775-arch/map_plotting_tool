@@ -1047,6 +1047,24 @@
         </div>
     </div>
 
+    <!-- Destructive action confirmation (replaces browser confirm) -->
+    <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="confirmModalTitle">Confirm</h2>
+                <button type="button" class="modal-close" id="confirmModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmModalBody"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="confirmModalCancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmModalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
         <div class="spinner"></div>
@@ -1081,6 +1099,7 @@
 
     <!-- App Scripts -->
     <script src="js/config.js"></script>
+    <script src="js/confirm-modal.js"></script>
     <script src="js/grid.js"></script>
     <script src="js/airspace.js"></script>
     <script src="js/notam.js"></script>

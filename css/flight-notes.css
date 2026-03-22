@@ -81,6 +81,25 @@ body.flight-notes-mode .fp-welcome-bar {
     padding-bottom: max(48px, env(safe-area-inset-bottom));
 }
 
+.fn-disclaimer {
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--sidebar-text-muted, #9999aa);
+    margin: 0 0 20px;
+    padding: 12px 14px;
+    background: rgba(255, 152, 0, 0.08);
+    border-radius: var(--radius, 6px);
+    border-left: 3px solid rgba(255, 152, 0, 0.45);
+}
+
+.fn-disclaimer p {
+    margin: 0;
+}
+
+.fn-disclaimer strong {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
 .fn-header {
     margin-bottom: 24px;
 }
@@ -379,6 +398,26 @@ body.flight-notes-mode .fp-welcome-bar {
     cursor: not-allowed;
 }
 
+.fn-btn-danger {
+    background: transparent;
+    color: var(--danger, #e05555);
+    border: 1px solid var(--danger, #e05555);
+}
+
+.fn-btn-danger:hover {
+    background: rgba(224, 85, 85, 0.12);
+    filter: none;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-btn-danger {
+    color: #c62828;
+    border-color: #c62828;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-btn-danger:hover {
+    background: rgba(198, 40, 40, 0.1);
+}
+
 /* ---- Light theme (Flight Weather / Flight Overview pattern) ---- */
 
 html.flight-notes-mode body.flight-notes-mode.fn-light-theme {
@@ -419,6 +458,16 @@ body.flight-notes-mode.fn-light-theme .fn-title {
 
 body.flight-notes-mode.fn-light-theme .fn-lead {
     color: #555;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-disclaimer {
+    color: #555;
+    background: rgba(255, 152, 0, 0.12);
+    border-left-color: rgba(200, 120, 0, 0.55);
+}
+
+body.flight-notes-mode.fn-light-theme .fn-disclaimer strong {
+    color: #1a1a1a;
 }
 
 body.flight-notes-mode.fn-light-theme .fn-section {
@@ -503,6 +552,48 @@ body.flight-notes-mode.fn-light-theme ::-webkit-scrollbar-thumb {
 
 body.flight-notes-mode.fn-light-theme ::-webkit-scrollbar-track {
     background: #e8e8ec;
+}
+
+/*
+ * Clear-form modal: body.fn-light-theme sets dark text on the page; the modal still uses
+ * dark sidebar colours, so inherited colour becomes unreadable. Match Flight Overview light modals.
+ */
+body.flight-notes-mode.fn-light-theme #fnClearModal .modal-content {
+    background: #ffffff;
+    border-color: #d0d0d0;
+    color: #1a1a1a;
+}
+
+body.flight-notes-mode.fn-light-theme #fnClearModal .modal-header {
+    background: #f5f6f8;
+    border-bottom-color: #d0d0d0;
+}
+
+body.flight-notes-mode.fn-light-theme #fnClearModal .modal-header h2 {
+    color: #1a1a1a;
+}
+
+body.flight-notes-mode.fn-light-theme #fnClearModal .modal-close {
+    color: #666;
+}
+
+body.flight-notes-mode.fn-light-theme #fnClearModal .modal-close:hover {
+    color: #1a1a1a;
+    background: #e0e0e0;
+}
+
+body.flight-notes-mode.fn-light-theme #fnClearModal .modal-body {
+    background: #ffffff;
+    color: #1a1a1a;
+}
+
+body.flight-notes-mode.fn-light-theme #fnClearModal .modal-body p {
+    color: #1a1a1a;
+}
+
+body.flight-notes-mode.fn-light-theme #fnClearModal .modal-footer {
+    background: #f5f6f8;
+    border-top-color: #d0d0d0;
 }
 
 @media (max-width: 600px) {
