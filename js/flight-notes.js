@@ -420,6 +420,15 @@
         if (timeEl) timeEl.value = hh + ':' + mm;
     }
 
+    function setTimeInputNow(inputId) {
+        var el = document.getElementById(inputId);
+        if (!el) return;
+        var now = new Date();
+        var hh = String(now.getHours()).padStart(2, '0');
+        var mm = String(now.getMinutes()).padStart(2, '0');
+        el.value = hh + ':' + mm;
+    }
+
     function setGpsStatus(message, kind) {
         var el = document.getElementById('fnGpsStatus');
         if (!el) return;
@@ -744,6 +753,12 @@
         var clearConfirm = document.getElementById('fnClearModalConfirm');
 
         if (nowBtn) nowBtn.addEventListener('click', setNowDateTime);
+        document.querySelectorAll('.fn-btn-battery-time-now').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-time-for');
+                if (id) setTimeInputNow(id);
+            });
+        });
         if (gpsBtn) gpsBtn.addEventListener('click', onGpsClick);
         if (weatherFetchBtn) weatherFetchBtn.addEventListener('click', onWeatherFetchClick);
         if (emailBtn) emailBtn.addEventListener('click', onEmailClick);

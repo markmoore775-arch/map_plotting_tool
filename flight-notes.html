@@ -63,7 +63,7 @@
                     <input type="time" id="fnTime" name="fnTime" class="fn-input">
                 </div>
                 <div class="fn-now-row">
-                    <button type="button" class="fn-btn fn-btn-secondary" id="fnNowBtn" title="Set date and time to now (local)">
+                    <button type="button" class="fn-btn fn-btn-now" id="fnNowBtn" title="Set date and time to now (local)">
                         Now
                     </button>
                 </div>
@@ -77,10 +77,10 @@
                         <input type="text" id="fnLocation" name="fnLocation" class="fn-input" placeholder="Address, site name, or coordinates" autocomplete="street-address">
                     </div>
                     <div class="fn-gps-wrap">
-                        <span id="fnGpsStatus" class="fn-gps-status" role="status" aria-live="polite"></span>
-                        <button type="button" class="fn-btn fn-btn-secondary" id="fnGpsBtn" title="Fill location from device GPS (requires HTTPS)">
+                        <button type="button" class="fn-btn fn-btn-now" id="fnGpsBtn" title="Fill location from device GPS (requires HTTPS)">
                             Use current GPS
                         </button>
+                        <span id="fnGpsStatus" class="fn-gps-status" role="status" aria-live="polite"></span>
                     </div>
                 </div>
                 <div id="fnLocationResult" class="fn-location-result" hidden>
@@ -126,28 +126,40 @@
                         <label class="fn-label" for="fnBattery1">Details</label>
                         <input type="text" id="fnBattery1" name="fnBattery1" class="fn-input">
                         <label class="fn-label" for="fnBattery1Time">Time</label>
-                        <input type="time" id="fnBattery1Time" name="fnBattery1Time" class="fn-input">
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery1Time" name="fnBattery1Time" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now" data-time-for="fnBattery1Time" title="Set time to now (local)">Time now</button>
+                        </div>
                     </div>
                     <div class="fn-battery-card">
                         <h3 class="fn-battery-title">Battery 2</h3>
                         <label class="fn-label" for="fnBattery2">Details</label>
                         <input type="text" id="fnBattery2" name="fnBattery2" class="fn-input">
                         <label class="fn-label" for="fnBattery2Time">Time</label>
-                        <input type="time" id="fnBattery2Time" name="fnBattery2Time" class="fn-input">
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery2Time" name="fnBattery2Time" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now" data-time-for="fnBattery2Time" title="Set time to now (local)">Time now</button>
+                        </div>
                     </div>
                     <div class="fn-battery-card">
                         <h3 class="fn-battery-title">Battery 3</h3>
                         <label class="fn-label" for="fnBattery3">Details</label>
                         <input type="text" id="fnBattery3" name="fnBattery3" class="fn-input">
                         <label class="fn-label" for="fnBattery3Time">Time</label>
-                        <input type="time" id="fnBattery3Time" name="fnBattery3Time" class="fn-input">
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery3Time" name="fnBattery3Time" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now" data-time-for="fnBattery3Time" title="Set time to now (local)">Time now</button>
+                        </div>
                     </div>
                     <div class="fn-battery-card">
                         <h3 class="fn-battery-title">Battery 4</h3>
                         <label class="fn-label" for="fnBattery4">Details</label>
                         <input type="text" id="fnBattery4" name="fnBattery4" class="fn-input">
                         <label class="fn-label" for="fnBattery4Time">Time</label>
-                        <input type="time" id="fnBattery4Time" name="fnBattery4Time" class="fn-input">
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery4Time" name="fnBattery4Time" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now" data-time-for="fnBattery4Time" title="Set time to now (local)">Time now</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -155,7 +167,7 @@
             <section class="fn-section" aria-labelledby="fn-weather-heading">
                 <h2 id="fn-weather-heading" class="fn-section-title">Weather</h2>
                 <div class="fn-weather-actions">
-                    <button type="button" class="fn-btn fn-btn-secondary" id="fnWeatherFetchBtn"
+                    <button type="button" class="fn-btn fn-btn-now" id="fnWeatherFetchBtn"
                         title="Fetches forecast from Open-Meteo (same source as Flight Weather). Location must include latitude and longitude — use Use current GPS or paste coordinates.">
                         Fetch weather report
                     </button>
@@ -210,6 +222,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="js/pdf-theme.js?v=1"></script>
-    <script src="js/flight-notes.js?v=8"></script>
+    <script src="js/flight-notes.js?v=9"></script>
 </body>
 </html>
