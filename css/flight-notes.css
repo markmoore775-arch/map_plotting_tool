@@ -304,13 +304,23 @@ body.flight-notes-mode .fp-welcome-bar {
     word-break: break-word;
 }
 
+/*
+ * Near-square preview (was short letterbox at 200px height).
+ * width: min(100%, …) keeps a square on phones without overflowing; 400px cap on large screens.
+ */
 .fn-mini-map {
-    height: 200px;
-    width: 100%;
+    width: min(100%, min(92vw, 400px));
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    aspect-ratio: 1;
+    height: auto;
     border-radius: var(--radius);
     border: 1px solid var(--sidebar-border);
     overflow: hidden;
     background: var(--input-bg);
+    /* Prefer pan/zoom over browser scroll on touch devices */
+    touch-action: manipulation;
 }
 
 /* Leaflet layers sit above our base background */

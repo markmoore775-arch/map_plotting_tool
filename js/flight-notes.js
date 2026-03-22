@@ -9,6 +9,22 @@
 
     var miniMap = null;
 
+    /** Grow/shrink Conditions textarea to fit content (fetch + typing); cap height so very long notes scroll inside. */
+    function autoResizeConditionsTextarea() {
+        var ta = document.getElementById('fnWeather');
+        if (!ta) return;
+        ta.style.height = 'auto';
+        var cap = Math.min(window.innerHeight * 0.85, 1400);
+        var h = ta.scrollHeight;
+        if (h > cap) {
+            ta.style.height = cap + 'px';
+            ta.style.overflowY = 'auto';
+        } else {
+            ta.style.height = h + 'px';
+            ta.style.overflowY = 'hidden';
+        }
+    }
+
     function trimVal(id) {
         var el = document.getElementById(id);
         if (!el) return '';
@@ -399,6 +415,7 @@
                 ta.value = block;
             }
             setWeatherFetchStatus('Report added to Conditions.', 'ok');
+            autoResizeConditionsTextarea();
         } catch (err) {
             console.error('Flight Notes weather fetch failed:', err);
             setWeatherFetchStatus(err && err.message ? err.message : 'Failed to fetch weather.', 'error');
@@ -728,7 +745,7 @@
             var mapShot = await tryCaptureMiniMapPng();
             if (mapShot && mapShot.dataUrl) {
                 var maxW = 100;
-                var maxH = 42;
+                var maxH = 100;
                 var dims = mapImageSizeMm(mapShot.width, mapShot.height, maxW, maxH);
                 doc.addImage(mapShot.dataUrl, 'PNG', 10, startY, dims.w, dims.h);
                 startY = startY + dims.h + 4;
@@ -786,10 +803,16 @@
     function clearEntireForm() {
         var form = document.getElementById('flightNotesForm');
         if (form) form.reset();
+        var ta = document.getElementById('fnWeather');
+        if (ta) {
+            ta.style.height = '';
+            ta.style.overflowY = '';
+        }
         hideLocationResult();
         setGpsStatus('', '');
         clearWeatherFetchStatus();
         closeClearModal();
+        autoResizeConditionsTextarea();
     }
 
     function init() {
@@ -833,6 +856,18 @@
         if (searchLocationBtn) searchLocationBtn.addEventListener('click', onSearchLocationClick);
         if (gpsBtn) gpsBtn.addEventListener('click', onGpsClick);
         if (weatherFetchBtn) weatherFetchBtn.addEventListener('click', onWeatherFetchClick);
+        var fnWeatherTa = document.getElementById('fnWeather');
+        if (fnWeatherTa) {
+            fnWeatherTa.addEventListener('input', autoResizeConditionsTextarea);
+            autoResizeConditionsTextarea();
+        }
+        window.addEventListener(
+            'resize',
+            function () {
+                autoResizeConditionsTextarea();
+            },
+            { passive: true }
+        );
         if (emailBtn) emailBtn.addEventListener('click', onEmailClick);
         if (pdfBtn) pdfBtn.addEventListener('click', onPdfClick);
 

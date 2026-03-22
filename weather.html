@@ -216,13 +216,21 @@
                     </div>
                     <div class="weather-tab-panel" id="weatherTabAirspace">
                         <div class="weather-airspace-intro">
-                            <p>NOTAMs, FRZs, and restricted airspace within <strong>10 km</strong> of the selected location.</p>
+                            <p id="weatherAirspaceIntroText">NOTAMs, FRZs, and restricted airspace within <strong id="weatherAirspaceIntroKm">10</strong> km of the selected location.</p>
+                        </div>
+                        <div class="weather-airspace-toolbar">
+                            <label class="weather-airspace-radius-label" for="weatherAirspaceRadiusKm">Search radius (km)</label>
+                            <input type="number" class="weather-airspace-radius-input" id="weatherAirspaceRadiusKm" min="1" max="100" step="1" value="10" inputmode="numeric">
+                            <button type="button" class="btn btn-secondary weather-airspace-refresh-btn" id="weatherAirspaceRefreshBtn">Refresh</button>
                         </div>
                         <div id="weatherAirspaceLoading" class="weather-airspace-loading hidden">
                             <div class="spinner"></div>
                             <p>Loading airspace data…</p>
                         </div>
                         <div id="weatherAirspaceContent" class="weather-airspace-content hidden"></div>
+                        <div id="weatherAirspaceMinimapPark" class="weather-airspace-minimap-park hidden" aria-hidden="true">
+                            <div id="weatherAirspaceMinimap" class="weather-airspace-minimap" role="application" aria-label="Restriction map preview"></div>
+                        </div>
                         <p class="weather-attribution" id="weatherAttributionAirspace">NOTAMs: <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS) · Airspace: UK AIP / NATS</p>
                     </div>
                 </div>

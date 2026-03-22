@@ -95,7 +95,37 @@
     let lastNotamData = null;
     let lastAirspaceData = null;
 
-    const AIRSPACE_SEARCH_RADIUS_KM = 10;
+    const AIRSPACE_RADIUS_STORAGE_KEY = 'weatherAirspaceRadiusKm';
+    const AIRSPACE_RADIUS_MIN_KM = 1;
+    const AIRSPACE_RADIUS_MAX_KM = 100;
+    let airspaceSearchRadiusKm = 10;
+    let airspaceMinimap = null;
+    let airspaceMinimapOverlay = null;
+    let airspaceDetailSelectedEl = null;
+
+    function clampAirspaceRadiusKm(n) {
+        var v = typeof n === 'number' ? n : parseInt(String(n), 10);
+        if (!isFinite(v)) return 10;
+        return Math.min(AIRSPACE_RADIUS_MAX_KM, Math.max(AIRSPACE_RADIUS_MIN_KM, Math.round(v)));
+    }
+
+    function syncAirspaceRadiusInput() {
+        var input = document.getElementById('weatherAirspaceRadiusKm');
+        if (input) input.value = String(airspaceSearchRadiusKm);
+        var introKm = document.getElementById('weatherAirspaceIntroKm');
+        if (introKm) introKm.textContent = String(airspaceSearchRadiusKm);
+    }
+
+    function readAirspaceRadiusFromInput() {
+        var input = document.getElementById('weatherAirspaceRadiusKm');
+        return clampAirspaceRadiusKm(input ? input.value : airspaceSearchRadiusKm);
+    }
+
+    function persistAirspaceRadiusKm() {
+        try {
+            sessionStorage.setItem(AIRSPACE_RADIUS_STORAGE_KEY, String(airspaceSearchRadiusKm));
+        } catch (e) { /* ignore */ }
+    }
 
     function haversineKm(lat1, lng1, lat2, lng2) {
         var R = 6371;
@@ -194,6 +224,9 @@
                     name: props.name || '—',
                     lower: props.lowerLimit || props.lower || '—',
                     upper: props.upperLimit || props.upper || '—',
+                    type: props.type || '',
+                    source: props.source || '',
+                    description: props.description || '',
                     geometry: f.geometry
                 };
             }).sort(function (a, b) {
@@ -777,7 +810,7 @@
         renderAviationSection(aviationData || { nearby: [], metars: [], tafs: [], error: null });
 
         if (selectedPoint) {
-            loadAirspaceTab(selectedPoint.lat, selectedPoint.lng);
+            loadAirspaceTab(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
         }
     }
 
@@ -823,17 +856,185 @@
         return fmt(new Date(Date.UTC(year, mm, dd, hh, min)));
     }
 
-    async function loadAirspaceTab(lat, lng) {
+    function escapeHtml(str) {
+        if (str == null) return '';
+        var div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+
+    function parkAirspaceMinimap() {
+        var park = document.getElementById('weatherAirspaceMinimapPark');
+        var mm = document.getElementById('weatherAirspaceMinimap');
+        if (park && mm && mm.parentNode !== park) {
+            park.appendChild(mm);
+        }
+    }
+
+    function hideAirspaceDetailPanel() {
+        parkAirspaceMinimap();
+        var content = document.getElementById('weatherAirspaceContent');
+        if (content) {
+            content.querySelectorAll('.weather-airspace-item-expanded').forEach(function (exp) {
+                exp.classList.add('hidden');
+                exp.setAttribute('aria-hidden', 'true');
+            });
+            content.querySelectorAll('.weather-airspace-item-trigger').forEach(function (tr) {
+                tr.setAttribute('aria-expanded', 'false');
+            });
+            content.querySelectorAll('.weather-airspace-item--selected').forEach(function (row) {
+                row.classList.remove('weather-airspace-item--selected');
+            });
+        }
+        airspaceDetailSelectedEl = null;
+    }
+
+    function ensureAirspaceMinimap() {
+        var el = document.getElementById('weatherAirspaceMinimap');
+        if (!el) return null;
+        if (airspaceMinimap) return airspaceMinimap;
+        airspaceMinimap = L.map(el, { zoomControl: false, attributionControl: false });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(airspaceMinimap);
+        airspaceMinimapOverlay = L.layerGroup().addTo(airspaceMinimap);
+        return airspaceMinimap;
+    }
+
+    function refreshAirspaceMinimapView() {
+        if (!airspaceMinimap) return;
+        requestAnimationFrame(function () {
+            airspaceMinimap.invalidateSize();
+            setTimeout(function () { airspaceMinimap.invalidateSize(); }, 200);
+        });
+    }
+
+    function showAirspaceDetail(kind, index, lat, lng, itemEl) {
+        if (!itemEl) return;
+        var titleEl = itemEl.querySelector('.weather-airspace-detail-title');
+        var bodyEl = itemEl.querySelector('.weather-airspace-detail-body');
+        var slot = itemEl.querySelector('.weather-airspace-minimap-slot');
+        if (!titleEl || !bodyEl) return;
+
+        parkAirspaceMinimap();
+        if (slot) {
+            var mmEl = document.getElementById('weatherAirspaceMinimap');
+            if (mmEl) slot.appendChild(mmEl);
+        }
+
+        var mm = ensureAirspaceMinimap();
+        if (airspaceMinimapOverlay) airspaceMinimapOverlay.clearLayers();
+
+        if (kind === 'airspace') {
+            var a = lastAirspaceData && lastAirspaceData[index];
+            if (!a) return;
+            titleEl.textContent = (a.name && a.name !== '—' ? a.name : a.designator) + ' (' + a.category + ')';
+            var lines = [];
+            lines.push('<p><strong>Designator</strong> ' + escapeHtml(a.designator) + '</p>');
+            lines.push('<p><strong>Lower / Upper</strong> ' + escapeHtml(String(a.lower)) + ' / ' + escapeHtml(String(a.upper)) + '</p>');
+            if (a.type) lines.push('<p><strong>Type</strong> ' + escapeHtml(a.type) + '</p>');
+            if (a.source) lines.push('<p><strong>Source</strong> ' + escapeHtml(a.source) + '</p>');
+            if (a.description) lines.push('<p class="weather-airspace-detail-desc">' + escapeHtml(a.description) + '</p>');
+            bodyEl.innerHTML = lines.join('');
+
+            var catColors = { FRZ: '#9333ea', Prohibited: '#991b1b', Restricted: '#dc2626', Danger: '#ca8a04' };
+            if (mm && a.geometry && airspaceMinimapOverlay) {
+                var gj = L.geoJSON(a.geometry, {
+                    style: { color: catColors[a.category] || '#dc2626', weight: 2, fillColor: catColors[a.category] || '#dc2626', fillOpacity: 0.2 }
+                });
+                airspaceMinimapOverlay.addLayer(gj);
+                L.marker([lat, lng], { title: 'Selected point' }).addTo(airspaceMinimapOverlay);
+                var b = gj.getBounds();
+                if (b.isValid()) {
+                    b.extend([lat, lng]);
+                    mm.fitBounds(b.pad(0.12));
+                } else {
+                    mm.setView([lat, lng], 11);
+                }
+            }
+        } else if (kind === 'notam') {
+            var n = lastNotamData && lastNotamData[index];
+            if (!n) return;
+            titleEl.textContent = n.id || 'NOTAM';
+            var dist = haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
+            var validStart = formatNotamDate(n.startValidity);
+            var validEnd = formatNotamDate(n.endValidity);
+            var radStr = (n.radiusNm > 0 && n.radiusNm < 999) ? n.radiusNm + ' NM' : '—';
+            bodyEl.innerHTML =
+                '<p><strong>Distance</strong> ' + escapeHtml(dist) + ' km</p>' +
+                '<p><strong>Radius</strong> ' + escapeHtml(radStr) + '</p>' +
+                '<p><strong>Valid</strong> ' + escapeHtml(validStart) + ' – ' + escapeHtml(validEnd) + '</p>' +
+                '<p class="weather-airspace-detail-notam-text">' + escapeHtml(n.text || '').replace(/\n/g, '<br>') + '</p>';
+
+            if (mm && airspaceMinimapOverlay) {
+                L.marker([lat, lng], { title: 'Selected point' }).addTo(airspaceMinimapOverlay);
+                L.marker([n.lat, n.lng], { title: 'NOTAM centre' }).addTo(airspaceMinimapOverlay);
+                if (n.radiusNm > 0 && n.radiusNm < 999) {
+                    L.circle([n.lat, n.lng], { radius: n.radiusNm * 1852, color: '#dc2626', weight: 2, fillColor: '#dc2626', fillOpacity: 0.12 }).addTo(airspaceMinimapOverlay);
+                }
+                var groupBounds = L.latLngBounds([lat, lng], [n.lat, n.lng]);
+                if (groupBounds.isValid()) {
+                    mm.fitBounds(groupBounds.pad(0.25));
+                } else {
+                    mm.setView([lat, lng], 10);
+                }
+            }
+        }
+
+        refreshAirspaceMinimapView();
+        if (typeof itemEl.scrollIntoView === 'function') {
+            itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function activateAirspaceListItem(trigger) {
+        if (!trigger || !selectedPoint) return;
+        var item = trigger.closest('.weather-airspace-item');
+        if (!item) return;
+        var kind = trigger.getAttribute('data-kind');
+        var idx = parseInt(trigger.getAttribute('data-index'), 10);
+        if (!kind || !isFinite(idx)) return;
+
+        if (airspaceDetailSelectedEl && airspaceDetailSelectedEl !== item) {
+            var prevExp = airspaceDetailSelectedEl.querySelector('.weather-airspace-item-expanded');
+            if (prevExp) {
+                prevExp.classList.add('hidden');
+                prevExp.setAttribute('aria-hidden', 'true');
+            }
+            var prevTr = airspaceDetailSelectedEl.querySelector('.weather-airspace-item-trigger');
+            if (prevTr) prevTr.setAttribute('aria-expanded', 'false');
+            airspaceDetailSelectedEl.classList.remove('weather-airspace-item--selected');
+            parkAirspaceMinimap();
+        }
+
+        airspaceDetailSelectedEl = item;
+        item.classList.add('weather-airspace-item--selected');
+        trigger.setAttribute('aria-expanded', 'true');
+        var exp = item.querySelector('.weather-airspace-item-expanded');
+        if (exp) {
+            exp.classList.remove('hidden');
+            exp.setAttribute('aria-hidden', 'false');
+        }
+        showAirspaceDetail(kind, idx, selectedPoint.lat, selectedPoint.lng, item);
+    }
+
+    async function loadAirspaceTab(lat, lng, radiusKm) {
         var loading = document.getElementById('weatherAirspaceLoading');
         var content = document.getElementById('weatherAirspaceContent');
         if (!loading || !content) return;
+        var r = radiusKm != null ? clampAirspaceRadiusKm(radiusKm) : readAirspaceRadiusFromInput();
+        airspaceSearchRadiusKm = r;
+        syncAirspaceRadiusInput();
+        persistAirspaceRadiusKm();
+
+        hideAirspaceDetailPanel();
         loading.classList.remove('hidden');
         content.classList.add('hidden');
         content.innerHTML = '';
 
         var results = await Promise.all([
-            fetchNearbyNotams(lat, lng, AIRSPACE_SEARCH_RADIUS_KM),
-            fetchNearbyAirspace(lat, lng, AIRSPACE_SEARCH_RADIUS_KM)
+            fetchNearbyNotams(lat, lng, airspaceSearchRadiusKm),
+            fetchNearbyAirspace(lat, lng, airspaceSearchRadiusKm)
         ]);
         lastNotamData = results[0];
         lastAirspaceData = results[1];
@@ -843,13 +1044,25 @@
         renderAirspaceTab(lastNotamData, lastAirspaceData, lat, lng);
     }
 
+    function weatherAirspaceExpandedHtml() {
+        return '<div class="weather-airspace-item-expanded hidden" aria-hidden="true">' +
+            '<div class="weather-airspace-detail weather-airspace-detail--inline">' +
+            '<div class="weather-airspace-detail-header">' +
+            '<h4 class="weather-airspace-detail-title"></h4>' +
+            '<button type="button" class="weather-airspace-detail-close" aria-label="Close details">&times;</button>' +
+            '</div>' +
+            '<div class="weather-airspace-detail-body"></div>' +
+            '<div class="weather-airspace-minimap-slot"></div>' +
+            '</div></div>';
+    }
+
     function renderAirspaceTab(notams, airspace, lat, lng) {
         var content = document.getElementById('weatherAirspaceContent');
         if (!content) return;
         content.innerHTML = '';
 
         if (notams.length === 0 && airspace.length === 0) {
-            content.innerHTML = '<div class="weather-airspace-empty"><p>No NOTAMs or airspace restrictions found within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km.</p></div>';
+            content.innerHTML = '<div class="weather-airspace-empty"><p>No NOTAMs or airspace restrictions found within ' + airspaceSearchRadiusKm + ' km.</p></div>';
             return;
         }
 
@@ -858,7 +1071,7 @@
             content.insertAdjacentHTML('beforeend',
                 '<div class="weather-airspace-section-title">Airspace Restrictions <span class="airspace-count">(' + airspace.length + ')</span></div>'
             );
-            airspace.forEach(function (a) {
+            airspace.forEach(function (a, i) {
                 var cls = catColors[a.category] || 'danger';
                 var distKm = '';
                 if (a.geometry) {
@@ -869,14 +1082,17 @@
                 }
                 content.insertAdjacentHTML('beforeend',
                     '<div class="weather-airspace-item category-' + cls + '">' +
+                    '<div class="weather-airspace-item-trigger weather-airspace-item--selectable" role="button" tabindex="0" data-kind="airspace" data-index="' + i + '" aria-expanded="false">' +
                     '<div class="weather-airspace-item-header">' +
                     '<span class="weather-airspace-badge badge-' + cls + '">' + a.category + '</span>' +
-                    '<span class="weather-airspace-item-name">' + (a.name || a.designator) + '</span>' +
+                    '<span class="weather-airspace-item-name">' + escapeHtml(a.name || a.designator) + '</span>' +
                     '</div>' +
                     '<div class="weather-airspace-item-detail">' +
-                    '<strong>' + a.designator + '</strong>' + distKm +
-                    ' · Lower: ' + a.lower + ' · Upper: ' + a.upper +
-                    '</div></div>'
+                    '<strong>' + escapeHtml(a.designator) + '</strong>' + distKm +
+                    ' · Lower: ' + escapeHtml(String(a.lower)) + ' · Upper: ' + escapeHtml(String(a.upper)) +
+                    '</div></div>' +
+                    weatherAirspaceExpandedHtml() +
+                    '</div>'
                 );
             });
         }
@@ -885,7 +1101,7 @@
             content.insertAdjacentHTML('beforeend',
                 '<div class="weather-airspace-section-title">NOTAMs <span class="airspace-count">(' + notams.length + ')</span></div>'
             );
-            notams.forEach(function (n) {
+            notams.forEach(function (n, i) {
                 var dist = haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
                 var validStart = formatNotamDate(n.startValidity);
                 var validEnd = formatNotamDate(n.endValidity);
@@ -894,16 +1110,19 @@
                 if (descText.length > 300) descText = descText.slice(0, 297) + '…';
                 content.insertAdjacentHTML('beforeend',
                     '<div class="weather-airspace-item category-notam">' +
+                    '<div class="weather-airspace-item-trigger weather-airspace-item--selectable" role="button" tabindex="0" data-kind="notam" data-index="' + i + '" aria-expanded="false">' +
                     '<div class="weather-airspace-item-header">' +
                     '<span class="weather-airspace-badge badge-notam">NOTAM</span>' +
-                    '<span class="weather-airspace-item-name">' + (n.id || 'NOTAM') + '</span>' +
+                    '<span class="weather-airspace-item-name">' + escapeHtml(n.id || 'NOTAM') + '</span>' +
                     '</div>' +
                     '<div class="weather-airspace-item-detail">' +
                     dist + ' km away' +
                     (n.radiusNm > 0 && n.radiusNm < 999 ? ' · Radius: ' + n.radiusNm + ' NM' : '') +
-                    '<br>Valid: ' + validStr +
-                    '<br>' + descText +
-                    '</div></div>'
+                    '<br>Valid: ' + escapeHtml(validStr) +
+                    '<br>' + escapeHtml(descText) +
+                    '</div></div>' +
+                    weatherAirspaceExpandedHtml() +
+                    '</div>'
                 );
             });
         }
@@ -1358,8 +1577,8 @@
             }
 
             // --- NOTAMs & Airspace within 10 km ---
-            var notamSlides = lastNotamData || await fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, AIRSPACE_SEARCH_RADIUS_KM);
-            var airspaceFeatures = lastAirspaceData || await fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, AIRSPACE_SEARCH_RADIUS_KM);
+            var notamSlides = lastNotamData || await fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
+            var airspaceFeatures = lastAirspaceData || await fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
 
             if (notamSlides.length > 0 || airspaceFeatures.length > 0) {
                 var tempLayers = [];
@@ -1383,7 +1602,7 @@
                     }
                 });
 
-                var radiusDeg = AIRSPACE_SEARCH_RADIUS_KM / 111.32;
+                var radiusDeg = airspaceSearchRadiusKm / 111.32;
                 map.fitBounds([
                     [selectedPoint.lat - radiusDeg, selectedPoint.lng - radiusDeg * 1.5],
                     [selectedPoint.lat + radiusDeg, selectedPoint.lng + radiusDeg * 1.5]
@@ -1396,7 +1615,7 @@
                 map.setView(origView.center, origView.zoom, { animate: false });
 
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('Airspace & NOTAMs — ' + AIRSPACE_SEARCH_RADIUS_KM + ' km radius', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('Airspace & NOTAMs — ' + airspaceSearchRadiusKm + ' km radius', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
                 var amapSize = 5.6;
                 slide.addShape('roundRect', { x: 0.42, y: 0.82, w: amapSize + 0.16, h: amapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
                 slide.addImage({ data: airspaceMapImg, x: 0.5, y: 0.9, w: amapSize, h: amapSize, rounding: false });
@@ -1420,12 +1639,12 @@
                 legendY += 0.2;
                 slide.addText(notamSlides.length + ' NOTAM' + (notamSlides.length !== 1 ? 's' : '') + ', ' + airspaceFeatures.length + ' airspace zone' + (airspaceFeatures.length !== 1 ? 's' : ''), { x: legendX, y: legendY, w: 6, h: 0.3, fontSize: 11, bold: true, color: C.accent, fontFace: 'Arial' });
                 legendY += 0.4;
-                slide.addText('Search radius: ' + AIRSPACE_SEARCH_RADIUS_KM + ' km from ' + selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5), { x: legendX, y: legendY, w: 6, h: 0.25, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+                slide.addText('Search radius: ' + airspaceSearchRadiusKm + ' km from ' + selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5), { x: legendX, y: legendY, w: 6, h: 0.25, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
             }
 
             if (notamSlides.length > 0) {
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('NOTAMs within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km (' + notamSlides.length + ')', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('NOTAMs within ' + airspaceSearchRadiusKm + ' km (' + notamSlides.length + ')', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
                 var nRows = [[
                     { text: 'NOTAM ID', options: headerOpts },
@@ -1469,7 +1688,7 @@
 
             if (airspaceFeatures.length > 0) {
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('Airspace Restrictions within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km (' + airspaceFeatures.length + ')', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('Airspace Restrictions within ' + airspaceSearchRadiusKm + ' km (' + airspaceFeatures.length + ')', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
                 var catColors = { 'FRZ': '9333EA', 'Prohibited': '991B1B', 'Restricted': 'DC2626', 'Danger': 'CA8A04' };
                 var aRows = [[
@@ -1802,8 +2021,8 @@
             }
 
             // Page 5+: NOTAMs & Airspace (with map visualisation matching PPTX)
-            var notams = lastNotamData || await fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, AIRSPACE_SEARCH_RADIUS_KM);
-            var airspace = lastAirspaceData || await fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, AIRSPACE_SEARCH_RADIUS_KM);
+            var notams = lastNotamData || await fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
+            var airspace = lastAirspaceData || await fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
 
             if (notams.length > 0 || airspace.length > 0) {
                 var catMapColorsHex = { FRZ: '#9333ea', Prohibited: '#991b1b', Restricted: '#dc2626', Danger: '#ca8a04' };
@@ -1827,7 +2046,7 @@
                     }
                 });
 
-                var radiusDeg = AIRSPACE_SEARCH_RADIUS_KM / 111.32;
+                var radiusDeg = airspaceSearchRadiusKm / 111.32;
                 map.fitBounds([
                     [selectedPoint.lat - radiusDeg, selectedPoint.lng - radiusDeg * 1.5],
                     [selectedPoint.lat + radiusDeg, selectedPoint.lng + radiusDeg * 1.5]
@@ -1840,7 +2059,7 @@
                 map.setView(origView.center, origView.zoom, { animate: false });
 
                 PdfTheme.newPage(doc);
-                PdfTheme.addHeader(doc, 'Airspace & NOTAMs — ' + AIRSPACE_SEARCH_RADIUS_KM + ' km radius');
+                PdfTheme.addHeader(doc, 'Airspace & NOTAMs — ' + airspaceSearchRadiusKm + ' km radius');
                 doc.addImage(airspaceMapImg, 'PNG', 10, 16, 120, 120);
 
                 var legX = 140;
@@ -1876,12 +2095,12 @@
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(7.5);
                 doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-                doc.text('Search radius: ' + AIRSPACE_SEARCH_RADIUS_KM + ' km from ' + selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5), legX, legY);
+                doc.text('Search radius: ' + airspaceSearchRadiusKm + ' km from ' + selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5), legX, legY);
             }
 
             if (notams.length > 0) {
                 PdfTheme.newPage(doc);
-                PdfTheme.addHeader(doc, 'NOTAMs within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km (' + notams.length + ')');
+                PdfTheme.addHeader(doc, 'NOTAMs within ' + airspaceSearchRadiusKm + ' km (' + notams.length + ')');
                 var nBody = notams.map(function (n) {
                     var dist = haversineKm(selectedPoint.lat, selectedPoint.lng, n.lat, n.lng).toFixed(1) + ' km';
                     var validStart = formatNotamDate(n.startValidity);
@@ -1901,7 +2120,7 @@
 
             if (airspace.length > 0) {
                 PdfTheme.newPage(doc);
-                PdfTheme.addHeader(doc, 'Airspace Restrictions within ' + AIRSPACE_SEARCH_RADIUS_KM + ' km (' + airspace.length + ')');
+                PdfTheme.addHeader(doc, 'Airspace Restrictions within ' + airspaceSearchRadiusKm + ' km (' + airspace.length + ')');
                 var catRgb = { FRZ: [147,51,234], Prohibited: [153,27,27], Restricted: [220,38,38], Danger: [202,138,4] };
                 var aBody = airspace.map(function (a) {
                     return [a.category, a.designator, a.name, a.lower, a.upper];
@@ -2146,6 +2365,40 @@
             weatherStatusEl.innerHTML = WEATHER_STATUS_HTML_DEFAULT;
         }
 
+        try {
+            var st = sessionStorage.getItem(AIRSPACE_RADIUS_STORAGE_KEY);
+            if (st) airspaceSearchRadiusKm = clampAirspaceRadiusKm(parseInt(st, 10));
+        } catch (errSt) { /* ignore */ }
+        syncAirspaceRadiusInput();
+
+        var airspaceRefreshBtn = document.getElementById('weatherAirspaceRefreshBtn');
+        if (airspaceRefreshBtn) {
+            airspaceRefreshBtn.addEventListener('click', function () {
+                if (!selectedPoint) return;
+                loadAirspaceTab(selectedPoint.lat, selectedPoint.lng, readAirspaceRadiusFromInput());
+            });
+        }
+        var airspaceContentEl = document.getElementById('weatherAirspaceContent');
+        if (airspaceContentEl) {
+            airspaceContentEl.addEventListener('click', function (e) {
+                if (e.target.closest('.weather-airspace-detail-close')) {
+                    e.stopPropagation();
+                    hideAirspaceDetailPanel();
+                    return;
+                }
+                var trigger = e.target.closest('.weather-airspace-item-trigger');
+                if (!trigger || !airspaceContentEl.contains(trigger)) return;
+                activateAirspaceListItem(trigger);
+            });
+            airspaceContentEl.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                var trigger = e.target.closest('.weather-airspace-item-trigger');
+                if (!trigger || !airspaceContentEl.contains(trigger)) return;
+                e.preventDefault();
+                activateAirspaceListItem(trigger);
+            });
+        }
+
         const helpToggle = document.getElementById('weatherHelpToggle');
         const helpClose = document.getElementById('weatherHelpClose');
         const sideToolbar = document.getElementById('weatherHelpPanelWrap');
@@ -2182,6 +2435,9 @@
                 this.classList.add('active');
                 const panel = document.getElementById('weatherTab' + (tabName.charAt(0).toUpperCase() + tabName.slice(1)));
                 if (panel) panel.classList.add('active');
+                if (tabName === 'airspace' && airspaceMinimap) {
+                    refreshAirspaceMinimapView();
+                }
             });
         });
 
