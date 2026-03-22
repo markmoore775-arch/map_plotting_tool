@@ -3735,6 +3735,26 @@ select {
     color: #fff;
 }
 
+.shape-popup-delete {
+    border-top: 1px solid var(--sidebar-border, #333);
+    color: #f87171 !important;
+}
+
+.shape-popup-delete:hover {
+    background: rgba(220, 38, 38, 0.25) !important;
+    color: #fecaca !important;
+}
+
+.flight-overview-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.flight-overview-footer .btn-danger {
+    margin-right: auto;
+}
+
 /* ---- Flight Overview Light Theme Toggle ---- */
 
 .fo-header-actions {

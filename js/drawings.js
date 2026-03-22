@@ -229,6 +229,141 @@ const Drawings = (() => {
         return Math.max(0.02, Math.min(0.98, bestRatio));
     }
 
+    function minDistanceToPolyline(latlngs, pos) {
+        if (!latlngs || latlngs.length < 2) return Infinity;
+        const p = L.latLng(pos);
+        let bestDist = Infinity;
+        for (let i = 1; i < latlngs.length; i++) {
+            const a = L.latLng(latlngs[i - 1]);
+            const b = L.latLng(latlngs[i]);
+            const segLen = a.distanceTo(b);
+            if (segLen <= 0) {
+                bestDist = Math.min(bestDist, p.distanceTo(a));
+                continue;
+            }
+            const ax = a.lat; const ay = a.lng;
+            const bx = b.lat; const by = b.lng;
+            const dx = bx - ax; const dy = by - ay;
+            const t = Math.max(0, Math.min(1,
+                ((p.lat - ax) * dx + (p.lng - ay) * dy) / (dx * dx + dy * dy)
+            ));
+            const projLat = ax + t * dx;
+            const projLng = ay + t * dy;
+            const proj = L.latLng(projLat, projLng);
+            bestDist = Math.min(bestDist, p.distanceTo(proj));
+        }
+        return bestDist;
+    }
+
+    function minDistanceToPolygonBorder(latlngs, pos) {
+        if (!latlngs || latlngs.length < 2) return Infinity;
+        const p = L.latLng(pos);
+        let bestDist = Infinity;
+        const n = latlngs.length;
+        for (let i = 0; i < n; i++) {
+            const a = L.latLng(latlngs[i]);
+            const b = L.latLng(latlngs[(i + 1) % n]);
+            const segLen = a.distanceTo(b);
+            if (segLen <= 0) {
+                bestDist = Math.min(bestDist, p.distanceTo(a));
+                continue;
+            }
+            const ax = a.lat; const ay = a.lng;
+            const bx = b.lat; const by = b.lng;
+            const dx = bx - ax; const dy = by - ay;
+            const t = Math.max(0, Math.min(1,
+                ((p.lat - ax) * dx + (p.lng - ay) * dy) / (dx * dx + dy * dy)
+            ));
+            const projLat = ax + t * dx;
+            const projLng = ay + t * dy;
+            const proj = L.latLng(projLat, projLng);
+            bestDist = Math.min(bestDist, p.distanceTo(proj));
+        }
+        return bestDist;
+    }
+
+    function pointInPolygonLatLng(latlng, latlngs) {
+        if (!latlngs || latlngs.length < 3) return false;
+        const x = latlng.lng;
+        const y = latlng.lat;
+        let inside = false;
+        for (let i = 0, j = latlngs.length - 1; i < latlngs.length; j = i++) {
+            const xi = latlngs[i][1];
+            const yi = latlngs[i][0];
+            const xj = latlngs[j][1];
+            const yj = latlngs[j][0];
+            const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    function sampleQuadraticBezierLatLngs(p0, p1, p2, segments) {
+        const pts = [];
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const omt = 1 - t;
+            const lat = omt * omt * p0[0] + 2 * omt * t * p1[0] + t * t * p2[0];
+            const lng = omt * omt * p0[1] + 2 * omt * t * p1[1] + t * t * p2[1];
+            pts.push([lat, lng]);
+        }
+        return pts;
+    }
+
+    function distanceShapeToPointMeters(shape, latlng) {
+        const p = L.latLng(latlng);
+        if (shape.type === 'text' && shape.position) {
+            return L.latLng(shape.position).distanceTo(p);
+        }
+        if (shape.type === 'circle' && shape.center && shape.radius != null) {
+            const d = L.latLng(shape.center).distanceTo(p);
+            if (d <= shape.radius) return 0;
+            return d - shape.radius;
+        }
+        if ((shape.type === 'polyline' || shape.type === 'flightpath') && shape.latlngs && shape.latlngs.length >= 2) {
+            return minDistanceToPolyline(shape.latlngs, latlng);
+        }
+        if ((shape.type === 'polygon' || shape.type === 'rectangle') && shape.latlngs && shape.latlngs.length >= 3) {
+            if (pointInPolygonLatLng(latlng, shape.latlngs)) return 0;
+            return minDistanceToPolygonBorder(shape.latlngs, latlng);
+        }
+        if (shape.type === 'arrow') {
+            const entry = shapeLayerMap[shape.id];
+            if (entry && entry.layer && entry.layer.getLatLngs) {
+                const verts = flattenLatLngs(entry.layer.getLatLngs());
+                if (verts.length >= 3) {
+                    if (pointInPolygonLatLng(latlng, verts)) return 0;
+                    return minDistanceToPolygonBorder(verts, latlng);
+                }
+            }
+            if (shape.tail && shape.tip) {
+                return minDistanceToPolyline([shape.tail, shape.tip], latlng);
+            }
+        }
+        if (shape.type === 'curve' && shape.curvePoints && shape.curvePoints.length >= 3) {
+            const sampled = sampleQuadraticBezierLatLngs(shape.curvePoints[0], shape.curvePoints[1], shape.curvePoints[2], 32);
+            return minDistanceToPolyline(sampled, latlng);
+        }
+        return Infinity;
+    }
+
+    /**
+     * Returns the shape id closest to latlng within maxMeters (for touch long-press / hit testing).
+     */
+    function findShapeIdNearLatLng(latlng, maxMeters) {
+        if (!latlng || maxMeters == null || maxMeters <= 0) return null;
+        let bestId = null;
+        let bestDist = Infinity;
+        for (const shape of shapes) {
+            const d = distanceShapeToPointMeters(shape, latlng);
+            if (d <= maxMeters && d < bestDist) {
+                bestDist = d;
+                bestId = shape.id;
+            }
+        }
+        return bestId;
+    }
+
     // ---- Copy / Paste ----
     const PASTE_OFFSET_DEG = 0.0004; // ~44m offset so pasted shape doesn't overlap
 
@@ -1436,6 +1571,17 @@ const Drawings = (() => {
                     L.DomEvent.preventDefault(e);
                     layer.closePopup();
                     map.fire('flightoverviewrequest', { shapeId: shape.id });
+                });
+                const del = L.DomUtil.create('a', 'shape-popup-action shape-popup-delete', container);
+                del.href = '#';
+                del.textContent = 'Delete route';
+                L.DomEvent.on(del, 'click', (e) => {
+                    L.DomEvent.preventDefault(e);
+                    layer.closePopup();
+                    const label = shape.label || getShapeTypeLabel(shape.type);
+                    if (confirm(`Delete this ${label}? This cannot be undone.`)) {
+                        removeShape(shape.id);
+                    }
                 });
                 return container;
             }, { closeButton: false, className: 'shape-action-popup' });
@@ -2961,7 +3107,8 @@ const Drawings = (() => {
         hasClipboard,
         enableDrawMode,
         enableArrowDrawAt,
-        enableLineDrawAt
+        enableLineDrawAt,
+        findShapeIdNearLatLng
     };
 
 })();

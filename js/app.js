@@ -1882,6 +1882,21 @@
         if (copyBtn) {
             copyBtn.addEventListener('click', () => copyFlightOverviewToClipboard(copyBtn));
         }
+
+        const deleteBtn = document.getElementById('foDeleteFlightBtn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                const id = _foCurrentShapeId;
+                if (id == null) return;
+                const shapes = Drawings.getShapes();
+                const shape = shapes.find(s => s.id === id);
+                const typeName = shape && shape.type === 'polyline' ? 'line' : 'flight path';
+                if (!confirm(`Delete this ${typeName}? This cannot be undone.`)) return;
+                Drawings.removeShape(id);
+                _foCurrentShapeId = null;
+                closeModal('flightOverviewModal');
+            });
+        }
     }
 
     function copyFlightOverviewToClipboard(btn) {
@@ -3218,7 +3233,15 @@ ${summaryRows}
                 ));
 
                 mapContextMenuLatLng = latlng;
-                mapContextShapeId = null;
+                // Match ~45px at map centre in metres so long-press on a shape opens shape actions (e.g. Delete).
+                const rect = mapContainer.getBoundingClientRect();
+                const cx = rect.width / 2;
+                const cy = rect.height / 2;
+                const p1 = map.containerPointToLatLng(L.point(cx, cy));
+                const p2 = map.containerPointToLatLng(L.point(cx + 45, cy));
+                const touchSlopM = Math.max(35, Math.min(p1.distanceTo(p2), 120));
+                const hitShapeId = Drawings.findShapeIdNearLatLng(latlng, touchSlopM);
+                mapContextShapeId = hitShapeId != null ? hitShapeId : null;
                 mapContextPointId = null;
 
                 // Synthesize a fake event for positioning

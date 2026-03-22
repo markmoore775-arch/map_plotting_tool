@@ -671,7 +671,7 @@
                     <h3>Drawing Style</h3>
                     <p>The <strong>Drawing Style</strong> section in the sidebar sets colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. Values apply to new shapes; when a shape is selected, they apply to that shape.</p>
                     <h3>Flight Overview</h3>
-                    <p>For flight paths and lines, use <strong>Flight Overview</strong> to see altitude statistics. Click the altitude icon (▲) in the sidebar next to a flight path or line, or use the <strong>Flight Overview</strong> button when editing a shape. You can also right-click the path and choose Flight Overview. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>.</p>
+                    <p>For flight paths and lines, use <strong>Flight Overview</strong> to see altitude statistics. Click the altitude icon (▲) in the sidebar next to a flight path or line, or use the <strong>Flight Overview</strong> button when editing a shape. You can also right-click the path and choose Flight Overview, or tap the path and use <strong>Delete route</strong> in the popup. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. Use <strong>Delete route</strong> in the modal footer to remove the path (with confirmation). For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>. On touch devices, long-press on a shape opens the same context menu as right-click, including <strong>Delete Shape</strong>.</p>
                     <h3>Flight Path Distance</h3>
                     <p>Flight paths can show total distance on the map. Use the <strong>Show distance on map</strong> checkbox when editing a flight path, or enable <strong>Show flight path distance on map</strong> in Settings to apply to all flight paths by default.</p>
                 </div>
@@ -1033,7 +1033,8 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer flight-overview-footer">
+                <button type="button" class="btn btn-danger" id="foDeleteFlightBtn">Delete route</button>
                 <button class="btn btn-primary" id="foCopyBtn">&#128203; Copy to Clipboard</button>
                 <button class="btn btn-secondary modal-cancel">Close</button>
             </div>
