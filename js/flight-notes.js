@@ -507,6 +507,97 @@
         }, 200);
     }
 
+    function postcodeFromNominatimHit(hit) {
+        if (!hit || !hit.address) return null;
+        var a = hit.address;
+        return a.postcode || a.postal_code || null;
+    }
+
+    /**
+     * OpenStreetMap Nominatim forward search (same policy as reverse geocode).
+     */
+    function nominatimSearch(query) {
+        var url =
+            'https://nominatim.openstreetmap.org/search?q=' +
+            encodeURIComponent(query) +
+            '&format=json&limit=1&addressdetails=1';
+        return fetch(url, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            mode: 'cors'
+        })
+            .then(function (res) {
+                if (!res.ok) throw new Error('Search failed');
+                return res.json();
+            })
+            .then(function (arr) {
+                if (!arr || !arr.length) return null;
+                return arr[0];
+            });
+    }
+
+    /**
+     * Show map, postcode line, and location field after coordinates are known (GPS or search).
+     * @param {string|null} postcodeHint - if set, skips reverse geocode lookup
+     */
+    function showLocationResolved(lat, lng, postcodeHint, okMessage) {
+        var input = document.getElementById('fnLocation');
+        var wrap = document.getElementById('fnLocationResult');
+        var pcDisp = document.getElementById('fnPostcodeDisplay');
+        var loc = lat.toFixed(6) + ', ' + lng.toFixed(6);
+        if (wrap) wrap.hidden = false;
+        if (pcDisp) pcDisp.textContent = postcodeHint != null ? postcodeHint : '…';
+        if (input) {
+            input.value = postcodeHint != null ? loc + ' · Postcode: ' + postcodeHint : loc;
+        }
+        setTimeout(function () {
+            initMiniMap(lat, lng);
+        }, 0);
+        if (postcodeHint != null) {
+            setGpsStatus(okMessage, 'ok');
+        } else {
+            setGpsStatus('Looking up postcode…', '');
+            reversePostcode(lat, lng).then(function (pc) {
+                if (pcDisp) pcDisp.textContent = pc || '—';
+                if (input && pc) {
+                    input.value = loc + ' · Postcode: ' + pc;
+                }
+                setGpsStatus(okMessage, 'ok');
+            });
+        }
+    }
+
+    function onSearchLocationClick() {
+        var q = trimVal('fnLocation');
+        if (!q) {
+            setGpsStatus('Enter a postcode, address, or place name to search.', 'error');
+            return;
+        }
+        var btn = document.getElementById('fnSearchLocationBtn');
+        if (btn) btn.disabled = true;
+        setGpsStatus('Searching…', '');
+        nominatimSearch(q)
+            .then(function (hit) {
+                if (btn) btn.disabled = false;
+                if (!hit) {
+                    setGpsStatus('No results found. Try a different search.', 'error');
+                    return;
+                }
+                var lat = parseFloat(hit.lat);
+                var lng = parseFloat(hit.lon);
+                if (isNaN(lat) || isNaN(lng)) {
+                    setGpsStatus('Invalid result from search.', 'error');
+                    return;
+                }
+                var pc = postcodeFromNominatimHit(hit);
+                showLocationResolved(lat, lng, pc, 'Location updated from search.');
+            })
+            .catch(function () {
+                if (btn) btn.disabled = false;
+                setGpsStatus('Search failed. Check your connection and try again.', 'error');
+            });
+    }
+
     function onGpsClick() {
         if (!navigator.geolocation) {
             setGpsStatus('Geolocation is not available in this browser.', 'error');
@@ -521,29 +612,8 @@
             function (pos) {
                 var lat = pos.coords.latitude;
                 var lng = pos.coords.longitude;
-                var loc = lat.toFixed(6) + ', ' + lng.toFixed(6);
-                var input = document.getElementById('fnLocation');
-                var wrap = document.getElementById('fnLocationResult');
-                var pcDisp = document.getElementById('fnPostcodeDisplay');
-
-                if (input) input.value = loc;
-                if (wrap) wrap.hidden = false;
-                if (pcDisp) pcDisp.textContent = '…';
-
-                setGpsStatus('Looking up postcode…', '');
                 if (btn) btn.disabled = false;
-
-                setTimeout(function () {
-                    initMiniMap(lat, lng);
-                }, 0);
-
-                reversePostcode(lat, lng).then(function (pc) {
-                    if (pcDisp) pcDisp.textContent = pc || '—';
-                    if (input && pc) {
-                        input.value = loc + ' · Postcode: ' + pc;
-                    }
-                    setGpsStatus('Location updated from GPS.', 'ok');
-                });
+                showLocationResolved(lat, lng, null, 'Location updated from GPS.');
             },
             function (err) {
                 hideLocationResult();
@@ -740,6 +810,7 @@
         }
 
         var nowBtn = document.getElementById('fnNowBtn');
+        var searchLocationBtn = document.getElementById('fnSearchLocationBtn');
         var gpsBtn = document.getElementById('fnGpsBtn');
         var emailBtn = document.getElementById('fnEmailBtn');
         var pdfBtn = document.getElementById('fnPdfBtn');
@@ -759,6 +830,7 @@
                 if (id) setTimeInputNow(id);
             });
         });
+        if (searchLocationBtn) searchLocationBtn.addEventListener('click', onSearchLocationClick);
         if (gpsBtn) gpsBtn.addEventListener('click', onGpsClick);
         if (weatherFetchBtn) weatherFetchBtn.addEventListener('click', onWeatherFetchClick);
         if (emailBtn) emailBtn.addEventListener('click', onEmailClick);

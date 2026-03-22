@@ -44,7 +44,7 @@
             <p>
                 <strong>Privacy:</strong> AirPlot does not save your flight notes on our servers. What you enter stays in this browser only and is not uploaded to us.
                 It is cleared when you close the browser (or this tab may be discarded). So <strong>export to PDF</strong> or <strong>send by email</strong> if you need a copy.
-                Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch weather report</strong>, map tiles for the preview map, or address details for postcode lookup). Your typed notes are not sent to those services.
+                Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch weather report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed notes are not sent to those services.
             </p>
         </aside>
         <header class="fn-header">
@@ -74,9 +74,13 @@
                 <div class="fn-location-row">
                     <div class="fn-field-grow">
                         <label class="fn-label" for="fnLocation">Location</label>
-                        <input type="text" id="fnLocation" name="fnLocation" class="fn-input" placeholder="Address, site name, or coordinates" autocomplete="street-address">
+                        <input type="text" id="fnLocation" name="fnLocation" class="fn-input" placeholder="Postcode, address, place name, or coordinates" autocomplete="street-address">
                     </div>
                     <div class="fn-gps-wrap">
+                        <button type="button" class="fn-btn fn-btn-secondary" id="fnSearchLocationBtn"
+                            title="Look up coordinates from what you typed (postcode, address, or place) using OpenStreetMap search. Use when GPS is unavailable.">
+                            Search location
+                        </button>
                         <button type="button" class="fn-btn fn-btn-now" id="fnGpsBtn" title="Fill location from device GPS (requires HTTPS)">
                             Use current GPS
                         </button>
@@ -88,7 +92,7 @@
                         <span class="fn-postcode-label">Postcode</span>
                         <span id="fnPostcodeDisplay" class="fn-postcode-value">—</span>
                     </p>
-                    <div id="fnMiniMap" class="fn-mini-map" aria-label="Map centered on GPS position"></div>
+                    <div id="fnMiniMap" class="fn-mini-map" aria-label="Map centered on resolved location"></div>
                 </div>
             </section>
 
@@ -222,6 +226,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="js/pdf-theme.js?v=1"></script>
-    <script src="js/flight-notes.js?v=9"></script>
+    <script src="js/flight-notes.js?v=10"></script>
 </body>
 </html>
