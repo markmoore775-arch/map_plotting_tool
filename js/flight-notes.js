@@ -591,10 +591,12 @@
         });
         if (miniMap) miniMap.invalidateSize();
         try {
+            var lt = document.getElementById('fnLightThemeToggle');
+            var capBg = lt && lt.checked ? '#e8eaed' : '#1a1a2e';
             var canvas = await html2canvas(mapEl, {
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: '#1a1a2e',
+                backgroundColor: capBg,
                 scale: 2,
                 logging: false
             });
@@ -635,7 +637,8 @@
                 throw new Error('PDF library not loaded');
             }
 
-            PdfTheme.setLight(false);
+            var lightToggle = document.getElementById('fnLightThemeToggle');
+            PdfTheme.setLight(!!(lightToggle && lightToggle.checked));
             await PdfTheme.loadLogo();
 
             var ts = PdfTheme.tableStyles();
@@ -680,6 +683,22 @@
     }
 
     function init() {
+        var lightToggle = document.getElementById('fnLightThemeToggle');
+        if (lightToggle) {
+            try {
+                if (localStorage.getItem('fnLightTheme') === '1') {
+                    lightToggle.checked = true;
+                    document.body.classList.add('fn-light-theme');
+                }
+            } catch (e) {}
+            lightToggle.addEventListener('change', function () {
+                document.body.classList.toggle('fn-light-theme', lightToggle.checked);
+                try {
+                    localStorage.setItem('fnLightTheme', lightToggle.checked ? '1' : '0');
+                } catch (e) {}
+            });
+        }
+
         var nowBtn = document.getElementById('fnNowBtn');
         var gpsBtn = document.getElementById('fnGpsBtn');
         var emailBtn = document.getElementById('fnEmailBtn');

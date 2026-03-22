@@ -53,26 +53,26 @@
             <div class="intro-logo-wrap">
                 <img src="assets/airplot-logo.png" alt="AirPlot" class="intro-logo">
             </div>
-            <p class="intro-tagline">Plan and visualise your drone flights directly on an interactive map.</p>
+            <p class="intro-tagline">Mapping, weather, and flight documentation in one place.</p>
             <p class="intro-description">
-                Use this tool to draw flight areas, highlight zones to avoid, and mark key locations such as take-off and landing points. Once you're ready, tap below to open the map and start planning your mission.
+                AirPlot combines an interactive map for areas and points, location-based weather with METAR/TAF, and structured post-flight notes you can share or export. Choose a tool below to get started.
             </p>
             <div class="intro-cta-stack">
-                <button type="button" class="intro-cta" id="introProceedBtn">
-                    Flight Planning
-                    <svg class="intro-cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                <button type="button" class="intro-cta intro-cta-secondary" id="introProceedBtn">
+                    Planning
                 </button>
                 <a href="weather.html" class="intro-cta intro-cta-secondary" id="introWeatherBtn">
-                    Flight Weather
+                    Weather
                 </a>
                 <a href="flight-notes.html" class="intro-cta intro-cta-secondary" id="introFlightNotesBtn">
-                    Flight Notes
+                    Notes
                 </a>
                 <button type="button" class="intro-cta intro-cta-secondary" id="introHelpBtn">
                     View Instructions
                 </button>
             </div>
-            <div class="intro-dji-section">
+            <!-- DJI Mission Planner: remove class intro-dji-welcome-hidden to show on welcome again -->
+            <div class="intro-dji-section intro-dji-welcome-hidden">
                 <p class="intro-dji-description">
                     For DJI drones, use the dedicated Mission Planner to create waypoint missions and exclusion zones that can be exported for use in DJI Pilot or Fly apps.
                 </p>
@@ -629,8 +629,11 @@
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p><strong>AirPlot</strong> (v2.0) lets you plan and visualise drone flights on an interactive map. Draw flight areas, mark no-fly zones, and place key locations such as take-off and landing points.</p>
-                    <p><strong>Related tools:</strong> <a href="weather.html">Flight Weather</a> — forecast, METAR/TAF, and exportable reports for a chosen location. <a href="flight-notes.html">Flight Notes</a> — structured post-flight notes with GPS, email, and PDF export. <a href="flight-planning.html">DJI Mission Planner</a> — waypoint missions and recce overlays exported as KMZ for DJI Pilot 2. You can also install AirPlot from the browser (&ldquo;Add to Home Screen&rdquo; / install app) for a standalone experience.</p>
+                    <p><strong>AirPlot</strong> (v2.0) is a set of browser tools for drone operations. From the welcome screen choose <strong>Planning</strong> (full-screen map), <strong>Weather</strong> (forecasts and aviation weather), <strong>Notes</strong> (structured post-flight records), or <strong>View Instructions</strong> (this help). Install from the browser (&ldquo;Add to Home Screen&rdquo; / install app) for a standalone experience.</p>
+                    <p><strong>Planning</strong> — Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
+                    <p><strong>Weather</strong> — Tap the map to select a location, pick a forecast model (e.g. ECMWF IFS, GFS, UK Met Office), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), airspace summary, and export to PowerPoint or PDF.</p>
+                    <p><strong>Notes</strong> — Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> into the form (Open-Meteo), free-text notes, light theme for readability, <strong>Export PDF</strong>, and <strong>Send by email</strong>.</p>
+                    <p>The tabs below cover the <strong>Planning</strong> map in detail. Use <strong>Welcome</strong> (top-left) from any tool to return to the welcome screen.</p>
                 </div>
                 <div class="tabs help-tabs">
                     <button class="tab active" data-tab="points">Points</button>
@@ -712,7 +715,7 @@
                     <h3>Sidebar &amp; footer</h3>
                     <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes a <strong>Disclaimer</strong> link (same content as the Disclaimer tab).</p>
                     <h3>Small screens</h3>
-                    <p>On narrow viewports the left toolbar may collapse behind a <strong>Tools</strong> (☰) button—tap to expand. The <strong>Welcome</strong> control (top-left, same as Flight Weather and DJI Mission Planner) returns to the start screen. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window.</p>
+                    <p>On narrow viewports the left toolbar may collapse behind a <strong>Tools</strong> (☰) button—tap to expand. The <strong>Welcome</strong> control (top-left, same pattern as on the Weather and Notes pages) returns to the welcome screen. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
                     <h3>Settings</h3>
                     <p>Configure optional API keys (What3Words, OS Maps, BGA Airspace for RA(T)), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
                     <h3>Keyboard Shortcuts</h3>
@@ -730,7 +733,7 @@
                         <li><strong>UK Airspace</strong> - UK AIP ENR 5.1 / <a href="https://nats-uk.ead-it.com/" target="_blank" rel="noopener">NATS UAS</a> (Prohibited, Restricted, Danger, FRZ)</li>
                         <li><strong>UK NOTAM</strong> - <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS Contingency PIB, hourly updated)</li>
                         <li><strong>RA(T) Airspace</strong> - <a href="https://airspace.bgaladder.net/" target="_blank" rel="noopener">BGA Airspace Service</a> (requires username/password)</li>
-                        <li><strong>Open-Meteo</strong> - <a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a> (weather forecast data for the <a href="weather.html">Flight Weather</a> page)</li>
+                        <li><strong>Open-Meteo</strong> - <a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a> (forecast data for the <a href="weather.html">Weather</a> page and optional fetch in Notes)</li>
                     </ul>
                     <h3>Libraries &amp; Tools</h3>
                     <ul>

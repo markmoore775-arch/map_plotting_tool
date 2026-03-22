@@ -37,15 +37,19 @@ AirPlot can display UK airspace restrictions (Prohibited, Restricted, Danger, FR
 
 1. From the Digital Datasets page, find **UAS Flight Restrictions** in the Regular Datasets table
 2. Click the download link for the current AIRAC cycle (Effective From column)
-3. The file is typically a **ZIP** containing a KMZ – e.g. `EG_UAS_FR_DS_AREA1_FULL_20260219_KML.zip`
+3. The file is typically a **ZIP** containing a KMZ – e.g. `EG_UAS_FR_DS_AREA1_FULL_20260319_KML.zip`
 4. Save it to your computer
+
+**Direct download (no login):** NATS also publishes the same file under export URLs, e.g.  
+`https://nats-uk.ead-it.com/cms-nats/export/sites/default/en/Publications/digital-datasets/UAS_AREA_1/EG_UAS_FR_DS_AREA1_FULL_20260319_KML.zip`  
+(Replace `20260319` with the date in the **Effective From** column for the cycle you need.)
 
 ### Step 3: Convert to GeoJSON
 
 Run the conversion script (accepts .zip, .kmz, or .kml):
 
 ```bash
-npm run convert-airspace -- path/to/EG_UAS_FR_DS_AREA1_FULL_20260219_KML.zip
+npm run convert-airspace -- path/to/EG_UAS_FR_DS_AREA1_FULL_20260319_KML.zip
 ```
 
 By default, output is written to `assets/uk-airspace.geojson`. To specify a different path:

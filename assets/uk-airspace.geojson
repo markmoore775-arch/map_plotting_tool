@@ -1,8 +1,8 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "effectiveFrom": "2026-02-19",
-    "effectiveTo": "2026-03-19",
+    "effectiveFrom": "2026-03-19",
+    "effectiveTo": "2026-04-16",
     "source": "NATS UAS ENR 5.1"
   },
   "features": [
@@ -24784,32 +24784,32 @@
             [
               -1.5951848611,
               51.80407725,
-              2286
+              2895.6
             ],
             [
               -1.9976505556,
               51.7955109722,
-              2286
+              2895.6
             ],
             [
               -1.9911186944,
               51.6860482222,
-              2286
+              2895.6
             ],
             [
               -1.8215250833,
               51.6661864444,
-              2286
+              2895.6
             ],
             [
               -1.58842725,
               51.6709806111,
-              2286
+              2895.6
             ],
             [
               -1.5951848611,
               51.80407725,
-              2286
+              2895.6
             ]
           ]
         ]
@@ -24817,7 +24817,7 @@
       "properties": {
         "designator": "EGD218A",
         "name": "EGD218A FAIRFORD",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"14485\" txt_name=\"FAIRFORD\"><tr><td>514815N 0013543W -<br/>514016N 0013518W -<br/>513958N 0014917W -<br/>514110N 0015928W -<br/>514744N 0015952W -<br/>514815N 0013543W <br/>Upper limit: FL75<br/>Lower limit: SFC  <br/>Class: </td><td>AMC - Manageable.<br/><br/>Activity: Unmanned Aircraft System Beyond Visual Line Of Sight with an Indicated Airspeed (IAS) of 150 KTS or less (BVLOS less than 150 KTS).<br/><br/>Service: SUACS: Brize Radar on 124.280. SUAAIS: London Information on 124.750 MHz.<br/><br/>Contact: Booking: Military Airspace Management Cell – Managed Airspace, Tel: 01489-612495.<br/><br/>SUA Authority: DAATM (HQ Air).</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"14485\" txt_name=\"FAIRFORD\"><tr><td>514815N 0013543W -<br/>514016N 0013518W -<br/>513958N 0014917W -<br/>514110N 0015928W -<br/>514744N 0015952W -<br/>514815N 0013543W <br/>Upper limit: FL95<br/>Lower limit: SFC  <br/>Class: </td><td>AMC - Manageable.<br/><br/>Activity: Unmanned Aircraft System Beyond Visual Line Of Sight with an Indicated Airspeed (IAS) of 150 KTS or less (BVLOS less than 150 KTS).<br/><br/>Service: SUACS: Brize Radar on 124.280. SUAAIS: London Information on 124.750 MHz.<br/><br/>Contact: Booking: Military Airspace Management Cell – Managed Airspace, Tel: 01489-612495.<br/><br/>SUA Authority: DAATM (HQ Air).</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -25074,7 +25074,7 @@
       "properties": {
         "designator": "EGD218B",
         "name": "EGD218B FAIRFORD",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"14481\" txt_name=\"FAIRFORD\"><tr><td>520518N 0020404W -<br/>514803N 0014539W -<br/>514749N 0015601W -<br/>514901N 0020407W -<br/>515342N 0022132W -<br/>520518N 0020404W <br/>Upper limit: FL240<br/>Lower limit: FL50<br/>Class: </td><td>AMC - Manageable.<br/><br/>Activity: Unmanned Aircraft System Beyond Visual Line Of Sight with an Indicated Airspeed (IAS) of 150 KTS or less (BVLOS less than 150 KTS).<br/><br/>Service: SUACS: Below FL160 Brize Radar on 124.280. At/above FL160 Swanwick Mil on 128.700 MHz. SUAAIS: London Information on 124.750 MHz.<br/><br/>Contact: Booking: Military Airspace Management Cell – Managed Airspace, Tel: 01489-612495.<br/><br/>SUA Authority: DAATM (HQ Air).</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"14481\" txt_name=\"FAIRFORD\"><tr><td>520518N 0020404W -<br/>514803N 0014539W -<br/>514749N 0015601W -<br/>514901N 0020407W -<br/>515342N 0022132W -<br/>520518N 0020404W <br/>Upper limit: FL240<br/>Lower limit: FL50<br/>Class: </td><td>AMC - Manageable.<br/><br/>Activity: Unmanned Aircraft System Beyond Visual Line Of Sight with an Indicated Airspeed (IAS) of 150 KTS or less (BVLOS less than 150 KTS).<br/><br/>Service: SUACS: Below FL180 Brize Radar on channel 124.280. At/above FL180 Swanwick Mil on 128.700 MHz. SUAAIS: London Information on 124.750 MHz.<br/><br/>Contact: Booking: Military Airspace Management Cell – Managed Airspace, Tel: 01489-612495.<br/><br/>SUA Authority: DAATM (HQ Air).</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -25136,32 +25136,32 @@
                 [
                   -2.2526999167,
                   52.2592760556,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.6449074167,
                   52.0214293333,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.567252,
                   51.9502352778,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.3588221389,
                   51.8948650833,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.0679103333,
                   52.0883218333,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.2526999167,
                   52.2592760556,
-                  4876.8
+                  5486.4
                 ]
               ]
             ]
@@ -25173,12 +25173,12 @@
                 [
                   -2.2526999167,
                   52.2592760556,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.6449074167,
                   52.0214293333,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.6449074167,
@@ -25193,7 +25193,7 @@
                 [
                   -2.2526999167,
                   52.2592760556,
-                  4876.8
+                  5486.4
                 ]
               ]
             ]
@@ -25205,12 +25205,12 @@
                 [
                   -2.6449074167,
                   52.0214293333,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.567252,
                   51.9502352778,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.567252,
@@ -25225,7 +25225,7 @@
                 [
                   -2.6449074167,
                   52.0214293333,
-                  4876.8
+                  5486.4
                 ]
               ]
             ]
@@ -25237,12 +25237,12 @@
                 [
                   -2.567252,
                   51.9502352778,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.3588221389,
                   51.8948650833,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.3588221389,
@@ -25257,7 +25257,7 @@
                 [
                   -2.567252,
                   51.9502352778,
-                  4876.8
+                  5486.4
                 ]
               ]
             ]
@@ -25269,12 +25269,12 @@
                 [
                   -2.3588221389,
                   51.8948650833,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.0679103333,
                   52.0883218333,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.0679103333,
@@ -25289,7 +25289,7 @@
                 [
                   -2.3588221389,
                   51.8948650833,
-                  4876.8
+                  5486.4
                 ]
               ]
             ]
@@ -25301,12 +25301,12 @@
                 [
                   -2.0679103333,
                   52.0883218333,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.2526999167,
                   52.2592760556,
-                  4876.8
+                  5486.4
                 ],
                 [
                   -2.2526999167,
@@ -25321,7 +25321,7 @@
                 [
                   -2.0679103333,
                   52.0883218333,
-                  4876.8
+                  5486.4
                 ]
               ]
             ]
@@ -25331,7 +25331,7 @@
       "properties": {
         "designator": "EGD218C",
         "name": "EGD218C FAIRFORD",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"14479\" txt_name=\"FAIRFORD\"><tr><td>521533N 0021510W -<br/>520518N 0020404W -<br/>515342N 0022132W -<br/>515701N 0023402W -<br/>520117N 0023842W -<br/>521533N 0021510W <br/>Upper limit: FL660<br/>Lower limit: FL160<br/>Class: </td><td>AMC - Manageable.<br/><br/>Activity: Unmanned Aircraft System Beyond Visual Line Of Sight with an Indicated Airspeed (IAS) of 150 KTS or less (BVLOS less than 150 KTS).<br/><br/>Service: SUACS: Swanwick Mil on 128.700 MHz. SUAAIS: London Information on 124.750 MHz.<br/><br/>Contact: Booking: Military Airspace Management Cell – Managed Airspace, Tel: 01489-612495.<br/><br/>SUA Authority: DAATM (HQ Air).</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"14479\" txt_name=\"FAIRFORD\"><tr><td>521533N 0021510W -<br/>520518N 0020404W -<br/>515342N 0022132W -<br/>515701N 0023402W -<br/>520117N 0023842W -<br/>521533N 0021510W <br/>Upper limit: FL660<br/>Lower limit: FL180<br/>Class: </td><td>AMC - Manageable.<br/><br/>Activity: Unmanned Aircraft System Beyond Visual Line Of Sight with an Indicated Airspeed (IAS) of 150 KTS or less (BVLOS less than 150 KTS).<br/><br/>Service: SUACS: Swanwick Mil on 128.700 MHz. SUAAIS: London Information on 124.750 MHz.<br/><br/>Contact: Booking: Military Airspace Management Cell – Managed Airspace, Tel: 01489-612495.<br/><br/>SUA Authority: DAATM (HQ Air).</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -124251,7 +124251,7 @@
       "properties": {
         "designator": "EGRU304A",
         "name": "EGRU304A BLACKPOOL",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7934\" txt_name=\"BLACKPOOL\"><tr><td>A circle, 2.5 NM radius, centred at 534618N 0030143W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7934\" txt_name=\"BLACKPOOL\"><tr><td>A circle, 2.5 NM radius, centred at 534618N 0030143W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ and associated RPZs Active H24. UAS flight is not permitted unless permission has been granted by Blackpool ATC via Air Portal (https://app.airportal.aero). For additional contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -124311,7 +124311,7 @@
       "properties": {
         "designator": "EGRU304B",
         "name": "EGRU304B BLACKPOOL RWY 10",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7600\" txt_name=\"BLACKPOOL RWY 10\"><tr><td>534617N 0030708W -<br/>534649N 0030704W -<br/>534646N 0030551W thence anti-clockwise by the arc of a circle radius 2.5 NM centred on 534618N 0030143W to<br/>534613N 0030556W -<br/>534617N 0030708W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7600\" txt_name=\"BLACKPOOL RWY 10\"><tr><td>534617N 0030708W -<br/>534649N 0030704W -<br/>534646N 0030551W thence anti-clockwise by the arc of a circle radius 2.5 NM centred on 534618N 0030143W to<br/>534613N 0030556W -<br/>534617N 0030708W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ and associated RPZs Active H24. UAS flight is not permitted unless permission has been granted by Blackpool ATC via Air Portal (https://app.airportal.aero). For additional contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -124371,7 +124371,7 @@
       "properties": {
         "designator": "EGRU304C",
         "name": "EGRU304C BLACKPOOL RWY 28",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7637\" txt_name=\"BLACKPOOL RWY 28\"><tr><td>534618N 0025618W -<br/>534546N 0025622W -<br/>534549N 0025735W thence anti-clockwise by the arc of a circle radius 2.5 NM centred on 534618N 0030143W to<br/>534622N 0025730W -<br/>534618N 0025618W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7637\" txt_name=\"BLACKPOOL RWY 28\"><tr><td>534618N 0025618W -<br/>534546N 0025622W -<br/>534549N 0025735W thence anti-clockwise by the arc of a circle radius 2.5 NM centred on 534618N 0030143W to<br/>534622N 0025730W -<br/>534618N 0025618W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ and associated RPZs Active H24. UAS flight is not permitted unless permission has been granted by Blackpool ATC via Air Portal (https://app.airportal.aero). For additional contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -124431,7 +124431,7 @@
       "properties": {
         "designator": "EGRU304D",
         "name": "EGRU304D BLACKPOOL RWY 13",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7926\" txt_name=\"BLACKPOOL RWY 13\"><tr><td>534750N 0030625W -<br/>534816N 0030552W -<br/>534752N 0030459W thence anti-clockwise by the arc of a circle radius 2.5 NM centred on 534618N 0030143W to<br/>534725N 0030529W -<br/>534750N 0030625W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7926\" txt_name=\"BLACKPOOL RWY 13\"><tr><td>534750N 0030625W -<br/>534816N 0030552W -<br/>534752N 0030459W thence anti-clockwise by the arc of a circle radius 2.5 NM centred on 534618N 0030143W to<br/>534725N 0030529W -<br/>534750N 0030625W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ and associated RPZs Active H24. UAS flight is not permitted unless permission has been granted by Blackpool ATC via Air Portal (https://app.airportal.aero). For additional contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -124491,7 +124491,7 @@
       "properties": {
         "designator": "EGRU304E",
         "name": "EGRU304E BLACKPOOL RWY 31",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7807\" txt_name=\"BLACKPOOL RWY 31\"><tr><td>534444N 0025801W -<br/>534418N 0025834W -<br/>534427N 0025854W thence anti-clockwise by the arc of a circle radius 2.5 NM centred on 534618N 0030143W to<br/>534451N 0025817W -<br/>534444N 0025801W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7807\" txt_name=\"BLACKPOOL RWY 31\"><tr><td>534444N 0025801W -<br/>534418N 0025834W -<br/>534427N 0025854W thence anti-clockwise by the arc of a circle radius 2.5 NM centred on 534618N 0030143W to<br/>534451N 0025817W -<br/>534444N 0025801W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ and associated RPZs Active H24. UAS flight is not permitted unless permission has been granted by Blackpool ATC via Air Portal (https://app.airportal.aero). For additional contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -132005,8 +132005,8 @@
       },
       "properties": {
         "designator": "EGRU317B",
-        "name": "EGRU317B SANDTOFT RWY 05",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7640\" txt_name=\"SANDTOFT RWY 05\"><tr><td>533118N 0005438W -<br/>533141N 0005517W -<br/>533222N 0005409W thence anti-clockwise by the arc of a circle radius 2 NM centred on 533335N 0005130W to<br/>533159N 0005330W -<br/>533118N 0005438W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "name": "EGRU317B SANDTOFT RWY 04",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7640\" txt_name=\"SANDTOFT RWY 04\"><tr><td>533118N 0005438W -<br/>533141N 0005517W -<br/>533222N 0005409W thence anti-clockwise by the arc of a circle radius 2 NM centred on 533335N 0005130W to<br/>533159N 0005330W -<br/>533118N 0005438W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -132065,8 +132065,8 @@
       },
       "properties": {
         "designator": "EGRU317C",
-        "name": "EGRU317C SANDTOFT RWY 23",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7750\" txt_name=\"SANDTOFT RWY 23\"><tr><td>533547N 0004830W -<br/>533525N 0004751W -<br/>533448N 0004851W thence anti-clockwise by the arc of a circle radius 2 NM centred on 533335N 0005130W to<br/>533511N 0004930W -<br/>533547N 0004830W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "name": "EGRU317C SANDTOFT RWY 22",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7750\" txt_name=\"SANDTOFT RWY 22\"><tr><td>533547N 0004830W -<br/>533525N 0004751W -<br/>533448N 0004851W thence anti-clockwise by the arc of a circle radius 2 NM centred on 533335N 0005130W to<br/>533511N 0004930W -<br/>533547N 0004830W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {

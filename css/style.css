@@ -242,19 +242,25 @@ body.sidebar-collapsed #map {
     margin-bottom: 32px;
 }
 
-/* CTA button stack (Flight Planning, View Instructions, etc.) */
+/* CTA button stack (Planning, Weather, Notes, etc.) — vertical */
 .intro-cta-stack {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
     gap: 12px;
     margin-bottom: 32px;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .intro-cta-stack .intro-cta {
     margin-bottom: 0;
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 /* DJI section (explanation + button) */
@@ -262,6 +268,11 @@ body.sidebar-collapsed #map {
     margin-bottom: 32px;
     padding-top: 24px;
     border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Hide DJI welcome entry while in development; strip intro-dji-welcome-hidden from index.html to restore */
+.intro-dji-section.intro-dji-welcome-hidden {
+    display: none !important;
 }
 
 .intro-dji-description {
@@ -303,14 +314,6 @@ body.sidebar-collapsed #map {
 .intro-cta:active {
     transform: translateY(0);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-}
-
-.intro-cta-arrow {
-    transition: transform 0.3s ease;
-}
-
-.intro-cta:hover .intro-cta-arrow {
-    transform: translateX(3px);
 }
 
 .intro-cta-secondary {
@@ -1078,6 +1081,16 @@ select {
     max-width: 700px;
 }
 
+/* Help modal: allow body to scroll inside flex layout on short viewports */
+#helpModal .modal-content {
+    min-height: 0;
+}
+
+#helpModal .modal-body {
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+}
+
 .modal-header {
     display: flex;
     align-items: center;
@@ -1131,9 +1144,18 @@ select {
 }
 
 .help-overview p {
-    margin: 0;
+    margin: 0 0 12px;
     line-height: 1.6;
     color: var(--sidebar-text);
+}
+
+.help-overview p:last-child {
+    margin-bottom: 0;
+}
+
+.help-overview strong {
+    color: #fff;
+    font-weight: 600;
 }
 
 .help-tabs {
@@ -1506,6 +1528,62 @@ select {
 
     .modal-large {
         max-width: 95%;
+    }
+
+    /* Help modal: use dynamic viewport height; scroll tab strip horizontally on narrow screens */
+    #helpModal .modal-content {
+        width: calc(100% - 16px);
+        max-width: none;
+        max-height: min(92dvh, calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16px));
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    #helpModal .modal-header,
+    #helpModal .modal-footer {
+        flex-shrink: 0;
+    }
+
+    #helpModal .help-tabs.tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        gap: 6px;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--sidebar-border);
+    }
+
+    #helpModal .help-tabs.tabs .tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 10px 14px;
+        min-height: 44px;
+        font-size: 12px;
+    }
+
+    #helpModal .modal-body {
+        padding: 16px 14px;
+    }
+
+    #helpModal .help-overview {
+        font-size: 14px;
+    }
+
+    #helpModal .modal-close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #helpModal .modal-footer .btn {
+        min-height: 44px;
+        padding-left: 20px;
+        padding-right: 20px;
     }
 
     /* Touch-friendly targets (Apple HIG: 44px min) */

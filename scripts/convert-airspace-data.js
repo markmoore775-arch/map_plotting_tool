@@ -145,9 +145,9 @@ async function main() {
         const year = parseInt(yyyymmdd.slice(0, 4), 10);
         const month = parseInt(yyyymmdd.slice(4, 6), 10);
         const day = parseInt(yyyymmdd.slice(6, 8), 10);
-        const from = new Date(year, month - 1, day);
-        const to = new Date(from);
-        to.setDate(to.getDate() + 28);
+        const from = new Date(Date.UTC(year, month - 1, day));
+        const to = new Date(from.getTime());
+        to.setUTCDate(to.getUTCDate() + 28);
         return {
             from: from.toISOString().slice(0, 10),
             to: to.toISOString().slice(0, 10)
