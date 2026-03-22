@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" class="flight-notes-mode">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Flight Notes | AirPlot</title>
+    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/flight-notes.css">
+    <!-- Leaflet (mini map for GPS location) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="" />
+</head>
+<body class="flight-notes-mode">
+    <nav class="fp-welcome-bar" aria-label="AirPlot home">
+        <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
+            <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+            <span class="fp-welcome-title">AirPlot</span>
+            <span class="fp-welcome-cta">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                Welcome
+            </span>
+        </a>
+    </nav>
+
+    <main class="fn-main">
+        <header class="fn-header">
+            <h1 class="fn-title">Flight Notes</h1>
+            <p class="fn-lead">Record key details from your flight. Export to PDF or send by email.</p>
+        </header>
+
+        <form id="flightNotesForm" class="fn-form" autocomplete="on">
+            <section class="fn-section" aria-labelledby="fn-when-heading">
+                <h2 id="fn-when-heading" class="fn-section-title">When</h2>
+                <div class="fn-row fn-row-2">
+                    <label class="fn-label" for="fnDate">Date</label>
+                    <input type="date" id="fnDate" name="fnDate" class="fn-input">
+
+                    <label class="fn-label" for="fnTime">Time</label>
+                    <input type="time" id="fnTime" name="fnTime" class="fn-input">
+                </div>
+                <div class="fn-now-row">
+                    <button type="button" class="fn-btn fn-btn-secondary" id="fnNowBtn" title="Set date and time to now (local)">
+                        Now
+                    </button>
+                </div>
+            </section>
+
+            <section class="fn-section" aria-labelledby="fn-loc-heading">
+                <h2 id="fn-loc-heading" class="fn-section-title">Location</h2>
+                <div class="fn-location-row">
+                    <div class="fn-field-grow">
+                        <label class="fn-label" for="fnLocation">Location</label>
+                        <input type="text" id="fnLocation" name="fnLocation" class="fn-input" placeholder="Address, site name, or coordinates" autocomplete="street-address">
+                    </div>
+                    <div class="fn-gps-wrap">
+                        <span id="fnGpsStatus" class="fn-gps-status" role="status" aria-live="polite"></span>
+                        <button type="button" class="fn-btn fn-btn-secondary" id="fnGpsBtn" title="Fill location from device GPS (requires HTTPS)">
+                            Use current GPS
+                        </button>
+                    </div>
+                </div>
+                <div id="fnLocationResult" class="fn-location-result" hidden>
+                    <p class="fn-postcode-line">
+                        <span class="fn-postcode-label">Postcode</span>
+                        <span id="fnPostcodeDisplay" class="fn-postcode-value">—</span>
+                    </p>
+                    <div id="fnMiniMap" class="fn-mini-map" aria-label="Map centered on GPS position"></div>
+                </div>
+            </section>
+
+            <section class="fn-section" aria-labelledby="fn-mission-heading">
+                <h2 id="fn-mission-heading" class="fn-section-title">Mission</h2>
+                <div class="fn-grid-2">
+                    <div class="fn-field">
+                        <label class="fn-label" for="fnReference">Reference</label>
+                        <input type="text" id="fnReference" name="fnReference" class="fn-input">
+                    </div>
+                    <div class="fn-field">
+                        <label class="fn-label" for="fnDeconflictions">Deconflictions</label>
+                        <input type="text" id="fnDeconflictions" name="fnDeconflictions" class="fn-input">
+                    </div>
+                    <div class="fn-field">
+                        <label class="fn-label" for="fnRp1">RP 1</label>
+                        <input type="text" id="fnRp1" name="fnRp1" class="fn-input">
+                    </div>
+                    <div class="fn-field">
+                        <label class="fn-label" for="fnRp2">RP 2</label>
+                        <input type="text" id="fnRp2" name="fnRp2" class="fn-input">
+                    </div>
+                    <div class="fn-field fn-field-span-2">
+                        <label class="fn-label" for="fnUas">UAS</label>
+                        <input type="text" id="fnUas" name="fnUas" class="fn-input">
+                    </div>
+                </div>
+            </section>
+
+            <section class="fn-section" aria-labelledby="fn-batt-heading">
+                <h2 id="fn-batt-heading" class="fn-section-title">Batteries</h2>
+                <div class="fn-battery-grid">
+                    <div class="fn-battery-card">
+                        <h3 class="fn-battery-title">Battery 1</h3>
+                        <label class="fn-label" for="fnBattery1">Details</label>
+                        <input type="text" id="fnBattery1" name="fnBattery1" class="fn-input">
+                        <label class="fn-label" for="fnBattery1Time">Time</label>
+                        <input type="time" id="fnBattery1Time" name="fnBattery1Time" class="fn-input">
+                    </div>
+                    <div class="fn-battery-card">
+                        <h3 class="fn-battery-title">Battery 2</h3>
+                        <label class="fn-label" for="fnBattery2">Details</label>
+                        <input type="text" id="fnBattery2" name="fnBattery2" class="fn-input">
+                        <label class="fn-label" for="fnBattery2Time">Time</label>
+                        <input type="time" id="fnBattery2Time" name="fnBattery2Time" class="fn-input">
+                    </div>
+                    <div class="fn-battery-card">
+                        <h3 class="fn-battery-title">Battery 3</h3>
+                        <label class="fn-label" for="fnBattery3">Details</label>
+                        <input type="text" id="fnBattery3" name="fnBattery3" class="fn-input">
+                        <label class="fn-label" for="fnBattery3Time">Time</label>
+                        <input type="time" id="fnBattery3Time" name="fnBattery3Time" class="fn-input">
+                    </div>
+                    <div class="fn-battery-card">
+                        <h3 class="fn-battery-title">Battery 4</h3>
+                        <label class="fn-label" for="fnBattery4">Details</label>
+                        <input type="text" id="fnBattery4" name="fnBattery4" class="fn-input">
+                        <label class="fn-label" for="fnBattery4Time">Time</label>
+                        <input type="time" id="fnBattery4Time" name="fnBattery4Time" class="fn-input">
+                    </div>
+                </div>
+            </section>
+
+            <section class="fn-section" aria-labelledby="fn-weather-heading">
+                <h2 id="fn-weather-heading" class="fn-section-title">Weather</h2>
+                <div class="fn-weather-actions">
+                    <button type="button" class="fn-btn fn-btn-secondary" id="fnWeatherFetchBtn"
+                        title="Fetches forecast from Open-Meteo (same source as Flight Weather). Location must include latitude and longitude — use Use current GPS or paste coordinates.">
+                        Fetch weather report
+                    </button>
+                    <span id="fnWeatherFetchStatus" class="fn-weather-fetch-status" role="status" aria-live="polite"></span>
+                </div>
+                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Time uses <strong>Date</strong> and <strong>Time</strong> above when both are set; otherwise the current hour.</p>
+                <label class="fn-label" for="fnWeather">Conditions</label>
+                <textarea id="fnWeather" name="fnWeather" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Wind, visibility, cloud, etc."></textarea>
+            </section>
+
+            <section class="fn-section" aria-labelledby="fn-notes-heading">
+                <h2 id="fn-notes-heading" class="fn-section-title">Notes</h2>
+                <label class="fn-label" for="fnNotes">Free text</label>
+                <textarea id="fnNotes" name="fnNotes" class="fn-input fn-textarea" rows="8" placeholder="Additional observations…"></textarea>
+            </section>
+
+            <div class="fn-actions">
+                <button type="button" class="fn-btn fn-btn-secondary" id="fnEmailBtn">
+                    Send by email
+                </button>
+                <button type="button" class="fn-btn fn-btn-primary" id="fnPdfBtn">
+                    Export PDF
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="js/pdf-theme.js?v=1"></script>
+    <script src="js/flight-notes.js?v=6"></script>
+</body>
+</html>

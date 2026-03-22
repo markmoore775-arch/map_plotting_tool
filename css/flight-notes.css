@@ -1,0 +1,351 @@
+/* Flight Notes — standalone form page */
+
+/*
+ * Global style.css sets html, body { height: 100%; overflow: hidden } for the map app.
+ * That locks the document — override both roots so this page can scroll.
+ */
+html.flight-notes-mode {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+html.flight-notes-mode body.flight-notes-mode {
+    min-height: 100%;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--sidebar-bg, #1e1e2e);
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+body.flight-notes-mode .fp-welcome-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 10px 12px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-top: max(10px, env(safe-area-inset-top));
+    background: linear-gradient(180deg, rgba(30, 30, 46, 0.98) 0%, rgba(30, 30, 46, 0.92) 100%);
+    border-bottom: 1px solid var(--sidebar-border, #3a3a50);
+}
+
+.fn-main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px 16px 48px;
+    padding-bottom: max(48px, env(safe-area-inset-bottom));
+}
+
+.fn-header {
+    margin-bottom: 24px;
+}
+
+.fn-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    color: var(--sidebar-text);
+}
+
+.fn-lead {
+    margin: 0;
+    color: var(--sidebar-text-muted, #9999aa);
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.fn-form {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.fn-section {
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: var(--radius, 6px);
+    padding: 16px 18px;
+}
+
+.fn-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--sidebar-text-muted);
+    margin: 0 0 14px;
+}
+
+.fn-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--sidebar-text);
+    margin-bottom: 6px;
+}
+
+.fn-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm, 4px);
+    border: 1px solid var(--input-border, #4a4a60);
+    background: var(--input-bg, #33334a);
+    color: var(--sidebar-text);
+    font-family: var(--font-family);
+    font-size: 14px;
+    transition: border-color var(--transition, 0.2s ease);
+}
+
+.fn-input:focus {
+    outline: none;
+    border-color: var(--input-focus, #5b8def);
+    box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.2);
+}
+
+.fn-input::placeholder {
+    color: var(--sidebar-text-muted);
+    opacity: 0.85;
+}
+
+.fn-textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.45;
+}
+
+.fn-textarea-short {
+    min-height: 72px;
+}
+
+.fn-weather-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin-bottom: 10px;
+}
+
+.fn-weather-fetch-status {
+    font-size: 0.85rem;
+    color: var(--sidebar-text-muted);
+    flex: 1;
+    min-width: 120px;
+}
+
+.fn-weather-fetch-status.fn-gps-error {
+    color: var(--danger, #e05555);
+}
+
+.fn-weather-fetch-status.fn-gps-ok {
+    color: var(--success, #4caf50);
+}
+
+.fn-weather-hint {
+    margin: 0 0 12px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--sidebar-text-muted);
+}
+
+.fn-weather-hint a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.fn-weather-hint a:hover {
+    text-decoration: underline;
+}
+
+.fn-row {
+    display: grid;
+    gap: 14px 16px;
+}
+
+.fn-row-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.fn-now-row {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.fn-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+}
+
+.fn-field {
+    min-width: 0;
+}
+
+.fn-field-span-2 {
+    grid-column: 1 / -1;
+}
+
+.fn-location-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fn-field-grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.fn-gps-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.fn-location-result {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.fn-location-result[hidden] {
+    display: none !important;
+}
+
+.fn-postcode-line {
+    margin: 0 0 10px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.fn-postcode-label {
+    font-weight: 600;
+    color: var(--sidebar-text-muted);
+    margin-right: 8px;
+}
+
+.fn-postcode-value {
+    color: var(--sidebar-text);
+    word-break: break-word;
+}
+
+.fn-mini-map {
+    height: 200px;
+    width: 100%;
+    border-radius: var(--radius);
+    border: 1px solid var(--sidebar-border);
+    overflow: hidden;
+    background: var(--input-bg);
+}
+
+/* Leaflet layers sit above our base background */
+.fn-mini-map .leaflet-container {
+    font-family: var(--font-family);
+    background: var(--input-bg);
+}
+
+.fn-gps-status {
+    font-size: 0.85rem;
+    color: var(--sidebar-text-muted);
+    flex: 1;
+    min-width: 140px;
+}
+
+.fn-gps-status.fn-gps-error {
+    color: var(--danger, #e05555);
+}
+
+.fn-gps-status.fn-gps-ok {
+    color: var(--success, #4caf50);
+}
+
+.fn-battery-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.fn-battery-card {
+    background: var(--input-bg, #33334a);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+}
+
+.fn-battery-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 0 0 10px;
+    color: var(--primary, #5b8def);
+}
+
+.fn-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 4px;
+}
+
+.fn-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-family: var(--font-family);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background var(--transition), filter var(--transition);
+}
+
+.fn-btn-primary {
+    background: var(--primary, #5b8def);
+    color: #fff;
+}
+
+.fn-btn-primary:hover {
+    background: var(--primary-hover, #4a7de0);
+}
+
+.fn-btn-primary:active {
+    background: var(--primary-active, #3a6dd0);
+}
+
+.fn-btn-secondary {
+    background: var(--sidebar-surface);
+    color: var(--sidebar-text);
+    border: 1px solid var(--sidebar-border);
+}
+
+.fn-btn-secondary:hover {
+    filter: brightness(1.08);
+}
+
+.fn-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .fn-row-2,
+    .fn-grid-2,
+    .fn-battery-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .fn-field-span-2 {
+        grid-column: auto;
+    }
+}
