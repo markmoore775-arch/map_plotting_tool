@@ -23,7 +23,7 @@
         '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. <strong>Altitude (ft)</strong> is shown next to each aircraft; tap for full detail and the highlighted path.</li>',
         '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session—not full flight history (see ADSB.lol docs for archives).</li>',
         '</ol>',
-        '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code>. Open <a href="flight-notes.html">Flight Notes</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
+        '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
     ].join('');
 
     let map;

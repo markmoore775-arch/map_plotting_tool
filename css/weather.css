@@ -102,17 +102,22 @@ body.weather-mode .leaflet-top.leaflet-left {
     border-color: var(--primary-hover, #4a7de0);
 }
 
-/* Mobile: single-row toolbar, horizontal scroll instead of wrapping */
-@media (max-width: 600px) {
+.weather-btn-primary .weather-fetch-label--short {
+    display: none;
+}
+
+/* Narrow viewports: single-row toolbar, horizontal scroll (phones, small tablets, landscape) */
+@media (max-width: 900px) {
     .weather-toolbar {
         flex-wrap: nowrap;
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
         gap: 8px;
-        padding: 10px 12px;
-        padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
-        bottom: max(12px, env(safe-area-inset-bottom, 12px));
+        padding: 8px 10px;
+        padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+        bottom: max(10px, env(safe-area-inset-bottom, 10px));
         left: 8px;
         right: 8px;
         transform: none;
@@ -121,22 +126,69 @@ body.weather-mode .leaflet-top.leaflet-left {
         width: auto;
         justify-content: flex-start;
     }
+
+    .weather-toolbar::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .weather-toolbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+    }
+
     .weather-toolbar-group {
         flex-shrink: 0;
         gap: 6px;
     }
+
     .weather-time-group {
         flex-wrap: nowrap;
     }
+
+    .weather-btn {
+        min-height: 36px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
     .weather-btn span:not(.weather-btn-text),
     .weather-model-label {
         display: none;
     }
+
     .weather-model-select {
-        min-width: 90px;
+        min-width: 88px;
+        font-size: 11px;
+        padding: 5px 8px;
     }
-    .weather-btn-primary span {
+
+    .weather-btn-primary {
+        min-width: 0;
+    }
+
+    .weather-btn-primary .weather-fetch-label--full {
+        display: none;
+    }
+
+    .weather-btn-primary .weather-fetch-label--short {
         display: inline;
+    }
+
+    .weather-time-label {
+        font-size: 12px;
+    }
+
+    .weather-datetime {
+        font-size: 12px;
+        padding: 5px 8px;
+    }
+
+    .weather-side-toolbar {
+        top: calc(64px + env(safe-area-inset-top, 0px));
+    }
+
+    .weather-side-panel {
+        width: min(280px, calc(100vw - 60px));
     }
 }
 
@@ -295,15 +347,6 @@ body.weather-mode .leaflet-top.leaflet-left {
 
 .weather-side-panel-body a {
     color: var(--primary, #5b8def);
-}
-
-@media (max-width: 600px) {
-    .weather-side-toolbar {
-        top: calc(64px + env(safe-area-inset-top, 0px));
-    }
-    .weather-side-panel {
-        width: min(280px, calc(100vw - 60px));
-    }
 }
 
 /* Full-screen overlay: flex center — avoids transform on the Leaflet map ancestor (transform breaks tile positioning) */

@@ -140,7 +140,7 @@
             min-width: 0;
         }
 
-        /* Match .fp-welcome-home-link height/padding (Flight Notes / Welcome row) */
+        /* Match .fp-welcome-home-link height/padding (Flight Report / Welcome row) */
         .cl-nav-link {
             display: inline-flex;
             align-items: center;
@@ -196,6 +196,58 @@
             font-weight: 500;
             color: var(--cl-muted);
             white-space: nowrap;
+        }
+
+        @media (max-width: 900px) {
+            .cl-top-bar {
+                flex-wrap: nowrap;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 10px;
+                padding-left: max(10px, env(safe-area-inset-left));
+                padding-right: max(10px, env(safe-area-inset-right));
+                padding-top: max(8px, env(safe-area-inset-top));
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+                justify-content: flex-start;
+            }
+
+            .cl-top-bar::-webkit-scrollbar {
+                height: 4px;
+            }
+
+            .cl-top-bar::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 2px;
+            }
+
+            .cl-top-bar-start {
+                flex-wrap: nowrap;
+                flex-shrink: 0;
+                gap: 8px;
+            }
+
+            .cl-top-bar-actions {
+                flex-shrink: 0;
+                gap: 8px;
+            }
+
+            .fp-welcome-home-link {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+
+            .cl-nav-link {
+                min-height: 40px;
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .cl-theme-toggle-label {
+                font-size: 11px;
+            }
         }
 
         .cl-main {
@@ -473,7 +525,7 @@
             display: none !important;
         }
 
-        /* Modal (same pattern as Flight Notes / index modals) */
+        /* Modal (same pattern as Flight Report / index modals) */
         .modal {
             position: fixed;
             inset: 0;
@@ -742,7 +794,7 @@
                     </span>
                 </a>
             </nav>
-            <a href="flight-notes.html" class="cl-nav-link" title="Open Flight Notes">Flight Notes</a>
+            <a href="flight-notes.html" class="cl-nav-link" title="Open Flight Report">Flight Report</a>
         </div>
         <div class="cl-top-bar-actions">
             <label class="cl-theme-toggle" title="Light theme (better for reading / print preview)">
@@ -757,12 +809,12 @@
         <p id="clPrintTimestamp" class="print-only cl-export-timestamp" aria-hidden="true"></p>
 
         <aside class="cl-privacy no-print" role="note">
-            <p>Nothing you enter here is sent to a server. This browser may keep your checklist on this device until you use <strong>Reset All</strong> or clear site data. Use <strong>Flight Notes</strong> in the header to record mission details and switch back without returning to the welcome screen.</p>
+            <p>Nothing you enter here is sent to a server. This browser may keep your checklist on this device until you use <strong>Reset All</strong> or clear site data. Use <strong>Flight Report</strong> in the header to record mission details and switch back without returning to the welcome screen.</p>
         </aside>
 
         <header class="cl-header-block no-print">
             <h1 class="cl-page-title">M4T / TD</h1>
-            <p class="cl-lead">Pre-flight, flight, and post-flight checks. Send by email or use Export to PDF to save a copy. <strong>Flight Notes</strong> in the header opens structured notes in this tab.</p>
+            <p class="cl-lead">Pre-flight, flight, and post-flight checks. Send by email or use Export to PDF to save a copy. <strong>Flight Report</strong> in the header opens the structured report in this tab.</p>
         </header>
 
         <div class="cl-toolbar">

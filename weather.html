@@ -68,9 +68,10 @@
             <input type="datetime-local" id="weatherDateTime" class="weather-datetime hidden" min="" max="">
         </div>
         <div class="weather-toolbar-group">
-            <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Get weather for selected location">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
-                <span>Get Weather</span>
+            <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Get weather for selected location" aria-label="Get weather">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                <span class="weather-fetch-label--full" aria-hidden="true">Get Weather</span>
+                <span class="weather-fetch-label--short" aria-hidden="true">Weather</span>
             </button>
         </div>
     </div>

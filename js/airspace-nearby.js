@@ -1,6 +1,6 @@
 /* ============================================
    AIRSPACE NEARBY — Shared NOTAM + UK airspace fetch
-   Used by Flight Weather and Flight Notes
+   Used by Flight Weather and Flight Report
    ============================================ */
 
 var AirspaceNearby = (function () {

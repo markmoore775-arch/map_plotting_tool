@@ -78,7 +78,23 @@ body.sidebar-collapsed #map {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     overflow-x: hidden;
     overflow-y: auto;
+    opacity: 1;
     transition: opacity 0.6s cubic-bezier(.4,0,.2,1), visibility 0.6s cubic-bezier(.4,0,.2,1);
+}
+
+/* Splash: entire overlay fades in from nothing; duration must match SPLASH_MS in app.js (2s) */
+.intro-overlay:not(.splash-done):not(.hidden) {
+    opacity: 0;
+    animation: introSplashFadeIn 2s ease-out forwards;
+}
+
+@keyframes introSplashFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .intro-overlay.hidden {
@@ -87,7 +103,7 @@ body.sidebar-collapsed #map {
     pointer-events: none;
 }
 
-/* Splash: logo only (slow fade), then full welcome after .splash-done (see app.js) */
+/* Splash layer: logo only, then full welcome after .splash-done (see app.js) */
 .intro-splash {
     position: absolute;
     inset: 0;
@@ -110,17 +126,6 @@ body.sidebar-collapsed #map {
     width: 160px;
     height: auto;
     filter: drop-shadow(0 4px 24px rgba(91, 141, 239, 0.35));
-    opacity: 0;
-    animation: introSplashLogoIn 2s ease-out forwards;
-}
-
-@keyframes introSplashLogoIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
 }
 
 .intro-overlay.splash-done .intro-splash {
@@ -136,7 +141,7 @@ body.sidebar-collapsed #map {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .intro-splash-logo {
+    .intro-overlay:not(.splash-done):not(.hidden) {
         animation: none;
         opacity: 1;
     }

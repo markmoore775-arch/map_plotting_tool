@@ -3569,6 +3569,7 @@ ${summaryRows}
         const params = new URLSearchParams(window.location.search);
         const shouldAutoLaunch = params.get('autostart') === '1';
 
+        /* Must match CSS intro splash duration (.introSplashFadeIn, style.css) */
         const SPLASH_MS = 2000;
         if (!shouldAutoLaunch && introOverlay) {
             window.setTimeout(showIntroWelcomeAfterSplash, SPLASH_MS);

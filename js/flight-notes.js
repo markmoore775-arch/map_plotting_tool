@@ -1,6 +1,6 @@
 /**
- * Flight Notes — form serialization, GPS (HTTPS only), mailto + clipboard fallback, PDF via PdfTheme.
- * Page Theme + PDF theme (Dark/Light) radios; Clear notes (header) / Clear form share one confirmation modal.
+ * Flight Report — form serialization, GPS (HTTPS only), mailto + clipboard fallback, PDF via PdfTheme.
+ * Page Theme + PDF theme (Dark/Light) radios; Clear report (header) / Clear form share one confirmation modal.
  */
 (function () {
     'use strict';
@@ -408,7 +408,7 @@
                 populateFnAirspaceMaps(ll.lat, ll.lng, notams, air);
             }, 50);
         } catch (e) {
-            console.error('Flight Notes airspace load failed:', e);
+            console.error('Flight Report airspace load failed:', e);
             alert('Failed to load airspace data.');
         } finally {
             if (loading) loading.classList.add('hidden');
@@ -444,7 +444,7 @@
                 setTimeout(res, 900);
             });
         } catch (e) {
-            console.warn('Flight Notes: PDF airspace prefetch failed', e);
+            console.warn('Flight Report: PDF airspace prefetch failed', e);
         }
     }
 
@@ -548,7 +548,7 @@
                     pxH: square.height
                 });
             } catch (e) {
-                console.warn('Flight Notes: airspace map PDF capture failed', e);
+                console.warn('Flight Report: airspace map PDF capture failed', e);
                 pdfMapEntries.push(null);
             }
         }
@@ -658,7 +658,7 @@
         return { w: w, h: h };
     }
 
-    /** Same map centre as Flight Notes mini-map — for email (mailto is plain text only; no embedded images). */
+    /** Same map centre as Flight Report mini-map — for email (mailto is plain text only; no embedded images). */
     function openStreetMapLink(lat, lng) {
         return (
             'https://www.openstreetmap.org/?mlat=' +
@@ -677,7 +677,7 @@
      */
     function buildNotesPlainText() {
         var lines = [];
-        lines.push('AirPlot v3 — Flight Notes');
+        lines.push('AirPlot v3 — Flight Report');
         lines.push('');
 
         lines.push('Date: ' + dash(formatDateForExportDdMmYyyy(trimVal('fnDate'))));
@@ -1067,7 +1067,7 @@
             autoResizeConditionsTextarea();
             saveFlightNotesDraft();
         } catch (err) {
-            console.error('Flight Notes weather fetch failed:', err);
+            console.error('Flight Report weather fetch failed:', err);
             setWeatherFetchStatus(err && err.message ? err.message : 'Failed to fetch weather.', 'error');
         } finally {
             if (btn) btn.disabled = false;
@@ -1302,14 +1302,14 @@
 
     function emailSubject() {
         var d = formatDateForExportDdMmYyyy(trimVal('fnDate'));
-        return d ? 'Flight Notes — ' + d : 'Flight Notes';
+        return d ? 'Flight Report — ' + d : 'Flight Report';
     }
 
     async function onEmailClick() {
         var text = buildNotesPlainText();
         var subj = emailSubject();
         var shortBody =
-            'Your flight notes are on the clipboard — paste into the email body below. (The full text was too long to put in the mail link automatically.)';
+            'Your flight report is on the clipboard — paste into the email body below. (The full text was too long to put in the mail link automatically.)';
 
         if (text.length > MAILTO_BODY_MAX) {
             try {
@@ -1321,7 +1321,7 @@
                     encodeURIComponent(shortBody);
             } catch (e) {
                 alert(
-                    'Could not copy notes to the clipboard. Try shortening your notes or copy the text manually from the page.'
+                    'Could not copy the report to the clipboard. Try shortening the text or copy it manually from the page.'
                 );
             }
             return;
@@ -1332,7 +1332,7 @@
     }
 
     /**
-     * Rasterise the Flight Notes Leaflet mini-map for PDF (same idea as PdfTheme.captureSquareMap).
+     * Rasterise the Flight Report Leaflet mini-map for PDF (same idea as PdfTheme.captureSquareMap).
      */
     async function tryCaptureMiniMapPng() {
         var mapEl = document.getElementById('fnMiniMap');
@@ -1360,7 +1360,7 @@
                 height: canvas.height
             };
         } catch (e) {
-            console.warn('Flight Notes: map screenshot failed', e);
+            console.warn('Flight Report: map screenshot failed', e);
             return null;
         }
     }
@@ -1388,7 +1388,7 @@
 
             var ts = PdfTheme.tableStyles();
             var doc = PdfTheme.createDoc();
-            PdfTheme.addHeader(doc, 'Flight Notes', true);
+            PdfTheme.addHeader(doc, 'Flight Report', true);
 
             var startY = 26;
             var mapShot = await tryCaptureMiniMapPng();
@@ -1424,9 +1424,9 @@
             var datePart =
                 formatDateForExportDdMmYyyy(trimVal('fnDate')) ||
                 formatDateForExportDdMmYyyy(new Date().toISOString().slice(0, 10));
-            doc.save('Flight_Notes_' + datePart + '.pdf');
+            doc.save('Flight_Report_' + datePart + '.pdf');
         } catch (err) {
-            console.error('Flight Notes PDF export failed:', err);
+            console.error('Flight Report PDF export failed:', err);
             alert('Failed to export PDF: ' + (err && err.message ? err.message : 'Unknown error'));
         } finally {
             if (btn) {
@@ -1467,7 +1467,7 @@
         if (ac) ac.innerHTML = '';
         var al = document.getElementById('fnAirspaceLoading');
         if (al) al.classList.add('hidden');
-        var form = document.getElementById('flightNotesForm');
+        var form = document.getElementById('flightReportForm');
         if (form) form.reset();
         syncFnAirspaceIntroKm();
         var ta = document.getElementById('fnWeather');
@@ -1575,7 +1575,7 @@
             }
         });
 
-        var fnForm = document.getElementById('flightNotesForm');
+        var fnForm = document.getElementById('flightReportForm');
         if (fnForm) {
             fnForm.addEventListener('input', scheduleFlightNotesDraftSave);
             fnForm.addEventListener('change', scheduleFlightNotesDraftSave);
