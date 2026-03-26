@@ -284,6 +284,16 @@ body.flight-notes-mode.fn-light-theme .fn-top-clear-btn:hover {
     text-decoration: underline;
 }
 
+.fn-weather-hint-sub {
+    display: inline;
+    opacity: 0.88;
+    font-size: 0.95em;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
+    opacity: 0.9;
+}
+
 .fn-row {
     display: grid;
     gap: 14px 16px;

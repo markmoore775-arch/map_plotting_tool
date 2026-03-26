@@ -1,6 +1,7 @@
 /* ============================================
-   AIRSPACE — ADS-B traffic (ADSB.lol API)
+   AIRSPACE PAGE — ADS-B traffic (ADSB.lol API)
    Plane markers, session trail, detail on click
+   Loaded only by airspace.html. Planning UK layers: js/uk-airspace-layers.js (Airspace.init).
    ============================================ */
 
 (function () {

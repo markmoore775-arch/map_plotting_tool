@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Serves the project root on PORT (default 8081, or next free if busy) and proxies GET /api/adsb → ADSB.lol.
- * Browsers cannot call api.adsb.lol directly (no CORS); use this instead of python -m http.server.
+ * Serves the project root on PORT (default 8081, or next free if busy) and proxies:
+ * - GET /api/adsb → ADSB.lol
+ * - GET /api/aviation → aviationweather.gov (METAR/TAF JSON; same contract as worker.js)
+ * Browsers cannot call those APIs directly (CORS); use this instead of python -m http.server.
  */
 import http from 'http';
 import https from 'https';
@@ -83,6 +85,50 @@ function handleAdsbProxy(req, res) {
     });
 }
 
+function handleAviationProxy(req, res) {
+  const u = new URL(req.url, 'http://localhost');
+  const type = String(u.searchParams.get('type') || '').toLowerCase();
+  const idsRaw = String(u.searchParams.get('ids') || '').toUpperCase();
+  const ids = idsRaw
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v) => /^[A-Z0-9]{3,6}$/.test(v))
+    .slice(0, 20);
+
+  if ((type !== 'metar' && type !== 'taf') || ids.length === 0) {
+    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Invalid query. Expected type=metar|taf and ids=ICAO,ICAO...' }));
+    return;
+  }
+
+  const endpoint =
+    'https://aviationweather.gov/api/data/' +
+    type +
+    '?ids=' +
+    encodeURIComponent(ids.join(',')) +
+    '&format=json';
+
+  https
+    .get(endpoint, { headers: { Accept: 'application/json' } }, (upstreamRes) => {
+      const code = upstreamRes.statusCode || 502;
+      if (code < 200 || code >= 300) {
+        res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'Upstream returned HTTP ' + code }));
+        upstreamRes.resume();
+        return;
+      }
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'public, max-age=60'
+      });
+      upstreamRes.pipe(res);
+    })
+    .on('error', () => {
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Upstream fetch failed' }));
+    });
+}
+
 function serveStatic(req, res) {
   const u = new URL(req.url, 'http://localhost');
   let rel = decodeURIComponent(u.pathname);
@@ -116,10 +162,23 @@ function serveStatic(req, res) {
   });
 }
 
+function normalizeApiPathname(pathname) {
+  if (!pathname || pathname === '/') return '/';
+  return pathname.replace(/\/+$/, '') || '/';
+}
+
 function handleRequest(req, res) {
   const u = new URL(req.url, 'http://localhost');
-  if (u.pathname === '/api/adsb') {
+  const pathname = normalizeApiPathname(u.pathname);
+  if (pathname === '/api/adsb') {
     handleAdsbProxy(req, res);
+  } else if (pathname === '/api/aviation') {
+    if (req.method !== 'GET') {
+      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Method not allowed' }));
+      return;
+    }
+    handleAviationProxy(req, res);
   } else {
     serveStatic(req, res);
   }
@@ -140,6 +199,7 @@ function listenFrom(port) {
   server.listen(port, function () {
     console.log('AirPlot dev: http://localhost:' + port + '/');
     console.log('  /api/adsb → https://api.adsb.lol (CORS proxy for Airspace)');
+    console.log('  /api/aviation → aviationweather.gov METAR/TAF (CORS proxy for Flight Weather)');
   });
 }
 

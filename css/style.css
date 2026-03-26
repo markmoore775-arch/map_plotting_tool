@@ -111,7 +111,7 @@ body.sidebar-collapsed #map {
     height: auto;
     filter: drop-shadow(0 4px 24px rgba(91, 141, 239, 0.35));
     opacity: 0;
-    animation: introSplashLogoIn 2.6s ease-out forwards;
+    animation: introSplashLogoIn 2s ease-out forwards;
 }
 
 @keyframes introSplashLogoIn {

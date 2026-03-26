@@ -14,8 +14,8 @@
         '<li>Set a location: tap <strong>Select Location</strong> then tap the map, or <strong>right-click</strong> the map and choose <strong>Get Weather</strong>.</li>',
         '<li>Tap <strong>Get Weather</strong> to open the report panel.</li>',
         '</ol>',
-        '<p><strong>Report tabs</strong> — <strong>Summary</strong> (wind by altitude, visibility, clouds, precipitation, temperature), <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>, <strong>Airspace</strong>. Expand <strong>About this forecast model</strong> on the Summary tab for model notes.</p>',
-        '<p><strong>Export</strong> — <strong>PPTX</strong> or <strong>PDF</strong> downloads a branded report. <strong>Light</strong> switches the report to a light theme (e.g. for screenshots or copy/paste). The map <strong>ⓘ</strong> button opens or closes this instructions panel.</p>',
+        '<p><strong>Report tabs</strong> — <strong>Summary</strong> (wind by altitude, visibility, clouds, precipitation, temperature), <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>, <strong>Airspace</strong> (set <strong>Search radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map per item). Expand <strong>About this forecast model</strong> on the Summary tab for model notes.</p>',
+        '<p><strong>Export</strong> — <strong>PPTX</strong> or <strong>PDF</strong> branded reports. Under <strong>Export</strong>, choose <strong>Dark</strong> or <strong>Light</strong> for document colours (the on-screen report preview matches). NOTAM/airspace data uses the <strong>radius from the Airspace tab</strong> at export time. <strong>PPTX</strong> includes a mini map on each NOTAM and airspace slide plus an overview map; <strong>PDF</strong> uses tables and overview map captures. The map <strong>ⓘ</strong> button opens or closes this instructions panel.</p>',
         '<p>From here you can also open <a href="flight-notes.html">Flight Notes</a> or the <a href="checklist.html">M4T / TD Checklist</a> from the welcome screen; those pages link to each other in the header so you can move between notes and checklist without returning home. Use <strong>Welcome</strong> (top-left) to return to the AirPlot home screen. Attribution and data sources are shown in the report.</p>'
     ].join('');
 
@@ -100,6 +100,8 @@
     const AIRSPACE_RADIUS_MAX_KM = 100;
     let airspaceSearchRadiusKm = 5;
     let weatherAirspaceItemMaps = [];
+    /** True when NOTAM/airspace HTML exists but mini maps were not built (Airspace tab was hidden → 0×0 breaks Leaflet tiles). */
+    let weatherAirspaceMapsNeedInit = false;
 
     function clampAirspaceRadiusKm(n) {
         var v = typeof n === 'number' ? n : parseInt(String(n), 10);
@@ -179,19 +181,36 @@
         return Math.round(m) + ' m';
     }
 
+    /** RAG suitability: ~12 m/s-class enterprise multi-rotor, thermal + optical; aloft wind/gusts included. */
     function deriveSuitability(data) {
-        const wind = data.wind_speed_10m ?? 0;
-        const gusts = data.wind_gusts_10m ?? wind;
+        const w10 = data.wind_speed_10m ?? 0;
+        const w120 = data.wind_speed_120m ?? w10;
+        const sustained = Math.max(w10, w120);
+        const g10 = data.wind_gusts_10m ?? sustained;
+        const g120Est = data.wind_speed_120m != null ? data.wind_speed_120m * GUST_120M_MULTIPLIER : g10;
+        const gusts = Math.max(g10, g120Est);
         const vis = data.visibility ?? 10000;
         const precip = data.precipitation ?? 0;
 
-        if (wind > 40 || gusts > 50 || vis < 3000 || precip > 2) {
-            return { level: 'poor', text: 'Not recommended for flight' };
+        if (sustained > 38 || gusts > 47 || vis < 4000 || precip > 1.5) {
+            return {
+                level: 'poor',
+                text:
+                    'Red: conditions exceed safe margins for typical enterprise multi-rotor wind limits and visibility; postpone or re-plan.'
+            };
         }
-        if (wind > 25 || gusts > 35 || vis < 5000 || precip > 0) {
-            return { level: 'caution', text: 'Caution: marginal conditions' };
+        if (sustained > 26 || gusts > 34 || vis < 5500 || precip > 0) {
+            return {
+                level: 'caution',
+                text:
+                    'Amber: marginal for heavier multi-rotor thermal and visible-light work; shorter sorties, extra altitude margin, watch gusts aloft, and reserve battery.'
+            };
         }
-        return { level: 'good', text: 'Good conditions for flight' };
+        return {
+            level: 'good',
+            text:
+                'Green: within usual operating margins for DJI enterprise-class aircraft; still confirm live wind and visibility at the site before take-off.'
+        };
     }
 
     // ---- Map init ----
@@ -443,8 +462,8 @@
         const params = new URLSearchParams({ type: type, ids: ids });
         const attempts = [{ name: 'worker-proxy', url: AVIATION_PROXY_URL + '?' + params.toString(), kind: 'json' }];
         if (isLocalDevHost()) {
+            // Same-origin /api/aviation only exists when using npm run serve; direct AWC always fails CORS in the browser.
             attempts.push(
-                { name: 'direct', url: url, kind: 'json' },
                 { name: 'corsproxy', url: CORS_PROXY + encodeURIComponent(url), kind: 'json' },
                 { name: 'jina', url: JINA_PROXY_PREFIX + url.replace(/^https?:\/\//i, ''), kind: 'jina-text' }
             );
@@ -497,12 +516,15 @@
         const targetTime = getTargetTimestamp();
         const useNow = targetTime === null;
 
-        const report = document.getElementById('weatherReport');
+        const reportOverlay = document.getElementById('weatherReportOverlay');
         const loading = document.getElementById('weatherReportLoading');
         const error = document.getElementById('weatherReportError');
         const content = document.getElementById('weatherReportContent');
 
-        report.classList.remove('hidden');
+        if (reportOverlay) {
+            reportOverlay.classList.remove('hidden');
+            reportOverlay.setAttribute('aria-hidden', 'false');
+        }
         loading.classList.remove('hidden');
         error.classList.add('hidden');
         content.classList.add('hidden');
@@ -802,6 +824,68 @@
         weatherAirspaceItemMaps = [];
     }
 
+    /** Re-run view after layout: hidden Airspace tab (0×0) makes first fitBounds zoom wrong; aspect-ratio boxes can report 0 height briefly — never skip setView. */
+    function deferWeatherMiniMapRefit(map, refitFn) {
+        function run() {
+            try {
+                refitFn();
+            } catch (e) { /* ignore */ }
+        }
+        if (!map || typeof map.whenReady !== 'function') return;
+        map.whenReady(function () {
+            run();
+            requestAnimationFrame(function () {
+                run();
+                setTimeout(run, 0);
+                setTimeout(run, 80);
+                setTimeout(run, 350);
+            });
+        });
+    }
+
+    /** Leaflet Circle.getBounds() can throw if the layer is not fully on a map; use geographic bounds from radius instead. */
+    function latLngBoundsFromRadiusMeters(centerLat, centerLng, radiusM) {
+        var R = 6371000;
+        var latRad = (centerLat * Math.PI) / 180;
+        var dLat = (radiusM / R) * (180 / Math.PI);
+        var cosLat = Math.cos(latRad);
+        var dLng = cosLat > 1e-10 ? (radiusM / (R * cosLat)) * (180 / Math.PI) : dLat;
+        return L.latLngBounds(
+            [centerLat - dLat, centerLng - dLng],
+            [centerLat + dLat, centerLng + dLng]
+        );
+    }
+
+    function applyNotamMiniMapView(m, lat, lng, groupBounds) {
+        if (groupBounds.isValid()) {
+            var sw = groupBounds.getSouthWest();
+            var ne = groupBounds.getNorthEast();
+            var tiny = Math.abs(sw.lat - ne.lat) < 1e-5 && Math.abs(sw.lng - ne.lng) < 1e-5;
+            if (tiny) {
+                m.setView([lat, lng], 13);
+            } else {
+                m.fitBounds(groupBounds.pad(0.25), { maxZoom: 15 });
+            }
+        } else {
+            m.setView([lat, lng], 10);
+        }
+    }
+
+    function applyAirspaceMiniMapView(m, lat, lng, b) {
+        if (b && b.isValid()) {
+            var sw = b.getSouthWest();
+            var ne = b.getNorthEast();
+            var tiny = Math.abs(sw.lat - ne.lat) < 1e-5 && Math.abs(sw.lng - ne.lng) < 1e-5;
+            if (tiny) {
+                m.setView([lat, lng], 12);
+            } else {
+                m.fitBounds(b.pad(0.12), { maxZoom: 15 });
+            }
+        } else {
+            m.setView([lat, lng], 11);
+        }
+    }
+
     function populateWeatherAirspaceItemMaps(lat, lng, notams, airspace) {
         destroyWeatherAirspaceItemMaps();
         if (typeof L === 'undefined' || typeof AirspaceNearby === 'undefined') return;
@@ -814,27 +898,38 @@
             var m = L.map(el, { zoomControl: false, attributionControl: false });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, crossOrigin: true }).addTo(m);
             var overlay = L.layerGroup().addTo(m);
+            var nLat = parseFloat(n.lat);
+            var nLng = parseFloat(n.lng);
+            if (!isFinite(nLat) || !isFinite(nLng)) {
+                nLat = lat;
+                nLng = lng;
+            }
+
             L.marker([lat, lng], { title: 'Selected location' }).addTo(overlay);
-            L.marker([n.lat, n.lng], { title: 'NOTAM centre' }).addTo(overlay);
+            L.marker([nLat, nLng], { title: 'NOTAM centre' }).addTo(overlay);
+
+            var groupBounds = L.latLngBounds([lat, lng], [nLat, nLng]);
             if (n.radiusNm > 0 && n.radiusNm < 999) {
-                L.circle([n.lat, n.lng], {
-                    radius: n.radiusNm * 1852,
+                var radiusM = n.radiusNm * 1852;
+                L.circle([nLat, nLng], {
+                    radius: radiusM,
                     color: '#dc2626',
                     weight: 2,
                     fillColor: '#dc2626',
                     fillOpacity: 0.12
                 }).addTo(overlay);
+                groupBounds.extend(latLngBoundsFromRadiusMeters(nLat, nLng, radiusM));
             }
-            var groupBounds = L.latLngBounds([lat, lng], [n.lat, n.lng]);
-            if (groupBounds.isValid()) {
-                m.fitBounds(groupBounds.pad(0.25));
-            } else {
-                m.setView([lat, lng], 10);
-            }
-            weatherAirspaceItemMaps.push({ map: m });
-            setTimeout(function () {
+
+            applyNotamMiniMapView(m, lat, lng, groupBounds);
+
+            function refitNotamMap() {
                 m.invalidateSize();
-            }, 100);
+                applyNotamMiniMapView(m, lat, lng, groupBounds);
+            }
+
+            weatherAirspaceItemMaps.push({ map: m, refit: refitNotamMap });
+            deferWeatherMiniMapRefit(m, refitNotamMap);
         });
 
         var part = partitionAirspaceByCategory(airspace);
@@ -848,6 +943,7 @@
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, crossOrigin: true }).addTo(m);
                 var overlay = L.layerGroup().addTo(m);
                 L.marker([lat, lng], { title: 'Selected location' }).addTo(overlay);
+                var b = null;
                 if (a.geometry) {
                     var gj = L.geoJSON(a.geometry, {
                         style: {
@@ -858,36 +954,39 @@
                         }
                     });
                     overlay.addLayer(gj);
-                    var b = gj.getBounds();
+                    b = gj.getBounds();
                     if (b.isValid()) {
                         b.extend([lat, lng]);
-                        m.fitBounds(b.pad(0.12));
-                    } else {
-                        m.setView([lat, lng], 11);
                     }
-                } else {
-                    m.setView([lat, lng], 11);
                 }
-                weatherAirspaceItemMaps.push({ map: m });
-                setTimeout(function () {
+
+                applyAirspaceMiniMapView(m, lat, lng, b);
+
+                function refitAirspaceMap() {
                     m.invalidateSize();
-                }, 100);
+                    applyAirspaceMiniMapView(m, lat, lng, b);
+                }
+
+                weatherAirspaceItemMaps.push({ map: m, refit: refitAirspaceMap });
+                deferWeatherMiniMapRefit(m, refitAirspaceMap);
             });
         });
 
         setTimeout(function () {
             weatherAirspaceItemMaps.forEach(function (o) {
                 try {
-                    if (o.map) o.map.invalidateSize();
+                    if (typeof o.refit === 'function') o.refit();
+                    else if (o.map) o.map.invalidateSize();
                 } catch (e) { /* ignore */ }
             });
-        }, 350);
+        }, 400);
     }
 
     function invalidateWeatherAirspaceItemMaps() {
         weatherAirspaceItemMaps.forEach(function (o) {
             try {
-                if (o.map) o.map.invalidateSize();
+                if (typeof o.refit === 'function') o.refit();
+                else if (o.map) o.map.invalidateSize();
             } catch (e) { /* ignore */ }
         });
     }
@@ -957,6 +1056,7 @@
         destroyWeatherAirspaceItemMaps();
         renderAirspaceTab(notams, airspace, lat, lng);
         populateWeatherAirspaceItemMaps(lat, lng, notams, airspace);
+        weatherAirspaceMapsNeedInit = false;
 
         await new Promise(function (r) {
             setTimeout(r, 800);
@@ -991,7 +1091,24 @@
         loading.classList.add('hidden');
         content.classList.remove('hidden');
         renderAirspaceTab(lastNotamData, lastAirspaceData, lat, lng);
-        populateWeatherAirspaceItemMaps(lat, lng, lastNotamData, lastAirspaceData);
+        finishWeatherAirspaceMiniMaps(lat, lng, lastNotamData, lastAirspaceData);
+    }
+
+    function finishWeatherAirspaceMiniMaps(lat, lng, notams, airspace) {
+        var na = notams || [];
+        var ar = airspace || [];
+        if (na.length === 0 && ar.length === 0) {
+            weatherAirspaceMapsNeedInit = false;
+            return;
+        }
+        var airPanel = document.getElementById('weatherTabAirspace');
+        var airspaceTabVisible = airPanel && airPanel.classList.contains('active');
+        if (airspaceTabVisible) {
+            populateWeatherAirspaceItemMaps(lat, lng, na, ar);
+            weatherAirspaceMapsNeedInit = false;
+        } else {
+            weatherAirspaceMapsNeedInit = true;
+        }
     }
 
     function renderAirspaceTab(notams, airspace, lat, lng) {
@@ -2382,11 +2499,19 @@
 
     // ---- Report panel ----
     function showReport() {
-        document.getElementById('weatherReport').classList.remove('hidden');
+        var overlay = document.getElementById('weatherReportOverlay');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            overlay.setAttribute('aria-hidden', 'false');
+        }
     }
 
     function hideReport() {
-        document.getElementById('weatherReport').classList.add('hidden');
+        var overlay = document.getElementById('weatherReportOverlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.setAttribute('aria-hidden', 'true');
+        }
     }
 
     // ---- Context menu (right-click) ----
@@ -2505,7 +2630,26 @@
                 const panel = document.getElementById('weatherTab' + (tabName.charAt(0).toUpperCase() + tabName.slice(1)));
                 if (panel) panel.classList.add('active');
                 if (tabName === 'airspace') {
-                    invalidateWeatherAirspaceItemMaps();
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            if (
+                                weatherAirspaceMapsNeedInit &&
+                                selectedPoint &&
+                                lastNotamData != null &&
+                                lastAirspaceData != null
+                            ) {
+                                weatherAirspaceMapsNeedInit = false;
+                                populateWeatherAirspaceItemMaps(
+                                    selectedPoint.lat,
+                                    selectedPoint.lng,
+                                    lastNotamData,
+                                    lastAirspaceData
+                                );
+                            } else {
+                                invalidateWeatherAirspaceItemMaps();
+                            }
+                        });
+                    });
                 }
             });
         });

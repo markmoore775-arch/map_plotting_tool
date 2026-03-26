@@ -1,5 +1,6 @@
 /**
  * Flight Notes — form serialization, GPS (HTTPS only), mailto + clipboard fallback, PDF via PdfTheme.
+ * Page Theme + PDF theme (Dark/Light) radios; Clear notes (header) / Clear form share one confirmation modal.
  */
 (function () {
     'use strict';
@@ -796,19 +797,40 @@
         return Math.round(speed) + ' km/h ' + directionToCardinal(dir);
     }
 
+    /**
+     * RAG suitability for heavier enterprise multi-rotor ops (~12 m/s wind class), thermal + optical payloads.
+     * Uses max(10 m, 120 m) sustained wind and max(10 m gusts, estimated 120 m gusts) so aloft conditions count.
+     * Open-Meteo wind values are km/h.
+     */
     function deriveSuitability(data) {
-        var wind = data.wind_speed_10m != null ? data.wind_speed_10m : 0;
-        var gusts = data.wind_gusts_10m != null ? data.wind_gusts_10m : wind;
+        var w10 = data.wind_speed_10m != null ? data.wind_speed_10m : 0;
+        var w120 = data.wind_speed_120m != null ? data.wind_speed_120m : w10;
+        var sustained = Math.max(w10, w120);
+        var g10 = data.wind_gusts_10m != null ? data.wind_gusts_10m : sustained;
+        var g120Est = data.wind_speed_120m != null ? data.wind_speed_120m * GUST_120M_MULTIPLIER : g10;
+        var gusts = Math.max(g10, g120Est);
         var vis = data.visibility != null ? data.visibility : 10000;
         var precip = data.precipitation != null ? data.precipitation : 0;
 
-        if (wind > 40 || gusts > 50 || vis < 3000 || precip > 2) {
-            return { level: 'poor', text: 'Not recommended for flight' };
+        if (sustained > 38 || gusts > 47 || vis < 4000 || precip > 1.5) {
+            return {
+                level: 'poor',
+                text:
+                    'Red: conditions exceed safe margins for typical enterprise multi-rotor wind limits and visibility; postpone or re-plan.'
+            };
         }
-        if (wind > 25 || gusts > 35 || vis < 5000 || precip > 0) {
-            return { level: 'caution', text: 'Caution: marginal conditions' };
+        if (sustained > 26 || gusts > 34 || vis < 5500 || precip > 0) {
+            return {
+                level: 'caution',
+                text:
+                    'Amber: marginal for heavier multi-rotor thermal and visible-light work; shorter sorties, extra altitude margin, watch gusts aloft, and reserve battery.'
+            };
         }
-        return { level: 'good', text: 'Good conditions for flight' };
+        return {
+            level: 'good',
+            text:
+                'Green: within usual operating margins for DJI enterprise-class aircraft; still confirm live wind and visibility at the site before take-off.'
+        };
     }
 
     function deriveSummaryText(hourlySlice, suitability) {

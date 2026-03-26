@@ -3569,7 +3569,7 @@ ${summaryRows}
         const params = new URLSearchParams(window.location.search);
         const shouldAutoLaunch = params.get('autostart') === '1';
 
-        const SPLASH_MS = 3000;
+        const SPLASH_MS = 2000;
         if (!shouldAutoLaunch && introOverlay) {
             window.setTimeout(showIntroWelcomeAfterSplash, SPLASH_MS);
         } else if (introOverlay) {

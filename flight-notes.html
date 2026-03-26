@@ -65,7 +65,7 @@
         </aside>
         <header class="fn-header">
             <h1 class="fn-title">Flight Notes</h1>
-            <p class="fn-lead">Record key details from your flight. Export to PDF or send by email. Use <strong>Checklist</strong> in the header to open the M4T / TD checklist in this tab without returning to the welcome screen.</p>
+            <p class="fn-lead">Record key details from your flight. <strong>Theme</strong> (top right) sets page colours; <strong>PDF theme</strong> next to Export PDF sets PDF colours (default Light). <strong>Clear notes</strong> (top) or <strong>Clear form</strong> (bottom) wipes the draft after confirmation. Export to PDF or send by email. Use <strong>Checklist</strong> in the header to open the M4T / TD checklist in this tab without returning to the welcome screen.</p>
         </header>
 
         <form id="flightNotesForm" class="fn-form" autocomplete="on">
@@ -186,19 +186,19 @@
 
             <section class="fn-section" aria-labelledby="fn-alos-rag-heading">
                 <h2 id="fn-alos-rag-heading" class="fn-section-title">ALoS RAG Notes</h2>
-                <textarea id="fnAlosRagNotes" name="fnAlosRagNotes" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Line-of-sight risk (red / amber / green) and related notes…" aria-labelledby="fn-alos-rag-heading"></textarea>
+                <textarea id="fnAlosRagNotes" name="fnAlosRagNotes" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Line-of-sight and site risk (red / amber / green); note mitigations for wind aloft, visibility, and sensor contrast…" aria-labelledby="fn-alos-rag-heading"></textarea>
             </section>
 
             <section class="fn-section" aria-labelledby="fn-weather-heading">
                 <h2 id="fn-weather-heading" class="fn-section-title">Weather</h2>
                 <div class="fn-weather-actions">
                     <button type="button" class="fn-btn fn-btn-now" id="fnWeatherFetchBtn"
-                        title="Fetches forecast from Open-Meteo (same source as Flight Weather). Location must include latitude and longitude — use Use current GPS or paste coordinates.">
+                        title="Fetches forecast from Open-Meteo (same source as Flight Weather). Location must include latitude and longitude; use Use current GPS or paste coordinates.">
                         Fetch weather report
                     </button>
                     <span id="fnWeatherFetchStatus" class="fn-weather-fetch-status" role="status" aria-live="polite"></span>
                 </div>
-                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Time uses <strong>Date</strong> and <strong>Time</strong> above when both are set; otherwise the current hour.</p>
+                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Time uses <strong>Date</strong> and <strong>Time</strong> above when both are set; otherwise the current hour. <span class="fn-weather-hint-sub">RAG lines assume DJI enterprise-class wind and visibility margins.</span></p>
                 <label class="fn-label" for="fnWeather">Conditions</label>
                 <textarea id="fnWeather" name="fnWeather" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Wind, visibility, cloud, etc."></textarea>
             </section>
@@ -285,6 +285,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="js/pdf-theme.js?v=6"></script>
     <script src="js/airspace-nearby.js?v=1"></script>
-    <script src="js/flight-notes.js?v=27"></script>
+    <script src="js/flight-notes.js?v=28"></script>
 </body>
 </html>

@@ -21,7 +21,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/weather.css?v=11">
+    <link rel="stylesheet" href="css/weather.css?v=15">
 </head>
 <body class="weather-mode">
     <div id="map"></div>
@@ -86,8 +86,9 @@
         </div>
     </div>
 
-    <!-- Weather report panel -->
-    <div id="weatherReport" class="weather-report hidden">
+    <!-- Weather report: outer overlay uses flex centering (no CSS transform) so Leaflet mini maps render tiles correctly -->
+    <div id="weatherReportOverlay" class="weather-report-overlay hidden" aria-hidden="true">
+    <div id="weatherReport" class="weather-report">
         <div class="weather-report-header">
             <h2>Flight Weather Report</h2>
             <div class="weather-header-actions">
@@ -241,6 +242,7 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- Map context menu (right-click) -->
     <div id="weatherContextMenu" class="weather-context-menu hidden">
@@ -272,6 +274,6 @@
     <script src="js/pptx-theme.js?v=10"></script>
     <script src="js/pdf-theme.js?v=6"></script>
     <script src="js/airspace-nearby.js?v=1"></script>
-    <script src="js/weather.js?v=14"></script>
+    <script src="js/weather.js?v=20"></script>
 </body>
 </html>

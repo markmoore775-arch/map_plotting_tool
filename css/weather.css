@@ -306,19 +306,34 @@ body.weather-mode .leaflet-top.leaflet-left {
     }
 }
 
-/* Weather report panel */
-.weather-report {
+/* Full-screen overlay: flex center — avoids transform on the Leaflet map ancestor (transform breaks tile positioning) */
+.weather-report-overlay {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    inset: 0;
     z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px))
+        max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.weather-report-overlay.hidden {
+    display: none !important;
+}
+
+/* Weather report panel (no transform — parent overlay centers it) */
+.weather-report {
+    position: relative;
+    flex-shrink: 0;
     width: min(720px, 95vw);
     min-width: 480px;
     max-width: 95vw;
-    /* Grow with report content; cap at viewport — no fixed 600px inner scroll for typical reports */
     height: auto;
-    max-height: 90vh;
+    max-height: min(90vh, calc(100dvh - 24px));
     min-height: 0;
     background: var(--sidebar-bg, #1e1e2e);
     border: 1px solid var(--sidebar-border, #3a3a50);
@@ -328,10 +343,6 @@ body.weather-mode .leaflet-top.leaflet-left {
     resize: both;
     display: flex;
     flex-direction: column;
-}
-
-.weather-report.hidden {
-    display: none;
 }
 
 .weather-report-header {
@@ -875,14 +886,13 @@ body.weather-mode .leaflet-top.leaflet-left {
     overflow-y: auto;
 }
 
-/* Square viewport: same idea as Flight Notes airspace minimaps */
+/* Fixed height so Leaflet always has a non-zero box (flex + hidden tabs can collapse aspect-ratio) */
 .weather-airspace-item-minimap {
     position: relative;
     width: 100%;
     max-width: 280px;
-    aspect-ratio: 1 / 1;
-    height: auto;
-    min-height: 0;
+    height: 240px;
+    min-height: 240px;
     margin-left: auto;
     margin-right: auto;
     margin-top: 10px;
@@ -892,13 +902,25 @@ body.weather-mode .leaflet-top.leaflet-left {
     background: #1a1a2e;
 }
 
-.weather-airspace-item-minimap .leaflet-container {
-    position: absolute !important;
-    inset: 0 !important;
+/* Leaflet adds .leaflet-container to the same element as the minimap wrapper */
+.weather-airspace-item-minimap.leaflet-container {
+    position: relative !important;
     width: 100% !important;
     height: 100% !important;
+    min-height: 240px;
     background: #1a1a2e;
     font-family: inherit;
+}
+
+.weather-airspace-item-minimap .leaflet-control-container {
+    display: none;
+}
+
+/* Global resets sometimes set img { max-width: 100% }, which shrinks Leaflet tiles to invisibility */
+.weather-airspace-item-minimap .leaflet-tile-container img,
+.weather-airspace-item-minimap img.leaflet-tile {
+    max-width: none !important;
+    max-height: none !important;
 }
 
 .weather-airspace-loading {
@@ -1354,12 +1376,9 @@ body.weather-mode .leaflet-top.leaflet-left {
     color: #1a1a1a;
 }
 
-.weather-light-theme .weather-airspace-item-minimap {
+.weather-light-theme .weather-airspace-item-minimap,
+.weather-light-theme .weather-airspace-item-minimap.leaflet-container {
     border-color: #d0d0d0;
-    background: #e8e9ec;
-}
-
-.weather-light-theme .weather-airspace-item-minimap .leaflet-container {
     background: #e8e9ec;
 }
 
