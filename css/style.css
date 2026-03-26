@@ -87,6 +87,61 @@ body.sidebar-collapsed #map {
     pointer-events: none;
 }
 
+/* Splash: logo only (slow fade), then full welcome after .splash-done (see app.js) */
+.intro-splash {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    transition: opacity 0.55s cubic-bezier(.4, 0, .2, 1), visibility 0.55s step-end;
+}
+
+.intro-splash-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.intro-splash-logo {
+    width: 160px;
+    height: auto;
+    filter: drop-shadow(0 4px 24px rgba(91, 141, 239, 0.35));
+    opacity: 0;
+    animation: introSplashLogoIn 2.6s ease-out forwards;
+}
+
+@keyframes introSplashLogoIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.intro-overlay.splash-done .intro-splash {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.intro-overlay:not(.splash-done) .intro-content {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .intro-splash-logo {
+        animation: none;
+        opacity: 1;
+    }
+}
+
 /* Hide grid/particles/scanline for cleaner glassmorphism look */
 .intro-overlay .intro-grid,
 .intro-overlay .intro-particles,
@@ -176,7 +231,7 @@ body.sidebar-collapsed #map {
     100% { transform: scale(2.5); opacity: 0; }
 }
 
-/* Content container - glassmorphism card */
+/* Content container - glassmorphism card (animates in when splash ends) */
 .intro-content {
     position: relative;
     z-index: 2;
@@ -189,7 +244,10 @@ body.sidebar-collapsed #map {
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 24px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    animation: introFadeIn 1s cubic-bezier(.4,0,.2,1) 0.2s both;
+}
+
+.intro-overlay.splash-done .intro-content {
+    animation: introFadeIn 0.85s cubic-bezier(.4, 0, .2, 1) 0.05s both;
 }
 
 @keyframes introFadeIn {
@@ -1487,6 +1545,10 @@ select {
         padding: 24px 20px;
         max-width: 100%;
         margin: 0 16px;
+    }
+
+    .intro-splash-logo {
+        width: 120px;
     }
 
     .intro-logo {

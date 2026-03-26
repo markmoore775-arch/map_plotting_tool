@@ -1,548 +1,819 @@
 /* ============================================
-   AIRSPACE MODULE - UK Airspace Restrictions
-   Multi-layer support: Prohibited, Restricted, Danger, FRZ
-   Data: NATS UAS / UK AIP ENR 5.1
+   AIRSPACE — ADS-B traffic (ADSB.lol API)
+   Plane markers, session trail, detail on click
    ============================================ */
 
-(function (global) {
+(function () {
     'use strict';
 
-    const AIRSPACE_TYPES = {
-        prohibited: {
-            label: 'Prohibited',
-            color: '#991b1b',
-            fillColor: '#991b1b',
-            fillOpacity: 0.2,
-            weight: 2,
-            description: 'No flying permitted'
-        },
-        restricted: {
-            label: 'Restricted',
-            color: '#ea580c',
-            fillColor: '#ea580c',
-            fillOpacity: 0.18,
-            weight: 2,
-            description: 'Flying limited under certain conditions'
-        },
-        danger: {
-            label: 'Danger',
-            color: '#ca8a04',
-            fillColor: '#ca8a04',
-            fillOpacity: 0.18,
-            weight: 2,
-            description: 'Hazardous activities may occur'
-        },
-        frz: {
-            label: 'FRZ / Aerodrome',
-            color: '#9333ea',
-            fillColor: '#9333ea',
-            fillOpacity: 0.2,
-            weight: 2,
-            description: 'Flight Restriction Zone around protected aerodrome'
-        },
-        other: {
-            label: 'Other',
-            color: '#6b7280',
-            fillColor: '#6b7280',
-            fillOpacity: 0.15,
-            weight: 2,
-            description: 'Other airspace restriction (internal fallback, not shown in menu)'
-        }
-    };
+    const ADSB_LOL_BASE = 'https://api.adsb.lol/v2';
+    const MIN_POLL_MS = 1100;
+    const MOVE_DEBOUNCE_MS = 500;
+    const RADIUS_MIN_NM = 5;
+    const RADIUS_MAX_NM = 250;
+    /** Recent positions per ICAO hex (API has no trail; we build from polls) */
+    const MAX_TRAIL_POINTS = 120;
 
-    /**
-     * Classify a feature into an airspace type from its properties.
-     * NATS UAS: EGP (Prohibited), EGR/EGRU (Restricted), EGD (Danger).
-     * FRZ zones use EGRU designators but have "FRZ Active" in description - check description first.
-     */
-    function classifyAirspaceType(feature) {
-        const props = feature.properties || {};
-        const designator = (props.designator || props.type || props.id || '').toUpperCase();
-        const name = (props.name || '').toUpperCase();
-        const description = (props.description || '').toUpperCase();
-        const aixmType = (props.type || '').toUpperCase();
+    const HELP_HTML = [
+        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v3) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open.</p>',
+        '<p><strong>Not for separation.</strong> Situational awareness only.</p>',
+        '<p><strong>Steps</strong></p>',
+        '<ol class="airspace-help-list">',
+        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. <strong>Altitude (ft)</strong> is shown next to each aircraft; tap for full detail and the highlighted path.</li>',
+        '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session—not full flight history (see ADSB.lol docs for archives).</li>',
+        '</ol>',
+        '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code>. Open <a href="flight-notes.html">Flight Notes</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
+    ].join('');
 
-        if (designator.startsWith('EGRU') || description.includes('FRZ') || designator.includes('FRZ') || designator.includes('RPZ') || name.includes('FRZ') || name.includes('AERODROME') || name.includes('FLIGHT RESTRICTION')) {
-            return 'frz';
-        }
-        if (designator.startsWith('EG-P') || designator.startsWith('EGP') || designator.startsWith('P') || name.includes('PROHIBITED') || aixmType === 'P') {
-            return 'prohibited';
-        }
-        if (designator.startsWith('EG-R') || designator.startsWith('EGR') || designator.startsWith('R') || name.includes('RESTRICTED') || aixmType === 'R') {
-            return 'restricted';
-        }
-        if (designator.startsWith('EG-D') || designator.startsWith('EGD') || designator.startsWith('D') || name.includes('DANGER') || aixmType === 'D') {
-            return 'danger';
-        }
-        if (aixmType === 'CTR' || aixmType === 'TMA' || aixmType === 'FIR' || aixmType === 'UIR' || aixmType === 'CTA') {
-            return 'other';
-        }
+    let map;
+    let trafficLayer;
+    let trafficEnabled = true;
+    let pollTimer = null;
+    let moveDebounce = null;
+    let lastFetchAt = 0;
+    let isFetching = false;
 
-        return 'other';
+    /** @type {Map<string, number[][]>} */
+    const trailByHex = new Map();
+    /** @type {L.Polyline|null} */
+    let selectedTrailPolyline = null;
+
+    /** True while a traffic marker popup is open (pauses polling so the panel is not torn down). */
+    let trafficPopupOpen = false;
+    /** ICAO hex of the open popup — preserved across forced re-renders (Refresh). */
+    let pinnedHex = null;
+    /** Leaflet fires popupclose when clearing layers; suppress clearing our pinned state during re-render. */
+    let suppressTrafficPopupClose = false;
+
+    function escapeHtml(s) {
+        if (s == null || s === '') return '';
+        const d = document.createElement('div');
+        d.textContent = String(s);
+        return d.innerHTML;
     }
 
-    function escapeHtml(str) {
-        if (str == null || str === '') return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+    function normalizeHex(h) {
+        return String(h || '')
+            .toLowerCase()
+            .replace(/[^0-9a-f]/g, '');
+    }
+
+    function formatTime(ts) {
+        if (ts == null) return '—';
+        try {
+            const sec = typeof ts === 'number' && ts > 1e12 ? Math.floor(ts / 1000) : ts;
+            return new Date(sec * 1000).toLocaleTimeString(undefined, {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch (e) {
+            return '—';
+        }
+    }
+
+    function setStatus(html, isError) {
+        const el = document.getElementById('airspaceStatus');
+        if (!el) return;
+        el.classList.toggle('airspace-status-error', !!isError);
+        el.innerHTML = html;
+    }
+
+    function radiusMetersFromBounds(bounds) {
+        const c = bounds.getCenter();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        const nw = L.latLng(ne.lat, sw.lng);
+        const se = L.latLng(sw.lat, ne.lng);
+        const d1 = c.distanceTo(sw);
+        const d2 = c.distanceTo(ne);
+        const d3 = c.distanceTo(nw);
+        const d4 = c.distanceTo(se);
+        return Math.max(d1, d2, d3, d4) * 1.08;
+    }
+
+    function radiusNmForMap() {
+        const b = map.getBounds();
+        if (b.getWest() > b.getEast()) {
+            return null;
+        }
+        const m = radiusMetersFromBounds(b);
+        const nm = m / 1852;
+        return Math.min(RADIUS_MAX_NM, Math.max(RADIUS_MIN_NM, nm));
+    }
+
+    function clearTraffic() {
+        suppressTrafficPopupClose = true;
+        trafficLayer.clearLayers();
+        suppressTrafficPopupClose = false;
+    }
+
+    function isGroundAircraft(a) {
+        const alt = a.alt_baro;
+        const gs = a.gs;
+        if (alt != null && alt < 400) return true;
+        if (gs != null && gs < 8) return true;
+        return false;
+    }
+
+    /** Altitude band for CSS `airspace-icon--*` (red hazard ramp in airspace.css). */
+    function altitudeIconTier(a) {
+        if (isGroundAircraft(a)) return 'ground';
+        const alt = a.alt_baro;
+        if (alt == null) return 'low';
+        if (alt >= 26000) return 'high';
+        if (alt >= 10000) return 'mid';
+        return 'low';
+    }
+
+    /** ICAO ADS-B emitter category A7 = rotorcraft; description / type hints. */
+    function isHelicopter(a) {
+        const cat = (a.category && String(a.category).toUpperCase()) || '';
+        if (cat === 'A7') return true;
+        const desc = (a.desc && String(a.desc).toLowerCase()) || '';
+        if (desc.indexOf('helicopter') !== -1 || desc.indexOf('rotorcraft') !== -1) {
+            return true;
+        }
+        const typ = (a.t && String(a.t).toUpperCase()) || '';
+        if (/^H[0-9]/.test(typ)) return true;
+        return false;
+    }
+
+    /** Lucide icons: align ~north for track 0° (tune per silhouette). */
+    const PLANE_ICON_ROTATION_OFFSET = -45;
+    const HELI_ICON_ROTATION_OFFSET = -90;
+
+    const ICON_STROKE_W = 2.85;
+
+    function planeIconHtml(trackDeg, tier) {
+        const tr = trackDeg != null && !Number.isNaN(Number(trackDeg)) ? Number(trackDeg) : 0;
+        const rot = tr + PLANE_ICON_ROTATION_OFFSET;
+        const size = 36;
+        return (
+            '<div class="airspace-plane-rot airspace-icon airspace-icon--' +
+            tier +
+            '" style="transform:rotate(' +
+            rot +
+            'deg)">' +
+            '<svg class="airspace-plane-svg" xmlns="http://www.w3.org/2000/svg" width="' +
+            size +
+            '" height="' +
+            size +
+            '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' +
+            ICON_STROKE_W +
+            '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>' +
+            '</svg></div>'
+        );
+    }
+
+    function helicopterIconHtml(trackDeg, tier) {
+        const tr = trackDeg != null && !Number.isNaN(Number(trackDeg)) ? Number(trackDeg) : 0;
+        const rot = tr + HELI_ICON_ROTATION_OFFSET;
+        const size = 36;
+        return (
+            '<div class="airspace-plane-rot airspace-heli-rot airspace-icon airspace-icon--' +
+            tier +
+            '" style="transform:rotate(' +
+            rot +
+            'deg)">' +
+            '<svg class="airspace-plane-svg" xmlns="http://www.w3.org/2000/svg" width="' +
+            size +
+            '" height="' +
+            size +
+            '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' +
+            ICON_STROKE_W +
+            '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M11 17v4"/>' +
+            '<path d="M14 3v8a2 2 0 0 0 2 2h5.865"/>' +
+            '<path d="M17 17v4"/>' +
+            '<path d="M18 17a4 4 0 0 0 4-4 8 6 0 0 0-8-6 6 5 0 0 0-6 5v3a2 2 0 0 0 2 2z"/>' +
+            '<path d="M2 10v5"/>' +
+            '<path d="M6 3h16"/>' +
+            '<path d="M7 21h14"/>' +
+            '<path d="M8 13H2"/>' +
+            '</svg></div>'
+        );
+    }
+
+    function aircraftIconHtml(trackDeg, tier, heli) {
+        if (heli) return helicopterIconHtml(trackDeg, tier);
+        return planeIconHtml(trackDeg, tier);
+    }
+
+    function recordTrailsFromList(ac) {
+        if (!ac || !ac.length) return;
+        for (let i = 0; i < ac.length; i++) {
+            const a = ac[i];
+            const hex = normalizeHex(a.hex);
+            if (hex.length !== 6) continue;
+            if (a.lat == null || a.lon == null) continue;
+            let arr = trailByHex.get(hex);
+            if (!arr) arr = [];
+            const last = arr[arr.length - 1];
+            if (last && last[0] === a.lat && last[1] === a.lon) continue;
+            arr.push([a.lat, a.lon]);
+            if (arr.length > MAX_TRAIL_POINTS) {
+                arr = arr.slice(-MAX_TRAIL_POINTS);
+            }
+            trailByHex.set(hex, arr);
+        }
+    }
+
+    function fmtNum(n, suffix) {
+        if (n == null || Number.isNaN(Number(n))) return '—';
+        return Math.round(Number(n)) + (suffix || '');
+    }
+
+    /** Short baro/geom altitude for always-visible map labels (ft, prime = feet). */
+    function formatAltitudeLabel(a) {
+        if (a.alt_baro != null && !Number.isNaN(Number(a.alt_baro))) {
+            return Math.round(Number(a.alt_baro)) + "'";
+        }
+        if (a.alt_geom != null && !Number.isNaN(Number(a.alt_geom))) {
+            return Math.round(Number(a.alt_geom)) + "' g";
+        }
+        if (isGroundAircraft(a)) return 'GND';
+        return '—';
+    }
+
+    function buildPopupHtml(a, trailPts) {
+        const flight = (a.flight && String(a.flight).trim()) || '';
+        const hex = a.hex || '';
+        const reg = (a.r && String(a.r).trim()) || '';
+        const typ = (a.t && String(a.t).trim()) || '';
+        const desc = (a.desc && String(a.desc).trim()) || '';
+        const alt =
+            a.alt_baro != null && !Number.isNaN(a.alt_baro)
+                ? fmtNum(a.alt_baro, ' ft baro')
+                : '—';
+        const altg =
+            a.alt_geom != null && !Number.isNaN(a.alt_geom)
+                ? fmtNum(a.alt_geom, ' ft geom')
+                : null;
+        const gs = a.gs != null ? fmtNum(a.gs, ' kt') : '—';
+        const trk = a.track != null ? fmtNum(a.track, '°') : '—';
+        const sq = (a.squawk && String(a.squawk).trim()) || '—';
+        const cat = (a.category && String(a.category).trim()) || '—';
+        const mach = a.mach != null ? Number(a.mach).toFixed(3) : null;
+        const tas = a.tas != null ? fmtNum(a.tas, ' kt') : null;
+        const ias = a.ias != null ? fmtNum(a.ias, ' kt') : null;
+        const br = a.baro_rate != null ? fmtNum(a.baro_rate, ' ft/min') : null;
+        const gr = a.geom_rate != null ? fmtNum(a.geom_rate, ' ft/min') : null;
+        const wd = a.wd != null ? fmtNum(a.wd, '°') : null;
+        const ws = a.ws != null ? fmtNum(a.ws, ' kt') : null;
+        const dst = a.dst != null ? Number(a.dst).toFixed(1) + ' NM from query center' : null;
+        const dir = a.dir != null ? fmtNum(a.dir, '° rel.') : null;
+        const navAlt = a.nav_altitude_mcp != null ? fmtNum(a.nav_altitude_mcp, ' ft') : null;
+        const mhdg = a.mag_heading != null ? fmtNum(a.mag_heading, '°') : null;
+        const thd = a.true_heading != null ? fmtNum(a.true_heading, '°') : null;
+
+        const tlen = trailPts ? trailPts.length : 0;
+        const estSec = Math.max(0, (tlen - 1) * (MIN_POLL_MS / 1000));
+        let trailNote =
+            '<p class="airspace-popup-muted">Trail: <strong>' +
+            tlen +
+            '</strong> points in this session';
+        if (tlen >= 2) {
+            trailNote += ' (~' + Math.round(estSec) + ' s of samples)';
+        }
+        trailNote +=
+            '. Full history is not in the public API—this path is built while the page is open.</p>';
+
+        const rows = [
+            ['Altitude', alt + (altg ? ' · ' + altg : '')],
+            ['Speed', 'GS ' + gs + (tas ? ' · TAS ' + tas : '') + (ias ? ' · IAS ' + ias : '')],
+            ['Track / heading', 'Track ' + trk + (thd ? ' · TH ' + thd : '') + (mhdg ? ' · MH ' + mhdg : '')],
+            ['Vert rate', (br ? 'Baro ' + br : '') + (br && gr ? ' · ' : '') + (gr ? 'Geom ' + gr : '') || '—'],
+            ['Wind', wd && ws ? wd + ' / ' + ws : '—'],
+            ['Mach', mach || '—'],
+            ['Squawk', escapeHtml(sq)],
+            ['Category', escapeHtml(cat)],
+            [
+                'Type',
+                typ || desc
+                    ? escapeHtml(typ + (desc ? ' — ' + desc : ''))
+                    : '—'
+            ],
+            ['Registration', reg ? escapeHtml(reg) : '—'],
+            ['Position', dst || '—'],
+            ['Bearing', dir || '—'],
+            ['Nav alt (MCP)', navAlt || '—']
+        ];
+
+        let table = '<table class="airspace-popup-table">';
+        for (let r = 0; r < rows.length; r++) {
+            if (
+                rows[r][1] === '—' &&
+                rows[r][0] !== 'Squawk' &&
+                rows[r][0] !== 'Category' &&
+                rows[r][0] !== 'Registration'
+            ) {
+                continue;
+            }
+            table +=
+                '<tr><th>' +
+                escapeHtml(rows[r][0]) +
+                '</th><td>' +
+                rows[r][1] +
+                '</td></tr>';
+        }
+        table += '</table>';
+
+        return (
+            '<div class="airspace-popup-inner">' +
+            '<div class="airspace-popup-title">' +
+            escapeHtml(flight || '(no callsign)') +
+            '</div>' +
+            '<div class="airspace-popup-sub">ICAO ' +
+            escapeHtml(hex) +
+            '</div>' +
+            trailNote +
+            table +
+            '</div>'
+        );
+    }
+
+    function clearSelectedTrail() {
+        if (selectedTrailPolyline && map) {
+            map.removeLayer(selectedTrailPolyline);
+            selectedTrailPolyline = null;
+        }
+    }
+
+    function showSelectedTrail(hex) {
+        clearSelectedTrail();
+        const pts = trailByHex.get(hex);
+        if (!pts || pts.length < 2) return;
+        selectedTrailPolyline = L.polyline(pts, {
+            color: '#fb7185',
+            weight: 4,
+            opacity: 0.95,
+            lineJoin: 'round',
+            lineCap: 'round'
+        }).addTo(map);
+    }
+
+    function buildAdsbUpstreamUrl(lat, lon, distNm) {
+        return (
+            ADSB_LOL_BASE +
+            '/lat/' +
+            lat.toFixed(5) +
+            '/lon/' +
+            lon.toFixed(5) +
+            '/dist/' +
+            distNm.toFixed(1)
+        );
+    }
+
+    function buildAdsbUpstreamHexUrl(hexClean) {
+        return ADSB_LOL_BASE + '/hex/' + encodeURIComponent(hexClean);
     }
 
     /**
-     * Parse NATS HTML description into structured sections.
+     * 1) Same-origin /api/adsb (npm run serve or Cloudflare Worker)
+     * 2–4) Public relays (Python http.server / Live Server have no /api — 404 here)
      */
-    function parseDescription(description) {
-        if (!description || typeof description !== 'string') return { limits: null, geometry: null, sections: [] };
-        const div = document.createElement('div');
-        div.innerHTML = description;
-        const cells = div.querySelectorAll('td');
-        let limits = null;
-        let geometry = null;
-        const sections = [];
+    function fetchJsonWithProxy(upstreamUrl, sameOriginQueryString) {
+        const sameOrigin = '/api/adsb?' + sameOriginQueryString;
 
-        cells.forEach(function (cell) {
-            const raw = cell.innerHTML.replace(/<br\s*\/?>/gi, '\n');
-            const text = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-            if (!text) return;
-
-            const upperMatch = text.match(/Upper limit:\s*([^<\n]+?)(?:\s*<|$|\n|Lower limit)/i);
-            const lowerMatch = text.match(/Lower limit:\s*([^<\n]+?)(?:\s*<|$|\n|Class)/i);
-            if (upperMatch || lowerMatch) {
-                limits = { lower: (lowerMatch && lowerMatch[1].trim()) || 'SFC', upper: (upperMatch && upperMatch[1].trim()) || 'UNL' };
-            }
-            if (text.match(/circle.*radius.*centred|radius.*centred.*at/i) && !geometry) {
-                const geomPart = text.split(/Upper limit/i)[0];
-                geometry = geomPart.replace(/\s+/g, ' ').trim();
-                if (geometry.length > 80) geometry = geometry.substring(0, 77) + '...';
-            }
-
-            if (text.includes('Activity:') || text.includes('FRZ') || text.includes('Contact:') || text.includes('Service:')) {
-                const parts = text.split(/\s*(?=(?:Activity|Service|Contact|SUA Authority|Hours|FRZ)\s*:)/i);
-                parts.forEach(function (p) {
-                    const t = p.trim();
-                    if (t.length > 15) sections.push(t);
-                });
-            } else if (text.length > 25 && !text.match(/^\d{6}[NS]\s+\d{7}[EW]/) && !text.match(/^[\d\s\-\.]+$/)) {
-                sections.push(text);
-            }
-        });
-
-        if (cells.length === 0 && description) {
-            const plain = description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-            if (plain.length > 15) sections.push(plain);
-        }
-        return { limits: limits, geometry: geometry, sections: sections };
-    }
-
-    /**
-     * Build rich popup content for an airspace feature.
-     */
-    function buildPopupContent(feature) {
-        const props = feature.properties || {};
-        const typeKey = classifyAirspaceType(feature);
-        const typeInfo = AIRSPACE_TYPES[typeKey];
-        const name = props.name || props.designator || 'Unnamed';
-        const designator = props.designator || props.id || '';
-        let lowerLimit = props.lowerLimit || props.lower_limit || props.altitudeBottom || '';
-        let upperLimit = props.upperLimit || props.upper_limit || props.altitudeTop || '';
-        const activation = props.activation || props.operatingTimes || props.times || '';
-        const parsed = parseDescription(props.description || '');
-
-        if (parsed.limits && !lowerLimit) lowerLimit = parsed.limits.lower;
-        if (parsed.limits && !upperLimit) upperLimit = parsed.limits.upper;
-
-        let html = '<div class="airspace-popup">';
-        html += '<div class="airspace-popup-header">';
-        html += '<div class="airspace-popup-title">' + escapeHtml(name) + '</div>';
-        html += '<span class="airspace-popup-badge" style="background:' + typeInfo.color + ';color:white">' + escapeHtml(typeInfo.label) + '</span>';
-        html += '</div>';
-        if (designator) {
-            html += '<div class="airspace-popup-designator">' + escapeHtml(designator) + '</div>';
-        }
-
-        html += '<div class="airspace-popup-body">';
-
-        const infoRows = [];
-        if (lowerLimit || upperLimit) {
-            infoRows.push({ label: 'Vertical limits', value: (lowerLimit || 'SFC') + ' – ' + (upperLimit || 'UNL') });
-        }
-        if (activation) {
-            infoRows.push({ label: 'Activation', value: activation });
-        }
-        if (parsed.geometry) {
-            infoRows.push({ label: 'Geometry', value: parsed.geometry });
-        }
-
-        if (infoRows.length > 0) {
-            html += '<div class="airspace-popup-info">';
-            infoRows.forEach(function (r) {
-                html += '<div class="airspace-popup-row"><span class="airspace-popup-label">' + escapeHtml(r.label) + '</span><span class="airspace-popup-value">' + escapeHtml(r.value) + '</span></div>';
-            });
-            html += '</div>';
-        }
-
-        if (parsed.sections.length > 0) {
-            html += '<div class="airspace-popup-details">';
-            parsed.sections.forEach(function (s) {
-                html += '<div class="airspace-popup-detail">' + escapeHtml(s) + '</div>';
-            });
-            html += '</div>';
-        }
-
-        const source = props.source || 'UK AIP ENR 5.1 / NATS UAS';
-        html += '<div class="airspace-popup-source">' + escapeHtml(source) + '</div>';
-        html += '</div></div>';
-        return html;
-    }
-
-    /**
-     * Create a GeoJSON layer for a specific airspace type.
-     */
-    function createLayerForType(typeKey) {
-        const style = AIRSPACE_TYPES[typeKey] || AIRSPACE_TYPES.other;
-        return L.geoJSON(null, {
-            style: {
-                color: style.color,
-                weight: style.weight,
-                fillColor: style.fillColor,
-                fillOpacity: style.fillOpacity
-            },
-            onEachFeature: function (feature, layer) {
-                if (feature.properties) {
-                    const content = buildPopupContent(feature);
-                    layer.bindPopup(content, { maxWidth: 420, maxHeight: 480 });
-                }
-            }
-        });
-    }
-
-    /**
-     * Split GeoJSON FeatureCollection by type and add to respective layers.
-     */
-    function addDataToLayers(data, layersByType) {
-        if (!data || !data.features) return;
-        data.features.forEach(function (feature) {
-            const typeKey = classifyAirspaceType(feature);
-            const layer = layersByType[typeKey];
-            if (layer) {
-                layer.addData(feature);
-            }
-        });
-    }
-
-    /**
-     * Initialize airspace layers and load data.
-     * Returns { layersByType, addAllToMap, removeAllFromMap, loadData }
-     */
-    function init(options) {
-        options = options || {};
-        const map = options.map;
-        const dataUrl = options.dataUrl || 'assets/uk-airspace.geojson';
-        const aipDataUrl = options.aipDataUrl || 'assets/uk-aip-airspace.geojson';
-        const notamModule = options.notamModule || null;
-        const ratModule = options.ratModule || null;
-
-        const layersByType = {};
-        const typeKeys = ['prohibited', 'restricted', 'danger', 'frz'];
-        typeKeys.forEach(function (key) {
-            layersByType[key] = createLayerForType(key);
-        });
-
-        function addLayerToMap(key) {
-            if (map && layersByType[key]) {
-                map.addLayer(layersByType[key]);
-            }
-        }
-
-        function removeLayerFromMap(key) {
-            if (map && layersByType[key]) {
-                map.removeLayer(layersByType[key]);
-            }
-        }
-
-        function addAllToMap() {
-            typeKeys.forEach(function (key) {
-                if (map && layersByType[key]) {
-                    map.addLayer(layersByType[key]);
-                }
-            });
-        }
-
-        function removeAllFromMap() {
-            typeKeys.forEach(function (key) {
-                if (map && layersByType[key]) {
-                    map.removeLayer(layersByType[key]);
-                }
-            });
-        }
-
-        let lastValidity = null;
-
-        let validityUpdateCallback = null;
-        function loadData(callback) {
-            typeKeys.forEach(function (key) {
-                layersByType[key].clearLayers();
-            });
-            const url = dataUrl + (dataUrl.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
-            const aipUrl = aipDataUrl + (aipDataUrl.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
-            Promise.all([
-                fetch(url).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
-                fetch(aipUrl).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
-            ]).then(function (results) {
-                const enrData = results[0];
-                const aipData = results[1];
-                if (enrData && enrData.features) {
-                    addDataToLayers(enrData, layersByType);
-                    lastValidity = enrData.metadata || lastValidity;
-                }
-                if (aipData && aipData.features && aipData.features.length > 0) {
-                    addDataToLayers(aipData, layersByType);
-                    if (!lastValidity && aipData.metadata) lastValidity = aipData.metadata;
-                }
-                if (validityUpdateCallback) validityUpdateCallback();
-                if (callback) callback();
-            }).catch(function () {
-                if (callback) callback();
-            });
-        }
-        function setValidityUpdateCallback(fn) { validityUpdateCallback = fn; }
-
-        loadData();
-
-        /**
-         * Create combined legend control with integrated toggle and refresh.
-         */
-        function createLegendControl() {
-            const LegendControl = L.Control.extend({
-                options: { position: 'bottomright' },
-                onAdd: function () {
-                    const container = L.DomUtil.create('div', 'leaflet-control airspace-legend');
-                    const header = L.DomUtil.create('div', 'airspace-legend-header', container);
-                    const titleSpan = L.DomUtil.create('span', 'airspace-legend-title', header);
-                    titleSpan.textContent = 'UK Airspace';
-                    const collapseBtn = L.DomUtil.create('button', 'airspace-legend-collapse', header);
-                    collapseBtn.type = 'button';
-                    collapseBtn.title = 'Collapse';
-                    collapseBtn.textContent = '\u25BC';
-                    collapseBtn.setAttribute('aria-expanded', 'true');
-                    const refreshBtn = L.DomUtil.create('button', 'airspace-legend-refresh', header);
-                    refreshBtn.type = 'button';
-                    refreshBtn.title = 'Refresh airspace data';
-                    refreshBtn.textContent = '\u21BB';
-                    L.DomEvent.disableClickPropagation(container);
-                    const body = L.DomUtil.create('div', 'airspace-legend-body', container);
-                    L.DomEvent.on(collapseBtn, 'click', function () {
-                        const isCollapsed = body.classList.toggle('airspace-legend-body-collapsed');
-                        container.classList.toggle('airspace-legend-collapsed', isCollapsed);
-                        collapseBtn.setAttribute('aria-expanded', String(!isCollapsed));
-                        collapseBtn.textContent = isCollapsed ? '\u25B6' : '\u25BC';
-                        collapseBtn.title = isCollapsed ? 'Expand' : 'Collapse';
-                    });
-                    /* Start collapsed on small screens (phones) */
-                    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
-                        body.classList.add('airspace-legend-body-collapsed');
-                        container.classList.add('airspace-legend-collapsed');
-                        collapseBtn.setAttribute('aria-expanded', 'false');
-                        collapseBtn.textContent = '\u25B6';
-                        collapseBtn.title = 'Expand';
+        return fetch(sameOrigin, {
+            method: 'GET',
+            credentials: 'omit',
+            cache: 'no-store'
+        })
+            .then(function (res) {
+                if (res.ok) return res.json();
+                throw new Error('same_origin_proxy');
+            })
+            .catch(function () {
+                return fetch(
+                    'https://api.allorigins.win/get?url=' + encodeURIComponent(upstreamUrl),
+                    {
+                        method: 'GET',
+                        credentials: 'omit',
+                        cache: 'no-store'
                     }
-                    L.DomEvent.on(refreshBtn, 'click', function () {
-                        refreshBtn.disabled = true;
-                        refreshBtn.classList.add('airspace-refreshing');
-                        loadData(function () {
-                            refreshBtn.disabled = false;
-                            refreshBtn.classList.remove('airspace-refreshing');
-                        });
-                    });
-                    const validityEl = L.DomUtil.create('div', 'airspace-legend-validity', body);
-                    validityEl.style.fontSize = '10px';
-                    validityEl.style.color = '#9ca3af';
-                    validityEl.style.marginBottom = '6px';
-                    function updateValidityDisplay() {
-                        if (lastValidity && lastValidity.effectiveFrom && lastValidity.effectiveTo) {
-                            validityEl.textContent = 'Data valid: ' + lastValidity.effectiveFrom + ' – ' + lastValidity.effectiveTo;
-                            validityEl.style.display = '';
-                        } else {
-                            validityEl.style.display = 'none';
+                )
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('allorigins');
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        if (typeof data.contents === 'string') {
+                            return JSON.parse(data.contents);
                         }
-                    }
-                    updateValidityDisplay();
-                    setValidityUpdateCallback(updateValidityDisplay);
-
-                    const list = L.DomUtil.create('ul', 'airspace-legend-list', body);
-                    const selectAllLi = L.DomUtil.create('li', 'airspace-legend-item airspace-legend-item-select-all', list);
-                    const selectAllLabel = L.DomUtil.create('label', 'airspace-legend-item-label', selectAllLi);
-                    selectAllLabel.style.cursor = 'pointer';
-                    const selectAllCb = L.DomUtil.create('input', 'airspace-legend-item-cb airspace-select-all-cb', selectAllLabel);
-                    selectAllCb.type = 'checkbox';
-                    selectAllCb.dataset.type = 'select-all';
-                    selectAllCb.title = 'Show UK airspace restrictions (NATS UAS / UK AIP ENR 5.1)';
-                    const selectAllLbl = L.DomUtil.create('span', 'airspace-legend-label', selectAllLabel);
-                    selectAllLbl.textContent = 'Select all';
-                    function updateSelectAllState() {
-                        const itemCbs = container.querySelectorAll('.airspace-legend-item-cb:not(.airspace-select-all-cb)');
-                        let allChecked = true;
-                        itemCbs.forEach(function (cb) {
-                            const key = cb.dataset.type;
-                            if (key === 'notam' || key === 'rat') return;
-                            if (!cb.checked) allChecked = false;
-                        });
-                        selectAllCb.checked = allChecked;
-                    }
-                    L.DomEvent.on(selectAllCb, 'change', function () {
-                        const itemCbs = container.querySelectorAll('.airspace-legend-item-cb:not(.airspace-select-all-cb)');
-                        itemCbs.forEach(function (cb) {
-                            const key = cb.dataset.type;
-                            if (key === 'notam' || key === 'rat') return;
-                            cb.checked = selectAllCb.checked;
-                            if (selectAllCb.checked) {
-                                addLayerToMap(key);
-                            } else {
-                                removeLayerFromMap(key);
-                            }
-                        });
+                        throw new Error('allorigins_parse');
                     });
-                    const types = ['prohibited', 'restricted', 'danger', 'frz'];
-                    types.forEach(function (key) {
-                        const info = AIRSPACE_TYPES[key];
-                        const li = L.DomUtil.create('li', 'airspace-legend-item', list);
-                        const itemLabel = L.DomUtil.create('label', 'airspace-legend-item-label', li);
-                        itemLabel.style.cursor = 'pointer';
-                        const cb = L.DomUtil.create('input', 'airspace-legend-item-cb', itemLabel);
-                        cb.type = 'checkbox';
-                        cb.dataset.type = key;
-                        const swatch = L.DomUtil.create('span', 'airspace-legend-swatch', itemLabel);
-                        swatch.style.backgroundColor = info.color;
-                        const lbl = L.DomUtil.create('span', 'airspace-legend-label', itemLabel);
-                        lbl.textContent = info.label;
-                        L.DomEvent.on(cb, 'change', function () {
-                            if (cb.checked) {
-                                addLayerToMap(key);
-                            } else {
-                                removeLayerFromMap(key);
-                            }
-                            updateSelectAllState();
-                        });
-                    });
-                    if (notamModule) {
-                        const li = L.DomUtil.create('li', 'airspace-legend-item airspace-legend-item-notam', list);
-                        const itemLabel = L.DomUtil.create('label', 'airspace-legend-item-label', li);
-                        itemLabel.style.cursor = 'pointer';
-                        const cb = L.DomUtil.create('input', 'airspace-legend-item-cb', itemLabel);
-                        cb.type = 'checkbox';
-                        cb.dataset.type = 'notam';
-                        const swatch = L.DomUtil.create('span', 'airspace-legend-swatch', itemLabel);
-                        swatch.style.backgroundColor = '#dc2626';
-                        const lbl = L.DomUtil.create('span', 'airspace-legend-label', itemLabel);
-                        lbl.textContent = 'NOTAM';
-                        const expandBtn = L.DomUtil.create('button', 'airspace-notam-expand', itemLabel);
-                        expandBtn.type = 'button';
-                        expandBtn.title = 'NOTAM options';
-                        expandBtn.textContent = '\u25BC';
-                        expandBtn.style.display = 'none';
-                        L.DomEvent.on(expandBtn, 'click', function (e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const isOpen = optsWrap.style.display !== 'none';
-                            optsWrap.style.display = isOpen ? 'none' : 'block';
-                            expandBtn.textContent = isOpen ? '\u25BC' : '\u25B2';
-                        });
-                        L.DomEvent.on(cb, 'change', function () {
-                            if (cb.checked) {
-                                notamModule.loadNotams(function () {
-                                    notamModule.addToMap();
-                                });
-                            } else {
-                                notamModule.removeFromMap();
-                            }
-                        });
-                        const optsWrap = L.DomUtil.create('div', 'airspace-notam-options', li);
-                        optsWrap.style.display = 'none';
-                        const maxRadiusRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
-                        const maxRadiusLabel = L.DomUtil.create('label', 'airspace-notam-option-label', maxRadiusRow);
-                        maxRadiusLabel.textContent = 'Max radius';
-                        const maxRadiusSelect = L.DomUtil.create('select', 'airspace-notam-select', maxRadiusRow);
-                        [ { v: 5, l: '5 NM' }, { v: 10, l: '10 NM' }, { v: 12, l: '12 NM' }, { v: 20, l: '20 NM' }, { v: 50, l: '50 NM' }, { v: 999, l: 'All' } ].forEach(function (o) {
-                            const opt = L.DomUtil.create('option', '', maxRadiusSelect);
-                            opt.value = String(o.v);
-                            opt.textContent = o.l;
-                            if (o.v === 12) opt.selected = true;
-                        });
-                        L.DomEvent.on(maxRadiusSelect, 'change', function () {
-                            notamModule.setOptions({ maxRadius: parseInt(maxRadiusSelect.value, 10) });
-                        });
-                        const droneRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
-                        const droneLabel = L.DomUtil.create('label', 'airspace-notam-option-label airspace-notam-check-label', droneRow);
-                        const droneCb = L.DomUtil.create('input', 'airspace-notam-drone-cb', droneLabel);
-                        droneCb.type = 'checkbox';
-                        droneCb.title = 'Show only UAS/drone-relevant NOTAMs (cranes, TDA, BVLOS, etc.)';
-                        droneLabel.appendChild(document.createTextNode(' Drone-relevant only'));
-                        L.DomEvent.on(droneCb, 'change', function () {
-                            notamModule.setOptions({ droneRelevantOnly: droneCb.checked });
-                        });
-                        const opacityRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
-                        const opacityLabel = L.DomUtil.create('label', 'airspace-notam-option-label', opacityRow);
-                        opacityLabel.textContent = 'Opacity';
-                        const opacityRange = L.DomUtil.create('input', 'airspace-notam-opacity', opacityRow);
-                        opacityRange.type = 'range';
-                        opacityRange.min = '0.03';
-                        opacityRange.max = '0.2';
-                        opacityRange.step = '0.01';
-                        opacityRange.value = '0.08';
-                        opacityRange.title = 'Fill opacity';
-                        L.DomEvent.on(opacityRange, 'input', function () {
-                            const val = parseFloat(opacityRange.value);
-                            notamModule.setOptions({ fillOpacity: val });
-                        });
-                        cb.addEventListener('change', function () {
-                            if (cb.checked) {
-                                expandBtn.style.display = '';
-                            } else {
-                                expandBtn.style.display = 'none';
-                                optsWrap.style.display = 'none';
-                                expandBtn.textContent = '\u25BC';
-                            }
-                        });
+            })
+            .catch(function () {
+                return fetch(
+                    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(upstreamUrl),
+                    {
+                        method: 'GET',
+                        credentials: 'omit',
+                        cache: 'no-store'
                     }
-                    if (ratModule) {
-                        const li = L.DomUtil.create('li', 'airspace-legend-item', list);
-                        const itemLabel = L.DomUtil.create('label', 'airspace-legend-item-label', li);
-                        itemLabel.style.cursor = 'pointer';
-                        const cb = L.DomUtil.create('input', 'airspace-legend-item-cb', itemLabel);
-                        cb.type = 'checkbox';
-                        cb.dataset.type = 'rat';
-                        const swatch = L.DomUtil.create('span', 'airspace-legend-swatch', itemLabel);
-                        swatch.style.backgroundColor = '#7c3aed';
-                        const lbl = L.DomUtil.create('span', 'airspace-legend-label', itemLabel);
-                        lbl.textContent = 'RA(T)';
-                        L.DomEvent.on(cb, 'change', function () {
-                            if (cb.checked) {
-                                const bounds = map.getBounds();
-                                ratModule.loadRAT(bounds, function () {
-                                    ratModule.addToMap();
-                                });
-                            } else {
-                                ratModule.removeFromMap();
-                            }
-                        });
-                    }
-                    return container;
-                }
+                ).then(function (res) {
+                    if (!res.ok) throw new Error('codetabs');
+                    return res.json();
+                });
+            })
+            .catch(function () {
+                return fetch('https://corsproxy.io/?' + encodeURIComponent(upstreamUrl), {
+                    method: 'GET',
+                    credentials: 'omit',
+                    cache: 'no-store'
+                }).then(function (res) {
+                    if (!res.ok) throw new Error('corsproxy');
+                    return res.json();
+                });
+            })
+            .catch(function () {
+                throw new Error('no_proxy');
             });
-            return new LegendControl();
-        }
+    }
 
+    function fetchAdsbJson(lat, lon, distNm) {
+        const params = new URLSearchParams({
+            lat: lat.toFixed(5),
+            lon: lon.toFixed(5),
+            dist: distNm.toFixed(1)
+        });
+        const upstream = buildAdsbUpstreamUrl(lat, lon, distNm);
+        return fetchJsonWithProxy(upstream, params.toString());
+    }
+
+    function fetchAdsbHex(hex) {
+        const h = normalizeHex(hex);
+        if (h.length !== 6) return Promise.reject(new Error('Invalid ICAO'));
+        const qs = new URLSearchParams({ hex: h }).toString();
+        const upstream = buildAdsbUpstreamHexUrl(h);
+        return fetchJsonWithProxy(upstream, qs);
+    }
+
+    function trafficPopupLeafletOptions() {
+        const narrow =
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(max-width: 600px)').matches;
         return {
-            layersByType: layersByType,
-            addAllToMap: addAllToMap,
-            removeAllFromMap: removeAllFromMap,
-            loadData: loadData,
-            createLegendControl: createLegendControl,
-            setValidityUpdateCallback: setValidityUpdateCallback,
-            AIRSPACE_TYPES: AIRSPACE_TYPES,
-            classifyAirspaceType: classifyAirspaceType
+            maxWidth: Math.min(340, Math.max(240, window.innerWidth - 32)),
+            closeButton: true,
+            autoPan: true,
+            autoPanPadding: narrow ? [12, 120] : [16, 88]
         };
     }
 
-    global.Airspace = { init: init, AIRSPACE_TYPES: AIRSPACE_TYPES };
-})(typeof window !== 'undefined' ? window : this);
+    function renderAircraftList(ac) {
+        clearTraffic();
+        recordTrailsFromList(ac);
+        if (!ac || !ac.length) {
+            if (pinnedHex) {
+                trafficPopupOpen = false;
+                pinnedHex = null;
+                clearSelectedTrail();
+            }
+            return 0;
+        }
+
+        const bounds = map.getBounds();
+        let count = 0;
+
+        for (let i = 0; i < ac.length; i++) {
+            const a = ac[i];
+            const lat = a.lat;
+            const lon = a.lon;
+            if (lat == null || lon == null) continue;
+            if (!bounds.contains(L.latLng(lat, lon))) continue;
+
+            const hex = normalizeHex(a.hex);
+            if (hex.length !== 6) continue;
+
+            const tier = altitudeIconTier(a);
+            const trk = a.track != null ? a.track : 0;
+            const heli = isHelicopter(a);
+            const icon = L.divIcon({
+                className: 'airspace-plane-marker' + (heli ? ' airspace-marker-heli' : ''),
+                html: aircraftIconHtml(trk, tier, heli),
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            const m = L.marker([lat, lon], { icon: icon }).addTo(trafficLayer);
+            m._airspaceHex = hex;
+
+            const popupId = 'airspace-popup-body-' + hex;
+            const trailPts = trailByHex.get(hex) || [];
+            m.bindPopup(
+                '<div class="airspace-popup" id="' +
+                    popupId +
+                    '">' +
+                    buildPopupHtml(a, trailPts) +
+                    '</div>',
+                trafficPopupLeafletOptions()
+            );
+
+            m.bindTooltip(formatAltitudeLabel(a), {
+                permanent: true,
+                direction: 'right',
+                opacity: 1,
+                interactive: false,
+                className: 'airspace-alt-label',
+                offset: [16, 0]
+            });
+
+            m.on('popupopen', function () {
+                trafficPopupOpen = true;
+                pinnedHex = hex;
+                showSelectedTrail(hex);
+                setStatus(
+                    '<strong>Details open</strong> · auto-refresh paused until you close.',
+                    false
+                );
+                fetchAdsbHex(hex)
+                    .then(function (data) {
+                        const ac0 = data.ac && data.ac[0];
+                        const el = document.getElementById(popupId);
+                        if (!el || !ac0) return;
+                        el.innerHTML = buildPopupHtml(ac0, trailByHex.get(hex) || []);
+                    })
+                    .catch(function () {});
+            });
+
+            m.on('popupclose', function () {
+                if (suppressTrafficPopupClose) return;
+                trafficPopupOpen = false;
+                pinnedHex = null;
+                clearSelectedTrail();
+                lastFetchAt = 0;
+                fetchTraffic();
+            });
+
+            count++;
+        }
+
+        if (pinnedHex) {
+            let found = false;
+            trafficLayer.eachLayer(function (layer) {
+                if (layer._airspaceHex === pinnedHex && typeof layer.openPopup === 'function') {
+                    layer.openPopup();
+                    found = true;
+                }
+            });
+            if (!found) {
+                trafficPopupOpen = false;
+                pinnedHex = null;
+                clearSelectedTrail();
+            }
+        }
+
+        return count;
+    }
+
+    function fetchTraffic(force) {
+        if (!trafficEnabled || !map) return;
+        if (!force && trafficPopupOpen) return;
+
+        const now = Date.now();
+        if (now - lastFetchAt < MIN_POLL_MS && lastFetchAt > 0) {
+            return;
+        }
+        if (isFetching) return;
+
+        const b = map.getBounds();
+        if (b.getWest() > b.getEast()) {
+            setStatus('Map crosses the date line; zoom to a single region.', true);
+            return;
+        }
+
+        const rNm = radiusNmForMap();
+        if (rNm == null) {
+            setStatus('Could not compute view radius.', true);
+            return;
+        }
+
+        const c = b.getCenter();
+        const lat = c.lat;
+        const lon = c.lng;
+
+        isFetching = true;
+        setStatus('Loading traffic…', false);
+
+        fetchAdsbJson(lat, lon, rNm)
+            .then(function (data) {
+                lastFetchAt = Date.now();
+
+                const list = data.ac || [];
+                const n = renderAircraftList(list);
+
+                const t = formatTime(data.now != null ? data.now : data.ctime);
+                setStatus(
+                    '<strong>' +
+                        n +
+                        '</strong> in view · ~' +
+                        rNm.toFixed(0) +
+                        ' NM · ' +
+                        (t !== '—' ? 'data ' + escapeHtml(t) : '') +
+                        ' · refresh ~1s',
+                    false
+                );
+            })
+            .catch(function (err) {
+                if (err && err.message === 'no_proxy') {
+                    setStatus(
+                        '<strong>No ADSB proxy</strong>. Run <code>npm run serve</code> from the project folder (not <code>python -m http.server</code>). If port 8081 is busy, stop the other process or use the port shown in the terminal. Or use the deployed site.',
+                        true
+                    );
+                } else {
+                    setStatus(
+                        'Could not load traffic (' +
+                            escapeHtml(err.message || 'network') +
+                            '). Try again later.',
+                        true
+                    );
+                }
+            })
+            .finally(function () {
+                isFetching = false;
+            });
+    }
+
+    function scheduleFetch() {
+        if (!trafficEnabled) return;
+        clearTimeout(moveDebounce);
+        moveDebounce = setTimeout(fetchTraffic, MOVE_DEBOUNCE_MS);
+    }
+
+    function startPolling() {
+        stopPolling();
+        lastFetchAt = 0;
+        fetchTraffic();
+        pollTimer = setInterval(function () {
+            if (document.visibilityState !== 'visible') return;
+            lastFetchAt = 0;
+            fetchTraffic();
+        }, MIN_POLL_MS);
+    }
+
+    function stopPolling() {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    function initMap() {
+        map = L.map('map', {
+            center: [51.5074, -0.1278],
+            zoom: 11,
+            zoomControl: true
+        });
+
+        trafficLayer = L.layerGroup().addTo(map);
+
+        const dark = L.tileLayer(
+            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            {
+                attribution: '&copy; OpenStreetMap, &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }
+        );
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        });
+        const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors, SRTM',
+            maxZoom: 17
+        });
+        const satellite = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+                attribution: '&copy; Esri, Maxar',
+                maxZoom: 18
+            }
+        );
+
+        osm.addTo(map);
+        L.control.layers(
+            {
+                OpenStreetMap: osm,
+                'Dark (Carto)': dark,
+                Topographic: topo,
+                Satellite: satellite
+            },
+            null,
+            { position: 'topright' }
+        ).addTo(map);
+
+        if (typeof L.control.locate === 'function') {
+            L.control.locate({
+                position: 'topleft',
+                strings: {
+                    title: 'Show my location',
+                    popup: 'You are within {distance} from this point',
+                    outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
+                },
+                locateOptions: { enableHighAccuracy: true }
+            }).addTo(map);
+        }
+
+        const InfoControl = L.Control.extend({
+            onAdd: function () {
+                const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-airspace-info');
+                const link = L.DomUtil.create('a', '', div);
+                link.href = '#';
+                link.title = 'Instructions';
+                link.setAttribute('aria-label', 'Show instructions');
+                link.id = 'airspaceHelpToggle';
+                link.innerHTML =
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1.25" fill="currentColor" stroke="none"/></svg>';
+                L.DomEvent.on(link, 'click', L.DomEvent.stop);
+                return div;
+            }
+        });
+        new InfoControl({ position: 'topleft' }).addTo(map);
+
+        map.on('moveend', scheduleFetch);
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible' && trafficEnabled && !trafficPopupOpen) {
+                lastFetchAt = 0;
+                fetchTraffic();
+            }
+        });
+    }
+
+    function wireUi() {
+        const toggle = document.getElementById('airspaceTrafficToggle');
+        const refreshBtn = document.getElementById('airspaceRefreshBtn');
+        const helpToggle = document.getElementById('airspaceHelpToggle');
+        const helpClose = document.getElementById('airspaceHelpClose');
+        const helpWrap = document.getElementById('airspaceHelpPanelWrap');
+        const helpBody = document.getElementById('airspaceHelpBody');
+
+        if (helpBody) {
+            helpBody.innerHTML = HELP_HTML;
+        }
+
+        if (toggle) {
+            toggle.checked = trafficEnabled;
+            toggle.addEventListener('change', function () {
+                trafficEnabled = toggle.checked;
+                if (trafficEnabled) {
+                    startPolling();
+                } else {
+                    stopPolling();
+                    trafficPopupOpen = false;
+                    pinnedHex = null;
+                    clearTraffic();
+                    clearSelectedTrail();
+                    setStatus('Traffic is off. Enable <strong>Show traffic</strong> to load ADS-B data.', false);
+                }
+            });
+        }
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function () {
+                lastFetchAt = 0;
+                fetchTraffic(true);
+            });
+        }
+
+        function openHelp() {
+            if (helpWrap) helpWrap.classList.add('airspace-help-open');
+        }
+
+        function closeHelp() {
+            if (helpWrap) helpWrap.classList.remove('airspace-help-open');
+        }
+
+        if (helpToggle) {
+            helpToggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (helpWrap && helpWrap.classList.contains('airspace-help-open')) {
+                    closeHelp();
+                } else {
+                    openHelp();
+                }
+            });
+        }
+
+        if (helpClose) {
+            helpClose.addEventListener('click', closeHelp);
+        }
+    }
+
+    function init() {
+        initMap();
+        wireUi();
+        startPolling();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();

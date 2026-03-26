@@ -7,7 +7,7 @@
     'use strict';
 
     const WEATHER_STATUS_HTML_DEFAULT = [
-        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlot v2.0) shows forecast and aviation information for a point on the map.</p>',
+        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlot v3.0) shows forecast and aviation information for a point on the map.</p>',
         '<p><strong>Steps</strong></p>',
         '<ol class="weather-help-list">',
         '<li>Choose a <strong>Model</strong> (e.g. Best match, ECMWF, GFS) and time: <strong>Now</strong> or <strong>Date &amp; Time</strong>.</li>',
@@ -316,7 +316,8 @@
                 link.title = 'Instructions';
                 link.setAttribute('aria-label', 'Show instructions');
                 link.id = 'weatherHelpToggle';
-                link.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+                link.innerHTML =
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1.25" fill="currentColor" stroke="none"/></svg>';
                 L.DomEvent.on(link, 'click', L.DomEvent.stop);
                 return div;
             }
@@ -1376,7 +1377,7 @@
 
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';
-            pptx.author = 'AirPlot';
+            pptx.author = 'AirPlot v3';
             pptx.subject = 'Flight Weather Report';
 
             const logo = await PptxTheme.loadLogo();

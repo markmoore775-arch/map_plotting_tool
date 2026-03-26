@@ -124,7 +124,7 @@
      */
     function buildNotesPlainText() {
         var lines = [];
-        lines.push('AirPlot — Flight Notes');
+        lines.push('AirPlot v3 — Flight Notes');
         lines.push('');
 
         lines.push('Date: ' + dash(trimVal('fnDate')));

@@ -11,6 +11,10 @@ export default {
       return handleAviationApi(request);
     }
 
+    if (path === '/api/adsb') {
+      return handleAdsbApi(request);
+    }
+
     // Temporary test mode: disable all password protection.
     if (path === '/unlock' || path === '/logout') {
       return new Response(null, {
@@ -66,6 +70,63 @@ function normalizeNextPath(nextRaw) {
   if (nextRaw.startsWith('//')) return DEFAULT_NEXT_PATH;
   if (nextRaw.startsWith('/unlock')) return DEFAULT_NEXT_PATH;
   return nextRaw;
+}
+
+async function handleAdsbApi(request) {
+  if (request.method.toUpperCase() !== 'GET') {
+    return jsonResponse({ error: 'Method not allowed' }, 405);
+  }
+
+  const url = new URL(request.url);
+  const hexRaw = url.searchParams.get('hex');
+  let upstreamUrl;
+
+  if (hexRaw != null && hexRaw !== '') {
+    const hex = String(hexRaw)
+      .toLowerCase()
+      .replace(/[^0-9a-f]/g, '');
+    if (!/^[0-9a-f]{6}$/.test(hex)) {
+      return jsonResponse({ error: 'Invalid hex (expect 6 hex chars)' }, 400);
+    }
+    upstreamUrl = `https://api.adsb.lol/v2/hex/${hex}`;
+  } else {
+    const lat = Number(url.searchParams.get('lat'));
+    const lon = Number(url.searchParams.get('lon'));
+    const dist = Number(url.searchParams.get('dist'));
+
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      return jsonResponse({ error: 'Invalid lat' }, 400);
+    }
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+      return jsonResponse({ error: 'Invalid lon' }, 400);
+    }
+    if (!Number.isFinite(dist) || dist < 1 || dist > 250) {
+      return jsonResponse({ error: 'Invalid dist (nm)' }, 400);
+    }
+
+    upstreamUrl =
+      `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/${dist}`;
+  }
+
+  const upstream = await fetch(upstreamUrl, {
+    headers: { Accept: 'application/json' }
+  });
+
+  if (!upstream.ok) {
+    return jsonResponse(
+      { error: `Upstream returned HTTP ${upstream.status}` },
+      502
+    );
+  }
+
+  const body = await upstream.text();
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store'
+    }
+  });
 }
 
 async function handleAviationApi(request) {

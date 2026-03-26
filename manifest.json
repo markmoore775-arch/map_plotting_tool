@@ -1,7 +1,7 @@
 {
   "name": "AirPlot",
   "short_name": "AirPlot",
-  "description": "Plan drone flights on an interactive map, check weather, write flight notes, and run an M4T / TD checklist—with local drafts and quick links between Notes and Checklist.",
+  "description": "AirPlot v3: plan on an interactive map, check weather, monitor live ADS-B traffic (hazard-themed map, altitude labels, session trails), write flight notes, and run an M4T / TD checklist—with local drafts and quick links between Notes and Checklist.",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0a0a0a",

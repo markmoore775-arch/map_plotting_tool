@@ -869,7 +869,7 @@
         return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
   <Document>
-    <wpml:author>AirPlot</wpml:author>
+    <wpml:author>AirPlot v3</wpml:author>
     <wpml:createTime>${now}</wpml:createTime>
     <wpml:updateTime>${now}</wpml:updateTime>
     <wpml:missionConfig>
@@ -1010,7 +1010,7 @@
 
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';
-            pptx.author = 'AirPlot';
+            pptx.author = 'AirPlot v3';
             pptx.subject = 'Flight Plan Report';
 
             const logo = await PptxTheme.loadLogo();

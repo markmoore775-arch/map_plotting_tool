@@ -1494,7 +1494,10 @@
 
     function showWelcomeScreen() {
         const introOverlay = document.getElementById('introOverlay');
-        if (introOverlay) introOverlay.classList.remove('hidden');
+        if (introOverlay) {
+            introOverlay.classList.remove('hidden');
+            introOverlay.classList.add('splash-done');
+        }
         document.body.classList.remove('mobile-style-open');
     }
 
@@ -3550,11 +3553,23 @@ ${summaryRows}
     // ---- Initialise ----
 
     // Defer init until load so layout is stable and map container has final dimensions
+    function showIntroWelcomeAfterSplash() {
+        const introOverlay = document.getElementById('introOverlay');
+        if (introOverlay) introOverlay.classList.add('splash-done');
+    }
+
     window.addEventListener('load', () => {
         const introOverlay = document.getElementById('introOverlay');
         const introProceedBtn = document.getElementById('introProceedBtn');
         const params = new URLSearchParams(window.location.search);
         const shouldAutoLaunch = params.get('autostart') === '1';
+
+        const SPLASH_MS = 3000;
+        if (!shouldAutoLaunch && introOverlay) {
+            window.setTimeout(showIntroWelcomeAfterSplash, SPLASH_MS);
+        } else if (introOverlay) {
+            introOverlay.classList.add('splash-done');
+        }
 
         function dismissIntro() {
             if (introOverlay) introOverlay.classList.add('hidden');

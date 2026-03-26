@@ -1,6 +1,8 @@
 # UK Airspace Data – Real NATS UAS Data
 
-AirPlot can display UK airspace restrictions (Prohibited, Restricted, Danger, FRZ) using official NATS UAS data. This guide explains how to obtain and convert the data.
+AirPlot **v3** includes a separate **[Airspace](../airspace.html)** page for **live ADS-B traffic** (hazard-themed map, altitude labels, session trails)—that feature uses the [ADSB.lol](https://api.adsb.lol/docs) API, not the GeoJSON files described here.
+
+This document covers **Planning** mode **UK airspace** layers: AirPlot can display UK airspace restrictions (Prohibited, Restricted, Danger, FRZ) using official NATS UAS data. The guide below explains how to obtain and convert that data.
 
 ## Quick Start
 
