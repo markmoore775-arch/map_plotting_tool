@@ -87,7 +87,8 @@
             {
                 attribution: '&copy; <a href="https://www.ordnancesurvey.co.uk/">Ordnance Survey</a>',
                 maxZoom: 20,
-                minZoom: 7
+                minZoom: 7,
+                crossOrigin: true
             }
         );
     }
@@ -99,7 +100,8 @@
                 attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 22,
                 id: styleId,
-                accessToken: token
+                accessToken: token,
+                crossOrigin: true
             }
         );
     }
@@ -148,17 +150,20 @@
         // Base layers
         const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
+            maxZoom: 19,
+            crossOrigin: true
         });
 
         const osmTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap',
-            maxZoom: 17
+            maxZoom: 17,
+            crossOrigin: true
         });
 
         const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: '&copy; Esri, Maxar, Earthstar Geographics',
-            maxZoom: 18
+            maxZoom: 18,
+            crossOrigin: true
         });
 
         osmStandard.addTo(map);

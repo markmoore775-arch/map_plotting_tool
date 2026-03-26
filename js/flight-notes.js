@@ -314,7 +314,7 @@
             var el = document.getElementById('fnAirspaceMap-airspace-' + i);
             if (!el) return;
             var map = L.map(el, { zoomControl: false, attributionControl: false });
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, crossOrigin: true }).addTo(map);
             var overlay = L.layerGroup().addTo(map);
             if (a.geometry) {
                 var gj = L.geoJSON(a.geometry, {
@@ -345,7 +345,7 @@
             var el = document.getElementById('fnAirspaceMap-notam-' + i);
             if (!el) return;
             var map = L.map(el, { zoomControl: false, attributionControl: false });
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, crossOrigin: true }).addTo(map);
             var overlay = L.layerGroup().addTo(map);
             L.marker([lat, lng], { title: 'Location' }).addTo(overlay);
             L.marker([n.lat, n.lng], { title: 'NOTAM centre' }).addTo(overlay);
@@ -529,13 +529,17 @@
                 setTimeout(r, 150);
             });
             try {
-                var canvas = await html2canvas(el, {
-                    useCORS: true,
-                    allowTaint: true,
-                    scale: 1.5,
-                    logging: false,
-                    backgroundColor: '#f5f6f8'
-                });
+                var h2cOpts =
+                    typeof MapCapture !== 'undefined' && MapCapture.html2canvasOptions
+                        ? MapCapture.html2canvasOptions('#f5f6f8', { scale: 1.5 })
+                        : {
+                              useCORS: true,
+                              allowTaint: false,
+                              scale: 1.5,
+                              logging: false,
+                              backgroundColor: '#f5f6f8'
+                          };
+                var canvas = await html2canvas(el, h2cOpts);
                 var square = cropCanvasToSquare(canvas);
                 pdfMapEntries.push({
                     url: square.toDataURL('image/png'),
@@ -1137,7 +1141,8 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution:
                 '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
-            maxZoom: 19
+            maxZoom: 19,
+            crossOrigin: true
         }).addTo(miniMap);
         L.marker([lat, lng]).addTo(miniMap);
         requestAnimationFrame(function () {
@@ -1315,15 +1320,18 @@
         });
         if (miniMap) miniMap.invalidateSize();
         try {
-            var lt = document.getElementById('fnLightThemeToggle');
-            var capBg = lt && lt.checked ? '#e8eaed' : '#1a1a2e';
-            var canvas = await html2canvas(mapEl, {
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: capBg,
-                scale: 2,
-                logging: false
-            });
+            var capBg = document.body.classList.contains('fn-light-theme') ? '#e8eaed' : '#1a1a2e';
+            var h2cMini =
+                typeof MapCapture !== 'undefined' && MapCapture.html2canvasOptions
+                    ? MapCapture.html2canvasOptions(capBg, { scale: 2 })
+                    : {
+                          useCORS: true,
+                          allowTaint: false,
+                          backgroundColor: capBg,
+                          scale: 2,
+                          logging: false
+                      };
+            var canvas = await html2canvas(mapEl, h2cMini);
             return {
                 dataUrl: canvas.toDataURL('image/png'),
                 width: canvas.width,
@@ -1333,6 +1341,11 @@
             console.warn('Flight Notes: map screenshot failed', e);
             return null;
         }
+    }
+
+    function isFlightNotesExportLightTheme() {
+        var el = document.querySelector('input[name="fnExportTheme"]:checked');
+        return !!(el && el.value === 'light');
     }
 
     async function onPdfClick() {
@@ -1348,7 +1361,7 @@
                 throw new Error('PDF library not loaded');
             }
 
-            PdfTheme.setLight(true);
+            PdfTheme.setLight(isFlightNotesExportLightTheme());
             await PdfTheme.loadLogo();
 
             var ts = PdfTheme.tableStyles();
@@ -1449,19 +1462,29 @@
     }
 
     function init() {
-        var lightToggle = document.getElementById('fnLightThemeToggle');
-        if (lightToggle) {
+        function syncPageThemeFromRadios() {
+            var el = document.querySelector('input[name="fnPageTheme"]:checked');
+            var light = !!(el && el.value === 'light');
+            document.body.classList.toggle('fn-light-theme', light);
+            try {
+                localStorage.setItem('fnLightTheme', light ? '1' : '0');
+            } catch (e) {}
+        }
+
+        var pageThemeInputs = document.querySelectorAll('input[name="fnPageTheme"]');
+        if (pageThemeInputs.length) {
             try {
                 if (localStorage.getItem('fnLightTheme') === '1') {
-                    lightToggle.checked = true;
-                    document.body.classList.add('fn-light-theme');
+                    var rLight = document.querySelector('input[name="fnPageTheme"][value="light"]');
+                    if (rLight) rLight.checked = true;
+                } else {
+                    var rDark = document.querySelector('input[name="fnPageTheme"][value="dark"]');
+                    if (rDark) rDark.checked = true;
                 }
             } catch (e) {}
-            lightToggle.addEventListener('change', function () {
-                document.body.classList.toggle('fn-light-theme', lightToggle.checked);
-                try {
-                    localStorage.setItem('fnLightTheme', lightToggle.checked ? '1' : '0');
-                } catch (e) {}
+            syncPageThemeFromRadios();
+            pageThemeInputs.forEach(function (inp) {
+                inp.addEventListener('change', syncPageThemeFromRadios);
             });
         }
 
@@ -1518,6 +1541,8 @@
         if (pdfBtn) pdfBtn.addEventListener('click', onPdfClick);
 
         if (clearFormBtn) clearFormBtn.addEventListener('click', openClearModal);
+        var clearNotesTopBtn = document.getElementById('fnClearNotesTopBtn');
+        if (clearNotesTopBtn) clearNotesTopBtn.addEventListener('click', openClearModal);
         if (clearCancel) clearCancel.addEventListener('click', closeClearModal);
         if (clearClose) clearClose.addEventListener('click', closeClearModal);
         if (clearBackdrop) clearBackdrop.addEventListener('click', closeClearModal);

@@ -270,9 +270,12 @@ const PdfTheme = (() => {
 
     async function captureSquareMap(mapElement) {
         var c = C();
+        if (typeof MapCapture !== 'undefined' && MapCapture.captureSquareMap) {
+            return MapCapture.captureSquareMap(mapElement, c.mapBg);
+        }
         var srcCanvas = await html2canvas(mapElement, {
             useCORS: true,
-            allowTaint: true,
+            allowTaint: false,
             backgroundColor: c.mapBg,
             scale: 2,
             logging: false

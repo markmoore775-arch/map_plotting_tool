@@ -171,7 +171,7 @@ const Exporters = (() => {
             // html2canvas needs the element to be visible
             const canvas = await html2canvas(mapElement, {
                 useCORS: true,
-                allowTaint: true,
+                allowTaint: false,
                 backgroundColor: '#fff',
                 scale: 2, // higher resolution
                 logging: false

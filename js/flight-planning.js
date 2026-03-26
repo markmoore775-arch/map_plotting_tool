@@ -255,15 +255,18 @@
 
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors',
-            maxZoom: 19
+            maxZoom: 19,
+            crossOrigin: true
         });
         const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors, SRTM',
-            maxZoom: 17
+            maxZoom: 17,
+            crossOrigin: true
         });
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: '&copy; Esri, Maxar',
-            maxZoom: 18
+            maxZoom: 18,
+            crossOrigin: true
         });
 
         osm.addTo(map);
@@ -980,9 +983,12 @@
     // ---- PPTX Report Export ----
     async function captureMapImage() {
         const mapEl = document.getElementById('map');
+        if (typeof MapCapture !== 'undefined' && MapCapture.captureFullMapToDataUrl) {
+            return MapCapture.captureFullMapToDataUrl(mapEl, '#1a1a2e');
+        }
         const canvas = await html2canvas(mapEl, {
             useCORS: true,
-            allowTaint: true,
+            allowTaint: false,
             backgroundColor: '#1a1a2e',
             scale: 2,
             logging: false

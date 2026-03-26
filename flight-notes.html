@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css">
+    <link rel="stylesheet" href="css/flight-notes.css?v=4">
     <!-- Leaflet (mini map for GPS location) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -35,10 +35,22 @@
             <a href="checklist.html" class="fn-nav-link" title="Open M4T / TD checklist">Checklist</a>
         </div>
         <div class="fn-top-bar-actions">
-            <label class="fn-theme-toggle" title="Light theme (better for copy/paste)">
-                <input type="checkbox" id="fnLightThemeToggle">
-                <span class="fn-theme-toggle-label">&#9788; Light</span>
-            </label>
+            <button type="button" class="fn-top-clear-btn" id="fnClearNotesTopBtn" title="Clear all entered flight notes">
+                Clear notes
+            </button>
+            <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="fnPageThemeLabel" title="Page colours (better for copy/paste in light mode)">
+                <span id="fnPageThemeLabel" class="fn-export-theme-label">Theme</span>
+                <div class="fn-export-theme-segments">
+                    <label class="fn-export-theme-segment-opt">
+                        <input type="radio" name="fnPageTheme" value="dark" checked>
+                        <span class="fn-export-theme-segment-text">Dark</span>
+                    </label>
+                    <label class="fn-export-theme-segment-opt">
+                        <input type="radio" name="fnPageTheme" value="light">
+                        <span class="fn-export-theme-segment-text">Light</span>
+                    </label>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -46,7 +58,7 @@
         <aside class="fn-disclaimer" role="note" aria-label="Privacy and data">
             <p>
                 <strong>Privacy:</strong> AirPlot does not save your flight notes on our servers. What you enter stays in this browser on this device and is not uploaded to us.
-                Your draft is saved locally so you can leave this page and return later; use <strong>Clear form</strong> to wipe it from this browser.
+                Your draft is saved locally so you can leave this page and return later; use <strong>Clear notes</strong> at the top of the page or <strong>Clear form</strong> at the bottom to wipe it from this browser.
                 For a portable copy, use <strong>export to PDF</strong> or <strong>send by email</strong>.
                 Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch weather report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed notes are not sent to those services.
             </p>
@@ -227,6 +239,19 @@
                 <button type="button" class="fn-btn fn-btn-primary" id="fnPdfBtn">
                     Export PDF
                 </button>
+                <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="fnExportThemeLabel">
+                    <span id="fnExportThemeLabel" class="fn-export-theme-label">PDF theme</span>
+                    <div class="fn-export-theme-segments">
+                        <label class="fn-export-theme-segment-opt">
+                            <input type="radio" name="fnExportTheme" value="dark">
+                            <span class="fn-export-theme-segment-text">Dark</span>
+                        </label>
+                        <label class="fn-export-theme-segment-opt">
+                            <input type="radio" name="fnExportTheme" value="light" checked>
+                            <span class="fn-export-theme-segment-text">Light</span>
+                        </label>
+                    </div>
+                </div>
                 <button type="button" class="fn-btn fn-btn-danger" id="fnClearFormBtn">
                     Clear form
                 </button>
@@ -238,7 +263,7 @@
         <div class="modal-backdrop" id="fnClearModalBackdrop" aria-hidden="true"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="fnClearModalTitle">Clear form?</h2>
+                <h2 id="fnClearModalTitle">Clear notes?</h2>
                 <button type="button" class="modal-close" id="fnClearModalClose" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
@@ -246,7 +271,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="fnClearModalCancel">Cancel</button>
-                <button type="button" class="btn btn-danger" id="fnClearModalConfirm">Clear form</button>
+                <button type="button" class="btn btn-danger" id="fnClearModalConfirm">Clear notes</button>
             </div>
         </div>
     </div>
@@ -255,10 +280,11 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/map-capture.js?v=1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="js/pdf-theme.js?v=5"></script>
+    <script src="js/pdf-theme.js?v=6"></script>
     <script src="js/airspace-nearby.js?v=1"></script>
-    <script src="js/flight-notes.js?v=23"></script>
+    <script src="js/flight-notes.js?v=27"></script>
 </body>
 </html>

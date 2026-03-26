@@ -98,9 +98,12 @@ const PptxTheme = (() => {
 
     async function captureSquareMap(mapElement) {
         var C = colors();
+        if (typeof MapCapture !== 'undefined' && MapCapture.captureSquareMap) {
+            return MapCapture.captureSquareMap(mapElement, C.mapBg);
+        }
         var srcCanvas = await html2canvas(mapElement, {
             useCORS: true,
-            allowTaint: true,
+            allowTaint: false,
             backgroundColor: C.mapBg,
             scale: 2,
             logging: false
