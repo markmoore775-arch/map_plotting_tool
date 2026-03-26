@@ -127,118 +127,6 @@
         } catch (e) { /* ignore */ }
     }
 
-    function haversineKm(lat1, lng1, lat2, lng2) {
-        var R = 6371;
-        var dLat = (lat2 - lat1) * Math.PI / 180;
-        var dLng = (lng2 - lng1) * Math.PI / 180;
-        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    function classifyAirspaceFeature(f) {
-        var props = f.properties || {};
-        var desig = (props.designator || props.type || props.id || '').toUpperCase();
-        var name = (props.name || '').toUpperCase();
-        var desc = (props.description || '').toUpperCase();
-        var aType = (props.type || '').toUpperCase();
-        if (desig.startsWith('EGRU') || desc.includes('FRZ') || desig.includes('FRZ') || desig.includes('RPZ') || name.includes('FRZ') || name.includes('AERODROME') || name.includes('FLIGHT RESTRICTION')) return 'FRZ';
-        if (desig.startsWith('EG-P') || desig.startsWith('EGP') || desig.startsWith('P') || name.includes('PROHIBITED') || aType === 'P') return 'Prohibited';
-        if (desig.startsWith('EG-R') || desig.startsWith('EGR') || desig.startsWith('R') || name.includes('RESTRICTED') || aType === 'R') return 'Restricted';
-        if (desig.startsWith('EG-D') || desig.startsWith('EGD') || desig.startsWith('D') || name.includes('DANGER') || aType === 'D') return 'Danger';
-        return null;
-    }
-
-    async function fetchNearbyNotams(lat, lng, radiusKm) {
-        try {
-            var resp = await fetch('https://jonty.github.io/uk-notam-archive/data/PIB.xml?t=' + Date.now());
-            if (!resp.ok) return [];
-            var xmlText = await resp.text();
-            var parser = new DOMParser();
-            var doc = parser.parseFromString(xmlText, 'text/xml');
-            var notamEls = doc.querySelectorAll('Notam');
-            var all = [];
-            notamEls.forEach(function (el) {
-                var coords = el.querySelector('Coordinates');
-                var radius = el.querySelector('Radius');
-                var itemE = el.querySelector('ItemE');
-                var startVal = el.querySelector('StartValidity');
-                var endVal = el.querySelector('EndValidity');
-                var nof = el.querySelector('NOF');
-                var series = el.querySelector('Series');
-                var number = el.querySelector('Number');
-                var year = el.querySelector('Year');
-                if (!coords || !coords.textContent) return;
-                var cStr = coords.textContent.trim();
-                var m = cStr.match(/^(\d{4})([NS])(\d{5})([EW])$/);
-                if (!m) return;
-                var nLat = parseInt(m[1].slice(0, 2), 10) + parseInt(m[1].slice(2, 4), 10) / 60;
-                if (m[2] === 'S') nLat = -nLat;
-                var nLng = parseInt(m[3].slice(0, 3), 10) + parseInt(m[3].slice(3, 5), 10) / 60;
-                if (m[4] === 'W') nLng = -nLng;
-                var radiusNm = radius && radius.textContent ? parseInt(radius.textContent.trim(), 10) || 0 : 0;
-                var id = (nof ? nof.textContent : '') + (series ? series.textContent : '') + (number ? number.textContent : '') + '/' + (year ? year.textContent : '');
-                all.push({
-                    id: id.trim(), lat: nLat, lng: nLng, radiusNm: radiusNm,
-                    text: itemE ? itemE.textContent.trim() : '',
-                    startValidity: startVal ? startVal.textContent : '',
-                    endValidity: endVal ? endVal.textContent : ''
-                });
-            });
-            return all.filter(function (n) {
-                var dist = haversineKm(lat, lng, n.lat, n.lng);
-                var notamRadiusKm = (n.radiusNm > 0 && n.radiusNm < 999) ? n.radiusNm * 1.852 : 0;
-                return (dist - notamRadiusKm) <= radiusKm;
-            });
-        } catch (e) {
-            console.warn('NOTAM fetch failed:', e);
-            return [];
-        }
-    }
-
-    async function fetchNearbyAirspace(lat, lng, radiusKm) {
-        try {
-            var results = await Promise.all([
-                fetch('assets/uk-airspace.geojson?t=' + Date.now()).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
-                fetch('assets/uk-aip-airspace.geojson?t=' + Date.now()).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
-            ]);
-            var features = [];
-            results.forEach(function (data) {
-                if (data && data.features) features = features.concat(data.features);
-            });
-            return features.filter(function (f) {
-                var category = classifyAirspaceFeature(f);
-                if (!category) return false;
-                var geom = f.geometry;
-                if (!geom || !geom.coordinates) return false;
-                var coords = geom.type === 'MultiPolygon' ? geom.coordinates.flat(2) : (geom.type === 'Polygon' ? geom.coordinates.flat() : []);
-                return coords.some(function (c) {
-                    return haversineKm(lat, lng, c[1], c[0]) <= radiusKm;
-                });
-            }).map(function (f) {
-                var props = f.properties || {};
-                return {
-                    category: classifyAirspaceFeature(f),
-                    designator: props.designator || props.id || '—',
-                    name: props.name || '—',
-                    lower: props.lowerLimit || props.lower || '—',
-                    upper: props.upperLimit || props.upper || '—',
-                    type: props.type || '',
-                    source: props.source || '',
-                    description: props.description || '',
-                    geometry: f.geometry
-                };
-            }).sort(function (a, b) {
-                var order = { 'FRZ': 0, 'Prohibited': 1, 'Restricted': 2, 'Danger': 3 };
-                return (order[a.category] || 4) - (order[b.category] || 4);
-            });
-        } catch (e) {
-            console.warn('Airspace fetch failed:', e);
-            return [];
-        }
-    }
-
     // ---- Helpers ----
     function directionToCardinal(deg) {
         if (deg == null || isNaN(deg)) return '—';
@@ -957,7 +845,7 @@
             var n = lastNotamData && lastNotamData[index];
             if (!n) return;
             titleEl.textContent = n.id || 'NOTAM';
-            var dist = haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
+            var dist = AirspaceNearby.haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
             var validStart = formatNotamDate(n.startValidity);
             var validEnd = formatNotamDate(n.endValidity);
             var radStr = (n.radiusNm > 0 && n.radiusNm < 999) ? n.radiusNm + ' NM' : '—';
@@ -1034,8 +922,8 @@
         content.innerHTML = '';
 
         var results = await Promise.all([
-            fetchNearbyNotams(lat, lng, airspaceSearchRadiusKm),
-            fetchNearbyAirspace(lat, lng, airspaceSearchRadiusKm)
+            AirspaceNearby.fetchNearbyNotams(lat, lng, airspaceSearchRadiusKm),
+            AirspaceNearby.fetchNearbyAirspace(lat, lng, airspaceSearchRadiusKm)
         ]);
         lastNotamData = results[0];
         lastAirspaceData = results[1];
@@ -1078,7 +966,7 @@
                 if (a.geometry) {
                     var coords = a.geometry.type === 'MultiPolygon' ? a.geometry.coordinates.flat(2) : (a.geometry.type === 'Polygon' ? a.geometry.coordinates.flat() : []);
                     var minDist = Infinity;
-                    coords.forEach(function (c) { var d = haversineKm(lat, lng, c[1], c[0]); if (d < minDist) minDist = d; });
+                    coords.forEach(function (c) { var d = AirspaceNearby.haversineKm(lat, lng, c[1], c[0]); if (d < minDist) minDist = d; });
                     if (isFinite(minDist)) distKm = ' · ' + minDist.toFixed(1) + ' km away';
                 }
                 content.insertAdjacentHTML('beforeend',
@@ -1103,7 +991,7 @@
                 '<div class="weather-airspace-section-title">NOTAMs <span class="airspace-count">(' + notams.length + ')</span></div>'
             );
             notams.forEach(function (n, i) {
-                var dist = haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
+                var dist = AirspaceNearby.haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
                 var validStart = formatNotamDate(n.startValidity);
                 var validEnd = formatNotamDate(n.endValidity);
                 var validStr = validStart + ' – ' + validEnd;
@@ -1578,8 +1466,8 @@
             }
 
             // --- NOTAMs & Airspace within 10 km ---
-            var notamSlides = lastNotamData || await fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
-            var airspaceFeatures = lastAirspaceData || await fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
+            var notamSlides = lastNotamData || await AirspaceNearby.fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
+            var airspaceFeatures = lastAirspaceData || await AirspaceNearby.fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
 
             if (notamSlides.length > 0 || airspaceFeatures.length > 0) {
                 var tempLayers = [];
@@ -1669,7 +1557,7 @@
                         ]];
                     }
                     var ntm = notamSlides[ni];
-                    var ntmDist = haversineKm(selectedPoint.lat, selectedPoint.lng, ntm.lat, ntm.lng).toFixed(1) + ' km';
+                    var ntmDist = AirspaceNearby.haversineKm(selectedPoint.lat, selectedPoint.lng, ntm.lat, ntm.lng).toFixed(1) + ' km';
                     var validStart = formatNotamDate(ntm.startValidity);
                     var validEnd = formatNotamDate(ntm.endValidity);
                     var validStr = (validStart || ntm.startValidity || '?') + ' – ' + (validEnd || ntm.endValidity || '?');
@@ -1828,10 +1716,9 @@
         btn.querySelector('span').textContent = 'Exporting…';
 
         try {
-            const lightToggle = document.getElementById('weatherLightThemeToggle');
-            PdfTheme.setLight(lightToggle && lightToggle.checked);
+            PdfTheme.setLight(true);
 
-            const logo = await PdfTheme.loadLogo();
+            await PdfTheme.loadLogo();
             const c = PdfTheme.colors();
             const ts = PdfTheme.tableStyles();
 
@@ -1851,7 +1738,7 @@
             PdfTheme.addHeader(doc, 'Flight Weather Report', true);
             doc.addImage(mapImg, 'PNG', 10, 25, 120, 120);
             var suitRgb = suitColor.bg === '4CAF50' ? [102,187,106] : (suitColor.bg === 'FF9800' ? [255,183,77] : [239,83,80]);
-            PdfTheme.addInfoPanel(doc, 140, 25, 147, [
+            PdfTheme.addInfoPanel(doc, 10, 25 + 120 + 8, 190, [
                 { label: 'LOCATION', value: locLabel, divider: true },
                 { label: 'DATE & TIME', value: timeLabel, divider: true },
                 { label: 'WEATHER MODEL', value: modelLabel, divider: true },
@@ -2022,8 +1909,8 @@
             }
 
             // Page 5+: NOTAMs & Airspace (with map visualisation matching PPTX)
-            var notams = lastNotamData || await fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
-            var airspace = lastAirspaceData || await fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
+            var notams = lastNotamData || await AirspaceNearby.fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
+            var airspace = lastAirspaceData || await AirspaceNearby.fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
 
             if (notams.length > 0 || airspace.length > 0) {
                 var catMapColorsHex = { FRZ: '#9333ea', Prohibited: '#991b1b', Restricted: '#dc2626', Danger: '#ca8a04' };
@@ -2103,7 +1990,7 @@
                 PdfTheme.newPage(doc);
                 PdfTheme.addHeader(doc, 'NOTAMs within ' + airspaceSearchRadiusKm + ' km (' + notams.length + ')');
                 var nBody = notams.map(function (n) {
-                    var dist = haversineKm(selectedPoint.lat, selectedPoint.lng, n.lat, n.lng).toFixed(1) + ' km';
+                    var dist = AirspaceNearby.haversineKm(selectedPoint.lat, selectedPoint.lng, n.lat, n.lng).toFixed(1) + ' km';
                     var validStart = formatNotamDate(n.startValidity);
                     var validEnd = formatNotamDate(n.endValidity);
                     var desc = (n.text || '').replace(/\s+/g, ' ');

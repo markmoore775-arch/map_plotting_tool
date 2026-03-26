@@ -1198,8 +1198,8 @@
         btn.querySelector('span').textContent = 'Exporting…';
 
         try {
-            PdfTheme.setLight(false);
-            var logo = await PdfTheme.loadLogo();
+            PdfTheme.setLight(true);
+            await PdfTheme.loadLogo();
             var c = PdfTheme.colors();
             var ts = PdfTheme.tableStyles();
 
@@ -1214,6 +1214,7 @@
             PdfTheme.addHeader(doc, 'Flight Plan Report', true);
             doc.addImage(mapImg, 'PNG', 10, 25, 120, 120);
 
+            var panelTopY = 25 + 120 + 8;
             var panelRows = [
                 { label: 'MISSION TYPE', value: modeLabel, bold: true, fontSize: 11, divider: true },
                 { label: 'DATE & TIME', value: dateLabel, divider: true }
@@ -1229,7 +1230,7 @@
                 panelRows.push({ label: 'EXCLUSION ZONES', value: exclusions.length + ' zone' + (exclusions.length !== 1 ? 's' : ''), divider: true });
             }
             panelRows.push({ label: 'GENERATED', value: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '  at  ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) });
-            PdfTheme.addInfoPanel(doc, 140, 25, 147, panelRows);
+            PdfTheme.addInfoPanel(doc, 10, panelTopY, 190, panelRows);
 
             if (hasRecce) {
                 PdfTheme.newPage(doc);

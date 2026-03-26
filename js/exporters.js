@@ -331,9 +331,9 @@ const Exporters = (() => {
 
     // ---- PDF Export ----
 
-    async function exportPdf(mapElement, points, shapes, light) {
-        PdfTheme.setLight(!!light);
-        var logo = await PdfTheme.loadLogo();
+    async function exportPdf(mapElement, points, shapes) {
+        PdfTheme.setLight(true);
+        await PdfTheme.loadLogo();
         var c = PdfTheme.colors();
         var ts = PdfTheme.tableStyles();
 
@@ -345,6 +345,7 @@ const Exporters = (() => {
         PdfTheme.addHeader(doc, 'Map Report', true);
         doc.addImage(mapImg, 'PNG', 10, 25, 120, 120);
 
+        var panelTopY = 25 + 120 + 8;
         var panelRows = [
             { label: 'DATE & TIME', value: dateLabel, divider: true },
             { label: 'POINTS', value: points.length + ' point' + (points.length !== 1 ? 's' : '') + ' plotted', bold: true, fontSize: 11, divider: true },
@@ -355,7 +356,7 @@ const Exporters = (() => {
             panelRows.push({ label: 'FIRST POINT', value: (firstPt.name || 'Unnamed') + '  (' + firstPt.lat.toFixed(5) + ', ' + firstPt.lng.toFixed(5) + ')', divider: true });
         }
         panelRows.push({ label: 'GENERATED', value: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '  at  ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) });
-        PdfTheme.addInfoPanel(doc, 140, 25, 147, panelRows);
+        PdfTheme.addInfoPanel(doc, 10, panelTopY, 190, panelRows);
 
         if (points.length > 0) {
             PdfTheme.newPage(doc);

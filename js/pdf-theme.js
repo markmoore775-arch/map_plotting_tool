@@ -6,7 +6,8 @@
 const PdfTheme = (() => {
     'use strict';
 
-    let _light = false;
+    /** PDF exports default to light theme (paper-style). */
+    let _light = true;
     let _logoBase64 = null;
 
     const DARK = {
@@ -40,63 +41,142 @@ const PdfTheme = (() => {
 
     function setLight(v) { _light = !!v; }
 
-    async function loadLogo() {
-        if (_logoBase64) return _logoBase64;
-        try {
-            var resp = await fetch('assets/airplot-icon.png');
-            if (!resp.ok) return null;
-            var blob = await resp.blob();
-            return new Promise(function (resolve) {
-                var reader = new FileReader();
-                reader.onloadend = function () { _logoBase64 = reader.result; resolve(_logoBase64); };
-                reader.readAsDataURL(blob);
-            });
-        } catch (e) { return null; }
+    /**
+     * Convert raster logo (white on dark) to black glyph on white for PDF headers.
+     */
+    function dataUrlToBlackOnWhitePng(dataUrl) {
+        return new Promise(function (resolve, reject) {
+            var img = new Image();
+            img.onload = function () {
+                try {
+                    var w = img.naturalWidth;
+                    var h = img.naturalHeight;
+                    if (!w || !h) {
+                        resolve(dataUrl);
+                        return;
+                    }
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    var id = ctx.getImageData(0, 0, w, h);
+                    var d = id.data;
+                    var lumThreshold = 135;
+                    for (var i = 0; i < d.length; i += 4) {
+                        var lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                        if (lum > lumThreshold) {
+                            d[i] = 0;
+                            d[i + 1] = 0;
+                            d[i + 2] = 0;
+                            d[i + 3] = 255;
+                        } else {
+                            d[i] = 255;
+                            d[i + 1] = 255;
+                            d[i + 2] = 255;
+                            d[i + 3] = 255;
+                        }
+                    }
+                    ctx.putImageData(id, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            img.onerror = function () {
+                resolve(dataUrl);
+            };
+            img.src = dataUrl;
+        });
     }
 
+    async function loadLogo() {
+        if (_logoBase64) return _logoBase64;
+        var paths = ['assets/icon-192.png', 'assets/airplot-icon.png'];
+        for (var i = 0; i < paths.length; i++) {
+            try {
+                var resp = await fetch(paths[i]);
+                if (!resp.ok) continue;
+                var blob = await resp.blob();
+                var rawUrl = await new Promise(function (resolve, reject) {
+                    var reader = new FileReader();
+                    reader.onerror = function () { reject(new Error('read failed')); };
+                    reader.onloadend = function () { resolve(reader.result); };
+                    reader.readAsDataURL(blob);
+                });
+                try {
+                    _logoBase64 = await dataUrlToBlackOnWhitePng(rawUrl);
+                } catch (e) {
+                    _logoBase64 = rawUrl;
+                }
+                return _logoBase64;
+            } catch (e) { /* try next */ }
+        }
+        return null;
+    }
+
+    /** A4 portrait (mm) — all PDF reports use this. */
+    var PAGE_W = 210;
+    var PAGE_H = 297;
+
     function createDoc() {
-        var doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        var doc = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         var c = C();
         doc.setFillColor(c.bg[0], c.bg[1], c.bg[2]);
-        doc.rect(0, 0, 297, 210, 'F');
+        doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
         return doc;
     }
 
     function newPage(doc) {
-        doc.addPage('a4', 'landscape');
+        doc.addPage('a4', 'portrait');
         var c = C();
         doc.setFillColor(c.bg[0], c.bg[1], c.bg[2]);
-        doc.rect(0, 0, 297, 210, 'F');
+        doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
     }
 
     function addHeader(doc, title, isTitlePage) {
         var c = C();
         var barH = isTitlePage ? 3 : 2;
         doc.setFillColor(c.accent[0], c.accent[1], c.accent[2]);
-        doc.rect(0, 0, 297, barH, 'F');
+        doc.rect(0, 0, PAGE_W, barH, 'F');
+        var logoLeft = 10;
+        var logoTop = 5;
+        var logoW = 14;
+        var logoH = 14;
         if (_logoBase64) {
             try {
                 if (isTitlePage) {
-                    doc.addImage(_logoBase64, 'PNG', 10, 5, 14, 14);
+                    doc.addImage(_logoBase64, 'PNG', logoLeft, logoTop, logoW, logoH);
                 } else {
-                    doc.addImage(_logoBase64, 'PNG', 280, 3.5, 10, 10);
+                    logoW = 10;
+                    logoH = 10;
+                    logoTop = 3.5;
+                    logoLeft = PAGE_W - 10 - logoW;
+                    doc.addImage(_logoBase64, 'PNG', logoLeft, logoTop, logoW, logoH);
                 }
             } catch (e) {}
         }
         if (title) {
-            var titleY = isTitlePage ? 10 : 6;
             var titleSize = isTitlePage ? 22 : 16;
             var titleX = isTitlePage && _logoBase64 ? 28 : 10;
+            var titleY;
+            if (_logoBase64) {
+                titleY = logoTop + logoH / 2;
+            } else if (isTitlePage) {
+                titleY = 14;
+            } else {
+                titleY = 7;
+            }
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(titleSize);
             doc.setTextColor(c.text[0], c.text[1], c.text[2]);
-            doc.text(title, titleX, titleY);
+            doc.text(title, titleX, titleY, { baseline: 'middle' });
         }
     }
 
     function addFooter(doc) {
         var c = C();
-        var pw = 297, ph = 210;
+        var pw = PAGE_W, ph = PAGE_H;
         doc.setFillColor(c.accent[0], c.accent[1], c.accent[2]);
         doc.rect(0, ph - 6, pw, 1.5, 'F');
         doc.setFillColor(c.footer[0], c.footer[1], c.footer[2]);
@@ -213,6 +293,8 @@ const PdfTheme = (() => {
         loadLogo: loadLogo,
         colors: C,
         hex: hex,
+        pageWidthMm: function () { return PAGE_W; },
+        pageHeightMm: function () { return PAGE_H; },
         createDoc: createDoc,
         newPage: newPage,
         addHeader: addHeader,

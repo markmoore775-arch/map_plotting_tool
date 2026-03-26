@@ -23,7 +23,9 @@
         'fnBattery3Time',
         'fnBattery4',
         'fnBattery4Time',
+        'fnAlosRagNotes',
         'fnWeather',
+        'fnAirspaceRadiusKm',
         'fnNotes'
     ];
 
@@ -79,6 +81,530 @@
 
     var miniMap = null;
 
+    var fnAirspaceRadiusKm = 3;
+    var fnLastNotams = null;
+    var fnLastAirspace = null;
+    var fnAirspaceMaps = [];
+    var fnAirspaceDataLoaded = false;
+
+    function escapeHtmlFn(str) {
+        if (str == null) return '';
+        var div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+
+    function formatNotamDateFn(str) {
+        if (!str) return '';
+        var raw = String(str).trim();
+        var up = raw.toUpperCase();
+        if (up === 'PERM' || up === 'UFN') return up;
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var fmt = function (d) {
+            return (
+                d.getUTCDate() +
+                ' ' +
+                months[d.getUTCMonth()] +
+                ' ' +
+                d.getUTCFullYear() +
+                ' ' +
+                String(d.getUTCHours()).padStart(2, '0') +
+                ':' +
+                String(d.getUTCMinutes()).padStart(2, '0') +
+                ' UTC'
+            );
+        };
+        var m = raw.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+        if (m) {
+            var d = new Date(Date.UTC(+m[1], parseInt(m[2], 10) - 1, +m[3], +m[4], +m[5]));
+            if (!isNaN(d.getTime())) return fmt(d);
+        }
+        m = raw.match(/\d{10}/);
+        if (!m) return raw;
+        var s = m[0];
+        var yy = parseInt(s.slice(0, 2), 10);
+        var mm = parseInt(s.slice(2, 4), 10) - 1;
+        var dd = parseInt(s.slice(4, 6), 10);
+        var hh = parseInt(s.slice(6, 8), 10);
+        var min = parseInt(s.slice(8, 10), 10);
+        var year = yy >= 50 ? 1900 + yy : 2000 + yy;
+        if (mm < 0 || mm > 11 || dd < 1 || dd > 31) return raw;
+        return fmt(new Date(Date.UTC(year, mm, dd, hh, min)));
+    }
+
+    function readFnAirspaceRadiusFromInput() {
+        var input = document.getElementById('fnAirspaceRadiusKm');
+        var v = input ? parseInt(String(input.value), 10) : 3;
+        if (!isFinite(v)) v = 3;
+        return Math.min(100, Math.max(1, Math.round(v)));
+    }
+
+    function syncFnAirspaceIntroKm() {
+        var intro = document.getElementById('fnAirspaceIntroKm');
+        var v = readFnAirspaceRadiusFromInput();
+        fnAirspaceRadiusKm = v;
+        if (intro) intro.textContent = String(v);
+    }
+
+    function destroyFnAirspaceMaps() {
+        fnAirspaceMaps.forEach(function (o) {
+            try {
+                if (o.map) o.map.remove();
+            } catch (e) {}
+        });
+        fnAirspaceMaps = [];
+    }
+
+    function fnAirspaceSummaryForExport() {
+        if (!fnAirspaceDataLoaded) {
+            return '— (set coordinates and tap Refresh in Airspace)';
+        }
+        var na = (fnLastNotams || []).length;
+        var nb = (fnLastAirspace || []).length;
+        return fnAirspaceRadiusKm + ' km · ' + (na + nb) + ' item(s) · maps after table';
+    }
+
+    function renderFnAirspaceHtml(notams, airspace, lat, lng) {
+        var content = document.getElementById('fnAirspaceContent');
+        if (!content) return;
+        content.innerHTML = '';
+
+        if (notams.length === 0 && airspace.length === 0) {
+            content.innerHTML =
+                '<div class="fn-airspace-empty"><p>No NOTAMs or airspace restrictions found within ' +
+                fnAirspaceRadiusKm +
+                ' km.</p></div>';
+            return;
+        }
+
+        var catColors = { FRZ: 'frz', Prohibited: 'prohibited', Restricted: 'restricted', Danger: 'danger' };
+
+        if (airspace.length > 0) {
+            content.insertAdjacentHTML(
+                'beforeend',
+                '<div class="fn-airspace-section-title">Airspace restrictions <span>(' + airspace.length + ')</span></div>'
+            );
+            airspace.forEach(function (a, i) {
+                var cls = catColors[a.category] || 'danger';
+                var distKm = '';
+                if (a.geometry) {
+                    var coords =
+                        a.geometry.type === 'MultiPolygon'
+                            ? a.geometry.coordinates.flat(2)
+                            : a.geometry.type === 'Polygon'
+                              ? a.geometry.coordinates.flat()
+                              : [];
+                    var minDist = Infinity;
+                    coords.forEach(function (c) {
+                        var d = AirspaceNearby.haversineKm(lat, lng, c[1], c[0]);
+                        if (d < minDist) minDist = d;
+                    });
+                    if (isFinite(minDist)) distKm = ' · ' + minDist.toFixed(1) + ' km away';
+                }
+                var bodyLines = [];
+                bodyLines.push('<p><strong>Designator</strong> ' + escapeHtmlFn(a.designator) + '</p>');
+                bodyLines.push(
+                    '<p><strong>Lower / Upper</strong> ' + escapeHtmlFn(String(a.lower)) + ' / ' + escapeHtmlFn(String(a.upper)) + '</p>'
+                );
+                if (a.type) bodyLines.push('<p><strong>Type</strong> ' + escapeHtmlFn(a.type) + '</p>');
+                if (a.source) bodyLines.push('<p><strong>Source</strong> ' + escapeHtmlFn(a.source) + '</p>');
+                if (a.description) {
+                    bodyLines.push('<p class="fn-airspace-detail-desc">' + escapeHtmlFn(a.description) + '</p>');
+                }
+                content.insertAdjacentHTML(
+                    'beforeend',
+                    '<div class="fn-airspace-item category-' +
+                        cls +
+                        '">' +
+                        '<div class="fn-airspace-item-header">' +
+                        '<span class="fn-airspace-badge badge-' +
+                        cls +
+                        '">' +
+                        escapeHtmlFn(a.category) +
+                        '</span>' +
+                        '<span class="fn-airspace-item-name">' +
+                        escapeHtmlFn(a.name || a.designator) +
+                        '</span>' +
+                        '</div>' +
+                        '<div class="fn-airspace-item-detail">' +
+                        '<strong>' +
+                        escapeHtmlFn(a.designator) +
+                        '</strong>' +
+                        distKm +
+                        ' · Lower: ' +
+                        escapeHtmlFn(String(a.lower)) +
+                        ' · Upper: ' +
+                        escapeHtmlFn(String(a.upper)) +
+                        '</div>' +
+                        '<div class="fn-airspace-item-body">' +
+                        '<div class="fn-airspace-detail-body">' +
+                        bodyLines.join('') +
+                        '</div>' +
+                        '<div class="fn-airspace-minimap" id="fnAirspaceMap-airspace-' +
+                        i +
+                        '"></div>' +
+                        '</div></div>'
+                );
+            });
+        }
+
+        if (notams.length > 0) {
+            content.insertAdjacentHTML(
+                'beforeend',
+                '<div class="fn-airspace-section-title">NOTAMs <span>(' + notams.length + ')</span></div>'
+            );
+            notams.forEach(function (n, i) {
+                var dist = AirspaceNearby.haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
+                var validStart = formatNotamDateFn(n.startValidity);
+                var validEnd = formatNotamDateFn(n.endValidity);
+                var validStr = validStart + ' – ' + validEnd;
+                var descText = (n.text || '').replace(/\s+/g, ' ');
+                if (descText.length > 300) descText = descText.slice(0, 297) + '…';
+                content.insertAdjacentHTML(
+                    'beforeend',
+                    '<div class="fn-airspace-item category-notam">' +
+                        '<div class="fn-airspace-item-header">' +
+                        '<span class="fn-airspace-badge badge-notam">NOTAM</span>' +
+                        '<span class="fn-airspace-item-name">' +
+                        escapeHtmlFn(n.id || 'NOTAM') +
+                        '</span>' +
+                        '</div>' +
+                        '<div class="fn-airspace-item-detail">' +
+                        dist +
+                        ' km away' +
+                        (n.radiusNm > 0 && n.radiusNm < 999 ? ' · Radius: ' + n.radiusNm + ' NM' : '') +
+                        '<br>Valid: ' +
+                        escapeHtmlFn(validStr) +
+                        '<br>' +
+                        escapeHtmlFn(descText) +
+                        '</div>' +
+                        '<div class="fn-airspace-item-body">' +
+                        '<div class="fn-airspace-detail-body">' +
+                        '<p><strong>Distance</strong> ' +
+                        escapeHtmlFn(dist) +
+                        ' km</p>' +
+                        '<p><strong>Radius</strong> ' +
+                        escapeHtmlFn(n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm + ' NM' : '—') +
+                        '</p>' +
+                        '<p><strong>Valid</strong> ' +
+                        escapeHtmlFn(validStart) +
+                        ' – ' +
+                        escapeHtmlFn(validEnd) +
+                        '</p>' +
+                        '<p class="fn-airspace-detail-notam-text">' +
+                        escapeHtmlFn(n.text || '').replace(/\n/g, '<br>') +
+                        '</p>' +
+                        '</div>' +
+                        '<div class="fn-airspace-minimap" id="fnAirspaceMap-notam-' +
+                        i +
+                        '"></div>' +
+                        '</div></div>'
+                );
+            });
+        }
+    }
+
+    function populateFnAirspaceMaps(lat, lng, notams, airspace) {
+        destroyFnAirspaceMaps();
+        if (typeof L === 'undefined' || typeof AirspaceNearby === 'undefined') return;
+
+        var catColors = { FRZ: '#9333ea', Prohibited: '#991b1b', Restricted: '#dc2626', Danger: '#ca8a04' };
+
+        airspace.forEach(function (a, i) {
+            var el = document.getElementById('fnAirspaceMap-airspace-' + i);
+            if (!el) return;
+            var map = L.map(el, { zoomControl: false, attributionControl: false });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            var overlay = L.layerGroup().addTo(map);
+            if (a.geometry) {
+                var gj = L.geoJSON(a.geometry, {
+                    style: {
+                        color: catColors[a.category] || '#dc2626',
+                        weight: 2,
+                        fillColor: catColors[a.category] || '#dc2626',
+                        fillOpacity: 0.2
+                    }
+                });
+                overlay.addLayer(gj);
+                L.marker([lat, lng], { title: 'Location' }).addTo(overlay);
+                var b = gj.getBounds();
+                if (b.isValid()) {
+                    b.extend([lat, lng]);
+                    map.fitBounds(b.pad(0.12));
+                } else {
+                    map.setView([lat, lng], 11);
+                }
+            }
+            fnAirspaceMaps.push({ map: map });
+            setTimeout(function () {
+                map.invalidateSize();
+            }, 100);
+        });
+
+        notams.forEach(function (n, i) {
+            var el = document.getElementById('fnAirspaceMap-notam-' + i);
+            if (!el) return;
+            var map = L.map(el, { zoomControl: false, attributionControl: false });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            var overlay = L.layerGroup().addTo(map);
+            L.marker([lat, lng], { title: 'Location' }).addTo(overlay);
+            L.marker([n.lat, n.lng], { title: 'NOTAM centre' }).addTo(overlay);
+            if (n.radiusNm > 0 && n.radiusNm < 999) {
+                L.circle([n.lat, n.lng], {
+                    radius: n.radiusNm * 1852,
+                    color: '#dc2626',
+                    weight: 2,
+                    fillColor: '#dc2626',
+                    fillOpacity: 0.12
+                }).addTo(overlay);
+            }
+            var groupBounds = L.latLngBounds([lat, lng], [n.lat, n.lng]);
+            if (groupBounds.isValid()) {
+                map.fitBounds(groupBounds.pad(0.25));
+            } else {
+                map.setView([lat, lng], 10);
+            }
+            fnAirspaceMaps.push({ map: map });
+            setTimeout(function () {
+                map.invalidateSize();
+            }, 100);
+        });
+
+        setTimeout(function () {
+            fnAirspaceMaps.forEach(function (o) {
+                try {
+                    if (o.map) o.map.invalidateSize();
+                } catch (e) {}
+            });
+        }, 350);
+    }
+
+    async function loadFnAirspaceTab() {
+        if (typeof AirspaceNearby === 'undefined') {
+            alert('Airspace data module not loaded.');
+            return;
+        }
+        var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
+        if (!ll) {
+            alert('Location must include latitude and longitude (e.g. 51.05, -0.08).');
+            return;
+        }
+        var r = readFnAirspaceRadiusFromInput();
+        fnAirspaceRadiusKm = r;
+        syncFnAirspaceIntroKm();
+        destroyFnAirspaceMaps();
+        var loading = document.getElementById('fnAirspaceLoading');
+        var content = document.getElementById('fnAirspaceContent');
+        if (loading) loading.classList.remove('hidden');
+        try {
+            var notams = await AirspaceNearby.fetchNearbyNotams(ll.lat, ll.lng, r);
+            var air = await AirspaceNearby.fetchNearbyAirspace(ll.lat, ll.lng, r);
+            fnLastNotams = notams;
+            fnLastAirspace = air;
+            fnAirspaceDataLoaded = true;
+            if (content) renderFnAirspaceHtml(notams, air, ll.lat, ll.lng);
+            setTimeout(function () {
+                populateFnAirspaceMaps(ll.lat, ll.lng, notams, air);
+            }, 50);
+        } catch (e) {
+            console.error('Flight Notes airspace load failed:', e);
+            alert('Failed to load airspace data.');
+        } finally {
+            if (loading) loading.classList.add('hidden');
+        }
+    }
+
+    async function ensureFnAirspaceForPdf() {
+        if (typeof AirspaceNearby === 'undefined' || typeof L === 'undefined') return;
+        var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
+        if (!ll) return;
+        if (fnAirspaceMaps.length > 0) return;
+        if (
+            fnAirspaceDataLoaded &&
+            fnLastNotams &&
+            fnLastAirspace &&
+            fnLastNotams.length + fnLastAirspace.length === 0
+        ) {
+            return;
+        }
+        var r = readFnAirspaceRadiusFromInput();
+        fnAirspaceRadiusKm = r;
+        syncFnAirspaceIntroKm();
+        try {
+            var notams = await AirspaceNearby.fetchNearbyNotams(ll.lat, ll.lng, r);
+            var air = await AirspaceNearby.fetchNearbyAirspace(ll.lat, ll.lng, r);
+            fnLastNotams = notams;
+            fnLastAirspace = air;
+            fnAirspaceDataLoaded = true;
+            var c = document.getElementById('fnAirspaceContent');
+            if (c) renderFnAirspaceHtml(notams, air, ll.lat, ll.lng);
+            populateFnAirspaceMaps(ll.lat, ll.lng, notams, air);
+            await new Promise(function (res) {
+                setTimeout(res, 900);
+            });
+        } catch (e) {
+            console.warn('Flight Notes: PDF airspace prefetch failed', e);
+        }
+    }
+
+    /** Center-crop a canvas to a square (same idea as PdfTheme.captureSquareMap). */
+    function cropCanvasToSquare(srcCanvas) {
+        var sw = srcCanvas.width;
+        var sh = srcCanvas.height;
+        var side = Math.min(sw, sh);
+        var sx = Math.round((sw - side) / 2);
+        var sy = Math.round((sh - side) / 2);
+        var sq = document.createElement('canvas');
+        sq.width = side;
+        sq.height = side;
+        sq.getContext('2d').drawImage(srcCanvas, sx, sy, side, side, 0, 0, side, side);
+        return sq;
+    }
+
+    /** Plain-text explainer for PDF column (NOTAM / restriction details). */
+    function buildAirspaceDetailPdfForRow(kind, lat, lng, a, n) {
+        if (kind === 'airspace' && a) {
+            var lines = [];
+            lines.push(a.category + ' — ' + (a.name || a.designator));
+            lines.push('Designator: ' + a.designator);
+            lines.push('Lower / Upper: ' + a.lower + ' / ' + a.upper);
+            if (a.type) lines.push('Type: ' + a.type);
+            if (a.source) lines.push('Source: ' + a.source);
+            if (a.description) {
+                var d = String(a.description).replace(/\s+/g, ' ').trim();
+                if (d.length > 650) d = d.slice(0, 647) + '…';
+                lines.push('Description: ' + d);
+            }
+            return lines.join('\n');
+        }
+        if (kind === 'notam' && n) {
+            var dist = AirspaceNearby.haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
+            var lines = [];
+            lines.push('NOTAM ' + (n.id || '—'));
+            lines.push('Distance: ' + dist + ' km from your location');
+            if (n.radiusNm > 0 && n.radiusNm < 999) lines.push('Radius: ' + n.radiusNm + ' NM');
+            lines.push('Valid: ' + formatNotamDateFn(n.startValidity) + ' – ' + formatNotamDateFn(n.endValidity));
+            var txt = (n.text || '').replace(/\s+/g, ' ').trim();
+            if (txt.length > 1100) txt = txt.slice(0, 1097) + '…';
+            lines.push('Text: ' + txt);
+            return lines.join('\n');
+        }
+        return '—';
+    }
+
+    async function appendAirspacePdfPages(doc) {
+        if (typeof html2canvas === 'undefined' || typeof doc.autoTable !== 'function') return;
+        var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
+        if (!ll) return;
+        await ensureFnAirspaceForPdf();
+        var notams = fnLastNotams || [];
+        var airspace = fnLastAirspace || [];
+        if (notams.length === 0 && airspace.length === 0) return;
+
+        var items = [];
+        airspace.forEach(function (a, i) {
+            items.push({ kind: 'airspace', index: i, a: a, n: null });
+        });
+        notams.forEach(function (n, i) {
+            items.push({ kind: 'notam', index: i, a: null, n: n });
+        });
+
+        var MAP_THUMB_MM = 26;
+        var MAP_COL_W = 34;
+        var pdfMapEntries = [];
+
+        for (var j = 0; j < items.length; j++) {
+            var id = 'fnAirspaceMap-' + items[j].kind + '-' + items[j].index;
+            var el = document.getElementById(id);
+            if (!el) {
+                pdfMapEntries.push(null);
+                continue;
+            }
+            if (fnAirspaceMaps[j] && fnAirspaceMaps[j].map) {
+                try {
+                    fnAirspaceMaps[j].map.invalidateSize();
+                } catch (e) {}
+            }
+            await new Promise(function (r) {
+                setTimeout(r, 150);
+            });
+            try {
+                var canvas = await html2canvas(el, {
+                    useCORS: true,
+                    allowTaint: true,
+                    scale: 1.5,
+                    logging: false,
+                    backgroundColor: '#f5f6f8'
+                });
+                var square = cropCanvasToSquare(canvas);
+                pdfMapEntries.push({
+                    url: square.toDataURL('image/png'),
+                    pxW: square.width,
+                    pxH: square.height
+                });
+            } catch (e) {
+                console.warn('Flight Notes: airspace map PDF capture failed', e);
+                pdfMapEntries.push(null);
+            }
+        }
+
+        var body = items.map(function (it) {
+            var txt =
+                it.kind === 'airspace'
+                    ? buildAirspaceDetailPdfForRow('airspace', ll.lat, ll.lng, it.a, null)
+                    : buildAirspaceDetailPdfForRow('notam', ll.lat, ll.lng, null, it.n);
+            return ['', txt];
+        });
+
+        var ts = PdfTheme.tableStyles();
+        var tableW = PdfTheme.pageWidthMm() - 20;
+        var detailColW = tableW - MAP_COL_W;
+
+        PdfTheme.newPage(doc);
+        PdfTheme.addHeader(doc, 'Airspace & NOTAMs (' + fnAirspaceRadiusKm + ' km)', false);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(85, 85, 85);
+        doc.text('One row per restriction or NOTAM: map (left) and full details (right). Maps are indicative.', 10, 14);
+
+        doc.autoTable({
+            startY: 18,
+            head: [['Map', 'Details']],
+            body: body,
+            tableWidth: tableW,
+            columnStyles: {
+                0: { cellWidth: MAP_COL_W },
+                1: { cellWidth: detailColW }
+            },
+            headStyles: ts.headStyles,
+            bodyStyles: Object.assign({}, ts.bodyStyles, { valign: 'top' }),
+            alternateRowStyles: ts.alternateRowStyles,
+            styles: Object.assign({}, ts.styles, { minCellHeight: 26, valign: 'top' }),
+            margin: ts.margin,
+            tableLineColor: ts.tableLineColor,
+            tableLineWidth: ts.tableLineWidth,
+            didDrawCell: function (data) {
+                if (data.section !== 'body' || data.column.index !== 0) return;
+                var entry = pdfMapEntries[data.row.index];
+                if (!entry || !entry.url) return;
+                var pad = 1;
+                var cellH = data.cell.height > 1 ? data.cell.height : 26;
+                var maxBox = Math.min(
+                    MAP_THUMB_MM,
+                    data.cell.width - 2 * pad,
+                    cellH - 2 * pad
+                );
+                if (maxBox <= 0) return;
+                var dims = mapImageSizeMm(entry.pxW, entry.pxH, maxBox, maxBox);
+                var innerW = data.cell.width - 2 * pad;
+                var innerH = data.cell.height - 2 * pad;
+                var drawX = data.cell.x + pad + (innerW - dims.w) / 2;
+                var drawY = data.cell.y + pad + (innerH - dims.h) / 2;
+                doc.addImage(entry.url, 'PNG', drawX, drawY, dims.w, dims.h);
+            }
+        });
+    }
+
     /** Grow/shrink Conditions textarea to fit content (fetch + typing); cap height so very long notes scroll inside. */
     function autoResizeConditionsTextarea() {
         var ta = document.getElementById('fnWeather');
@@ -105,6 +631,28 @@
         return s ? s : '—';
     }
 
+    /** HTML date input is yyyy-mm-dd; exports show dd-mm-yyyy. */
+    function formatDateForExportDdMmYyyy(isoOrEmpty) {
+        var s = String(isoOrEmpty || '').trim();
+        if (!s) return '';
+        var m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return m[3] + '-' + m[2] + '-' + m[1];
+        return s;
+    }
+
+    /** Fit image into a max box (mm) without stretching — preserves aspect ratio. */
+    function mapImageSizeMm(canvasW, canvasH, maxWMm, maxHMm) {
+        if (!canvasW || !canvasH) return { w: maxWMm, h: maxHMm };
+        var ar = canvasW / canvasH;
+        var w = maxWMm;
+        var h = w / ar;
+        if (h > maxHMm) {
+            h = maxHMm;
+            w = h * ar;
+        }
+        return { w: w, h: h };
+    }
+
     /** Same map centre as Flight Notes mini-map — for email (mailto is plain text only; no embedded images). */
     function openStreetMapLink(lat, lng) {
         return (
@@ -127,7 +675,7 @@
         lines.push('AirPlot v3 — Flight Notes');
         lines.push('');
 
-        lines.push('Date: ' + dash(trimVal('fnDate')));
+        lines.push('Date: ' + dash(formatDateForExportDdMmYyyy(trimVal('fnDate'))));
         lines.push('Time: ' + dash(trimVal('fnTime')));
         lines.push('Location: ' + dash(trimVal('fnLocation')));
         var llPlain = parseLatLngFromLocationString(trimVal('fnLocation'));
@@ -149,7 +697,9 @@
         lines.push('Battery 4: ' + dash(trimVal('fnBattery4')));
         lines.push('Battery 4 time: ' + dash(trimVal('fnBattery4Time')));
 
+        lines.push('ALoS RAG Notes: ' + dash(trimVal('fnAlosRagNotes').replace(/\n/g, ' ')));
         lines.push('Weather: ' + dash(trimVal('fnWeather').replace(/\n/g, ' ')));
+        lines.push('Airspace: ' + fnAirspaceSummaryForExport());
         lines.push('');
         lines.push('Notes:');
         lines.push(trimVal('fnNotes') || '—');
@@ -158,13 +708,14 @@
     }
 
     function tableRowsForPdf() {
+        var alos = trimVal('fnAlosRagNotes');
         var w = trimVal('fnWeather');
         var llPdf = parseLatLngFromLocationString(trimVal('fnLocation'));
         var mapLinkRow = llPdf
             ? ['Map (OpenStreetMap)', openStreetMapLink(llPdf.lat, llPdf.lng)]
             : ['Map (OpenStreetMap)', '—'];
         return [
-            ['Date', dash(trimVal('fnDate'))],
+            ['Date', dash(formatDateForExportDdMmYyyy(trimVal('fnDate')))],
             ['Time', dash(trimVal('fnTime'))],
             ['Location', dash(trimVal('fnLocation'))],
             mapLinkRow,
@@ -181,7 +732,9 @@
             ['Battery 3 time', dash(trimVal('fnBattery3Time'))],
             ['Battery 4', dash(trimVal('fnBattery4'))],
             ['Battery 4 time', dash(trimVal('fnBattery4Time'))],
+            ['ALoS RAG Notes', alos || '—'],
             ['Weather', w || '—'],
+            ['Airspace', fnAirspaceSummaryForExport()],
             ['Notes', trimVal('fnNotes') || '—']
         ];
     }
@@ -721,7 +1274,7 @@
     }
 
     function emailSubject() {
-        var d = trimVal('fnDate');
+        var d = formatDateForExportDdMmYyyy(trimVal('fnDate'));
         return d ? 'Flight Notes — ' + d : 'Flight Notes';
     }
 
@@ -782,19 +1335,6 @@
         }
     }
 
-    /** Fit image into a max box (mm) without stretching — preserves aspect ratio. */
-    function mapImageSizeMm(canvasW, canvasH, maxWMm, maxHMm) {
-        if (!canvasW || !canvasH) return { w: maxWMm, h: maxHMm };
-        var ar = canvasW / canvasH;
-        var w = maxWMm;
-        var h = w / ar;
-        if (h > maxHMm) {
-            h = maxHMm;
-            w = h * ar;
-        }
-        return { w: w, h: h };
-    }
-
     async function onPdfClick() {
         var btn = document.getElementById('fnPdfBtn');
         var orig = btn ? btn.textContent : '';
@@ -808,8 +1348,7 @@
                 throw new Error('PDF library not loaded');
             }
 
-            var lightToggle = document.getElementById('fnLightThemeToggle');
-            PdfTheme.setLight(!!(lightToggle && lightToggle.checked));
+            PdfTheme.setLight(true);
             await PdfTheme.loadLogo();
 
             var ts = PdfTheme.tableStyles();
@@ -822,25 +1361,34 @@
                 var maxW = 100;
                 var maxH = 100;
                 var dims = mapImageSizeMm(mapShot.width, mapShot.height, maxW, maxH);
-                doc.addImage(mapShot.dataUrl, 'PNG', 10, startY, dims.w, dims.h);
+                var pageW = PdfTheme.pageWidthMm();
+                var mapX = (pageW - dims.w) / 2;
+                doc.addImage(mapShot.dataUrl, 'PNG', mapX, startY, dims.w, dims.h);
                 startY = startY + dims.h + 4;
             }
 
             var body = tableRowsForPdf();
+            var tableW = PdfTheme.pageWidthMm() - 20;
+            var fieldColW = 42;
             doc.autoTable({
                 startY: startY,
                 head: [['Field', 'Details']],
                 body: body,
+                tableWidth: tableW,
                 columnStyles: {
-                    0: { cellWidth: 52 },
-                    1: { cellWidth: 220 }
+                    0: { cellWidth: fieldColW },
+                    1: { cellWidth: tableW - fieldColW }
                 },
                 ...ts
             });
 
+            await appendAirspacePdfPages(doc);
+
             PdfTheme.addAllFooters(doc);
 
-            var datePart = trimVal('fnDate') || new Date().toISOString().slice(0, 10);
+            var datePart =
+                formatDateForExportDdMmYyyy(trimVal('fnDate')) ||
+                formatDateForExportDdMmYyyy(new Date().toISOString().slice(0, 10));
             doc.save('Flight_Notes_' + datePart + '.pdf');
         } catch (err) {
             console.error('Flight Notes PDF export failed:', err);
@@ -876,8 +1424,17 @@
     }
 
     function clearEntireForm() {
+        destroyFnAirspaceMaps();
+        fnLastNotams = null;
+        fnLastAirspace = null;
+        fnAirspaceDataLoaded = false;
+        var ac = document.getElementById('fnAirspaceContent');
+        if (ac) ac.innerHTML = '';
+        var al = document.getElementById('fnAirspaceLoading');
+        if (al) al.classList.add('hidden');
         var form = document.getElementById('flightNotesForm');
         if (form) form.reset();
+        syncFnAirspaceIntroKm();
         var ta = document.getElementById('fnWeather');
         if (ta) {
             ta.style.height = '';
@@ -909,6 +1466,17 @@
         }
 
         loadFlightNotesDraft();
+        syncFnAirspaceIntroKm();
+
+        var fnAirspaceRefresh = document.getElementById('fnAirspaceRefreshBtn');
+        var fnAirspaceRadius = document.getElementById('fnAirspaceRadiusKm');
+        if (fnAirspaceRefresh) fnAirspaceRefresh.addEventListener('click', loadFnAirspaceTab);
+        if (fnAirspaceRadius) {
+            fnAirspaceRadius.addEventListener('change', function () {
+                syncFnAirspaceIntroKm();
+                scheduleFlightNotesDraftSave();
+            });
+        }
 
         var nowBtn = document.getElementById('fnNowBtn');
         var searchLocationBtn = document.getElementById('fnSearchLocationBtn');

@@ -45,19 +45,21 @@ const PptxTheme = (() => {
 
     async function loadLogo() {
         if (logoBase64) return logoBase64;
-        try {
-            const resp = await fetch('assets/airplot-icon.png');
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            const blob = await resp.blob();
-            return new Promise(function (resolve) {
-                const reader = new FileReader();
-                reader.onloadend = function () { logoBase64 = reader.result; resolve(logoBase64); };
-                reader.readAsDataURL(blob);
-            });
-        } catch (e) {
-            console.warn('Could not load logo for PPTX branding:', e);
-            return null;
+        const paths = ['assets/icon-192.png', 'assets/airplot-icon.png'];
+        for (let i = 0; i < paths.length; i++) {
+            try {
+                const resp = await fetch(paths[i]);
+                if (!resp.ok) continue;
+                const blob = await resp.blob();
+                return new Promise(function (resolve) {
+                    const reader = new FileReader();
+                    reader.onloadend = function () { logoBase64 = reader.result; resolve(logoBase64); };
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) { /* try next */ }
         }
+        console.warn('Could not load logo for PPTX branding (tried icon-192.png, airplot-icon.png).');
+        return null;
     }
 
     function applyTheme(pptx, logo) {

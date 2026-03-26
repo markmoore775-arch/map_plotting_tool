@@ -172,6 +172,11 @@
                 </div>
             </section>
 
+            <section class="fn-section" aria-labelledby="fn-alos-rag-heading">
+                <h2 id="fn-alos-rag-heading" class="fn-section-title">ALoS RAG Notes</h2>
+                <textarea id="fnAlosRagNotes" name="fnAlosRagNotes" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Line-of-sight risk (red / amber / green) and related notes…" aria-labelledby="fn-alos-rag-heading"></textarea>
+            </section>
+
             <section class="fn-section" aria-labelledby="fn-weather-heading">
                 <h2 id="fn-weather-heading" class="fn-section-title">Weather</h2>
                 <div class="fn-weather-actions">
@@ -184,6 +189,29 @@
                 <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Time uses <strong>Date</strong> and <strong>Time</strong> above when both are set; otherwise the current hour.</p>
                 <label class="fn-label" for="fnWeather">Conditions</label>
                 <textarea id="fnWeather" name="fnWeather" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Wind, visibility, cloud, etc."></textarea>
+            </section>
+
+            <section class="fn-section" aria-labelledby="fn-airspace-heading">
+                <h2 id="fn-airspace-heading" class="fn-section-title">Airspace</h2>
+                <p class="fn-airspace-intro">
+                    NOTAMs, FRZs, and restricted airspace within
+                    <strong id="fnAirspaceIntroKm">3</strong> km of the location (latitude &amp; longitude in <strong>Location</strong> above).
+                </p>
+                <div class="fn-airspace-toolbar">
+                    <label class="fn-label fn-airspace-radius-label" for="fnAirspaceRadiusKm">Search radius (km)</label>
+                    <input type="number" class="fn-input fn-airspace-radius-input" id="fnAirspaceRadiusKm" name="fnAirspaceRadiusKm" min="1" max="100" step="1" value="3" inputmode="numeric" />
+                    <button type="button" class="fn-btn fn-btn-now" id="fnAirspaceRefreshBtn" title="Load NOTAMs and UK airspace near your coordinates">
+                        Refresh
+                    </button>
+                </div>
+                <div id="fnAirspaceLoading" class="fn-airspace-loading hidden" role="status" aria-live="polite">
+                    <p>Loading airspace data…</p>
+                </div>
+                <div id="fnAirspaceContent" class="fn-airspace-content"></div>
+                <p class="fn-airspace-attribution">
+                    NOTAMs:
+                    <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS) · Airspace: UK AIP / NATS
+                </p>
             </section>
 
             <section class="fn-section" aria-labelledby="fn-notes-heading">
@@ -229,7 +257,8 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="js/pdf-theme.js?v=2"></script>
-    <script src="js/flight-notes.js?v=12"></script>
+    <script src="js/pdf-theme.js?v=5"></script>
+    <script src="js/airspace-nearby.js?v=1"></script>
+    <script src="js/flight-notes.js?v=23"></script>
 </body>
 </html>
