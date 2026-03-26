@@ -666,7 +666,7 @@
     function initMap() {
         map = L.map('map', {
             center: [51.5074, -0.1278],
-            zoom: 11,
+            zoom: 13,
             zoomControl: true
         });
 

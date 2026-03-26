@@ -210,7 +210,11 @@
                 if (a.type) bodyLines.push('<p><strong>Type</strong> ' + escapeHtmlFn(a.type) + '</p>');
                 if (a.source) bodyLines.push('<p><strong>Source</strong> ' + escapeHtmlFn(a.source) + '</p>');
                 if (a.description) {
-                    bodyLines.push('<p class="fn-airspace-detail-desc">' + escapeHtmlFn(a.description) + '</p>');
+                    bodyLines.push(
+                        '<p class="fn-airspace-detail-desc">' +
+                            escapeHtmlFn(AirspaceNearby.htmlToPlainText(a.description)) +
+                            '</p>'
+                    );
                 }
                 content.insertAdjacentHTML(
                     'beforeend',
@@ -472,7 +476,7 @@
             if (a.type) lines.push('Type: ' + a.type);
             if (a.source) lines.push('Source: ' + a.source);
             if (a.description) {
-                var d = String(a.description).replace(/\s+/g, ' ').trim();
+                var d = AirspaceNearby.htmlToPlainText(a.description).replace(/\s+/g, ' ').trim();
                 if (d.length > 650) d = d.slice(0, 647) + '…';
                 lines.push('Description: ' + d);
             }
@@ -581,7 +585,10 @@
                 0: { cellWidth: MAP_COL_W },
                 1: { cellWidth: detailColW }
             },
-            headStyles: ts.headStyles,
+            headStyles: Object.assign({}, ts.headStyles, {
+                minCellHeight: 6,
+                valign: 'middle'
+            }),
             bodyStyles: Object.assign({}, ts.bodyStyles, { valign: 'top' }),
             alternateRowStyles: ts.alternateRowStyles,
             styles: Object.assign({}, ts.styles, { minCellHeight: 26, valign: 'top' }),

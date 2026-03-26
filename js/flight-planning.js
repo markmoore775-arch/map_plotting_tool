@@ -1012,7 +1012,7 @@
         btn.querySelector('span').textContent = 'Exporting…';
 
         try {
-            PptxTheme.setLight(false);
+            PptxTheme.setLight(true);
 
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';

@@ -43,6 +43,55 @@ const PptxTheme = (() => {
         _light = !!isLight;
     }
 
+    /**
+     * Match PdfTheme: raster logo (light glyph on dark) → black pin/drone on white for slide headers.
+     */
+    function dataUrlToBlackOnWhitePng(dataUrl) {
+        return new Promise(function (resolve, reject) {
+            var img = new Image();
+            img.onload = function () {
+                try {
+                    var w = img.naturalWidth;
+                    var h = img.naturalHeight;
+                    if (!w || !h) {
+                        resolve(dataUrl);
+                        return;
+                    }
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    var id = ctx.getImageData(0, 0, w, h);
+                    var d = id.data;
+                    var lumThreshold = 135;
+                    for (var i = 0; i < d.length; i += 4) {
+                        var lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                        if (lum > lumThreshold) {
+                            d[i] = 0;
+                            d[i + 1] = 0;
+                            d[i + 2] = 0;
+                            d[i + 3] = 255;
+                        } else {
+                            d[i] = 255;
+                            d[i + 1] = 255;
+                            d[i + 2] = 255;
+                            d[i + 3] = 255;
+                        }
+                    }
+                    ctx.putImageData(id, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            img.onerror = function () {
+                resolve(dataUrl);
+            };
+            img.src = dataUrl;
+        });
+    }
+
     async function loadLogo() {
         if (logoBase64) return logoBase64;
         const paths = ['assets/icon-192.png', 'assets/airplot-icon.png'];
@@ -51,11 +100,22 @@ const PptxTheme = (() => {
                 const resp = await fetch(paths[i]);
                 if (!resp.ok) continue;
                 const blob = await resp.blob();
-                return new Promise(function (resolve) {
+                const rawUrl = await new Promise(function (resolve, reject) {
                     const reader = new FileReader();
-                    reader.onloadend = function () { logoBase64 = reader.result; resolve(logoBase64); };
+                    reader.onerror = function () {
+                        reject(new Error('read failed'));
+                    };
+                    reader.onloadend = function () {
+                        resolve(reader.result);
+                    };
                     reader.readAsDataURL(blob);
                 });
+                try {
+                    logoBase64 = await dataUrlToBlackOnWhitePng(rawUrl);
+                } catch (e) {
+                    logoBase64 = rawUrl;
+                }
+                return logoBase64;
             } catch (e) { /* try next */ }
         }
         console.warn('Could not load logo for PPTX branding (tried icon-192.png, airplot-icon.png).');
@@ -122,39 +182,137 @@ const PptxTheme = (() => {
         return sq.toDataURL('image/png');
     }
 
+    /** Word-wrap line count for panel width (inches) and font size (pt). */
+    function estimateInfoPanelLines(text, widthInches, fontSizePt) {
+        if (text == null || text === '') return 1;
+        var avgCharW = (fontSizePt / 72) * 0.5;
+        var cpl = Math.max(12, Math.floor(widthInches / avgCharW));
+        var words = String(text).split(/\s+/);
+        var lines = 1;
+        var cur = 0;
+        for (var wi = 0; wi < words.length; wi++) {
+            var word = words[wi];
+            var need = word.length + (cur > 0 ? 1 : 0);
+            if (cur + need > cpl && cur > 0) {
+                lines++;
+                cur = word.length;
+            } else {
+                cur += need;
+            }
+        }
+        return Math.max(1, lines);
+    }
+
     function addInfoPanel(slide, x, y, w, h, rows) {
         var C = colors();
+        var padding = 0.2;
+        var labelH = 0.2;
+        var defaultValueH = 0.28;
+        var textW = w - 0.5;
+
+        /** Coloured status word + normal explainer (Flight Weather panel). */
+        function suitabilityValueHeight(row) {
+            var sb = row.suitability;
+            var fs = row.fontSize || 13;
+            var efs = Math.max(10, fs - 1.5);
+            var labelLineH = Math.max(0.2, (fs / 72) * 1.18);
+            var explLines = estimateInfoPanelLines(sb.explainer, textW, efs);
+            var lineGap = (efs / 72) * 1.22;
+            var explBlockH = Math.max(0.32, explLines * lineGap + 0.04);
+            return labelLineH + 0.06 + explBlockH;
+        }
+
+        function valueBlockHeight(row) {
+            if (row.suitability) return suitabilityValueHeight(row);
+            if (row.value == null || row.value === '') return 0;
+            if (typeof row.valueHeight === 'number' && row.valueHeight > 0) return row.valueHeight;
+            var fs = row.fontSize || 13;
+            var lines = estimateInfoPanelLines(String(row.value), textW, fs);
+            var lineGap = (fs / 72) * 1.22;
+            return Math.max(defaultValueH, lines * lineGap + 0.04);
+        }
+
+        function rowTotalHeight(row) {
+            var vh = valueBlockHeight(row);
+            if (vh === 0 && !row.suitability) return Math.max(labelH + 0.08, 0.35);
+            return labelH + vh + 0.06;
+        }
+
+        var totalH = padding;
+        var ri;
+        for (ri = 0; ri < rows.length; ri++) {
+            totalH += rowTotalHeight(rows[ri]);
+        }
+        totalH += padding;
+
+        var panelH = Math.max(h, totalH);
+
         slide.addShape('roundRect', {
-            x: x, y: y, w: w, h: h,
+            x: x, y: y, w: w, h: panelH,
             fill: { color: C.surface },
             rectRadius: 0.08,
             line: { color: C.border, width: 0.5 }
         });
-        var rowH = 0.55;
-        var padding = 0.2;
+
+        var cy = y + padding;
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
-            var ry = y + padding + (i * rowH);
+            var ry = cy;
+            var vh = valueBlockHeight(row);
+            var rH = rowTotalHeight(row);
+
             if (row.label) {
                 slide.addText(row.label, {
-                    x: x + 0.25, y: ry, w: w - 0.5, h: 0.2,
+                    x: x + 0.25, y: ry, w: textW, h: labelH,
                     fontSize: 9, fontFace: 'Arial', color: C.textMuted,
-                    bold: true, letterSpacing: 0.5
+                    bold: true, letterSpacing: 0.5, valign: 'top'
                 });
             }
-            if (row.value) {
-                slide.addText(row.value, {
-                    x: x + 0.25, y: ry + 0.18, w: w - 0.5, h: 0.28,
+            if (row.suitability) {
+                var sb = row.suitability;
+                var fs = row.fontSize || 13;
+                var efs = Math.max(10, fs - 1.5);
+                var labelLineH = Math.max(0.2, (fs / 72) * 1.18);
+                var explLines = estimateInfoPanelLines(sb.explainer, textW, efs);
+                var lineGap = (efs / 72) * 1.22;
+                var explBlockH = Math.max(0.32, explLines * lineGap + 0.04);
+                slide.addText(sb.label, {
+                    x: x + 0.25,
+                    y: ry + labelH,
+                    w: textW * 0.42,
+                    h: labelLineH,
+                    fontSize: fs,
+                    bold: true,
+                    color: sb.labelColor,
+                    fontFace: 'Arial',
+                    valign: 'top'
+                });
+                slide.addText(sb.explainer, {
+                    x: x + 0.25,
+                    y: ry + labelH + labelLineH + 0.05,
+                    w: textW,
+                    h: explBlockH,
+                    fontSize: efs,
+                    color: C.textPrimary,
+                    fontFace: 'Arial',
+                    wrap: true,
+                    valign: 'top'
+                });
+            } else if (row.value != null && row.value !== '') {
+                slide.addText(String(row.value), {
+                    x: x + 0.25, y: ry + labelH, w: textW, h: vh,
                     fontSize: row.fontSize || 13, fontFace: 'Arial',
-                    color: row.color || C.textPrimary, bold: row.bold || false
+                    color: row.color || C.textPrimary, bold: row.bold || false,
+                    wrap: true, valign: 'top'
                 });
             }
             if (row.divider && i < rows.length - 1) {
                 slide.addShape('line', {
-                    x: x + 0.25, y: ry + rowH - 0.05, w: w - 0.5, h: 0,
+                    x: x + 0.25, y: ry + rH - 0.04, w: textW, h: 0,
                     line: { color: C.border, width: 0.3 }
                 });
             }
+            cy += rH;
         }
     }
 

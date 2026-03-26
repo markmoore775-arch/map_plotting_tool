@@ -195,7 +195,7 @@ const Exporters = (() => {
     // ---- PowerPoint Export ----
 
     async function exportPptx(mapElement, points, shapes, light) {
-        PptxTheme.setLight(!!light);
+        PptxTheme.setLight(light !== false);
 
         const pptx = new PptxGenJS();
         pptx.layout = 'LAYOUT_WIDE';

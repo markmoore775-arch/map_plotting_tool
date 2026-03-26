@@ -373,7 +373,7 @@ body.weather-mode .leaflet-top.leaflet-left {
     position: relative;
     flex-shrink: 0;
     width: min(720px, 95vw);
-    min-width: 480px;
+    min-width: 0;
     max-width: 95vw;
     height: auto;
     max-height: min(90vh, calc(100dvh - 24px));
@@ -400,18 +400,27 @@ body.weather-mode .leaflet-top.leaflet-left {
 .weather-header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
 }
 
 .weather-export-theme-box {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 10px;
-    padding: 6px 10px;
+    flex-wrap: nowrap;
+    gap: 6px 8px;
+    padding: 5px 8px;
     border: 1px solid var(--sidebar-border, #3a3a50);
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .weather-export-theme-label {
@@ -439,6 +448,27 @@ body.weather-mode .leaflet-top.leaflet-left {
     width: 14px;
     height: 14px;
     margin: 0;
+    flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+    .weather-export-theme-label {
+        font-size: 10px;
+    }
+
+    .weather-export-theme-option {
+        font-size: 11px;
+        gap: 4px;
+    }
+
+    .weather-export-theme-box {
+        padding: 4px 6px;
+        gap: 4px 6px;
+    }
+
+    .weather-header-actions {
+        gap: 6px;
+    }
 }
 
 .weather-report-header h2 {
@@ -551,37 +581,50 @@ body.weather-mode .leaflet-top.leaflet-left {
     display: block;
 }
 
-/* Suitability summary */
-.weather-summary {
+/* Suitability summary — coloured status word + neutral explainer */
+.weather-summary.weather-summary--subtle {
     padding: 12px 14px;
     border-radius: 6px;
-    margin-bottom: 16px;
-    font-weight: 600;
+    margin-bottom: 8px;
     font-size: 14px;
+    line-height: 1.45;
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
 }
 
-.weather-summary.good {
-    background: rgba(76, 175, 80, 0.2);
-    border: 1px solid rgba(76, 175, 80, 0.2);
-    color: var(--success, #4caf50);
+.weather-suitability-label {
+    display: block;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
 }
 
-.weather-summary.caution {
-    background: rgba(255, 152, 0, 0.2);
-    border: 1px solid rgba(255, 152, 0, 0.2);
-    color: var(--warning, #ff9800);
+.weather-summary--subtle.good .weather-suitability-label {
+    color: #81c784;
 }
 
-.weather-summary.poor {
-    background: rgba(224, 85, 85, 0.2);
-    border: 1px solid rgba(224, 85, 85, 0.2);
-    color: var(--danger, #e05555);
+.weather-summary--subtle.caution .weather-suitability-label {
+    color: #ffb74d;
+}
+
+.weather-summary--subtle.poor .weather-suitability-label {
+    color: #e57373;
+}
+
+.weather-suitability-explainer {
+    display: block;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--sidebar-text, #e0e0e8);
 }
 
 .weather-summary-text {
     font-size: 12px;
     line-height: 1.5;
     color: var(--sidebar-text-muted, #9999aa);
+    margin-top: 0;
     margin-bottom: 16px;
 }
 
@@ -929,13 +972,14 @@ body.weather-mode .leaflet-top.leaflet-left {
     overflow-y: auto;
 }
 
-/* Fixed height so Leaflet always has a non-zero box (flex + hidden tabs can collapse aspect-ratio) */
+/* Square box: matches PPTX square crop and avoids asymmetric html2canvas + Leaflet issues */
 .weather-airspace-item-minimap {
     position: relative;
     width: 100%;
     max-width: 280px;
-    height: 240px;
-    min-height: 240px;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    min-height: 0;
     margin-left: auto;
     margin-right: auto;
     margin-top: 10px;
@@ -950,7 +994,7 @@ body.weather-mode .leaflet-top.leaflet-left {
     position: relative !important;
     width: 100% !important;
     height: 100% !important;
-    min-height: 240px;
+    min-height: 0 !important;
     background: #1a1a2e;
     font-family: inherit;
 }
@@ -1344,6 +1388,27 @@ body.weather-mode .leaflet-top.leaflet-left {
 .weather-light-theme .weather-alt-note,
 .weather-light-theme .weather-alt-title {
     color: #666;
+}
+
+.weather-light-theme .weather-summary.weather-summary--subtle {
+    background: #f0f1f3;
+    border-color: #d8d9dc;
+}
+
+.weather-light-theme .weather-suitability-explainer {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-summary--subtle.good .weather-suitability-label {
+    color: #2e7d32;
+}
+
+.weather-light-theme .weather-summary--subtle.caution .weather-suitability-label {
+    color: #e65100;
+}
+
+.weather-light-theme .weather-summary--subtle.poor .weather-suitability-label {
+    color: #c62828;
 }
 
 .weather-light-theme .weather-alt-section {

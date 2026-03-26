@@ -200,41 +200,113 @@ const PdfTheme = (() => {
 
     function addInfoPanel(doc, x, y, w, rows) {
         var c = C();
-        var rowH = 10;
         var padding = 4;
-        var h = padding * 2 + rows.length * rowH;
+        var maxTextW = w - 10;
+        var defaultValueFontSize = 9;
+
+        function measureValueBlock(row) {
+            if (row.suitability) {
+                var sb = row.suitability;
+                var vSize = row.fontSize || defaultValueFontSize;
+                var eSize = Math.max(7.5, vSize - 1);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(vSize);
+                var labelH = vSize * 0.42;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(eSize);
+                var explLines = doc.splitTextToSize(String(sb.explainer || ''), maxTextW);
+                if (!explLines.length) explLines = [''];
+                var lhExpl = eSize * 0.42;
+                var valueH = labelH + 2 + explLines.length * lhExpl;
+                return {
+                    suitability: true,
+                    label: String(sb.label || ''),
+                    labelRgb: sb.labelColor,
+                    explLines: explLines,
+                    vSize: vSize,
+                    eSize: eSize,
+                    labelH: labelH,
+                    lhExpl: lhExpl,
+                    valueH: valueH
+                };
+            }
+            var vSize = row.fontSize || defaultValueFontSize;
+            doc.setFont('helvetica', row.bold ? 'bold' : 'normal');
+            doc.setFontSize(vSize);
+            var valStr = row.value != null ? String(row.value) : '';
+            var lines = doc.splitTextToSize(valStr, maxTextW);
+            if (!lines.length) lines = [''];
+            var lhMm = vSize * 0.42;
+            return { lines: lines, lhMm: lhMm, vSize: vSize, bold: !!row.bold, valueH: lines.length * lhMm };
+        }
+
+        var measured = [];
+        var totalH = padding;
+        for (var ri = 0; ri < rows.length; ri++) {
+            measured.push(measureValueBlock(rows[ri]));
+            var labelGap = rows[ri].label ? 4 : 0;
+            var rowH = labelGap + 3 + measured[ri].valueH + 3;
+            totalH += rowH;
+        }
+        totalH += padding;
+
         doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
-        doc.roundedRect(x, y, w, h, 2, 2, 'F');
+        doc.roundedRect(x, y, w, totalH, 2, 2, 'F');
         doc.setDrawColor(c.border[0], c.border[1], c.border[2]);
         doc.setLineWidth(0.3);
-        doc.roundedRect(x, y, w, h, 2, 2, 'S');
+        doc.roundedRect(x, y, w, totalH, 2, 2, 'S');
 
+        var cy = y + padding;
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
-            var ry = y + padding + i * rowH;
+            var m = measured[i];
+            var labelGap = row.label ? 4 : 0;
+            var rowH = labelGap + 3 + m.valueH + 3;
+
             if (row.label) {
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(6.5);
                 doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-                doc.text(row.label, x + 5, ry + 3);
+                doc.text(row.label, x + 5, cy + 3);
             }
-            if (row.value) {
-                doc.setFont('helvetica', row.bold ? 'bold' : 'normal');
-                doc.setFontSize(row.fontSize || 9);
+            var vx = x + 5;
+            var firstBaseline = cy + (row.label ? 8 : 4);
+            if (m.suitability) {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(m.vSize);
+                if (m.labelRgb) {
+                    doc.setTextColor(m.labelRgb[0], m.labelRgb[1], m.labelRgb[2]);
+                } else {
+                    doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                }
+                doc.text(m.label, vx, firstBaseline);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(m.eSize);
+                doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                var explY = firstBaseline + m.labelH + 2;
+                for (var ei = 0; ei < m.explLines.length; ei++) {
+                    doc.text(m.explLines[ei], vx, explY + ei * m.lhExpl);
+                }
+            } else {
+                doc.setFont('helvetica', m.bold ? 'bold' : 'normal');
+                doc.setFontSize(m.vSize);
                 if (row.color) {
                     doc.setTextColor(row.color[0], row.color[1], row.color[2]);
                 } else {
                     doc.setTextColor(c.text[0], c.text[1], c.text[2]);
                 }
-                doc.text(String(row.value), x + 5, ry + 8);
+                for (var li = 0; li < m.lines.length; li++) {
+                    doc.text(m.lines[li], vx, firstBaseline + li * m.lhMm);
+                }
             }
             if (row.divider && i < rows.length - 1) {
                 doc.setDrawColor(c.border[0], c.border[1], c.border[2]);
                 doc.setLineWidth(0.15);
-                doc.line(x + 5, ry + rowH - 0.5, x + w - 5, ry + rowH - 0.5);
+                doc.line(x + 5, cy + rowH - 0.5, x + w - 5, cy + rowH - 0.5);
             }
+            cy += rowH;
         }
-        return h;
+        return totalH;
     }
 
     function tableStyles() {

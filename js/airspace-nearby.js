@@ -6,6 +6,46 @@
 var AirspaceNearby = (function () {
     'use strict';
 
+    /**
+     * UK AIP / NATS airspace descriptions are often HTML tables. Strip to readable plain text
+     * for UI and exports (avoids showing raw tags when escaped, or unsafe innerHTML).
+     */
+    function htmlToPlainText(html) {
+        if (html == null || html === '') return '';
+        var s = String(html);
+        s = s.replace(/<\s*br\s*\/?>/gi, '\n');
+        s = s.replace(/<\/\s*tr\s*>/gi, '\n');
+        s = s.replace(/<\/\s*p\s*>/gi, '\n');
+        s = s.replace(/<\/\s*div\s*>/gi, '\n');
+        s = s.replace(/<\/\s*td\s*>/gi, ' ');
+        s = s.replace(/<\/\s*th\s*>/gi, ' ');
+        s = s.replace(/<[^>]+>/g, '');
+        if (typeof document !== 'undefined') {
+            try {
+                var ta = document.createElement('textarea');
+                ta.innerHTML = s;
+                s = ta.value;
+            } catch (e) { /* keep stripped string */ }
+        } else {
+            s = s
+                .replace(/&nbsp;/gi, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#(\d+);/g, function (_, n) {
+                    return String.fromCharCode(parseInt(n, 10));
+                })
+                .replace(/&#x([0-9a-f]+);/gi, function (_, h) {
+                    return String.fromCharCode(parseInt(h, 16));
+                });
+        }
+        s = s.replace(/[ \t\f\v]+/g, ' ');
+        s = s.replace(/\n[ \t]+/g, '\n');
+        s = s.replace(/\n{3,}/g, '\n\n');
+        return s.trim();
+    }
+
     function haversineKm(lat1, lng1, lat2, lng2) {
         var R = 6371;
         var dLat = (lat2 - lat1) * Math.PI / 180;
@@ -165,6 +205,7 @@ var AirspaceNearby = (function () {
         haversineKm: haversineKm,
         classifyAirspaceFeature: classifyAirspaceFeature,
         fetchNearbyNotams: fetchNearbyNotams,
-        fetchNearbyAirspace: fetchNearbyAirspace
+        fetchNearbyAirspace: fetchNearbyAirspace,
+        htmlToPlainText: htmlToPlainText
     };
 })();

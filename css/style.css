@@ -456,6 +456,12 @@ body.sidebar-collapsed .map-logo {
     visibility: hidden;
 }
 
+/* Hide mobile Help FAB — it sits outside .map-top-chrome and would show through splash fade-in */
+.intro-overlay:not(.hidden) ~ .mobile-map-actions {
+    visibility: hidden;
+    pointer-events: none;
+}
+
 /* ---- Shared welcome pill (index map, flight-planning, weather) ---- */
 .fp-welcome-bar {
     position: fixed;
