@@ -644,16 +644,33 @@
     }
 
     let touchId = null;
-    let lastTouch = { x: 0, y: 0 };
+    /** Relative drag: finger delta from pointerdown, not absolute finger → ship (avoids snap + thumb cover). */
+    let touchStartGx = 0;
+    let touchStartGy = 0;
+    let touchStartPx = 0;
+    let touchStartPy = 0;
 
-    function touchToPlayer(clientX, clientY) {
+    /** CSS px — ship stays roughly this far above the touch on touch pointers. */
+    const TOUCH_THUMB_LIFT_PX = 64;
+
+    function clientToGame(clientX, clientY) {
         const rect = canvas.getBoundingClientRect();
         const tx = clientX - rect.left;
         const ty = clientY - rect.top;
         const scaleX = W / rect.width;
         const scaleY = H / rect.height;
-        player.x = Math.max(player.r + 4, Math.min(W - player.r - 4, tx * scaleX));
-        player.y = Math.max(player.r + 4, Math.min(H - player.r - 4, ty * scaleY));
+        return {
+            gx: tx * scaleX,
+            gy: ty * scaleY,
+            rect
+        };
+    }
+
+    function applyDragFromPointer(clientX, clientY) {
+        const { gx, gy } = clientToGame(clientX, clientY);
+        const m = player.r + 4;
+        player.x = Math.max(m, Math.min(W - m, touchStartPx + gx - touchStartGx));
+        player.y = Math.max(m, Math.min(H - m, touchStartPy + gy - touchStartGy));
     }
 
     canvas.addEventListener('pointerdown', (e) => {
@@ -661,16 +678,19 @@
         if (e.target.closest('.dr-mobile-fire')) return;
         touchId = e.pointerId;
         canvas.setPointerCapture(e.pointerId);
-        lastTouch.x = e.clientX;
-        lastTouch.y = e.clientY;
-        touchToPlayer(e.clientX, e.clientY);
+        const { gx, gy, rect } = clientToGame(e.clientX, e.clientY);
+        const liftGame =
+            e.pointerType === 'touch' ? (TOUCH_THUMB_LIFT_PX / rect.height) * H : 0;
+        touchStartGx = gx;
+        touchStartGy = gy + liftGame;
+        touchStartPx = player.x;
+        touchStartPy = player.y;
+        applyDragFromPointer(e.clientX, e.clientY);
     });
 
     canvas.addEventListener('pointermove', (e) => {
         if (state.phase !== 'play' || touchId !== e.pointerId) return;
-        touchToPlayer(e.clientX, e.clientY);
-        lastTouch.x = e.clientX;
-        lastTouch.y = e.clientY;
+        applyDragFromPointer(e.clientX, e.clientY);
     });
 
     canvas.addEventListener('pointerup', (e) => {
