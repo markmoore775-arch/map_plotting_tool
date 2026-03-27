@@ -1,0 +1,335 @@
+/* Drone Run — standalone arcade page (AirPlot palette) */
+
+:root {
+    --dr-bg: #0d1118;
+    --dr-surface: #161b26;
+    --dr-border: #2a3344;
+    --dr-text: #e8eaef;
+    --dr-muted: #8b95a8;
+    --dr-primary: #5b8def;
+    --dr-primary-hover: #4a7de0;
+    --dr-danger: #e05555;
+    --dr-accent: #3ddc97;
+    --dr-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html.drone-run-page,
+body.drone-run-mode {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--dr-font);
+    font-size: 14px;
+    color: var(--dr-text);
+    background: var(--dr-bg);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dr-top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-top: max(10px, env(safe-area-inset-top));
+    background: linear-gradient(180deg, rgba(13, 17, 24, 0.97) 0%, rgba(13, 17, 24, 0.88) 100%);
+    border-bottom: 1px solid var(--dr-border);
+}
+
+.fp-welcome-bar {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.fp-welcome-home-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dr-text);
+    text-decoration: none;
+    background: var(--dr-surface);
+    border: 1px solid var(--dr-primary);
+    border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.fp-welcome-home-link:hover {
+    background: #1c2433;
+    border-color: var(--dr-primary-hover);
+    color: #fff;
+}
+
+.fp-welcome-home-link:focus-visible {
+    outline: 2px solid var(--dr-primary);
+    outline-offset: 2px;
+}
+
+.fp-welcome-logo {
+    flex-shrink: 0;
+    display: block;
+}
+
+.fp-welcome-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 4px;
+    padding-left: 12px;
+    border-left: 1px solid var(--dr-border);
+    font-weight: 500;
+    color: var(--dr-primary);
+}
+
+@media (max-width: 520px) {
+    .fp-welcome-title {
+        display: none;
+    }
+
+    .fp-welcome-cta {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+    }
+
+    .fp-welcome-home-link {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+}
+
+.dr-canvas-host {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--dr-top-pad, 64px);
+    bottom: 0;
+    touch-action: none;
+    background: var(--dr-bg);
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.dr-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(5, 8, 14, 0.72);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.dr-overlay[hidden] {
+    display: none;
+}
+
+.dr-panel {
+    max-width: 420px;
+    width: 100%;
+    padding: 28px 24px;
+    background: var(--dr-surface);
+    border: 1px solid var(--dr-border);
+    border-radius: 14px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+.dr-panel h1 {
+    margin: 0 0 8px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--dr-text);
+}
+
+.dr-panel .dr-sub {
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: var(--dr-muted);
+    line-height: 1.5;
+}
+
+.dr-instructions {
+    margin: 0 0 20px;
+    padding-left: 1.1em;
+    font-size: 13px;
+    color: var(--dr-muted);
+    line-height: 1.65;
+}
+
+.dr-instructions li {
+    margin-bottom: 6px;
+}
+
+.dr-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.dr-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 10px;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.dr-btn:active {
+    transform: scale(0.98);
+}
+
+.dr-btn-primary {
+    background: var(--dr-primary);
+    color: #fff;
+}
+
+.dr-btn-primary:hover {
+    background: var(--dr-primary-hover);
+}
+
+.dr-btn-ghost {
+    background: transparent;
+    color: var(--dr-muted);
+    border: 1px solid var(--dr-border);
+}
+
+.dr-btn-ghost:hover {
+    color: var(--dr-text);
+    border-color: var(--dr-primary);
+}
+
+.dr-gameover-stats {
+    margin: 12px 0 18px;
+    font-size: 15px;
+    color: var(--dr-text);
+}
+
+.dr-gameover-stats strong {
+    color: var(--dr-accent);
+}
+
+.dr-canvas-host:has(#drOverlayStart:not([hidden])) .dr-hud,
+.dr-canvas-host:has(#drOverlayGameOver:not([hidden])) .dr-hud,
+.dr-canvas-host:has(#drOverlayStart:not([hidden])) .dr-mobile-fire,
+.dr-canvas-host:has(#drOverlayGameOver:not([hidden])) .dr-mobile-fire {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dr-hud {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 5;
+    font-size: 12px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.dr-hud-block {
+    background: rgba(10, 14, 22, 0.65);
+    border: 1px solid rgba(91, 141, 239, 0.35);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--dr-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.dr-hud-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--dr-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+}
+
+.dr-battery-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.dr-battery-seg {
+    width: 22px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--dr-accent);
+    opacity: 0.35;
+}
+
+.dr-battery-seg.on {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(61, 220, 151, 0.5);
+}
+
+.dr-mobile-fire {
+    position: absolute;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    right: max(16px, env(safe-area-inset-right));
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid var(--dr-primary);
+    background: rgba(91, 141, 239, 0.2);
+    color: var(--dr-primary);
+    font-size: 11px;
+    font-weight: 700;
+    z-index: 8;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .dr-mobile-fire {
+        display: flex;
+    }
+}
+
+.dr-mobile-fire:active {
+    background: rgba(91, 141, 239, 0.4);
+}
+
+.dr-disclaimer {
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--dr-muted);
+    line-height: 1.4;
+}

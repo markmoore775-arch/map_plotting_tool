@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" class="drone-run-page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Drone Run | AirPlot</title>
+    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/drone-run.css?v=2">
+</head>
+<body class="drone-run-mode">
+    <header class="dr-top-bar">
+        <nav class="fp-welcome-bar" aria-label="AirPlot home">
+            <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
+                <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+                <span class="fp-welcome-title">AirPlot</span>
+                <span class="fp-welcome-cta">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                    Welcome
+                </span>
+            </a>
+        </nav>
+    </header>
+
+    <div class="dr-canvas-host">
+        <canvas id="gameCanvas" tabindex="0" role="application" aria-label="Drone Run game"></canvas>
+
+        <div class="dr-hud" aria-hidden="true">
+            <div class="dr-hud-block">
+                <span class="dr-hud-label">Score</span>
+                <span id="drHudScore">0</span>
+            </div>
+            <div class="dr-hud-block">
+                <span class="dr-hud-label">Distance (m)</span>
+                <span id="drHudAlt">0</span>
+            </div>
+            <div class="dr-hud-block">
+                <span class="dr-hud-label">Battery</span>
+                <div class="dr-battery-row">
+                    <span class="dr-battery-seg on"></span>
+                    <span class="dr-battery-seg on"></span>
+                    <span class="dr-battery-seg on"></span>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="dr-mobile-fire" id="drMobileFire" aria-label="Fire">FIRE</button>
+
+        <div class="dr-overlay" id="drOverlayStart" role="dialog" aria-modal="true" aria-labelledby="drStartTitle">
+            <div class="dr-panel">
+                <h1 id="drStartTitle">Drone Run</h1>
+                <p class="dr-sub">Top-down arcade run: your craft uses the <strong>AirPlot</strong> logo. Dodge <strong>Airspace</strong>-style ADS-B plane silhouettes (hazard reds). Shoot the coloured emblem targets (varied sizes and hues). For fun only — not flight training.</p>
+                <ul class="dr-instructions">
+                    <li><strong>Move</strong> — WASD or arrow keys; drag on touch.</li>
+                    <li><strong>Shoot</strong> — Space (desktop); on phones, auto-fire plus the Fire button.</li>
+                    <li><strong>Lives</strong> — Three hits; score from distance and destroyed targets.</li>
+                </ul>
+                <div class="dr-actions">
+                    <button type="button" class="dr-btn dr-btn-primary" id="drBtnStart">Start</button>
+                    <a href="index.html" class="dr-btn dr-btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;">Back to welcome</a>
+                </div>
+                <p class="dr-disclaimer">High score is stored only in this browser.</p>
+            </div>
+        </div>
+
+        <div class="dr-overlay" id="drOverlayGameOver" hidden role="dialog" aria-modal="true" aria-labelledby="drOverTitle">
+            <div class="dr-panel">
+                <h1 id="drOverTitle">Mission ended</h1>
+                <p class="dr-gameover-stats">Score: <strong id="drScoreFinal">0</strong><br>Best: <strong id="drHighFinal">0</strong></p>
+                <div class="dr-actions">
+                    <button type="button" class="dr-btn dr-btn-primary" id="drBtnRestart">Fly again</button>
+                    <a href="index.html" class="dr-btn dr-btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;">Welcome</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/drone-run.js?v=4"></script>
+</body>
+</html>

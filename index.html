@@ -61,7 +61,7 @@
             </div>
             <p class="intro-tagline">Mapping, weather, flight documentation, and checklists in one place.</p>
             <p class="intro-description">
-                AirPlot combines an interactive map for areas and points, location-based weather with METAR/TAF, live airspace traffic (ADS-B via ADSB.lol) with hazard-themed red tracks, always-on altitude labels, and session trails, structured flight reports you can share or export, and an M4T / TD pre- through post-flight checklist with progress and exports. Use <strong>Flight Report</strong> and <strong>Checklist</strong> together via the links at the top of each page. Choose a tool below to get started.
+                AirPlot combines an interactive map for areas and points, location-based weather with METAR/TAF, live airspace traffic with hazard-themed red tracks, always-on altitude labels, and session trails, structured flight reports you can share or export, and checklists with progress and exports. Choose a tool below to get started.
             </p>
             <div class="intro-cta-stack">
                 <button type="button" class="intro-cta intro-cta-secondary" id="introProceedBtn">
@@ -78,6 +78,9 @@
                 </a>
                 <a href="checklist.html" class="intro-cta intro-cta-secondary" id="introChecklistBtn">
                     Checklist
+                </a>
+                <a href="drone-run.html" class="intro-cta intro-cta-secondary" id="introDroneRunBtn">
+                    Drone Run
                 </a>
                 <button type="button" class="intro-cta intro-cta-secondary" id="introHelpBtn">
                     View Instructions
@@ -664,7 +667,7 @@
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p><strong>AirPlot</strong> (v3.0) is a set of browser tools for drone operations. From the welcome screen choose <strong>Planning</strong> (full-screen map), <strong>Weather</strong> (forecasts and aviation weather), <strong>Airspace</strong> (live ADS-B traffic with hazard awareness features—see below), <strong>Flight Report</strong> (structured flight records), <strong>Checklist</strong> (M4T / TD pre-flight through post-flight checks), or <strong>View Instructions</strong> (this help). Install from the browser (&ldquo;Add to Home Screen&rdquo; / install app) for a standalone experience.</p>
+                    <p><strong>AirPlot</strong> (v3.0) is a set of browser tools for drone operations. From the welcome screen choose <strong>Planning</strong> (full-screen map), <strong>Weather</strong> (forecasts and aviation weather), <strong>Airspace</strong> (live ADS-B traffic with hazard awareness features—see below), <strong>Flight Report</strong> (structured flight records), <strong>Checklist</strong> (M4T / TD pre-flight through post-flight checks), <strong>Drone Run</strong> (optional top-down arcade game at <a href="drone-run.html">drone-run.html</a>), or <strong>View Instructions</strong> (this help). Install from the browser (&ldquo;Add to Home Screen&rdquo; / install app) for a standalone experience.</p>
                     <p><strong>Planning</strong> — Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
                     <p><strong>Weather</strong> — Tap the map to select a location, pick a forecast model (e.g. ECMWF IFS, GFS, UK Met Office), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with mini maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM/airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
                     <p><strong>Airspace</strong> — From the welcome screen, <strong>Airspace</strong> opens a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance—situational awareness only.</p>
