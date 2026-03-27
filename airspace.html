@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/airspace.css?v=15">
+    <link rel="stylesheet" href="css/airspace.css?v=22">
 </head>
 <body class="airspace-mode">
     <div id="map"></div>
@@ -54,11 +54,25 @@
                         Show traffic
                     </label>
                 </div>
+                <div class="airspace-toolbar-group" id="airspaceAglWrap">
+                    <label class="airspace-toolbar-label" for="airspaceAglToggle">
+                        <input type="checkbox" id="airspaceAglToggle" />
+                        Approx. AGL
+                    </label>
+                    <span class="airspace-toolbar-hint" id="airspaceAglHint" title="Uses Mapbox terrain vs baro/geom altitude from js/config.js"
+                        >needs Mapbox token</span>
+                </div>
                 <div class="airspace-toolbar-group">
                     <button type="button" class="airspace-btn" id="airspaceRefreshBtn" title="Fetch traffic for the current map view">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
                         Refresh
                     </button>
+                </div>
+                <div class="airspace-toolbar-group">
+                    <a href="airspace-adsbx.html" class="airspace-btn airspace-view-switch" title="Switch to ADS-B Exchange embedded map" aria-label="Switch to ADS-B Exchange view">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                        <span class="airspace-view-switch-text">ADS-B Exchange</span>
+                    </a>
                 </div>
             </div>
             <div class="airspace-toolbar-status" id="airspaceStatus" aria-live="polite"></div>
@@ -68,7 +82,7 @@
     <p class="airspace-attribution">
         Traffic: <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a>
         (<a href="https://adsb.lol/" target="_blank" rel="noopener">adsb.lol</a>; coverage varies).
-        Map: layer attribution in the map control.
+        Optional AGL: Mapbox Terrain-RGB. Map: layer attribution in the map control.
     </p>
 
     <div class="airspace-logo" aria-hidden="true">
@@ -80,6 +94,8 @@
             crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
 
-    <script src="js/airspace.js?v=17"></script>
+    <script src="js/config.js"></script>
+    <script src="js/elevation.js"></script>
+    <script src="js/airspace.js?v=26"></script>
 </body>
 </html>

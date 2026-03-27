@@ -1,6 +1,6 @@
 /* ============================================
    AIRSPACE PAGE — ADS-B traffic (ADSB.lol API)
-   Plane markers, session trail, detail on click
+   Plane markers, session trail, detail on click; optional AGL (Mapbox terrain)
    Loaded only by airspace.html. Planning UK layers: js/uk-airspace-layers.js (Airspace.init).
    ============================================ */
 
@@ -8,6 +8,7 @@
     'use strict';
 
     const ADSB_LOL_BASE = 'https://api.adsb.lol/v2';
+    const AGL_STORAGE_KEY = 'airspaceAglEnabled';
     const MIN_POLL_MS = 1100;
     const MOVE_DEBOUNCE_MS = 500;
     const RADIUS_MIN_NM = 5;
@@ -17,10 +18,11 @@
 
     const HELP_HTML = [
         '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v3) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open.</p>',
+        '<p>Optional <strong>approx. AGL</strong> (metres) uses the same <strong>Mapbox Terrain-RGB</strong> source as Planning mode when a token is set in <code>js/config.js</code>. It is <strong>barometric altitude vs terrain model</strong>—not for separation; DEM and altimeter errors apply.</p>',
         '<p><strong>Not for separation.</strong> Situational awareness only.</p>',
         '<p><strong>Steps</strong></p>',
         '<ol class="airspace-help-list">',
-        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. <strong>Altitude (ft)</strong> is shown next to each aircraft; tap for full detail and the highlighted path.</li>',
+        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. Each marker shows a <strong>type/category silhouette</strong> (ADS-B Radar icon set) tinted <strong>red by altitude band</strong> with <strong>altitude (ft)</strong> under the icon—tap the marker or label for full detail and the highlighted path.</li>',
         '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session—not full flight history (see ADSB.lol docs for archives).</li>',
         '</ol>',
         '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
@@ -46,6 +48,21 @@
     /** Leaflet fires popupclose when clearing layers; suppress clearing our pinned state during re-render. */
     let suppressTrafficPopupClose = false;
 
+    /** Last successful aircraft list (for AGL toggle refresh without a new API call). */
+    let lastAircraftList = [];
+    /** Incremented each render so stale AGL tile callbacks do not update old markers. */
+    let airspaceRenderGen = 0;
+
+    function loadAglPreference() {
+        try {
+            return localStorage.getItem(AGL_STORAGE_KEY) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    let aglEnabled = loadAglPreference();
+
     function escapeHtml(s) {
         if (s == null || s === '') return '';
         const d = document.createElement('div');
@@ -57,6 +74,44 @@
         return String(h || '')
             .toLowerCase()
             .replace(/[^0-9a-f]/g, '');
+    }
+
+    /** Lat/lon for map geometry; some feeds use lastPosition when primary coords age out. */
+    function positionLatLon(a) {
+        if (!a) return null;
+        if (a.lat != null && a.lon != null) {
+            return { lat: a.lat, lon: a.lon };
+        }
+        const lp = a.lastPosition;
+        if (lp && lp.lat != null && lp.lon != null) {
+            return { lat: lp.lat, lon: lp.lon };
+        }
+        return null;
+    }
+
+    /** Response list key: ADSB.lol uses <code>ac</code>; other feeds may use <code>aircraft</code>. */
+    function aircraftListFromResponse(data) {
+        if (!data) return [];
+        const list = data.aircraft || data.ac;
+        return Array.isArray(list) ? list : [];
+    }
+
+    function getMapboxToken() {
+        if (typeof AIRPLOT_CONFIG === 'undefined' || !AIRPLOT_CONFIG.mapboxAccessToken) {
+            return '';
+        }
+        return String(AIRPLOT_CONFIG.mapboxAccessToken).trim();
+    }
+
+    function aircraftMslFt(a) {
+        if (!a) return null;
+        if (a.alt_baro != null && !Number.isNaN(Number(a.alt_baro))) {
+            return Number(a.alt_baro);
+        }
+        if (a.alt_geom != null && !Number.isNaN(Number(a.alt_geom))) {
+            return Number(a.alt_geom);
+        }
+        return null;
     }
 
     function formatTime(ts) {
@@ -140,66 +195,219 @@
         return false;
     }
 
-    /** Lucide icons: align ~north for track 0° (tune per silhouette). */
-    const PLANE_ICON_ROTATION_OFFSET = -45;
-    const HELI_ICON_ROTATION_OFFSET = -90;
+    /**
+     * Aircraft mask SVGs: assets/aircraft-icons/ (ADS-B Radar free set; see ATTRIBUTION.txt there).
+     * Colour = altitude tier via currentColor (CSS mask on .airspace-plane-rot).
+     */
+    const AIRCRAFT_ICON_DIR = 'assets/aircraft-icons/';
+    const AIRCRAFT_ICON_FALLBACK = AIRCRAFT_ICON_DIR + 'a0.svg';
 
-    const ICON_STROKE_W = 2.85;
+    /** Exact ICAO type designator (field `t`) → filename. Prefix rules fill gaps below. */
+    const AIRCRAFT_ICON_BY_TYPE = (function () {
+        const o = Object.create(null);
+        function add(list, file) {
+            for (let i = 0; i < list.length; i++) {
+                o[list[i]] = file;
+            }
+        }
+        add(
+            ['A318', 'A319', 'A320', 'A321', 'A19N', 'A20N', 'A21N', 'A318N', 'A319N', 'A320N', 'A321N'],
+            'a320.svg'
+        );
+        add(['A332', 'A333', 'A338', 'A339', 'A337', 'A330'], 'a330.svg');
+        add(['A340', 'A343', 'A345', 'A346', 'A342'], 'a340.svg');
+        add(['A359', 'A35K', 'A35X'], 'a330.svg');
+        add(['A388', 'A380'], 'a380.svg');
+        add(
+            [
+                'B731',
+                'B732',
+                'B733',
+                'B734',
+                'B735',
+                'B736',
+                'B737',
+                'B738',
+                'B739',
+                'B37M',
+                'B38M',
+                'B39M',
+                'BBJ',
+                'BBJ2',
+                'BBJ3'
+            ],
+            'b737.svg'
+        );
+        add(['B741', 'B742', 'B743', 'B744', 'BLCF', 'BSCA'], 'b747.svg');
+        add(['B762', 'B763', 'B764'], 'b767.svg');
+        add(['B772', 'B773', 'B774', 'B77L', 'B77W'], 'b777.svg');
+        add(['B788', 'B789', 'B78X'], 'b787.svg');
+        add(['CRJ2', 'CRJ7', 'CRJ9', 'CRJX', 'CRJ1', 'CRJ5'], 'crjx.svg');
+        add(['DH8A', 'DH8B', 'DH8C', 'DH8D', 'DHC6', 'DHC7'], 'dh8a.svg');
+        add(['E170', 'E175', 'E190', 'E195', 'E135', 'E145', 'E275', 'E545', 'E550'], 'e195.svg');
+        add(['E45X', 'E75L', 'E75S'], 'erj.svg');
+        add(['F70', 'F100', 'F28'], 'f100.svg');
+        add(['C172', 'C152', 'C150', 'C182', 'C206', 'C208', 'C82S', 'P28A', 'P28B', 'P28T', 'SR22', 'SR20'], 'cessna.svg');
+        add(['GLF5', 'GLF6', 'G150', 'G280', 'GA5C', 'GA6C', 'G650'], 'glf5.svg');
+        add(['FA7X', 'FA8X', 'F900', 'F950', 'F2TH', 'FALX'], 'fa7x.svg');
+        add(['LJ45', 'LJ60', 'LJ75', 'BE40', 'C25A', 'C25B', 'C25C', 'C25M', 'C510', 'C525', 'C550', 'C560', 'C680', 'C750', 'C700', 'PC24', 'EA50'], 'learjet.svg');
+        add(['C130', 'C30J', 'KC130', 'C295'], 'c130.svg');
+        add(['F5', 'RF5'], 'f5.svg');
+        add(['F15', 'F16', 'F22', 'F35', 'F18', 'F18H', 'FA18', 'EF18'], 'f15.svg');
+        add(['F11', 'F104'], 'f11.svg');
+        add(['MD11', 'DC10', 'DC11'], 'md11.svg');
+        return o;
+    })();
 
-    function planeIconHtml(trackDeg, tier) {
+    /** Track 0° = north; pack art is top-down, nose-up in viewBox. */
+    const MAP_ICON_ROTATION_OFFSET = 0;
+
+    /** Resolve icon SVG URL for <img src> (reliable vs CSS mask-image in WebKit/Safari). */
+    function aircraftIconAbsUrl(relPath) {
+        try {
+            return new URL(relPath, document.baseURI).href;
+        } catch (e) {
+            return relPath;
+        }
+    }
+
+    /** Single digit 0–7 from ADS-B emitter category, or null. */
+    function emitterCategoryDigit(a) {
+        const raw = (a.category != null && String(a.category).trim()) || '';
+        if (!raw) return null;
+        const u = raw.toUpperCase();
+        if (/^A[0-7]$/.test(u)) return u.charAt(1);
+        if (/^[0-7]$/.test(u)) return u;
+        return null;
+    }
+
+    /** Map ICAO type code `t` to icon filename, or null (use category / fallback). */
+    function icaoTypeToIconFile(tRaw) {
+        const t = String(tRaw || '')
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, '');
+        if (!t) return null;
+        const exact = AIRCRAFT_ICON_BY_TYPE[t];
+        if (exact) return exact;
+
+        if (/^A388|^A380/.test(t)) return 'a380.svg';
+        if (/^A33/.test(t)) return 'a330.svg';
+        if (/^A340|^A342|^A343|^A345|^A346/.test(t)) return 'a340.svg';
+        if (/^A35/.test(t)) return 'a330.svg';
+        if (/^A30/.test(t)) return 'a330.svg';
+        if (/^A31|^A32|^A318|^A319|^A320|^A321|^A19|^A20|^A21/.test(t)) return 'a320.svg';
+
+        if (/^B73|^B37|^B38|^B39/.test(t)) return 'b737.svg';
+        if (/^B74|^BLCF|^BSCA/.test(t)) return 'b747.svg';
+        if (/^B76[234]/.test(t)) return 'b767.svg';
+        if (/^B77/.test(t)) return 'b777.svg';
+        if (/^B78/.test(t)) return 'b787.svg';
+
+        if (/^CRJ|^CL35|^CL30|^CL60/.test(t)) return 'crjx.svg';
+        if (/^DH8|^DHC8/.test(t)) return 'dh8a.svg';
+
+        if (/^E170|^E175|^E190|^E195|^E135|^E145|^E275|^E545|^E550/.test(t)) return 'e195.svg';
+        if (/^E75|^E45|^E40|^E50/.test(t)) return 'erj.svg';
+
+        if (/^AT4|^AT4[56]|^AT7|^AT72|^AT76|^SF34|^SH36|^JS41|^DHC6/.test(t)) return 'dh8a.svg';
+
+        if (/^C1[0-9][0-9]/.test(t) || /^C82|^P28|^PA28|^SR22|^SR20|^DV20/.test(t)) return 'cessna.svg';
+
+        if (/^GLF|^G150|^G280|^GA5|^GA6/.test(t)) return 'glf5.svg';
+        if (/^F2T|^F900|^FA7|^FA8|^F950|^FALX/.test(t)) return 'fa7x.svg';
+        if (/^LJ|^BE40|^BE4W|^C25|^C5[0-9]|^C68|^C70|^C75|^C7X|^EA50|^PC24/.test(t)) return 'learjet.svg';
+
+        if (/^C130|^C30J|^KC130|^C295/.test(t)) return 'c130.svg';
+        if (/^F5|^RF5/.test(t)) return 'f5.svg';
+        if (/^F15|^F16|^F22|^F35|^F18|^FA18|^EF18/.test(t)) return 'f15.svg';
+        if (/^F11|^F104/.test(t)) return 'f11.svg';
+        if (/^F70|^F100|^F28/.test(t)) return 'f100.svg';
+
+        if (/^MD1|^MD11|^DC10/.test(t)) return 'md11.svg';
+
+        return null;
+    }
+
+    /** Relative path (from site root) to mask SVG for this aircraft. */
+    function aircraftMaskRelPath(a) {
+        if (isHelicopter(a)) {
+            return AIRCRAFT_ICON_DIR + 'a7.svg';
+        }
+        const typeFile = icaoTypeToIconFile(a.t);
+        if (typeFile) {
+            return AIRCRAFT_ICON_DIR + typeFile;
+        }
+        const d = emitterCategoryDigit(a);
+        if (d != null) {
+            return AIRCRAFT_ICON_DIR + 'a' + d + '.svg';
+        }
+        return AIRCRAFT_ICON_FALLBACK;
+    }
+
+    /**
+     * One divIcon: silhouette (img + CSS filter for altitude colour) + altitude pill.
+     * Altitude is inside the marker so taps hit the marker (Leaflet tooltips are non-interactive).
+     */
+    function aircraftIconHtml(trackDeg, tier, svgRelPath, altitudeText, hexLower) {
         const tr = trackDeg != null && !Number.isNaN(Number(trackDeg)) ? Number(trackDeg) : 0;
-        const rot = tr + PLANE_ICON_ROTATION_OFFSET;
-        const size = 36;
+        const rot = tr + MAP_ICON_ROTATION_OFFSET;
+        const path = svgRelPath || AIRCRAFT_ICON_FALLBACK;
+        const src = aircraftIconAbsUrl(path);
+        const altElId = 'airspace-marker-alt-' + hexLower;
         return (
-            '<div class="airspace-plane-rot airspace-icon airspace-icon--' +
+            '<div class="airspace-marker-wrap airspace-marker-tier--' +
             tier +
-            '" style="transform:rotate(' +
+            '">' +
+            '<div class="airspace-plane-drop">' +
+            '<div class="airspace-plane-spin" style="transform:rotate(' +
             rot +
             'deg)">' +
-            '<svg class="airspace-plane-svg" xmlns="http://www.w3.org/2000/svg" width="' +
-            size +
-            '" height="' +
-            size +
-            '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' +
-            ICON_STROKE_W +
-            '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-            '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>' +
-            '</svg></div>'
+            '<div class="airspace-plane-img-cell airspace-icon airspace-icon--' +
+            tier +
+            '">' +
+            '<img class="airspace-plane-img" src="' +
+            escapeHtml(src) +
+            '" alt="" draggable="false"/>' +
+            '</div></div></div>' +
+            '<div class="airspace-marker-alt" id="' +
+            altElId +
+            '">' +
+            escapeHtml(altitudeText) +
+            '</div>' +
+            '</div>'
         );
     }
 
-    function helicopterIconHtml(trackDeg, tier) {
-        const tr = trackDeg != null && !Number.isNaN(Number(trackDeg)) ? Number(trackDeg) : 0;
-        const rot = tr + HELI_ICON_ROTATION_OFFSET;
-        const size = 36;
-        return (
-            '<div class="airspace-plane-rot airspace-heli-rot airspace-icon airspace-icon--' +
-            tier +
-            '" style="transform:rotate(' +
-            rot +
-            'deg)">' +
-            '<svg class="airspace-plane-svg" xmlns="http://www.w3.org/2000/svg" width="' +
-            size +
-            '" height="' +
-            size +
-            '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' +
-            ICON_STROKE_W +
-            '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-            '<path d="M11 17v4"/>' +
-            '<path d="M14 3v8a2 2 0 0 0 2 2h5.865"/>' +
-            '<path d="M17 17v4"/>' +
-            '<path d="M18 17a4 4 0 0 0 4-4 8 6 0 0 0-8-6 6 5 0 0 0-6 5v3a2 2 0 0 0 2 2z"/>' +
-            '<path d="M2 10v5"/>' +
-            '<path d="M6 3h16"/>' +
-            '<path d="M7 21h14"/>' +
-            '<path d="M8 13H2"/>' +
-            '</svg></div>'
+    /** Leaflet divIcon width must cover the altitude pill (option 1: grow horizontally with AGL text). */
+    const AIRSPACE_MARKER_ICON_H = 66;
+    const AIRSPACE_MARKER_ANCHOR_Y = 22;
+    const AIRSPACE_MARKER_MIN_W = 52;
+    const AIRSPACE_MARKER_MAX_W = 240;
+
+    function estimateAirspaceIconWidth(altitudeText) {
+        const s = String(altitudeText || '');
+        const approxCharPx = 7;
+        const padBorder = 16;
+        const w = Math.ceil(s.length * approxCharPx + padBorder);
+        return Math.min(
+            AIRSPACE_MARKER_MAX_W,
+            Math.max(AIRSPACE_MARKER_MIN_W, w)
         );
     }
 
-    function aircraftIconHtml(trackDeg, tier, heli) {
-        if (heli) return helicopterIconHtml(trackDeg, tier);
-        return planeIconHtml(trackDeg, tier);
+    function trafficAircraftDivIcon(a, aglMeters) {
+        const tier = altitudeIconTier(a);
+        const trk = a.track != null ? a.track : 0;
+        const heli = isHelicopter(a);
+        const hex = normalizeHex(a.hex);
+        const altText = formatAltitudeLabel(a, aglMeters);
+        const w = estimateAirspaceIconWidth(altText);
+        return L.divIcon({
+            className: 'airspace-plane-marker' + (heli ? ' airspace-marker-heli' : ''),
+            html: aircraftIconHtml(trk, tier, aircraftMaskRelPath(a), altText, hex),
+            iconSize: [w, AIRSPACE_MARKER_ICON_H],
+            iconAnchor: [Math.round(w / 2), AIRSPACE_MARKER_ANCHOR_Y]
+        });
     }
 
     function recordTrailsFromList(ac) {
@@ -208,12 +416,13 @@
             const a = ac[i];
             const hex = normalizeHex(a.hex);
             if (hex.length !== 6) continue;
-            if (a.lat == null || a.lon == null) continue;
+            const pos = positionLatLon(a);
+            if (!pos) continue;
             let arr = trailByHex.get(hex);
             if (!arr) arr = [];
             const last = arr[arr.length - 1];
-            if (last && last[0] === a.lat && last[1] === a.lon) continue;
-            arr.push([a.lat, a.lon]);
+            if (last && last[0] === pos.lat && last[1] === pos.lon) continue;
+            arr.push([pos.lat, pos.lon]);
             if (arr.length > MAX_TRAIL_POINTS) {
                 arr = arr.slice(-MAX_TRAIL_POINTS);
             }
@@ -227,18 +436,29 @@
     }
 
     /** Short baro/geom altitude for always-visible map labels (ft, prime = feet). */
-    function formatAltitudeLabel(a) {
+    function formatAltitudeLabel(a, aglMeters) {
+        let base;
         if (a.alt_baro != null && !Number.isNaN(Number(a.alt_baro))) {
-            return Math.round(Number(a.alt_baro)) + "'";
+            base = Math.round(Number(a.alt_baro)) + "'";
+        } else if (a.alt_geom != null && !Number.isNaN(Number(a.alt_geom))) {
+            base = Math.round(Number(a.alt_geom)) + "' g";
+        } else if (isGroundAircraft(a)) {
+            base = 'GND';
+        } else {
+            base = '—';
         }
-        if (a.alt_geom != null && !Number.isNaN(Number(a.alt_geom))) {
-            return Math.round(Number(a.alt_geom)) + "' g";
+        if (
+            aglMeters != null &&
+            !Number.isNaN(Number(aglMeters)) &&
+            getMapboxToken() &&
+            aglEnabled
+        ) {
+            return base + ' · ~' + Math.round(Number(aglMeters)) + 'm AGL';
         }
-        if (isGroundAircraft(a)) return 'GND';
-        return '—';
+        return base;
     }
 
-    function buildPopupHtml(a, trailPts) {
+    function buildPopupHtml(a, trailPts, aglMeters) {
         const flight = (a.flight && String(a.flight).trim()) || '';
         const hex = a.hex || '';
         const reg = (a.r && String(a.r).trim()) || '';
@@ -283,6 +503,12 @@
 
         const rows = [
             ['Altitude', alt + (altg ? ' · ' + altg : '')],
+            [
+                'AGL (approx.)',
+                aglMeters != null && !Number.isNaN(Number(aglMeters))
+                    ? '~' + Math.round(Number(aglMeters)) + ' m (terrain vs baro/geom)'
+                    : null
+            ],
             ['Speed', 'GS ' + gs + (tas ? ' · TAS ' + tas : '') + (ias ? ' · IAS ' + ias : '')],
             ['Track / heading', 'Track ' + trk + (thd ? ' · TH ' + thd : '') + (mhdg ? ' · MH ' + mhdg : '')],
             ['Vert rate', (br ? 'Baro ' + br : '') + (br && gr ? ' · ' : '') + (gr ? 'Geom ' + gr : '') || '—'],
@@ -304,6 +530,9 @@
 
         let table = '<table class="airspace-popup-table">';
         for (let r = 0; r < rows.length; r++) {
+            if (rows[r][1] == null) {
+                continue;
+            }
             if (
                 rows[r][1] === '—' &&
                 rows[r][0] !== 'Squawk' &&
@@ -453,6 +682,57 @@
         return fetchJsonWithProxy(upstream, qs);
     }
 
+    /**
+     * @param {function(number|null):void} cb - metres AGL or null
+     */
+    function computeAglMeters(a, cb) {
+        const token = getMapboxToken();
+        if (!aglEnabled || !token || typeof Elevation === 'undefined') {
+            cb(null);
+            return;
+        }
+        const pos = positionLatLon(a);
+        if (!pos) {
+            cb(null);
+            return;
+        }
+        const mslFt = aircraftMslFt(a);
+        if (mslFt == null) {
+            cb(null);
+            return;
+        }
+        Elevation.getElevationAtLatLng(pos.lat, pos.lon, token).then(function (terrainM) {
+            if (terrainM == null || Number.isNaN(Number(terrainM))) {
+                cb(null);
+                return;
+            }
+            cb(mslFt * 0.3048 - Number(terrainM));
+        });
+    }
+
+    function scheduleAglForList(ac, renderGen) {
+        const token = getMapboxToken();
+        if (!aglEnabled || !token || typeof Elevation === 'undefined' || !trafficLayer) {
+            return;
+        }
+        if (!ac || !ac.length) return;
+        for (let i = 0; i < ac.length; i++) {
+            const a = ac[i];
+            const hex = normalizeHex(a.hex);
+            if (hex.length !== 6) continue;
+            (function (aircraft, hexKey) {
+                computeAglMeters(aircraft, function (aglM) {
+                    if (renderGen !== airspaceRenderGen) return;
+                    if (aglM == null) return;
+                    trafficLayer.eachLayer(function (layer) {
+                        if (layer._airspaceHex !== hexKey) return;
+                        layer.setIcon(trafficAircraftDivIcon(aircraft, aglM));
+                    });
+                });
+            })(a, hex);
+        }
+    }
+
     function trafficPopupLeafletOptions() {
         const narrow =
             typeof window.matchMedia === 'function' &&
@@ -466,6 +746,7 @@
     }
 
     function renderAircraftList(ac) {
+        const renderGen = ++airspaceRenderGen;
         clearTraffic();
         recordTrailsFromList(ac);
         if (!ac || !ac.length) {
@@ -482,25 +763,16 @@
 
         for (let i = 0; i < ac.length; i++) {
             const a = ac[i];
-            const lat = a.lat;
-            const lon = a.lon;
-            if (lat == null || lon == null) continue;
-            if (!bounds.contains(L.latLng(lat, lon))) continue;
+            const pos = positionLatLon(a);
+            if (!pos) continue;
+            if (!bounds.contains(L.latLng(pos.lat, pos.lon))) continue;
 
             const hex = normalizeHex(a.hex);
             if (hex.length !== 6) continue;
 
-            const tier = altitudeIconTier(a);
-            const trk = a.track != null ? a.track : 0;
-            const heli = isHelicopter(a);
-            const icon = L.divIcon({
-                className: 'airspace-plane-marker' + (heli ? ' airspace-marker-heli' : ''),
-                html: aircraftIconHtml(trk, tier, heli),
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
-            });
+            const icon = trafficAircraftDivIcon(a, undefined);
 
-            const m = L.marker([lat, lon], { icon: icon }).addTo(trafficLayer);
+            const m = L.marker([pos.lat, pos.lon], { icon: icon, interactive: true }).addTo(trafficLayer);
             m._airspaceHex = hex;
 
             const popupId = 'airspace-popup-body-' + hex;
@@ -514,15 +786,6 @@
                 trafficPopupLeafletOptions()
             );
 
-            m.bindTooltip(formatAltitudeLabel(a), {
-                permanent: true,
-                direction: 'right',
-                opacity: 1,
-                interactive: false,
-                className: 'airspace-alt-label',
-                offset: [16, 0]
-            });
-
             m.on('popupopen', function () {
                 trafficPopupOpen = true;
                 pinnedHex = hex;
@@ -533,10 +796,17 @@
                 );
                 fetchAdsbHex(hex)
                     .then(function (data) {
-                        const ac0 = data.ac && data.ac[0];
+                        const list = aircraftListFromResponse(data);
+                        const ac0 = list[0];
                         const el = document.getElementById(popupId);
                         if (!el || !ac0) return;
-                        el.innerHTML = buildPopupHtml(ac0, trailByHex.get(hex) || []);
+                        const trailPts = trailByHex.get(hex) || [];
+                        el.innerHTML = buildPopupHtml(ac0, trailPts);
+                        computeAglMeters(ac0, function (agl) {
+                            const el2 = document.getElementById(popupId);
+                            if (!el2 || !trafficPopupOpen || pinnedHex !== hex) return;
+                            el2.innerHTML = buildPopupHtml(ac0, trailPts, agl);
+                        });
                     })
                     .catch(function () {});
             });
@@ -552,6 +822,8 @@
 
             count++;
         }
+
+        scheduleAglForList(ac, renderGen);
 
         if (pinnedHex) {
             let found = false;
@@ -604,7 +876,8 @@
             .then(function (data) {
                 lastFetchAt = Date.now();
 
-                const list = data.ac || [];
+                const list = aircraftListFromResponse(data);
+                lastAircraftList = list.slice();
                 const n = renderAircraftList(list);
 
                 const t = formatTime(data.now != null ? data.now : data.ctime);
@@ -613,7 +886,7 @@
                         n +
                         '</strong> in view · ~' +
                         rNm.toFixed(0) +
-                        ' NM · ' +
+                        ' NM · ADSB.lol · ' +
                         (t !== '—' ? 'data ' + escapeHtml(t) : '') +
                         ' · refresh ~1s',
                     false
@@ -757,9 +1030,44 @@
         const helpClose = document.getElementById('airspaceHelpClose');
         const helpWrap = document.getElementById('airspaceHelpPanelWrap');
         const helpBody = document.getElementById('airspaceHelpBody');
+        const aglToggle = document.getElementById('airspaceAglToggle');
+        const aglHint = document.getElementById('airspaceAglHint');
 
         if (helpBody) {
             helpBody.innerHTML = HELP_HTML;
+        }
+
+        function syncAglControls() {
+            const tokenOk = !!getMapboxToken() && typeof Elevation !== 'undefined';
+            if (!tokenOk) {
+                aglEnabled = false;
+            }
+            if (aglToggle) {
+                aglToggle.disabled = !tokenOk;
+                aglToggle.checked = tokenOk && aglEnabled;
+            }
+            if (aglHint) {
+                aglHint.style.display = tokenOk ? 'none' : '';
+            }
+        }
+        syncAglControls();
+
+        if (aglToggle) {
+            aglToggle.addEventListener('change', function () {
+                const tokenOk = !!getMapboxToken() && typeof Elevation !== 'undefined';
+                if (!tokenOk) {
+                    aglToggle.checked = false;
+                    return;
+                }
+                aglEnabled = !!aglToggle.checked;
+                try {
+                    localStorage.setItem(AGL_STORAGE_KEY, aglEnabled ? '1' : '0');
+                } catch (e) {}
+                airspaceRenderGen++;
+                if (lastAircraftList.length) {
+                    renderAircraftList(lastAircraftList.slice());
+                }
+            });
         }
 
         if (toggle) {
@@ -774,7 +1082,10 @@
                     pinnedHex = null;
                     clearTraffic();
                     clearSelectedTrail();
-                    setStatus('Traffic is off. Enable <strong>Show traffic</strong> to load ADS-B data.', false);
+                    setStatus(
+                        'Traffic is off. Enable <strong>Show traffic</strong> to load data.',
+                        false
+                    );
                 }
             });
         }

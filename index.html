@@ -70,9 +70,9 @@
                 <a href="weather.html" class="intro-cta intro-cta-secondary" id="introWeatherBtn">
                     Weather
                 </a>
-                <a href="airspace.html" class="intro-cta intro-cta-secondary" id="introAirspaceBtn">
+                <button type="button" class="intro-cta intro-cta-secondary" id="introAirspaceBtn">
                     Airspace
-                </a>
+                </button>
                 <a href="flight-notes.html" class="intro-cta intro-cta-secondary" id="introFlightReportBtn">
                     Flight Report
                 </a>
@@ -631,6 +631,29 @@
         </div>
     </div>
 
+    <!-- Airspace: AirPlot map vs ADS-B Exchange (no remembered choice) -->
+    <div id="airspaceChoiceModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Live aircraft traffic</h2>
+                <button type="button" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="airspace-choice-lead">Choose a view. You&rsquo;ll see this each time you pick <strong>Airspace</strong> from the welcome screen.</p>
+                <div class="airspace-choice-actions">
+                    <a href="airspace.html" class="btn btn-primary airspace-choice-btn">AirPlot Airspace</a>
+                    <p class="airspace-choice-hint">Leaflet map, ADSB.lol, optional AGL (Mapbox), session trails.</p>
+                    <a href="airspace-adsbx.html" class="btn btn-secondary airspace-choice-btn">ADS-B Exchange</a>
+                    <p class="airspace-choice-hint">Embedded third-party globe. If the frame is blank, use the link on that page to open Exchange in a new tab.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Help Modal -->
     <div id="helpModal" class="modal hidden">
         <div class="modal-backdrop"></div>
@@ -644,7 +667,7 @@
                     <p><strong>AirPlot</strong> (v3.0) is a set of browser tools for drone operations. From the welcome screen choose <strong>Planning</strong> (full-screen map), <strong>Weather</strong> (forecasts and aviation weather), <strong>Airspace</strong> (live ADS-B traffic with hazard awareness features—see below), <strong>Flight Report</strong> (structured flight records), <strong>Checklist</strong> (M4T / TD pre-flight through post-flight checks), or <strong>View Instructions</strong> (this help). Install from the browser (&ldquo;Add to Home Screen&rdquo; / install app) for a standalone experience.</p>
                     <p><strong>Planning</strong> — Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
                     <p><strong>Weather</strong> — Tap the map to select a location, pick a forecast model (e.g. ECMWF IFS, GFS, UK Met Office), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with mini maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM/airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
-                    <p><strong>Airspace</strong> — Open <a href="airspace.html">airspace.html</a> for a full-screen map of live aircraft from <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> (ADS-B where received). Aircraft use <strong>red</strong> icons by altitude band; <strong>altitude (ft)</strong> appears beside each track without opening details. A <strong>session trail</strong> builds while the page stays open. Tap a marker for full detail and a highlighted path; while that panel is open, <strong>auto-refresh pauses</strong> so the information stays on screen—close it or use <strong>Refresh</strong> to update. Pan and zoom set the query area; updates about once per second when no detail panel is open. Not for separation or compliance—situational awareness only.</p>
+                    <p><strong>Airspace</strong> — From the welcome screen, <strong>Airspace</strong> opens a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance—situational awareness only.</p>
                     <p><strong>Flight Report</strong> — Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> into the form (Open-Meteo), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear report</strong> (top), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Use the <strong>Checklist</strong> link in the header to open the M4T / TD checklist without returning to the welcome screen.</p>
                     <p><strong>Checklist</strong> — The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. Use <strong>Flight Report</strong> in the header to open it without going home.</p>
                     <p><strong>What&rsquo;s new in v3</strong> — The <strong>Airspace</strong> page adds hazard-themed red aircraft icons, <strong>altitude (ft)</strong> beside every track, session trails, and <strong>paused refresh</strong> while aircraft details are open (see above). <strong>Flight Weather</strong> exports use your Airspace search radius and optional Dark/Light report styling (default Light); PowerPoint includes per-NOTAM and per-zone map slides. <strong>Flight Report</strong> adds matching theme controls for the page and PDF, and <strong>Clear report</strong> in the header. Branded exports and footers show <strong>AirPlot v3</strong> where a version label is used.</p>

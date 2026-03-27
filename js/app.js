@@ -3625,6 +3625,11 @@ ${summaryRows}
             introHelpBtn.addEventListener('click', () => openModal('helpModal'));
         }
 
+        const introAirspaceBtn = document.getElementById('introAirspaceBtn');
+        if (introAirspaceBtn) {
+            introAirspaceBtn.addEventListener('click', () => openModal('airspaceChoiceModal'));
+        }
+
         const introFlightPlanBtn = document.getElementById('introFlightPlanBtn');
         if (introFlightPlanBtn) {
             introFlightPlanBtn.addEventListener('click', (e) => {

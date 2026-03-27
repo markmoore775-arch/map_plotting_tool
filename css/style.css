@@ -1108,7 +1108,8 @@ select {
 
 /* ---- Modals ---- */
 
-#helpModal {
+#helpModal,
+#airspaceChoiceModal {
     z-index: 10001;
 }
 
@@ -1202,6 +1203,31 @@ select {
     gap: 8px;
     padding: 14px 20px;
     border-top: 1px solid var(--sidebar-border);
+}
+
+/* Welcome screen: Airspace destination chooser */
+.airspace-choice-lead {
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+.airspace-choice-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+a.airspace-choice-btn {
+    text-decoration: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.airspace-choice-hint {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--sidebar-text-muted);
 }
 
 /* ---- Help Modal ---- */

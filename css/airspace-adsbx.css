@@ -1,0 +1,225 @@
+/* Full-screen ADS-B Exchange embed (airspace-adsbx.html) */
+
+html,
+body.airspace-adsbx-mode {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--font-family, 'Inter', system-ui, sans-serif);
+}
+
+body.airspace-adsbx-mode {
+    background: #0f1117;
+    color: #e8e8ef;
+    /* Space to clear the in-flow disclaimer banner (multi-line on narrow screens) */
+    --adsbx-banner-stack: 84px;
+}
+
+@media (max-width: 640px) {
+    body.airspace-adsbx-mode {
+        --adsbx-banner-stack: 108px;
+    }
+}
+
+/* Welcome pill: default style.css pins top: 12px — shift below our banner on this page only */
+body.airspace-adsbx-mode .fp-welcome-bar {
+    top: calc(env(safe-area-inset-top, 0px) + 12px + var(--adsbx-banner-stack));
+}
+
+/* Zoom + locate — below welcome bar (same idea as Leaflet on airspace / weather) */
+.adsbx-map-controls-wrap {
+    position: fixed;
+    top: calc(
+        env(safe-area-inset-top, 0px) + 12px + var(--adsbx-banner-stack) + 52px + 10px
+    );
+    left: max(12px, env(safe-area-inset-left, 12px));
+    z-index: 1003;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    max-width: min(280px, calc(100vw - 24px));
+    pointer-events: none;
+}
+
+.adsbx-map-controls-wrap .adsbx-map-controls,
+.adsbx-map-controls-wrap .adsbx-map-status {
+    pointer-events: auto;
+}
+
+/* Leaflet-like control bar (default Leaflet zoom + locate stack) */
+.adsbx-map-controls.leaflet-bar-style {
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    background-clip: padding-box;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    background: #fff;
+}
+
+.adsbx-ctrl-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-top: 1px solid #ccc;
+    background: #fff;
+    color: #333;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    font-family: var(--font-family, 'Inter', 'Lucida Grande', sans-serif);
+    transition: background 0.15s;
+}
+
+.adsbx-map-controls.leaflet-bar-style .adsbx-ctrl-btn:first-child {
+    border-top: none;
+}
+
+.adsbx-ctrl-btn:hover:not(:disabled) {
+    background: #f4f4f4;
+}
+
+.adsbx-ctrl-btn:focus-visible {
+    outline: 2px solid var(--primary, #5b8def);
+    outline-offset: 2px;
+    z-index: 1;
+    position: relative;
+}
+
+.adsbx-ctrl-btn:disabled {
+    color: #bbb;
+    cursor: not-allowed;
+}
+
+.adsbx-ctrl-locate svg {
+    display: block;
+}
+
+.adsbx-map-status {
+    margin: 0;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.92);
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 6px;
+    min-height: 0;
+}
+
+.adsbx-map-status:empty {
+    display: none;
+}
+
+.adsbx-map-status.adsbx-map-status--error {
+    color: #fecaca;
+}
+
+@media (max-width: 520px) {
+    .adsbx-ctrl-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+.airspace-adsbx-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100dvh;
+}
+
+.airspace-adsbx-banner {
+    flex-shrink: 0;
+    padding: 8px 12px 8px max(12px, env(safe-area-inset-left, 12px));
+    padding-right: max(12px, env(safe-area-inset-right, 12px));
+    padding-top: max(8px, env(safe-area-inset-top, 8px));
+    background: rgba(22, 22, 31, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    line-height: 1.45;
+    color: #b4b4c4;
+}
+
+.airspace-adsbx-banner-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px 14px;
+}
+
+.airspace-adsbx-banner-copy {
+    margin: 0;
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.airspace-adsbx-banner-copy a {
+    color: #7eb6ff;
+}
+
+.airspace-adsbx-view-switch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-shrink: 0;
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-family, 'Inter', sans-serif);
+    color: var(--sidebar-text, #e0e0e8);
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.airspace-adsbx-view-switch:hover {
+    background: #33334a;
+    border-color: #4a4a60;
+    color: #fff;
+}
+
+.airspace-adsbx-view-switch:focus-visible {
+    outline: 2px solid var(--primary, #5b8def);
+    outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+    .airspace-adsbx-view-switch span {
+        display: none;
+    }
+
+    .airspace-adsbx-view-switch {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px;
+    }
+}
+
+.airspace-adsbx-frame-wrap {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    background: #000;
+}
+
+.airspace-adsbx-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}

@@ -1,6 +1,6 @@
 # UK Airspace Data – Real NATS UAS Data
 
-AirPlot **v3** includes a separate **[Airspace](../airspace.html)** page for **live ADS-B traffic** (hazard-themed map, altitude labels, session trails)—that feature uses the [ADSB.lol](https://api.adsb.lol/docs) API, not the GeoJSON files described here.
+AirPlot **v3** includes a separate **[Airspace](../airspace.html)** page for **live ADS-B traffic** (hazard-themed map, altitude labels, session trails)—that feature uses the [ADSB.lol](https://api.adsb.lol/docs) API, not the GeoJSON files described here. Optional **approx. AGL** on that page uses Mapbox Terrain-RGB when `js/config.js` includes a Mapbox token.
 
 This document covers **Planning** mode **UK airspace** layers: AirPlot can display UK airspace restrictions (Prohibited, Restricted, Danger, FRZ) using official NATS UAS data. The guide below explains how to obtain and convert that data.
 

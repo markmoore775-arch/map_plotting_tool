@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ADS-B Exchange | AirPlot</title>
+    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/airspace-adsbx.css?v=4">
+</head>
+<body class="airspace-adsbx-mode">
+    <div class="airspace-adsbx-shell">
+        <div class="adsbx-map-controls-wrap">
+            <div class="adsbx-map-controls leaflet-bar-style" role="toolbar" aria-label="Map view">
+                <button type="button" class="adsbx-ctrl-btn" id="adsbxZoomIn" title="Zoom in" aria-label="Zoom in">
+                    +
+                </button>
+                <button type="button" class="adsbx-ctrl-btn" id="adsbxZoomOut" title="Zoom out" aria-label="Zoom out">
+                    −
+                </button>
+                <button type="button" class="adsbx-ctrl-btn adsbx-ctrl-locate" id="adsbxLocate" title="Show my location" aria-label="Show my location">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                    </svg>
+                </button>
+            </div>
+            <p class="adsbx-map-status" id="adsbxMapStatus" role="status" aria-live="polite"></p>
+        </div>
+
+        <nav class="fp-welcome-bar" aria-label="AirPlot home">
+            <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen" aria-label="Return to AirPlot welcome screen">
+                <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+                <span class="fp-welcome-title">AirPlot</span>
+                <span class="fp-welcome-cta">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                    Welcome
+                </span>
+            </a>
+        </nav>
+
+        <div class="airspace-adsbx-banner" role="note">
+            <div class="airspace-adsbx-banner-inner">
+                <p class="airspace-adsbx-banner-copy">
+                    Third-party <strong>ADS-B Exchange</strong> map (embedded for testing). If the area below stays empty, your browser may block framing—use
+                    <a href="https://globe.adsbexchange.com/?kiosk&amp;hideSidebar&amp;lat=51.5074&amp;lon=-0.1278&amp;zoom=10" target="_blank" rel="noopener noreferrer">open globe in new tab</a>.
+                    Not for separation. Subject to ADS-B Exchange terms and availability.
+                </p>
+                <a href="airspace.html" class="airspace-adsbx-view-switch" title="Switch to AirPlot Airspace map (ADSB.lol)" aria-label="Switch to AirPlot Airspace map">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                    <span>AirPlot Airspace</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="airspace-adsbx-frame-wrap">
+            <iframe
+                id="adsbxFrame"
+                class="airspace-adsbx-frame"
+                title="ADS-B Exchange live aircraft map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+        </div>
+    </div>
+    <script src="js/airspace-adsbx.js?v=1"></script>
+</body>
+</html>
