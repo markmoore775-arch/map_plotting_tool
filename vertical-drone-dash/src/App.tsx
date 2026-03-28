@@ -9,6 +9,9 @@ const THRUST = 0.9;
 const MAX_VELOCITY = 12;
 const OBSTACLE_SPEED = 8;
 const DRONE_SIZE = 40;
+/** Fixed sim step so gameplay speed is stable when rAF is throttled (e.g. mobile without touch). */
+const SIM_DT = 1 / 60;
+const MAX_SIM_STEPS_PER_FRAME = 5;
 
 const THEMES = [
   {
@@ -94,6 +97,8 @@ export default function App() {
 
   const [dimensions, setDimensions] = useState({ width: 1280, height: 720 });
   const [isPortrait, setIsPortrait] = useState(false);
+  /** Narrow landscape: tighter HUD layout so score / zone fit without crowding the top bar. */
+  const [hudCompact, setHudCompact] = useState(false);
   const dimRef = useRef({ width: 1280, height: 720 });
 
   // Mutable game state refs
@@ -116,6 +121,8 @@ export default function App() {
   const particlesRef = useRef<Particle[]>([]);
   const bgElementsRef = useRef<BgElement[]>([]);
   const animationFrameId = useRef<number>(0);
+  const lastLoopTimeRef = useRef<number | null>(null);
+  const simAccumulatorRef = useRef(0);
 
   // --- Input Handling ---
   const handleThrustStart = (e?: React.SyntheticEvent | KeyboardEvent) => {
@@ -142,13 +149,14 @@ export default function App() {
     const handleResize = () => {
       const isPort = window.innerHeight > window.innerWidth;
       setIsPortrait(isPort);
-      
+      setHudCompact(window.innerWidth < 720);
+
       const aspect = window.innerWidth / window.innerHeight;
       const newWidth = Math.max(720 * aspect, 720);
-      
+
       dimRef.current = {
         width: newWidth,
-        height: 720
+        height: 720,
       };
       setDimensions(dimRef.current);
     };
@@ -341,105 +349,8 @@ export default function App() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const loop = () => {
-      const state = stateRef.current;
-      const drone = droneRef.current;
-      const obstacles = obstaclesRef.current;
+    const updateParticles = () => {
       const particles = particlesRef.current;
-      const bgElements = bgElementsRef.current;
-
-      // Theme Progression (Change every 150 points)
-      const newThemeIndex = Math.floor(state.score / 150) % THEMES.length;
-      if (newThemeIndex !== state.themeIndex && state.gameState === 'playing') {
-        state.themeIndex = newThemeIndex;
-        setCurrentThemeName(THEMES[newThemeIndex].name);
-      }
-      const currentTheme = THEMES[state.themeIndex];
-
-      // --- Update Phase ---
-      if (state.gameState === 'playing') {
-        state.frames++;
-
-        // Drone Physics
-        if (state.isThrusting) {
-          drone.vy -= THRUST;
-          spawnThrustParticles();
-        }
-        drone.vy += GRAVITY;
-        
-        if (drone.vy > MAX_VELOCITY) drone.vy = MAX_VELOCITY;
-        if (drone.vy < -MAX_VELOCITY) drone.vy = -MAX_VELOCITY;
-        
-        drone.y += drone.vy;
-
-        const targetRotation = Math.min(Math.max(drone.vy * 0.05, -0.5), 0.5);
-        drone.rotation += (targetRotation - drone.rotation) * 0.1;
-
-        if (drone.y + DRONE_SIZE / 2 > FLOOR_Y) {
-          drone.y = FLOOR_Y - DRONE_SIZE / 2;
-          drone.vy = 0;
-        }
-        if (drone.y - DRONE_SIZE / 2 < CEILING_Y) {
-          drone.y = CEILING_Y + DRONE_SIZE / 2;
-          drone.vy = 0;
-        }
-
-        // Background Elements
-        if (state.frames % 40 === 0) {
-          spawnBgElement();
-        }
-        for (let i = bgElements.length - 1; i >= 0; i--) {
-          bgElements[i].x -= bgElements[i].speed;
-          if (bgElements[i].x + bgElements[i].width < 0) {
-            bgElements.splice(i, 1);
-          }
-        }
-
-        // Obstacles
-        // Spawn rate increases slightly with score
-        const spawnRate = Math.max(40, 70 - Math.floor(state.score / 50));
-        if (state.frames % spawnRate === 0) {
-          spawnObstacle();
-        }
-
-        for (let i = obstacles.length - 1; i >= 0; i--) {
-          const obs = obstacles[i];
-          obs.x -= OBSTACLE_SPEED;
-
-          // Moving obstacles logic
-          if (obs.vy !== 0) {
-            obs.y += obs.vy;
-            if (obs.y <= obs.minY || obs.y + obs.height >= obs.maxY) {
-              obs.vy *= -1;
-            }
-          }
-
-          // Collision Detection
-          const margin = 8;
-          if (
-            drone.x + DRONE_SIZE / 2 - margin > obs.x &&
-            drone.x - DRONE_SIZE / 2 + margin < obs.x + obs.width &&
-            drone.y + DRONE_SIZE / 2 - margin > obs.y &&
-            drone.y - DRONE_SIZE / 2 + margin < obs.y + obs.height
-          ) {
-            gameOver();
-          }
-
-          // Score
-          if (!obs.passed && drone.x > obs.x + obs.width) {
-            obs.passed = true;
-            state.score += 10;
-            setScore(state.score);
-          }
-
-          // Remove off-screen
-          if (obs.x + obs.width < 0) {
-            obstacles.splice(i, 1);
-          }
-        }
-      }
-
-      // Update Particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
@@ -449,6 +360,127 @@ export default function App() {
           particles.splice(i, 1);
         }
       }
+    };
+
+    /** One fixed 1/60s simulation step (decoupled from rAF rate for stable speed on mobile). */
+    const advancePlayingTick = () => {
+      const state = stateRef.current;
+      if (state.gameState !== 'playing') return;
+
+      const drone = droneRef.current;
+      const obstacles = obstaclesRef.current;
+      const bgElements = bgElementsRef.current;
+
+      state.frames++;
+
+      if (state.isThrusting) {
+        drone.vy -= THRUST;
+        spawnThrustParticles();
+      }
+      drone.vy += GRAVITY;
+
+      if (drone.vy > MAX_VELOCITY) drone.vy = MAX_VELOCITY;
+      if (drone.vy < -MAX_VELOCITY) drone.vy = -MAX_VELOCITY;
+
+      drone.y += drone.vy;
+
+      const targetRotation = Math.min(Math.max(drone.vy * 0.05, -0.5), 0.5);
+      drone.rotation += (targetRotation - drone.rotation) * 0.1;
+
+      if (drone.y + DRONE_SIZE / 2 > FLOOR_Y) {
+        drone.y = FLOOR_Y - DRONE_SIZE / 2;
+        drone.vy = 0;
+      }
+      if (drone.y - DRONE_SIZE / 2 < CEILING_Y) {
+        drone.y = CEILING_Y + DRONE_SIZE / 2;
+        drone.vy = 0;
+      }
+
+      if (state.frames % 40 === 0) {
+        spawnBgElement();
+      }
+      for (let i = bgElements.length - 1; i >= 0; i--) {
+        bgElements[i].x -= bgElements[i].speed;
+        if (bgElements[i].x + bgElements[i].width < 0) {
+          bgElements.splice(i, 1);
+        }
+      }
+
+      const spawnRate = Math.max(40, 70 - Math.floor(state.score / 50));
+      if (state.frames % spawnRate === 0) {
+        spawnObstacle();
+      }
+
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obs = obstacles[i];
+        obs.x -= OBSTACLE_SPEED;
+
+        if (obs.vy !== 0) {
+          obs.y += obs.vy;
+          if (obs.y <= obs.minY || obs.y + obs.height >= obs.maxY) {
+            obs.vy *= -1;
+          }
+        }
+
+        const margin = 8;
+        if (
+          drone.x + DRONE_SIZE / 2 - margin > obs.x &&
+          drone.x - DRONE_SIZE / 2 + margin < obs.x + obs.width &&
+          drone.y + DRONE_SIZE / 2 - margin > obs.y &&
+          drone.y - DRONE_SIZE / 2 + margin < obs.y + obs.height
+        ) {
+          gameOver();
+        }
+
+        if (!obs.passed && drone.x > obs.x + obs.width) {
+          obs.passed = true;
+          state.score += 10;
+          setScore(state.score);
+        }
+
+        if (obs.x + obs.width < 0) {
+          obstacles.splice(i, 1);
+        }
+      }
+
+      updateParticles();
+    };
+
+    const loop = (now: number) => {
+      const state = stateRef.current;
+
+      // Theme Progression (Change every 150 points)
+      const newThemeIndex = Math.floor(state.score / 150) % THEMES.length;
+      if (newThemeIndex !== state.themeIndex && state.gameState === 'playing') {
+        state.themeIndex = newThemeIndex;
+        setCurrentThemeName(THEMES[newThemeIndex].name);
+      }
+      const currentTheme = THEMES[state.themeIndex];
+
+      if (lastLoopTimeRef.current === null) {
+        lastLoopTimeRef.current = now;
+      }
+      let frameDt = (now - lastLoopTimeRef.current) / 1000;
+      lastLoopTimeRef.current = now;
+      frameDt = Math.min(frameDt, 0.25);
+
+      if (state.gameState === 'playing') {
+        simAccumulatorRef.current += frameDt;
+        let steps = 0;
+        while (simAccumulatorRef.current >= SIM_DT && steps < MAX_SIM_STEPS_PER_FRAME) {
+          advancePlayingTick();
+          simAccumulatorRef.current -= SIM_DT;
+          steps++;
+        }
+      } else {
+        simAccumulatorRef.current = 0;
+        updateParticles();
+      }
+
+      const bgElements = bgElementsRef.current;
+      const obstacles = obstaclesRef.current;
+      const particles = particlesRef.current;
+      const drone = droneRef.current;
 
       // --- Draw Phase ---
       // 1. Background Fill
@@ -678,21 +710,57 @@ export default function App() {
 
       <div className="relative w-full h-full overflow-hidden">
         
-        {/* HUD */}
-        <div 
-          className="absolute z-10 flex flex-col gap-2 pointer-events-none"
-          style={{ top: 'max(1.5rem, env(safe-area-inset-top))', left: 'max(1.5rem, env(safe-area-inset-left))' }}
+        {/* HUD — wide: top-left stack; narrow landscape: bottom bar, smaller type, truncated zone */}
+        <div
+          className={`absolute z-10 flex pointer-events-none ${
+            hudCompact
+              ? 'flex-row flex-wrap items-center gap-x-2 gap-y-1 max-w-[calc(100vw-5.5rem)]'
+              : 'flex-col gap-2'
+          }`}
+          style={
+            hudCompact
+              ? {
+                  bottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+                  left: 'max(0.75rem, env(safe-area-inset-left))',
+                }
+              : {
+                  top: 'max(1.5rem, env(safe-area-inset-top))',
+                  left: 'max(1.5rem, env(safe-area-inset-left))',
+                }
+          }
         >
-          <div className="text-white font-mono text-3xl font-bold tracking-wider drop-shadow-md">
-            SCORE: {score}
+          <div
+            className={`text-white font-mono font-bold tracking-wide drop-shadow-md shrink-0 ${
+              hudCompact ? 'text-lg leading-tight' : 'text-3xl tracking-wider'
+            }`}
+          >
+            {hudCompact ? `${score}` : `SCORE: ${score}`}
+            {hudCompact && (
+              <span className="text-slate-400 font-normal text-xs ml-1.5 font-mono">pts</span>
+            )}
           </div>
           {highScore > 0 && (
-            <div className="text-slate-300 font-mono text-sm flex items-center gap-2 bg-black/40 px-2 py-1 rounded w-fit">
-              <Trophy size={14} className="text-yellow-400" /> HIGH: {highScore}
+            <div
+              className={`text-slate-300 font-mono flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded w-fit shrink-0 ${
+                hudCompact ? 'text-xs' : 'text-sm'
+              }`}
+            >
+              <Trophy size={hudCompact ? 12 : 14} className="text-yellow-400 shrink-0" />
+              {hudCompact ? highScore : `HIGH: ${highScore}`}
             </div>
           )}
-          <div className="text-slate-200 font-mono text-sm flex items-center gap-2 bg-black/40 px-2 py-1 rounded w-fit mt-2">
-            <Map size={14} /> ZONE: {currentThemeName}
+          <div
+            className={`text-slate-200 font-mono flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded min-w-0 ${
+              hudCompact ? 'text-xs max-w-full' : 'text-sm w-fit mt-2'
+            }`}
+            title={currentThemeName}
+          >
+            <Map size={hudCompact ? 12 : 14} className="shrink-0" />
+            {hudCompact ? (
+              <span className="truncate">{currentThemeName}</span>
+            ) : (
+              <>ZONE: {currentThemeName}</>
+            )}
           </div>
         </div>
 
