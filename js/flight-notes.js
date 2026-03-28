@@ -806,7 +806,7 @@
 
     /**
      * RAG suitability for heavier enterprise multi-rotor ops (~12 m/s wind class), thermal + optical payloads.
-     * Uses max(10 m, 120 m) sustained wind and max(10 m gusts, estimated 120 m gusts) so aloft conditions count.
+     * Uses max(10 m, 120 m) sustained wind and max(10 m gusts, estimated 120 m gusts) so higher-level conditions count.
      * Open-Meteo wind values are km/h.
      */
     function deriveSuitability(data) {
@@ -823,20 +823,20 @@
             return {
                 level: 'poor',
                 text:
-                    'Red: conditions exceed safe margins for typical enterprise multi-rotor wind limits and visibility; postpone or re-plan.'
+                    'Red: conditions exceed safe margins for typical enterprise-class multi-rotor wind limits and visibility; postpone or re-plan.'
             };
         }
         if (sustained > 26 || gusts > 34 || vis < 5500 || precip > 0) {
             return {
                 level: 'caution',
                 text:
-                    'Amber: marginal for heavier multi-rotor thermal and visible-light work; shorter sorties, extra altitude margin, watch gusts aloft, and reserve battery.'
+                    'Amber: marginal for heavier multi-rotor thermal and optical work; keep flights shorter, allow extra height margin, watch for stronger gusts higher up, and keep battery in reserve.'
             };
         }
         return {
             level: 'good',
-            text:
-                'Green: within usual operating margins for DJI enterprise-class aircraft; still confirm live wind and visibility at the site before take-off.'
+                text:
+                'Green: within usual operating margins for DJI enterprise-class aircraft; still check wind and visibility on site before take-off.'
         };
     }
 

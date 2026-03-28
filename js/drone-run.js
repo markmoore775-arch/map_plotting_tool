@@ -6,6 +6,14 @@
     'use strict';
 
     const STORAGE_KEY = 'airplot_drone_run_high';
+    const PERF_STORAGE_KEY = 'airplot_drone_run_perf';
+
+    let performanceMode = false;
+    try {
+        performanceMode = localStorage.getItem(PERF_STORAGE_KEY) === '1';
+    } catch {
+        performanceMode = false;
+    }
 
     const canvas = document.getElementById('gameCanvas');
     const host = document.querySelector('.dr-canvas-host');
@@ -35,13 +43,25 @@
         'assets/aircraft-icons/erj.svg',
         'assets/aircraft-icons/glf5.svg'
     ];
-    /** Black silhouette → solid primary fills only (red / blue / yellow / green). */
+    /** Obstacle planes only — blues, teals, greens, ambers, purples (no red; red reserved for targets). */
     const PLANE_PRIMARY_FILTERS = [
-        'brightness(0) saturate(100%) invert(22%) sepia(100%) saturate(6000%) hue-rotate(350deg) brightness(102%) contrast(98%)',
-        'brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(5000%) hue-rotate(210deg) brightness(99%) contrast(98%)',
-        'brightness(0) saturate(100%) invert(90%) sepia(100%) saturate(3500%) hue-rotate(12deg) brightness(104%) contrast(102%)',
-        'brightness(0) saturate(100%) invert(42%) sepia(100%) saturate(4500%) hue-rotate(92deg) brightness(97%) contrast(98%)'
+        'brightness(0) saturate(100%) invert(32%) sepia(90%) saturate(1400%) hue-rotate(198deg) brightness(99%) contrast(97%)',
+        'brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(1200%) hue-rotate(168deg) brightness(98%) contrast(96%)',
+        'brightness(0) saturate(100%) invert(40%) sepia(100%) saturate(900%) hue-rotate(92deg) brightness(97%) contrast(98%)',
+        'brightness(0) saturate(100%) invert(52%) sepia(75%) saturate(1000%) hue-rotate(58deg) brightness(103%) contrast(97%)',
+        'brightness(0) saturate(100%) invert(38%) sepia(80%) saturate(1100%) hue-rotate(235deg) brightness(98%) contrast(97%)',
+        'brightness(0) saturate(100%) invert(34%) sepia(70%) saturate(800%) hue-rotate(265deg) brightness(99%) contrast(98%)'
     ];
+    /** Solid fills for performance mode (matches filter order; no ctx.filter). */
+    const OBSTACLE_COLORS = [
+        '#2563eb',
+        '#0d9488',
+        '#16a34a',
+        '#ca8a04',
+        '#6366f1',
+        '#7c3aed'
+    ];
+    const MAX_ENTITIES_PERF = 20;
     /** Single bright red for all shootable enemy drones. */
     const ENEMY_DRONE_FILTER =
         'brightness(0) saturate(100%) invert(16%) sepia(100%) saturate(9000%) hue-rotate(348deg) brightness(106%) contrast(110%)';
@@ -135,6 +155,8 @@
         mapScrollPx: 0,
         entities: [],
         bullets: [],
+        effects: [],
+        screenShake: 0,
         keys: Object.create(null),
         fireCooldown: 0,
         autoFireAcc: 0,
@@ -165,6 +187,27 @@
         } catch { /* ignore */ }
     }
 
+    function savePerfMode(on) {
+        performanceMode = !!on;
+        try {
+            localStorage.setItem(PERF_STORAGE_KEY, performanceMode ? '1' : '0');
+        } catch { /* ignore */ }
+        syncPerfCheckboxes();
+        resize();
+        if (state.phase === 'menu') {
+            menuDraw(1 / 60);
+        } else if (state.phase === 'over') {
+            draw(0);
+        }
+    }
+
+    function syncPerfCheckboxes() {
+        const startCb = document.getElementById('drPerfToggle');
+        const overCb = document.getElementById('drPerfToggleOver');
+        if (startCb) startCb.checked = performanceMode;
+        if (overCb) overCb.checked = performanceMode;
+    }
+
     function resize() {
         const bar = document.querySelector('.dr-top-bar');
         if (bar) {
@@ -173,7 +216,7 @@
                 `${Math.ceil(bar.getBoundingClientRect().height)}px`
             );
         }
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        dpr = Math.min(window.devicePixelRatio || 1, performanceMode ? 1 : 2);
         const rect = host.getBoundingClientRect();
         W = Math.max(320, Math.floor(rect.width));
         H = Math.max(240, Math.floor(rect.height));
@@ -195,6 +238,8 @@
         state.mapScrollPx = 0;
         state.entities = [];
         state.bullets = [];
+        state.effects = [];
+        state.screenShake = 0;
         state.fireCooldown = 0;
         state.autoFireAcc = 0;
         player.x = W / 2;
@@ -213,13 +258,15 @@
     }
 
     function spawnObstacle() {
+        if (performanceMode && state.entities.length >= MAX_ENTITIES_PERF) return;
         const roll = Math.random();
         const speed = (120 + state.difficulty * 35) * (0.85 + Math.random() * 0.3);
         if (roll < 0.38) {
             const r = 22 + Math.random() * 14;
             const iconPath = PLANE_PATHS[(Math.random() * PLANE_PATHS.length) | 0];
-            const planeFilter =
-                PLANE_PRIMARY_FILTERS[(Math.random() * PLANE_PRIMARY_FILTERS.length) | 0];
+            const pi = (Math.random() * PLANE_PRIMARY_FILTERS.length) | 0;
+            const planeFilter = PLANE_PRIMARY_FILTERS[pi];
+            const planeColor = OBSTACLE_COLORS[pi];
             state.entities.push({
                 type: 'obstaclePlane',
                 x: r + Math.random() * Math.max(4, W - 2 * r),
@@ -231,6 +278,7 @@
                 solid: true,
                 iconPath,
                 planeFilter,
+                planeColor,
                 headingRad: Math.PI / 2
             });
         } else if (roll < 0.68) {
@@ -238,8 +286,9 @@
             let hvx = (Math.random() - 0.5) * 48;
             if (Math.abs(hvx) < 12) hvx += hvx >= 0 ? 18 : -18;
             const iconPath = PLANE_PATHS[(Math.random() * PLANE_PATHS.length) | 0];
-            const planeFilter =
-                PLANE_PRIMARY_FILTERS[(Math.random() * PLANE_PRIMARY_FILTERS.length) | 0];
+            const pi = (Math.random() * PLANE_PRIMARY_FILTERS.length) | 0;
+            const planeFilter = PLANE_PRIMARY_FILTERS[pi];
+            const planeColor = OBSTACLE_COLORS[pi];
             state.entities.push({
                 type: 'obstaclePlane',
                 x: r + Math.random() * Math.max(4, W - 2 * r),
@@ -251,6 +300,7 @@
                 solid: true,
                 iconPath,
                 planeFilter,
+                planeColor,
                 headingRad: 0
             });
         } else {
@@ -280,7 +330,7 @@
             x: player.x,
             y: player.y - player.r - 4,
             vy: -420,
-            r: 3
+            r: 4.5
         });
         state.fireCooldown = 0.14;
     }
@@ -322,6 +372,25 @@
 
     /** Scrolls Web Mercator tiles north over London (same tile server as OSM website). */
     function drawOsmScrolling(dt) {
+        const rate =
+            state.phase === 'play' ? 92 * (1 + state.difficulty * 0.14) : 30;
+        state.mapScrollPx += rate * dt;
+
+        if (performanceMode) {
+            const g = ctx.createLinearGradient(0, 0, 0, H);
+            g.addColorStop(0, '#1e293b');
+            g.addColorStop(0.55, '#0f172a');
+            g.addColorStop(1, '#020617');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, W, H);
+            const band = (state.mapScrollPx * 0.4) % 80;
+            ctx.fillStyle = 'rgba(51, 65, 85, 0.35)';
+            for (let y = -band; y < H + 80; y += 80) {
+                ctx.fillRect(0, y, W, 36);
+            }
+            return;
+        }
+
         const ts = 256;
         const z = MAP_ZOOM;
         const n = 1 << z;
@@ -346,25 +415,29 @@
                 ctx.drawImage(img, sx, sy, ts + 1, ts + 1);
             }
         }
-
-        const rate =
-            state.phase === 'play' ? 92 * (1 + state.difficulty * 0.14) : 30;
-        state.mapScrollPx += rate * dt;
     }
 
     function drawBackground(dt) {
         drawOsmScrolling(dt);
-        ctx.fillStyle = 'rgba(10, 14, 22, 0.44)';
+        ctx.fillStyle = performanceMode ? 'rgba(10, 14, 22, 0.32)' : 'rgba(10, 14, 22, 0.44)';
         ctx.fillRect(0, 0, W, H);
         ctx.fillStyle = 'rgba(240, 248, 255, 0.42)';
         ctx.font = '600 11px Inter, system-ui, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.fillText('London (OpenStreetMap)', 10, 10);
+        if (performanceMode) {
+            ctx.fillText('Performance mode — simplified backdrop', 10, 10);
+        } else {
+            ctx.fillText('London (OpenStreetMap)', 10, 10);
+        }
         ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
         ctx.font = '10px Inter, system-ui, sans-serif';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('© OpenStreetMap contributors', 10, H - 8);
+        ctx.fillText(
+            performanceMode ? 'No live map tiles' : '© OpenStreetMap contributors',
+            10,
+            H - 8
+        );
     }
 
     function drawDroneFallback(x, y, tilt) {
@@ -398,8 +471,10 @@
         ctx.translate(x, y);
         ctx.rotate(tilt + Math.PI);
         if (droneImageReady()) {
-            ctx.shadowColor = 'rgba(91, 141, 239, 0.9)';
-            ctx.shadowBlur = 16;
+            if (!performanceMode) {
+                ctx.shadowColor = 'rgba(91, 141, 239, 0.9)';
+                ctx.shadowBlur = 16;
+            }
             ctx.drawImage(img, -size / 2, -size / 2, size, size);
             ctx.shadowBlur = 0;
         } else {
@@ -417,6 +492,18 @@
         ctx.save();
         ctx.translate(e.x, e.y);
         ctx.rotate(e.headingRad);
+        if (performanceMode) {
+            const fill = e.planeColor || OBSTACLE_COLORS[0];
+            ctx.fillStyle = fill;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, e.r * 1.35, e.r * 0.55, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            return;
+        }
         if (planeImageReady(e.iconPath)) {
             ctx.filter = e.planeFilter || PLANE_PRIMARY_FILTERS[0];
             ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
@@ -425,8 +512,8 @@
             ctx.shadowBlur = 0;
             ctx.filter = 'none';
         } else {
-            ctx.fillStyle = '#e05555';
-            ctx.strokeStyle = '#fecaca';
+            ctx.fillStyle = '#475569';
+            ctx.strokeStyle = '#94a3b8';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(0, 0, e.r, 0, Math.PI * 2);
@@ -443,6 +530,17 @@
         ctx.save();
         ctx.translate(e.x, e.y);
         ctx.rotate(e.spinAngle);
+        if (performanceMode) {
+            ctx.fillStyle = '#dc2626';
+            ctx.strokeStyle = 'rgba(254, 202, 202, 0.9)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, e.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            return;
+        }
         if (targetImageReady()) {
             ctx.filter = ENEMY_DRONE_FILTER;
             ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
@@ -451,12 +549,127 @@
             ctx.shadowBlur = 0;
             ctx.filter = 'none';
         } else {
-            ctx.fillStyle = '#5b8def';
+            ctx.fillStyle = '#dc2626';
             ctx.beginPath();
             ctx.arc(0, 0, e.r, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.restore();
+    }
+
+    function spawnTargetExplosion(x, y) {
+        const n = performanceMode ? 5 : 14;
+        const parts = [];
+        for (let i = 0; i < n; i++) {
+            const ang = (i / n) * Math.PI * 2 + Math.random() * 0.4;
+            const spd = 95 + Math.random() * 160;
+            parts.push({
+                ang,
+                vx: Math.cos(ang) * spd,
+                vy: Math.sin(ang) * spd,
+                sz: 2.5 + Math.random() * 3.5
+            });
+        }
+        state.effects.push({
+            kind: 'explode',
+            x,
+            y,
+            t: 0,
+            life: performanceMode ? 0.26 : 0.38,
+            parts
+        });
+    }
+
+    function spawnCrashFx(x, y) {
+        state.effects.push({
+            kind: 'crash',
+            x,
+            y,
+            t: 0,
+            life: performanceMode ? 0.32 : 0.48,
+            rot: Math.random() * Math.PI * 2
+        });
+        state.screenShake = Math.max(state.screenShake, performanceMode ? 9 : 17);
+    }
+
+    function stepEffects(dt) {
+        state.screenShake = Math.max(0, state.screenShake - dt * 42);
+        for (let i = state.effects.length - 1; i >= 0; i--) {
+            const fx = state.effects[i];
+            fx.t += dt;
+            if (fx.t >= fx.life) state.effects.splice(i, 1);
+        }
+    }
+
+    function drawEffects() {
+        for (const fx of state.effects) {
+            const k = fx.t / fx.life;
+            const fade = 1 - k;
+            if (fx.kind === 'explode') {
+                ctx.save();
+                ctx.globalAlpha = fade;
+                const ringR = 6 + k * 48;
+                if (!performanceMode) {
+                    ctx.strokeStyle = `rgba(255, 200, 120, ${0.35 + fade * 0.45})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, ringR, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = `rgba(255, 90, 60, ${fade * 0.85})`;
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, ringR * 0.55, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    ctx.strokeStyle = `rgba(255, 160, 80, ${fade * 0.9})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, ringR * 0.65, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                for (const p of fx.parts) {
+                    const px = fx.x + p.vx * fx.t;
+                    const py = fx.y + p.vy * fx.t;
+                    const ps = p.sz * fade;
+                    ctx.fillStyle = k < 0.35 ? '#ffffff' : `rgba(255, 160, 80, ${fade})`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, ps, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            } else if (fx.kind === 'crash') {
+                ctx.save();
+                ctx.translate(fx.x, fx.y);
+                ctx.rotate(fx.rot);
+                ctx.globalAlpha = fade * 0.95;
+                const spike = 28 + k * 40;
+                const spikes = performanceMode ? 4 : 8;
+                ctx.strokeStyle = `rgba(251, 191, 36, ${fade})`;
+                ctx.lineWidth = performanceMode ? 3 : 4;
+                for (let s = 0; s < spikes; s++) {
+                    const a = (s / spikes) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(a) * 8, Math.sin(a) * 8);
+                    ctx.lineTo(Math.cos(a) * spike, Math.sin(a) * spike);
+                    ctx.stroke();
+                }
+                ctx.fillStyle = `rgba(248, 113, 113, ${fade * 0.55})`;
+                ctx.beginPath();
+                ctx.arc(0, 0, 14 + k * 22, 0, Math.PI * 2);
+                ctx.fill();
+                if (!performanceMode) {
+                    ctx.strokeStyle = `rgba(254, 249, 195, ${fade})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-18, -18);
+                    ctx.lineTo(18, 18);
+                    ctx.moveTo(18, -18);
+                    ctx.lineTo(-18, 18);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
     }
 
     function drawEntity(e) {
@@ -472,7 +685,8 @@
 
         state.distance += dt * (60 + state.difficulty * 8);
         state.difficulty = 1 + state.distance / 800;
-        state.spawnAcc += dt * (1.1 + state.difficulty * 0.35);
+        const spawnMul = performanceMode ? 0.82 : 1;
+        state.spawnAcc += dt * (1.1 + state.difficulty * 0.35) * spawnMul;
         while (state.spawnAcc >= 1) {
             state.spawnAcc -= 1;
             spawnObstacle();
@@ -550,6 +764,7 @@
                     }
                 } else if (hitBullet(b, e)) {
                     state.bullets.splice(bi, 1);
+                    spawnTargetExplosion(e.x, e.y);
                     state.entities.splice(ei, 1);
                     state.score += 50;
                     updateHud();
@@ -567,6 +782,14 @@
                 continue;
             }
             if (hitPlayer(e)) {
+                if (e.type === 'obstaclePlane') {
+                    spawnCrashFx(
+                        (player.x + e.x) / 2,
+                        (player.y + e.y) / 2
+                    );
+                } else {
+                    spawnTargetExplosion(e.x, e.y);
+                }
                 state.entities.splice(ei, 1);
                 state.lives -= 1;
                 updateHud();
@@ -577,6 +800,8 @@
             }
         }
 
+        stepEffects(dt);
+
         state.score += dt * 12 * state.difficulty;
         updateHud();
     }
@@ -584,17 +809,47 @@
     function draw(dt) {
         const tilt = (player.vx / 400) * 0.35;
         drawBackground(dt);
+        const tShake = state.phase === 'play' ? performance.now() * 0.05 : 0;
+        const sh = state.screenShake;
+        const ox = sh > 0.5 ? Math.sin(tShake) * sh * 0.55 : 0;
+        const oy = sh > 0.5 ? Math.cos(tShake * 1.17) * sh * 0.55 : 0;
+        ctx.save();
+        ctx.translate(ox, oy);
         for (const e of state.entities) drawEntity(e);
         for (const b of state.bullets) {
-            ctx.fillStyle = '#7ec8ff';
-            ctx.shadowColor = '#5b8def';
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
+            const core = b.r;
+            if (performanceMode) {
+                ctx.fillStyle = '#fffef0';
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, core, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, core * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.shadowColor = 'rgba(255, 240, 180, 0.95)';
+                ctx.shadowBlur = 14;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, core * 1.15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(255, 100, 200, 0.8)';
+                ctx.fillStyle = '#fff8e8';
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, core * 0.55, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, core * 0.28, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
+        drawEffects();
         drawDrone(player.x, player.y, tilt);
+        ctx.restore();
     }
 
     function loop(t) {
@@ -626,6 +881,7 @@
         if (elScoreFinal) elScoreFinal.textContent = String(Math.floor(state.score));
         if (elHighFinal) elHighFinal.textContent = String(hi);
         overlayGameOver.hidden = false;
+        syncPerfCheckboxes();
     }
 
     function onKeyDown(e) {
@@ -714,12 +970,32 @@
     if (btnStart) btnStart.addEventListener('click', () => startGame());
     if (btnRestart) btnRestart.addEventListener('click', () => startGame());
 
+    function onPerfToggleChange(checked) {
+        savePerfMode(checked);
+    }
+
+    const perfStart = document.getElementById('drPerfToggle');
+    const perfOver = document.getElementById('drPerfToggleOver');
+    if (perfStart) {
+        perfStart.checked = performanceMode;
+        perfStart.addEventListener('change', () => onPerfToggleChange(perfStart.checked));
+    }
+    if (perfOver) {
+        perfOver.checked = performanceMode;
+        perfOver.addEventListener('change', () => onPerfToggleChange(perfOver.checked));
+    }
+
     window.addEventListener('resize', () => {
         resize();
-        if (state.phase === 'menu' || state.phase === 'over') drawBackground(0);
+        if (state.phase === 'menu') {
+            drawBackground(0);
+        } else if (state.phase === 'over') {
+            draw(0);
+        }
     });
 
     resize();
+    syncPerfCheckboxes();
 
     preloadGameImages();
 

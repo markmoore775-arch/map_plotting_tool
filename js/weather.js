@@ -183,7 +183,7 @@
         return Math.round(m) + ' m';
     }
 
-    /** RAG suitability: ~12 m/s-class enterprise multi-rotor, thermal + optical; aloft wind/gusts included. */
+    /** RAG suitability: ~12 m/s-class enterprise multi-rotor, thermal + optical; 120 m wind/gust estimates included. */
     function deriveSuitability(data) {
         const w10 = data.wind_speed_10m ?? 0;
         const w120 = data.wind_speed_120m ?? w10;
@@ -195,11 +195,11 @@
         const precip = data.precipitation ?? 0;
 
         const explainerGood =
-            'Within usual operating margins for DJI enterprise-class aircraft. Still confirm live wind and visibility at the site before take-off.';
+            'Within usual operating margins for DJI enterprise-class aircraft. Still check wind and visibility on site before take-off.';
         const explainerCaution =
-            'Marginal for heavier multi-rotor thermal and visible-light work. Prefer shorter sorties, extra altitude margin, watch gusts aloft, and reserve battery.';
+            'Marginal for heavier multi-rotor thermal and optical work. Keep flights shorter, allow extra height margin, watch for stronger gusts higher up, and keep battery in reserve.';
         const explainerPoor =
-            'Conditions exceed safe margins for typical enterprise multi-rotor wind limits and visibility. Postpone or re-plan.';
+            'Conditions exceed safe margins for typical enterprise-class multi-rotor wind limits and visibility. Postpone or re-plan.';
 
         if (sustained > 38 || gusts > 47 || vis < 4000 || precip > 1.5) {
             return {

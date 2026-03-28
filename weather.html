@@ -21,7 +21,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/weather.css?v=16">
+    <link rel="stylesheet" href="css/weather.css?v=23">
 </head>
 <body class="weather-mode">
     <div id="map"></div>
@@ -93,26 +93,30 @@
         <div class="weather-report-header">
             <h2>Flight Weather Report</h2>
             <div class="weather-header-actions">
-                <button type="button" class="weather-btn weather-btn-export" id="weatherExportPptxBtn" title="Export report as PowerPoint">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-                    <span>PPTX</span>
-                </button>
-                <button type="button" class="weather-btn weather-btn-export" id="weatherExportPdfBtn" title="Export report as PDF">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-                    <span>PDF</span>
-                </button>
-                <div class="weather-export-theme-box" role="radiogroup" aria-labelledby="weatherExportThemeLabel">
-                    <span id="weatherExportThemeLabel" class="weather-export-theme-label">Export</span>
-                    <label class="weather-export-theme-option">
-                        <input type="radio" name="weatherExportTheme" value="dark">
-                        <span>Dark</span>
-                    </label>
-                    <label class="weather-export-theme-option">
-                        <input type="radio" name="weatherExportTheme" value="light" checked>
-                        <span>Light</span>
-                    </label>
+                <div class="weather-header-actions-row weather-header-actions-row--files">
+                    <button type="button" class="weather-btn weather-btn-export" id="weatherExportPptxBtn" title="Export report as PowerPoint">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                        <span>PPTX</span>
+                    </button>
+                    <button type="button" class="weather-btn weather-btn-export" id="weatherExportPdfBtn" title="Export report as PDF">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                        <span>PDF</span>
+                    </button>
                 </div>
-                <button type="button" class="weather-report-close" id="weatherReportClose" aria-label="Close">&times;</button>
+                <div class="weather-header-actions-row weather-header-actions-row--toggles">
+                    <div class="weather-export-theme-box" role="radiogroup" aria-labelledby="weatherExportThemeLabel">
+                        <span id="weatherExportThemeLabel" class="weather-export-theme-label">Export</span>
+                        <label class="weather-export-theme-option">
+                            <input type="radio" name="weatherExportTheme" value="dark">
+                            <span>Dark</span>
+                        </label>
+                        <label class="weather-export-theme-option">
+                            <input type="radio" name="weatherExportTheme" value="light" checked>
+                            <span>Light</span>
+                        </label>
+                    </div>
+                    <button type="button" class="weather-report-close" id="weatherReportClose" aria-label="Close">&times;</button>
+                </div>
             </div>
         </div>
         <div class="weather-report-body">
