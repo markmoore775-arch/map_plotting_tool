@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, RotateCcw, Trophy, Zap, Crosshair, Heart } from 'lucide-react';
+import { Play, RotateCcw, Trophy, Zap, Heart } from 'lucide-react';
 
 // --- Game Constants ---
 const DRONE_SIZE = 30;
@@ -616,8 +616,12 @@ export default function DroneGame() {
         if (p.y < 0) { p.y = 0; p.vy = 0; }
         if (p.y + p.height > state.height) { p.y = state.height - p.height; p.vy = 0; }
 
-        // Shooting
-        if (state.keys['Space'] && state.frameCount - state.lastShotTime > 12) {
+        // Shooting: Space on desktop; continuous autofire on coarse-pointer (touch) devices
+        const touchAutofire =
+          typeof window !== 'undefined' &&
+          window.matchMedia('(pointer: coarse)').matches;
+        const wantFire = state.keys['Space'] || touchAutofire;
+        if (wantFire && state.frameCount - state.lastShotTime > 12) {
           state.projectiles.push({
             x: p.x + p.width / 2 - 2,
             y: p.y,
@@ -1095,18 +1099,6 @@ export default function DroneGame() {
           style={{ touchAction: 'none' }}
         />
 
-        {/* Mobile Fire Button Overlay */}
-        {gameState === 'playing' && (
-          <button
-            className="absolute bottom-8 right-8 w-16 h-16 bg-rose-500/30 backdrop-blur-md rounded-full border-2 border-rose-400/50 text-rose-100 font-black active:bg-rose-500/60 active:scale-95 transition-all z-30 md:hidden flex items-center justify-center select-none shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-            onPointerDown={(e) => { e.preventDefault(); gameRef.current.keys['Space'] = true; }}
-            onPointerUp={(e) => { e.preventDefault(); gameRef.current.keys['Space'] = false; }}
-            onPointerLeave={(e) => { e.preventDefault(); gameRef.current.keys['Space'] = false; }}
-          >
-            <Crosshair className="w-8 h-8" />
-          </button>
-        )}
-
         {/* Overlays */}
         {gameState === 'start' && (
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
@@ -1115,9 +1107,11 @@ export default function DroneGame() {
             </div>
             <h2 className="text-2xl font-bold mb-2">Enter the Airspace</h2>
             <p className="text-slate-400 mb-8 max-w-[250px]">
-              Use <kbd className="bg-slate-800 px-2 py-1 rounded text-rose-300 font-mono text-sm mx-1">WASD</kbd>, <kbd className="bg-slate-800 px-2 py-1 rounded text-rose-300 font-mono text-sm mx-1">Arrows</kbd>, or <span className="text-rose-300 font-semibold">Touch Drag</span> to steer.
+              Use <kbd className="bg-slate-800 px-2 py-1 rounded text-rose-300 font-mono text-sm mx-1">WASD</kbd>, <kbd className="bg-slate-800 px-2 py-1 rounded text-rose-300 font-mono text-sm mx-1">Arrows</kbd>, or <span className="text-rose-300 font-semibold">touch drag</span> to steer.
               <br/><br/>
-              Press <kbd className="bg-slate-800 px-2 py-1 rounded text-rose-300 font-mono text-sm mx-1">Space</kbd> or use the <span className="text-rose-300 font-semibold">Fire Button</span> to shoot enemies!
+              <span className="text-slate-300">Desktop:</span> press <kbd className="bg-slate-800 px-2 py-1 rounded text-rose-300 font-mono text-sm mx-1">Space</kbd> to shoot.
+              <br/>
+              <span className="text-slate-300">Touch:</span> your drone <span className="text-rose-300 font-semibold">fires automatically</span>.
             </p>
             <button
               onClick={startGame}
@@ -1156,7 +1150,7 @@ export default function DroneGame() {
       </div>
       
       <div className="mt-6 text-slate-500 text-xs flex gap-4">
-        <span>Desktop: Keyboard Controls | Mobile: Touch Drag & Fire Button</span>
+        <span>Desktop: keyboard + Space to shoot | Touch: drag to steer, auto-fire</span>
       </div>
     </div>
   );
