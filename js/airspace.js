@@ -8,7 +8,6 @@
     'use strict';
 
     const ADSB_LOL_BASE = 'https://api.adsb.lol/v2';
-    const AGL_STORAGE_KEY = 'airspaceAglEnabled';
     const OGN_STORAGE_KEY = 'airspaceOgnEnabled';
     const MIN_POLL_MS = 1100;
     const MOVE_DEBOUNCE_MS = 500;
@@ -69,15 +68,8 @@
     /** Incremented each render so stale AGL tile callbacks do not update old markers. */
     let airspaceRenderGen = 0;
 
-    function loadAglPreference() {
-        try {
-            return localStorage.getItem(AGL_STORAGE_KEY) === '1';
-        } catch (e) {
-            return false;
-        }
-    }
-
-    let aglEnabled = loadAglPreference();
+    /** AGL always starts off each visit (not persisted). */
+    let aglEnabled = false;
 
     function loadOgnPreference() {
         try {
@@ -1699,9 +1691,6 @@
                     return;
                 }
                 aglEnabled = !!aglToggle.checked;
-                try {
-                    localStorage.setItem(AGL_STORAGE_KEY, aglEnabled ? '1' : '0');
-                } catch (e) {}
                 airspaceRenderGen++;
                 if (lastAircraftList.length) {
                     renderAircraftList(lastAircraftList.slice());
