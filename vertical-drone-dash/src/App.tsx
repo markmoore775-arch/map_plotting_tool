@@ -97,8 +97,6 @@ export default function App() {
 
   const [dimensions, setDimensions] = useState({ width: 1280, height: 720 });
   const [isPortrait, setIsPortrait] = useState(false);
-  /** Narrow landscape: tighter HUD layout so score / zone fit without crowding the top bar. */
-  const [hudCompact, setHudCompact] = useState(false);
   const dimRef = useRef({ width: 1280, height: 720 });
 
   // Mutable game state refs
@@ -149,7 +147,6 @@ export default function App() {
     const handleResize = () => {
       const isPort = window.innerHeight > window.innerWidth;
       setIsPortrait(isPort);
-      setHudCompact(window.innerWidth < 720);
 
       const aspect = window.innerWidth / window.innerHeight;
       const newWidth = Math.max(720 * aspect, 720);
@@ -665,14 +662,14 @@ export default function App() {
     };
   }, []);
 
+  const goToTrainingMenu = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.assign('../training.html');
+  };
+
   return (
-    <div 
-      className="fixed inset-0 bg-black select-none touch-none overflow-hidden"
-      onMouseDown={handleThrustStart}
-      onMouseUp={handleThrustEnd}
-      onTouchStart={handleThrustStart}
-      onTouchEnd={handleThrustEnd}
-    >
+    <div className="fixed inset-0 bg-black select-none touch-none overflow-hidden">
       {isPortrait && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-8 bg-slate-950 z-50">
           <RotateCcw size={48} className="mb-4" />
@@ -680,12 +677,11 @@ export default function App() {
           <p className="text-slate-400 text-center">Drone Dash requires landscape mode.</p>
           <a
             href="../training.html"
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-slate-200 text-sm font-semibold border border-white/20 hover:bg-white/20 pointer-events-auto"
+            onClick={goToTrainingMenu}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="mt-8 inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-4 py-2 rounded-full bg-white/10 text-slate-200 text-sm font-semibold border border-white/20 hover:bg-white/20 pointer-events-auto touch-manipulation z-[100]"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={18} className="shrink-0" />
             Training menu
           </a>
         </div>
@@ -694,10 +690,9 @@ export default function App() {
       {!isPortrait && (
         <a
           href="../training.html"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          className="fixed z-30 inline-flex items-center gap-2 px-3 py-2 sm:px-4 rounded-full bg-black/55 text-slate-100 text-xs sm:text-sm font-semibold border border-white/15 hover:bg-black/75 pointer-events-auto backdrop-blur-sm max-w-[calc(100vw-1.5rem)]"
+          onClick={goToTrainingMenu}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="fixed z-[100] inline-flex items-center justify-center gap-2 min-h-[44px] px-3 sm:px-4 py-2.5 rounded-full bg-black/55 text-slate-100 text-xs sm:text-sm font-semibold border border-white/15 hover:bg-black/75 pointer-events-auto backdrop-blur-sm max-w-[calc(100vw-1.5rem)] touch-manipulation"
           style={{
             top: 'max(0.75rem, env(safe-area-inset-top))',
             right: 'max(0.75rem, env(safe-area-inset-right))',
@@ -710,57 +705,34 @@ export default function App() {
 
       <div className="relative w-full h-full overflow-hidden">
         
-        {/* HUD — wide: top-left stack; narrow landscape: bottom bar, smaller type, truncated zone */}
+        {/* HUD — top-left row: score, high score, zone (stays under training link on the right) */}
         <div
-          className={`absolute z-10 flex pointer-events-none ${
-            hudCompact
-              ? 'flex-row flex-wrap items-center gap-x-2 gap-y-1 max-w-[calc(100vw-5.5rem)]'
-              : 'flex-col gap-2'
-          }`}
-          style={
-            hudCompact
-              ? {
-                  bottom: 'max(0.75rem, env(safe-area-inset-bottom))',
-                  left: 'max(0.75rem, env(safe-area-inset-left))',
-                }
-              : {
-                  top: 'max(1.5rem, env(safe-area-inset-top))',
-                  left: 'max(1.5rem, env(safe-area-inset-left))',
-                }
-          }
+          className="absolute z-10 flex flex-row flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 pointer-events-none max-w-[min(100%,calc(100vw-9rem))]"
+          style={{
+            top: 'max(0.65rem, env(safe-area-inset-top))',
+            left: 'max(0.65rem, env(safe-area-inset-left))',
+          }}
         >
-          <div
-            className={`text-white font-mono font-bold tracking-wide drop-shadow-md shrink-0 ${
-              hudCompact ? 'text-lg leading-tight' : 'text-3xl tracking-wider'
-            }`}
-          >
-            {hudCompact ? `${score}` : `SCORE: ${score}`}
-            {hudCompact && (
-              <span className="text-slate-400 font-normal text-xs ml-1.5 font-mono">pts</span>
-            )}
+          <div className="text-white font-mono font-bold tracking-wide drop-shadow-md shrink-0 text-sm sm:text-base tabular-nums">
+            <span className="text-slate-400 font-semibold text-xs sm:text-sm mr-1">SCORE</span>
+            {score}
           </div>
           {highScore > 0 && (
-            <div
-              className={`text-slate-300 font-mono flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded w-fit shrink-0 ${
-                hudCompact ? 'text-xs' : 'text-sm'
-              }`}
-            >
-              <Trophy size={hudCompact ? 12 : 14} className="text-yellow-400 shrink-0" />
-              {hudCompact ? highScore : `HIGH: ${highScore}`}
+            <div className="text-slate-300 font-mono flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded w-fit shrink-0 text-xs sm:text-sm">
+              <Trophy size={12} className="text-yellow-400 shrink-0" />
+              <span className="text-slate-500 mr-0.5">HI</span>
+              {highScore}
             </div>
           )}
           <div
-            className={`text-slate-200 font-mono flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded min-w-0 ${
-              hudCompact ? 'text-xs max-w-full' : 'text-sm w-fit mt-2'
-            }`}
+            className="text-slate-200 font-mono flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded min-w-0 max-w-[40vw] sm:max-w-none text-xs sm:text-sm"
             title={currentThemeName}
           >
-            <Map size={hudCompact ? 12 : 14} className="shrink-0" />
-            {hudCompact ? (
-              <span className="truncate">{currentThemeName}</span>
-            ) : (
-              <>ZONE: {currentThemeName}</>
-            )}
+            <Map size={12} className="shrink-0" />
+            <span className="truncate">
+              <span className="text-slate-500 mr-1">ZONE</span>
+              {currentThemeName}
+            </span>
           </div>
         </div>
 
@@ -769,23 +741,30 @@ export default function App() {
           ref={canvasRef}
           width={dimensions.width}
           height={dimensions.height}
-          className="w-full h-full object-cover bg-slate-900 block"
+          className="w-full h-full object-cover bg-slate-900 block touch-none"
+          onMouseDown={handleThrustStart}
+          onMouseUp={handleThrustEnd}
+          onMouseLeave={handleThrustEnd}
+          onTouchStart={handleThrustStart}
+          onTouchEnd={handleThrustEnd}
+          onTouchCancel={handleThrustEnd}
         />
 
         {/* Start Screen Overlay */}
         {gameState === 'start' && (
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center z-20">
-            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-tighter mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm pointer-events-none">
+            <h1 className="pointer-events-none text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-tighter mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
               DRONE DASH
             </h1>
-            <p className="text-slate-300 font-mono mb-8 text-center max-w-md">
+            <p className="pointer-events-none text-slate-300 font-mono mb-8 text-center max-w-md">
               Hold <kbd className="bg-slate-800 px-2 py-1 rounded text-cyan-400">SPACE</kbd> or <kbd className="bg-slate-800 px-2 py-1 rounded text-cyan-400">TAP</kbd> to fly up.<br/>
               Release to fall.<br/>
               Survive to reach new zones!
             </p>
             <button 
+              type="button"
               onClick={(e) => { e.stopPropagation(); startGame(); }}
-              className="group relative px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xl rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+              className="pointer-events-auto group relative px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xl rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-3 touch-manipulation"
             >
               <Play fill="currentColor" />
               START SYSTEM
@@ -796,11 +775,11 @@ export default function App() {
 
         {/* Game Over Overlay */}
         {gameState === 'gameover' && (
-          <div className="absolute inset-0 bg-rose-950/90 backdrop-blur-md flex flex-col items-center justify-center z-20 animate-in fade-in duration-300">
-            <h2 className="text-5xl font-black text-rose-500 tracking-tighter mb-2 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]">
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-rose-950/90 backdrop-blur-md animate-in fade-in duration-300 pointer-events-none">
+            <h2 className="pointer-events-none text-5xl font-black text-rose-500 tracking-tighter mb-2 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]">
               SYSTEM FAILURE
             </h2>
-            <div className="text-white font-mono text-2xl mb-8 flex flex-col items-center gap-2">
+            <div className="pointer-events-none text-white font-mono text-2xl mb-8 flex flex-col items-center gap-2">
               <span>FINAL SCORE: {score}</span>
               <span className="text-slate-300 text-lg">REACHED: {currentThemeName}</span>
               {score >= highScore && score > 0 && (
@@ -810,8 +789,9 @@ export default function App() {
               )}
             </div>
             <button 
+              type="button"
               onClick={(e) => { e.stopPropagation(); startGame(); }}
-              className="px-8 py-4 bg-white hover:bg-slate-200 text-rose-950 font-bold text-xl rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+              className="pointer-events-auto px-8 py-4 bg-white hover:bg-slate-200 text-rose-950 font-bold text-xl rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.3)] touch-manipulation"
             >
               <RotateCcw />
               REBOOT
