@@ -7,14 +7,21 @@ const BASE_SPEED = 1.8;
 /** Peak scroll multiplier (start is 1×). Capped — difficulty does not rise forever. */
 const MAX_SPEED_MULTIPLIER = 1.58;
 /**
- * Frames until the speed curve approaches MAX_SPEED_MULTIPLIER (ease-out: slow early, steady later).
- * Decoupled from score so score multipliers / touch autofire do not spike difficulty on phones.
+ * Wall-clock seconds until speed nears MAX_SPEED_MULTIPLIER (was 18_000 frames @ 60fps).
+ * Uses real time so 120Hz / throttled RAF cannot rush difficulty.
  */
-const SPEED_RAMP_FRAMES = 18_000;
-/** Obstacle spawn chance starts at base and rises toward cap over SPAWN_RAMP_FRAMES. */
+const SPEED_RAMP_SECONDS = 18_000 / 60;
+/** Spawn chance ramps to cap over this many seconds (was 24_000 frames @ 60fps). */
+const SPAWN_RAMP_SECONDS = 24_000 / 60;
 const SPAWN_CHANCE_BASE = 0.08;
 const SPAWN_CHANCE_CAP = 0.28;
-const SPAWN_RAMP_FRAMES = 24_000;
+/** Normalize physics to this reference framerate (scroll, timers, shots). */
+const REFERENCE_FPS = 60;
+const MAX_DELTA_SEC = 0.05;
+/** Same cadence as former 12 frames @ 60fps. */
+const SHOT_INTERVAL_MS = (12 / REFERENCE_FPS) * 1000;
+/** No real movement for this long → drift + spawns biased toward player. */
+const IDLE_POSITION_SEC = 1.45;
 
 function easeOutPow(t: number, power: number): number {
   const x = Math.min(1, Math.max(0, t));
@@ -150,7 +157,18 @@ export default function DroneGame() {
     distanceSinceLastSpawn: 0,
     particles: [] as Particle[],
     keys: {} as Record<string, boolean>,
-    frameCount: 0,
+    /** Accumulated “60fps frames” for visuals (rotors, sin waves). */
+    tRef: 0,
+    /** Wall-clock session time for difficulty ramps only. */
+    difficultySeconds: 0,
+    lastFrameTimeMs: 0,
+    lastShotMs: 0,
+    scorePulseAccum: 0,
+    multUiAccum: 0,
+    crashFxAccum: 0,
+    idleSec: 0,
+    lastIdlePx: 0,
+    lastIdlePy: 0,
     score: 0,
     multiplier: 1,
     multiplierTimer: 0,
@@ -159,7 +177,6 @@ export default function DroneGame() {
     isCrashing: false,
     crashTimer: 0,
     invulnerableTimer: 0,
-    lastShotTime: 0,
     nextId: 0,
   });
 
@@ -277,7 +294,7 @@ export default function DroneGame() {
     };
 
     const drawDrone = (ctx: CanvasRenderingContext2D, p: Player) => {
-      if (state.invulnerableTimer > 0 && Math.floor(state.frameCount / 5) % 2 === 0) {
+      if (state.invulnerableTimer > 0 && Math.floor(state.tRef / 5) % 2 === 0) {
         return; // Blink
       }
       ctx.save();
@@ -337,7 +354,7 @@ export default function DroneGame() {
           ctx.stroke();
 
           // Spinning blades
-          ctx.rotate(state.frameCount * 0.4);
+          ctx.rotate(state.tRef * 0.4);
           ctx.globalAlpha = 0.6;
           ctx.fillStyle = '#64748b'; // Darker blades
           ctx.beginPath();
@@ -385,7 +402,7 @@ export default function DroneGame() {
       ctx.save();
       ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
       
-      const tilt = Math.cos(state.frameCount * 0.05 + obs.phase) * 0.2;
+      const tilt = Math.cos(state.tRef * 0.05 + obs.phase) * 0.2;
       ctx.rotate(tilt);
 
       const baseColor = '#064e3b'; // Dark emerald
@@ -430,7 +447,7 @@ export default function DroneGame() {
         ctx.fill();
 
         // Spinning blades
-        ctx.rotate(-state.frameCount * 0.6);
+        ctx.rotate(-state.tRef * 0.6);
         ctx.globalAlpha = 0.8;
         ctx.fillStyle = accentColor;
         ctx.beginPath();
@@ -501,7 +518,7 @@ export default function DroneGame() {
       ctx.save();
       ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
 
-      const tilt = Math.sin(state.frameCount * 0.05 + obs.phase) * 0.1;
+      const tilt = Math.sin(state.tRef * 0.05 + obs.phase) * 0.1;
       ctx.rotate(tilt);
 
       // Tail
@@ -517,7 +534,7 @@ export default function DroneGame() {
       // Tail rotor
       ctx.save();
       ctx.translate(0, obs.height * 0.45);
-      ctx.rotate(state.frameCount * 0.8);
+      ctx.rotate(state.tRef * 0.8);
       ctx.fillStyle = '#94a3b8';
       ctx.beginPath();
       ctx.ellipse(0, 0, 8, 2, 0, 0, Math.PI * 2);
@@ -537,7 +554,7 @@ export default function DroneGame() {
       ctx.fill();
 
       // Police Lights (Flashing Red/Blue)
-      const isRed = Math.floor(state.frameCount / 10) % 2 === 0;
+      const isRed = Math.floor(state.tRef / 10) % 2 === 0;
       ctx.fillStyle = isRed ? '#ef4444' : '#3b82f6';
       ctx.shadowBlur = 10;
       ctx.shadowColor = ctx.fillStyle;
@@ -554,7 +571,7 @@ export default function DroneGame() {
 
       // Main Rotor
       ctx.save();
-      ctx.rotate(-state.frameCount * 0.4);
+      ctx.rotate(-state.tRef * 0.4);
       ctx.fillStyle = '#cbd5e1';
       ctx.globalAlpha = 0.6;
       ctx.beginPath();
@@ -576,57 +593,74 @@ export default function DroneGame() {
 
     const update = () => {
       const p = state.player;
-      
-      // Scroll speed: same as before at frame 0; rises smoothly toward a hard cap (time-based, not score).
-      const speedT = state.frameCount / SPEED_RAMP_FRAMES;
+      const now = performance.now();
+      let dt = 0;
+      if (state.lastFrameTimeMs <= 0) {
+        state.lastFrameTimeMs = now;
+        dt = 1 / REFERENCE_FPS;
+      } else {
+        dt = Math.min((now - state.lastFrameTimeMs) / 1000, MAX_DELTA_SEC);
+        state.lastFrameTimeMs = now;
+      }
+      const rf = dt * REFERENCE_FPS;
+      state.difficultySeconds += dt;
+      state.tRef += rf;
+
+      // Scroll speed: wall-clock ramp (immune to 120Hz / throttled RAF).
+      const speedT = state.difficultySeconds / SPEED_RAMP_SECONDS;
       const speedEase = easeOutPow(speedT, 2.35);
       state.speedMultiplier = 1 + (MAX_SPEED_MULTIPLIER - 1) * speedEase;
       const speed = BASE_SPEED * state.speedMultiplier;
-      
+
       // Update Multiplier Timer
       if (state.multiplierTimer > 0) {
-        state.multiplierTimer--;
+        state.multiplierTimer -= rf;
         if (state.multiplierTimer <= 0) {
           state.multiplier = 1;
           setMultiplier(1);
         }
-        if (state.frameCount % 5 === 0) {
-          setMultiplierTimeLeft(state.multiplierTimer);
+        state.multUiAccum += rf;
+        if (state.multUiAccum >= 5) {
+          state.multUiAccum -= 5;
+          setMultiplierTimeLeft(Math.max(0, Math.ceil(state.multiplierTimer)));
         }
       }
 
       if (state.invulnerableTimer > 0) {
-        state.invulnerableTimer--;
+        state.invulnerableTimer -= rf;
       }
 
       if (state.isCrashing) {
-        p.vy += 0.5;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rotation += p.vx * 0.1;
+        p.vy += 0.5 * rf;
+        p.x += p.vx * rf;
+        p.y += p.vy * rf;
+        p.rotation += p.vx * 0.1 * rf;
 
-        if (state.frameCount % 2 === 0) {
+        state.crashFxAccum += rf;
+        if (state.crashFxAccum >= 2) {
+          state.crashFxAccum -= 2;
           spawnParticles(p.x + p.width/2, p.y + p.height/2, '#f97316', 2, 4);
           spawnParticles(p.x + p.width/2, p.y + p.height/2, '#475569', 3, 2);
         }
 
-        state.crashTimer--;
+        state.crashTimer -= rf;
         if (state.crashTimer <= 0) {
           setGameState('gameover');
           return;
         }
       } else {
-        // Normal Player Movement
-        if (state.keys['ArrowLeft'] || state.keys['KeyA']) p.vx -= 1.0;
-        if (state.keys['ArrowRight'] || state.keys['KeyD']) p.vx += 1.0;
-        if (state.keys['ArrowUp'] || state.keys['KeyW']) p.vy -= 1.0;
-        if (state.keys['ArrowDown'] || state.keys['KeyS']) p.vy += 1.0;
+        // Normal Player Movement (scaled to reference 60fps)
+        if (state.keys['ArrowLeft'] || state.keys['KeyA']) p.vx -= 1.0 * rf;
+        if (state.keys['ArrowRight'] || state.keys['KeyD']) p.vx += 1.0 * rf;
+        if (state.keys['ArrowUp'] || state.keys['KeyW']) p.vy -= 1.0 * rf;
+        if (state.keys['ArrowDown'] || state.keys['KeyS']) p.vy += 1.0 * rf;
 
-        p.vx *= 0.82;
-        p.vy *= 0.82;
+        const friction = Math.pow(0.82, rf);
+        p.vx *= friction;
+        p.vy *= friction;
 
-        p.x += p.vx;
-        p.y += p.vy;
+        p.x += p.vx * rf;
+        p.y += p.vy * rf;
 
         // Bounds (Screen)
         if (p.x < 0) { p.x = 0; p.vx = 0; }
@@ -634,53 +668,81 @@ export default function DroneGame() {
         if (p.y < 0) { p.y = 0; p.vy = 0; }
         if (p.y + p.height > state.height) { p.y = state.height - p.height; p.vy = 0; }
 
+        // Idle = no real movement (can't AFK in a safe lane)
+        const moved =
+          Math.abs(p.x - state.lastIdlePx) > 0.85 || Math.abs(p.y - state.lastIdlePy) > 0.85;
+        if (moved) {
+          state.idleSec = 0;
+          state.lastIdlePx = p.x;
+          state.lastIdlePy = p.y;
+        } else {
+          state.idleSec += dt;
+        }
+        const afkPosition = state.idleSec >= IDLE_POSITION_SEC;
+        if (afkPosition) {
+          p.vx += Math.sin(state.difficultySeconds * 2.05) * 0.6 * rf;
+          p.vy += Math.cos(state.difficultySeconds * 1.65) * 0.28 * rf;
+        }
+
         // Shooting: Space on desktop; continuous autofire on coarse-pointer (touch) devices
         const touchAutofire =
           typeof window !== 'undefined' &&
           window.matchMedia('(pointer: coarse)').matches;
         const wantFire = state.keys['Space'] || touchAutofire;
-        if (wantFire && state.frameCount - state.lastShotTime > 12) {
+        if (wantFire && now - state.lastShotMs >= SHOT_INTERVAL_MS) {
           state.projectiles.push({
             x: p.x + p.width / 2 - 2,
             y: p.y,
             vy: -12,
             color: state.multiplier > 1 ? '#1d4ed8' : '#c2410c'
           });
-          state.lastShotTime = state.frameCount;
+          state.lastShotMs = now;
         }
 
         // Update Trail
         state.trail.unshift({ x: p.x + p.width / 2, y: p.y + p.height / 2 });
         if (state.trail.length > 15) state.trail.pop();
 
-        // Score
-        if (state.frameCount % 5 === 0) {
+        // Score — same rate as former “every 5 ref frames”
+        state.scorePulseAccum += rf;
+        while (state.scorePulseAccum >= 5) {
+          state.scorePulseAccum -= 5;
           state.score += 1 * state.multiplier;
           setScore(state.score);
         }
       }
 
-      state.scrollDistance += speed;
-      state.distanceSinceLastSpawn += speed;
+      state.scrollDistance += speed * rf;
+      state.distanceSinceLastSpawn += speed * rf;
 
       // Spawn Entities
       if (!state.isCrashing && state.distanceSinceLastSpawn > 30) {
         state.distanceSinceLastSpawn -= 30;
-        const spawnT = Math.min(1, state.frameCount / SPAWN_RAMP_FRAMES);
+        const spawnT = Math.min(1, state.difficultySeconds / SPAWN_RAMP_SECONDS);
         const spawnChance =
           SPAWN_CHANCE_BASE + (SPAWN_CHANCE_CAP - SPAWN_CHANCE_BASE) * spawnT;
 
         if (Math.random() < spawnChance) {
           const isCollectible = Math.random() < 0.25;
-          
+
+          const afkSpawn =
+            state.idleSec >= IDLE_POSITION_SEC &&
+            Math.abs(p.x - state.lastIdlePx) < 1 &&
+            Math.abs(p.y - state.lastIdlePy) < 1;
+
           if (isCollectible) {
             const isFirstAid = Math.random() < 0.2; // 20% chance of first aid when a collectible spawns
             const radius = 12;
             const minX = radius * 2;
             const maxX = state.width - radius * 2;
+            let cx = minX + Math.random() * (maxX - minX);
+            if (afkSpawn) {
+              const aim = p.x + p.width / 2 + (Math.random() - 0.5) * 90;
+              cx = Math.min(maxX, Math.max(minX, aim));
+            }
             state.collectibles.push({
               id: state.nextId++,
-              x: minX + Math.random() * (maxX - minX),
+              x: cx,
               y: -50,
               radius: radius,
               color: isFirstAid ? '#10b981' : '#3b82f6',
@@ -704,11 +766,15 @@ export default function DroneGame() {
               obsHeight = 30;
               obsColor = '#10b981';
             }
-            
+
             const minX = obsWidth;
             const maxX = state.width - obsWidth;
-            
-            const startX = minX + Math.random() * (maxX - minX);
+
+            let startX = minX + Math.random() * (maxX - minX);
+            if (afkSpawn) {
+              const aim = p.x + p.width / 2 + (Math.random() - 0.5) * 110;
+              startX = Math.min(maxX, Math.max(minX, aim));
+            }
             state.obstacles.push({
               id: state.nextId++,
               x: startX - obsWidth/2,
@@ -728,7 +794,7 @@ export default function DroneGame() {
       // Update Projectiles
       for (let i = state.projectiles.length - 1; i >= 0; i--) {
         const proj = state.projectiles[i];
-        proj.y += proj.vy;
+        proj.y += proj.vy * rf;
 
         let hit = false;
         for (let j = state.obstacles.length - 1; j >= 0; j--) {
@@ -764,7 +830,7 @@ export default function DroneGame() {
       // Update Collectibles
       for (let i = state.collectibles.length - 1; i >= 0; i--) {
         const col = state.collectibles[i];
-        col.y += speed;
+        col.y += speed * rf;
 
         if (!state.isCrashing) {
           const distX = Math.abs(col.x - (p.x + p.width/2));
@@ -805,10 +871,10 @@ export default function DroneGame() {
         
         if (obs.type === 'drone') {
           obs.y += speed;
-          obs.x = obs.startX + Math.sin(state.frameCount * 0.05 + obs.phase) * obs.range;
+          obs.x = obs.startX + Math.sin(state.tRef * 0.05 + obs.phase) * obs.range;
         } else if (obs.type === 'helicopter') {
           obs.y += speed + 1.0; // Helicopters fly slightly faster than drones
-          obs.x = obs.startX + Math.sin(state.frameCount * 0.02 + obs.phase) * (obs.range * 1.5); // Wider, slower sweep
+          obs.x = obs.startX + Math.sin(state.tRef * 0.02 + obs.phase) * (obs.range * 1.5); // Wider, slower sweep
         } else {
           obs.y += speed + 2.5; // Planes fly towards player faster
         }
@@ -834,15 +900,13 @@ export default function DroneGame() {
       // Particles update
       for (let i = state.particles.length - 1; i >= 0; i--) {
         const part = state.particles[i];
-        part.x += part.vx;
-        part.y += part.vy;
-        part.life++;
+        part.x += part.vx * rf;
+        part.y += part.vy * rf;
+        part.life += rf;
         if (part.life >= part.maxLife) {
           state.particles.splice(i, 1);
         }
       }
-
-      state.frameCount++;
     };
 
     const draw = () => {
@@ -901,7 +965,7 @@ export default function DroneGame() {
       state.collectibles.forEach(col => {
         ctx.save();
         ctx.translate(col.x, col.y);
-        ctx.shadowBlur = 20 + Math.sin(state.frameCount * 0.1) * 10;
+        ctx.shadowBlur = 20 + Math.sin(state.tRef * 0.1) * 10;
         ctx.shadowColor = col.color;
 
         if (col.type === 'firstaid') {
@@ -1029,7 +1093,16 @@ export default function DroneGame() {
       distanceSinceLastSpawn: 0,
       particles: [],
       keys: {},
-      frameCount: 0,
+      tRef: 0,
+      difficultySeconds: 0,
+      lastFrameTimeMs: 0,
+      lastShotMs: performance.now(),
+      scorePulseAccum: 0,
+      multUiAccum: 0,
+      crashFxAccum: 0,
+      idleSec: 0,
+      lastIdlePx: dimensions.width / 2 - DRONE_SIZE / 2,
+      lastIdlePy: dimensions.height - 120,
       score: 0,
       multiplier: 1,
       multiplierTimer: 0,
@@ -1038,7 +1111,6 @@ export default function DroneGame() {
       isCrashing: false,
       crashTimer: 0,
       invulnerableTimer: 0,
-      lastShotTime: 0,
       nextId: 0,
     };
     setScore(0);
@@ -1132,6 +1204,8 @@ export default function DroneGame() {
               <span className="text-slate-300">Desktop:</span> press <kbd className="bg-slate-800 px-2 py-1 rounded text-rose-300 font-mono text-sm mx-1">Space</kbd> to shoot.
               <br/>
               <span className="text-slate-300">Touch:</span> your drone <span className="text-rose-300 font-semibold">fires automatically</span>.
+              <br/><br/>
+              <span className="text-slate-500 text-sm">Staying still in one spot draws heavier traffic your way—keep moving.</span>
             </p>
             <button
               onClick={startGame}
@@ -1170,7 +1244,7 @@ export default function DroneGame() {
       </div>
       
       <div className="mt-6 text-slate-500 text-xs flex gap-4">
-        <span>Desktop: keyboard + Space to shoot | Touch: drag to steer, auto-fire</span>
+        <span>Desktop: keyboard + Space | Touch: drag + auto-fire | Don&apos;t camp in one lane</span>
       </div>
     </div>
   );
