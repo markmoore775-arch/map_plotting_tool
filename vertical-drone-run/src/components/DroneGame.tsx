@@ -4,25 +4,103 @@ import { Play, RotateCcw, Trophy, Zap, Heart } from 'lucide-react';
 // --- Game Constants ---
 const DRONE_SIZE = 30;
 const BASE_SPEED = 1.8;
-/** Peak scroll multiplier (start is 1×). Capped — difficulty does not rise forever. */
-const MAX_SPEED_MULTIPLIER = 1.58 * 1.2;
-/**
- * Wall-clock seconds until speed nears MAX_SPEED_MULTIPLIER (was 18_000 frames @ 60fps).
- * Uses real time so 120Hz / throttled RAF cannot rush difficulty.
- */
-const SPEED_RAMP_SECONDS = 18_000 / 60;
-/** Spawn chance ramps to cap over this many seconds (was 24_000 frames @ 60fps). */
-const SPAWN_RAMP_SECONDS = 24_000 / 60;
-/** +20% vs former 0.08 / 0.28 → more enemies at each spawn roll. */
-const SPAWN_CHANCE_BASE = 0.08 * 1.2;
-const SPAWN_CHANCE_CAP = 0.28 * 1.2;
 /** Normalize physics to this reference framerate (scroll, timers, shots). */
 const REFERENCE_FPS = 60;
 const MAX_DELTA_SEC = 0.05;
 /** Same cadence as former 12 frames @ 60fps. */
 const SHOT_INTERVAL_MS = (12 / REFERENCE_FPS) * 1000;
-/** No real movement for this long → drift + spawns biased toward player. */
-const IDLE_POSITION_SEC = 1.45;
+
+export type DifficultyId = 'easy' | 'medium' | 'hard';
+
+export interface GameTuning {
+  label: string;
+  maxSpeedMultiplier: number;
+  speedRampSeconds: number;
+  spawnRampSeconds: number;
+  spawnChanceBase: number;
+  spawnChanceCap: number;
+  idlePositionSec: number;
+  idleDriftVx: number;
+  idleDriftVy: number;
+  /** Scroll distance per spawn-wave tick (lower → more waves). */
+  spawnScrollChunk: number;
+  /** Extra downward speed on helicopters (added to base scroll). */
+  heliFallExtra: number;
+  /** Extra downward speed on planes (added to base scroll). */
+  planeFallExtra: number;
+}
+
+/** Easy = former default tuning. Medium / Hard ramp faster, peak higher, denser traffic. */
+export const DIFFICULTY_TUNING: Record<DifficultyId, GameTuning> = {
+  easy: {
+    label: 'Easy',
+    maxSpeedMultiplier: 1.58 * 1.2,
+    speedRampSeconds: 18_000 / 60,
+    spawnRampSeconds: 24_000 / 60,
+    spawnChanceBase: 0.08 * 1.2,
+    spawnChanceCap: 0.28 * 1.2,
+    idlePositionSec: 1.45,
+    idleDriftVx: 0.6,
+    idleDriftVy: 0.28,
+    spawnScrollChunk: 30,
+    heliFallExtra: 1.0,
+    planeFallExtra: 2.5,
+  },
+  medium: {
+    label: 'Medium',
+    maxSpeedMultiplier: 1.58 * 1.2 * 1.1,
+    speedRampSeconds: (18_000 / 60) * 0.82,
+    spawnRampSeconds: (24_000 / 60) * 0.86,
+    spawnChanceBase: 0.08 * 1.2 * 1.12,
+    spawnChanceCap: Math.min(0.4, 0.28 * 1.2 * 1.12),
+    idlePositionSec: 1.32,
+    idleDriftVx: 0.72,
+    idleDriftVy: 0.34,
+    spawnScrollChunk: 27,
+    heliFallExtra: 1.22,
+    planeFallExtra: 2.88,
+  },
+  hard: {
+    label: 'Hard',
+    maxSpeedMultiplier: 1.58 * 1.2 * 1.24,
+    speedRampSeconds: (18_000 / 60) * 0.68,
+    spawnRampSeconds: (24_000 / 60) * 0.72,
+    spawnChanceBase: 0.08 * 1.2 * 1.28,
+    spawnChanceCap: Math.min(0.45, 0.28 * 1.2 * 1.28),
+    idlePositionSec: 1.12,
+    idleDriftVx: 0.9,
+    idleDriftVy: 0.44,
+    spawnScrollChunk: 24,
+    heliFallExtra: 1.48,
+    planeFallExtra: 3.35,
+  },
+};
+
+const HIGH_SCORE_STORAGE_KEY = 'airplot_vertical_drone_highscores_v1';
+
+function loadHighScores(): Record<DifficultyId, number> {
+  if (typeof window === 'undefined') return { easy: 0, medium: 0, hard: 0 };
+  try {
+    const raw = localStorage.getItem(HIGH_SCORE_STORAGE_KEY);
+    if (!raw) return { easy: 0, medium: 0, hard: 0 };
+    const o = JSON.parse(raw) as Record<string, number>;
+    return {
+      easy: Number(o.easy) || 0,
+      medium: Number(o.medium) || 0,
+      hard: Number(o.hard) || 0,
+    };
+  } catch {
+    return { easy: 0, medium: 0, hard: 0 };
+  }
+}
+
+function saveHighScores(scores: Record<DifficultyId, number>) {
+  try {
+    localStorage.setItem(HIGH_SCORE_STORAGE_KEY, JSON.stringify(scores));
+  } catch {
+    /* ignore */
+  }
+}
 
 function easeOutPow(t: number, power: number): number {
   const x = Math.min(1, Math.max(0, t));
@@ -109,9 +187,13 @@ interface Particle {
 
 export default function DroneGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** Best score for this difficulty when the current run started (for “new record” on game over). */
+  const bestAtRunStartRef = useRef(0);
   const [gameState, setGameState] = useState<'start' | 'playing' | 'gameover'>('start');
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
+  const [highScores, setHighScores] = useState<Record<DifficultyId, number>>(() => loadHighScores());
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyId>('easy');
+  const [activeDifficulty, setActiveDifficulty] = useState<DifficultyId>('easy');
   const [multiplier, setMultiplier] = useState(1);
   const [multiplierTimeLeft, setMultiplierTimeLeft] = useState(0);
   const [health, setHealth] = useState(3);
@@ -179,6 +261,7 @@ export default function DroneGame() {
     crashTimer: 0,
     invulnerableTimer: 0,
     nextId: 0,
+    tuning: DIFFICULTY_TUNING.easy,
   });
 
   // Handle Keyboard Input
@@ -594,6 +677,7 @@ export default function DroneGame() {
 
     const update = () => {
       const p = state.player;
+      const tu = state.tuning;
       const now = performance.now();
       let dt = 0;
       if (state.lastFrameTimeMs <= 0) {
@@ -608,9 +692,9 @@ export default function DroneGame() {
       state.tRef += rf;
 
       // Scroll speed: wall-clock ramp (immune to 120Hz / throttled RAF).
-      const speedT = state.difficultySeconds / SPEED_RAMP_SECONDS;
+      const speedT = state.difficultySeconds / tu.speedRampSeconds;
       const speedEase = easeOutPow(speedT, 2.35);
-      state.speedMultiplier = 1 + (MAX_SPEED_MULTIPLIER - 1) * speedEase;
+      state.speedMultiplier = 1 + (tu.maxSpeedMultiplier - 1) * speedEase;
       const speed = BASE_SPEED * state.speedMultiplier;
 
       // Update Multiplier Timer
@@ -679,10 +763,10 @@ export default function DroneGame() {
         } else {
           state.idleSec += dt;
         }
-        const afkPosition = state.idleSec >= IDLE_POSITION_SEC;
+        const afkPosition = state.idleSec >= tu.idlePositionSec;
         if (afkPosition) {
-          p.vx += Math.sin(state.difficultySeconds * 2.05) * 0.6 * rf;
-          p.vy += Math.cos(state.difficultySeconds * 1.65) * 0.28 * rf;
+          p.vx += Math.sin(state.difficultySeconds * 2.05) * tu.idleDriftVx * rf;
+          p.vy += Math.cos(state.difficultySeconds * 1.65) * tu.idleDriftVy * rf;
         }
 
         // Shooting: Space on desktop; continuous autofire on coarse-pointer (touch) devices
@@ -717,17 +801,17 @@ export default function DroneGame() {
       state.distanceSinceLastSpawn += speed * rf;
 
       // Spawn Entities
-      if (!state.isCrashing && state.distanceSinceLastSpawn > 30) {
-        state.distanceSinceLastSpawn -= 30;
-        const spawnT = Math.min(1, state.difficultySeconds / SPAWN_RAMP_SECONDS);
+      if (!state.isCrashing && state.distanceSinceLastSpawn > tu.spawnScrollChunk) {
+        state.distanceSinceLastSpawn -= tu.spawnScrollChunk;
+        const spawnT = Math.min(1, state.difficultySeconds / tu.spawnRampSeconds);
         const spawnChance =
-          SPAWN_CHANCE_BASE + (SPAWN_CHANCE_CAP - SPAWN_CHANCE_BASE) * spawnT;
+          tu.spawnChanceBase + (tu.spawnChanceCap - tu.spawnChanceBase) * spawnT;
 
         if (Math.random() < spawnChance) {
           const isCollectible = Math.random() < 0.25;
 
           const afkSpawn =
-            state.idleSec >= IDLE_POSITION_SEC &&
+            state.idleSec >= tu.idlePositionSec &&
             Math.abs(p.x - state.lastIdlePx) < 1 &&
             Math.abs(p.y - state.lastIdlePy) < 1;
 
@@ -871,13 +955,13 @@ export default function DroneGame() {
         const obs = state.obstacles[i];
         
         if (obs.type === 'drone') {
-          obs.y += speed;
+          obs.y += speed * rf;
           obs.x = obs.startX + Math.sin(state.tRef * 0.05 + obs.phase) * obs.range;
         } else if (obs.type === 'helicopter') {
-          obs.y += speed + 1.0; // Helicopters fly slightly faster than drones
+          obs.y += (speed + tu.heliFallExtra) * rf;
           obs.x = obs.startX + Math.sin(state.tRef * 0.02 + obs.phase) * (obs.range * 1.5); // Wider, slower sweep
         } else {
-          obs.y += speed + 2.5; // Planes fly towards player faster
+          obs.y += (speed + tu.planeFallExtra) * rf;
         }
 
         // Collision with Player
@@ -1072,6 +1156,9 @@ export default function DroneGame() {
   }, [gameState]);
 
   const startGame = () => {
+    bestAtRunStartRef.current = highScores[selectedDifficulty];
+    setActiveDifficulty(selectedDifficulty);
+    const tuning = { ...DIFFICULTY_TUNING[selectedDifficulty] };
     gameRef.current = {
       width: dimensions.width,
       height: dimensions.height,
@@ -1113,6 +1200,7 @@ export default function DroneGame() {
       crashTimer: 0,
       invulnerableTimer: 0,
       nextId: 0,
+      tuning,
     };
     setScore(0);
     setHealth(3);
@@ -1122,12 +1210,17 @@ export default function DroneGame() {
   };
 
   useEffect(() => {
-    if (gameState === 'gameover') {
-      if (score > highScore) {
-        setHighScore(score);
-      }
-    }
-  }, [gameState, score, highScore]);
+    if (gameState !== 'gameover') return;
+    setHighScores((prev) => {
+      if (score <= prev[activeDifficulty]) return prev;
+      const next = { ...prev, [activeDifficulty]: score };
+      saveHighScores(next);
+      return next;
+    });
+  }, [gameState, score, activeDifficulty]);
+
+  const trophyScore =
+    gameState === 'start' ? highScores[selectedDifficulty] : highScores[activeDifficulty];
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
@@ -1144,9 +1237,16 @@ export default function DroneGame() {
         {/* Score HUD */}
         <div className="absolute top-14 left-4 right-4 flex justify-between items-start z-10 pointer-events-none sm:top-16">
           <div className="flex flex-col gap-2">
-            <div className="bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2">
-              <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Score</span>
-              <span className="text-xl font-mono font-bold text-rose-400">{score.toString().padStart(5, '0')}</span>
+            <div className="bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/50 flex flex-col gap-0.5 items-start">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Score</span>
+                <span className="text-xl font-mono font-bold text-rose-400">{score.toString().padStart(5, '0')}</span>
+              </div>
+              {(gameState === 'playing' || gameState === 'gameover') && (
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  {DIFFICULTY_TUNING[activeDifficulty].label}
+                </span>
+              )}
             </div>
             
             {/* Multiplier Indicator */}
@@ -1169,7 +1269,7 @@ export default function DroneGame() {
           <div className="flex flex-col gap-2 items-end">
             <div className="bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-400" />
-              <span className="text-xl font-mono font-bold text-amber-400">{highScore.toString().padStart(5, '0')}</span>
+              <span className="text-xl font-mono font-bold text-amber-400">{trophyScore.toString().padStart(5, '0')}</span>
             </div>
             
             {/* Health Indicator */}
@@ -1208,6 +1308,28 @@ export default function DroneGame() {
               <br/><br/>
               <span className="text-slate-500 text-sm">Staying still in one spot draws heavier traffic your way—keep moving.</span>
             </p>
+            <div className="mb-6 flex w-full max-w-[300px] flex-col gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Difficulty</span>
+              <div className="flex gap-2">
+                {(['easy', 'medium', 'hard'] as const).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setSelectedDifficulty(id)}
+                    className={`flex-1 rounded-lg px-2 py-2.5 text-xs font-bold uppercase transition-colors ${
+                      selectedDifficulty === id
+                        ? 'bg-rose-500 text-slate-950 shadow-[0_0_12px_rgba(244,63,94,0.45)]'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    {DIFFICULTY_TUNING[id].label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-left text-[11px] leading-snug text-slate-500">
+                Medium and Hard raise top speed, traffic density, and how quickly difficulty ramps. Best scores are saved per level.
+              </p>
+            </div>
             <button
               onClick={startGame}
               className="bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-lg px-8 py-3 rounded-full transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(244,63,94,0.4)]"
@@ -1220,13 +1342,16 @@ export default function DroneGame() {
         {gameState === 'gameover' && (
           <div className="absolute inset-0 bg-rose-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
             <h2 className="text-4xl font-black text-rose-500 mb-2 uppercase tracking-widest">Hull Breach</h2>
+            <p className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              {DIFFICULTY_TUNING[activeDifficulty].label}
+            </p>
             <p className="text-rose-200/70 mb-8">Drone destroyed on impact.</p>
             
             <div className="bg-slate-900/50 rounded-2xl p-6 w-full max-w-[250px] mb-8 border border-rose-500/20">
               <div className="text-sm text-slate-400 uppercase tracking-wider mb-1">Final Score</div>
               <div className="text-4xl font-mono font-bold text-white mb-4">{score}</div>
               
-              {score >= highScore && score > 0 && (
+              {score > bestAtRunStartRef.current && score > 0 && (
                 <div className="inline-block bg-amber-500/20 text-amber-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-amber-500/30">
                   New High Score!
                 </div>
