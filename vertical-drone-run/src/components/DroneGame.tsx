@@ -4,6 +4,22 @@ import { Play, RotateCcw, Trophy, Zap, Heart } from 'lucide-react';
 // --- Game Constants ---
 const DRONE_SIZE = 30;
 const BASE_SPEED = 1.8;
+/** Peak scroll multiplier (start is 1×). Capped — difficulty does not rise forever. */
+const MAX_SPEED_MULTIPLIER = 1.58;
+/**
+ * Frames until the speed curve approaches MAX_SPEED_MULTIPLIER (ease-out: slow early, steady later).
+ * Decoupled from score so score multipliers / touch autofire do not spike difficulty on phones.
+ */
+const SPEED_RAMP_FRAMES = 18_000;
+/** Obstacle spawn chance starts at base and rises toward cap over SPAWN_RAMP_FRAMES. */
+const SPAWN_CHANCE_BASE = 0.08;
+const SPAWN_CHANCE_CAP = 0.28;
+const SPAWN_RAMP_FRAMES = 24_000;
+
+function easeOutPow(t: number, power: number): number {
+  const x = Math.min(1, Math.max(0, t));
+  return 1 - Math.pow(1 - x, power);
+}
 
 // --- Map Constants (Central London, Zoom 16) ---
 const MAP_ZOOM = 16;
@@ -561,8 +577,10 @@ export default function DroneGame() {
     const update = () => {
       const p = state.player;
       
-      // Gradually increase speed as score goes up
-      state.speedMultiplier = 1 + (state.score / 500);
+      // Scroll speed: same as before at frame 0; rises smoothly toward a hard cap (time-based, not score).
+      const speedT = state.frameCount / SPEED_RAMP_FRAMES;
+      const speedEase = easeOutPow(speedT, 2.35);
+      state.speedMultiplier = 1 + (MAX_SPEED_MULTIPLIER - 1) * speedEase;
       const speed = BASE_SPEED * state.speedMultiplier;
       
       // Update Multiplier Timer
@@ -648,8 +666,10 @@ export default function DroneGame() {
       // Spawn Entities
       if (!state.isCrashing && state.distanceSinceLastSpawn > 30) {
         state.distanceSinceLastSpawn -= 30;
-        const spawnChance = 0.08 + (state.score * 0.0001);
-        
+        const spawnT = Math.min(1, state.frameCount / SPAWN_RAMP_FRAMES);
+        const spawnChance =
+          SPAWN_CHANCE_BASE + (SPAWN_CHANCE_CAP - SPAWN_CHANCE_BASE) * spawnT;
+
         if (Math.random() < spawnChance) {
           const isCollectible = Math.random() < 0.25;
           
