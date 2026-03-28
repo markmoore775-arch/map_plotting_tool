@@ -1,20 +1,13 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Drone Dash (AirPlot training)
 
-# Run and deploy your AI Studio app
+Side-scrolling training game opened from [training.html](../training.html) in the AirPlot project. For entertainment and stick practice only; it does not count towards flight currency.
 
-This contains everything you need to run your app locally.
+## Run locally
 
-View your app in AI Studio: https://ai.studio/apps/61663bd3-cb8b-4567-ab07-2fed26a05444
+**Prerequisites:** Node.js
 
-## Run Locally
+1. `npm install`
+2. If the template expects it, set `GEMINI_API_KEY` in `.env.local`.
+3. `npm run dev`
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+The upstream AI Studio project link (if present in the scaffold) is optional; AirPlot serves the built assets from `drone-dash/` after `npm run build` in this folder.

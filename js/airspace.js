@@ -1,5 +1,5 @@
 /* ============================================
-   AIRSPACE PAGE — ADS-B (ADSB.lol) + optional OGN (live.glidernet.org lxml)
+   AIRSPACE PAGE: ADS-B (ADSB.lol) + optional OGN (live.glidernet.org lxml)
    Plane markers, session trail, detail on click; optional AGL (Mapbox terrain)
    Loaded only by airspace.html. Planning UK layers: js/uk-airspace-layers.js (Airspace.init).
    ============================================ */
@@ -17,13 +17,13 @@
     const MAX_TRAIL_POINTS = 120;
 
     const HELP_HTML = [
-        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v3) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> uses the <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> live feed—<strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
-        '<p>Optional <strong>approx. AGL</strong> (metres) uses the same <strong>Mapbox Terrain-RGB</strong> source as Planning mode when a token is set in <code>js/config.js</code>. It is <strong>barometric altitude vs terrain model</strong>—not for separation; DEM and altimeter errors apply.</p>',
+        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v3) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> uses the <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> live feed: <strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
+        '<p>Optional <strong>approx. AGL</strong> (metres) uses the same <strong>Mapbox Terrain-RGB</strong> source as Planning mode when a token is set in <code>js/config.js</code>. It is <strong>barometric altitude vs terrain model</strong>; not for separation. DEM and altimeter errors apply.</p>',
         '<p><strong>Not for separation.</strong> Situational awareness only.</p>',
         '<p><strong>Steps</strong></p>',
         '<ol class="airspace-help-list">',
-        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. Each marker shows a <strong>type/category silhouette</strong> (ADS-B Radar icon set) tinted <strong>red by altitude band</strong> with <strong>altitude (ft)</strong> under the icon—tap the marker or label for full detail and the highlighted path. Known <strong>NPAS</strong> police helicopter registrations use the <strong>rotorcraft</strong> icon and an <strong>NPAS</strong> altitude label.</li>',
-        '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session—not full flight history (see ADSB.lol docs for archives).</li>',
+        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. Each marker shows a <strong>type/category silhouette</strong> (ADS-B Radar icon set) tinted <strong>red by altitude band</strong> with <strong>altitude (ft)</strong> under the icon. Tap the marker or label for full detail and the highlighted path. Known <strong>NPAS</strong> police helicopter registrations use the <strong>rotorcraft</strong> icon and an <strong>NPAS</strong> altitude label.</li>',
+        '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session, not full flight history (see ADSB.lol docs for archives).</li>',
         '</ol>',
         '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code> and <code>/api/ogn</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
     ].join('');
@@ -49,7 +49,7 @@
 
     /** True while a traffic marker popup is open (pauses polling so the panel is not torn down). */
     let trafficPopupOpen = false;
-    /** ICAO hex of the open popup — preserved across forced re-renders (Refresh). */
+    /** ICAO hex of the open popup, preserved across forced re-renders (Refresh). */
     let pinnedHex = null;
     /** OGN device id (hex) when its popup is open. */
     let pinnedOgnId = null;
@@ -641,7 +641,7 @@
             trailNote += ' (~' + Math.round(estSec) + ' s of samples)';
         }
         trailNote +=
-            '. Full history is not in the public API—this path is built while the page is open.</p>';
+            '. Full history is not in the public API; this path is built while the page is open.</p>';
 
         const npas = isNpasPoliceHelicopter(a);
         const rows = [
@@ -663,7 +663,7 @@
             [
                 'Type',
                 typ || desc
-                    ? escapeHtml(typ + (desc ? ' — ' + desc : ''))
+                    ? escapeHtml(typ + (desc ? ': ' + desc : ''))
                     : '—'
             ],
             ['Registration', reg ? escapeHtml(reg) : '—'],
@@ -726,7 +726,7 @@
             trailNote += ' (~' + Math.round((tlen - 1) * (MIN_POLL_MS / 1000)) + ' s of samples)';
         }
         trailNote +=
-            '. Open Glider Network — not for separation. Speed/climb are feed-specific units where shown.</p>';
+            '. Open Glider Network; not for separation. Speed/climb are feed-specific units where shown.</p>';
 
         const rows = [
             ['Source', 'Open Glider Network (live.glidernet.org)'],
@@ -817,7 +817,7 @@
 
     /**
      * 1) Same-origin /api/adsb (npm run serve or Cloudflare Worker)
-     * 2–4) Public relays (Python http.server / Live Server have no /api — 404 here)
+     * 2–4) Public relays (Python http.server / Live Server have no /api; 404 here)
      */
     function fetchJsonWithProxy(upstreamUrl, sameOriginQueryString) {
         const sameOrigin = '/api/adsb?' + sameOriginQueryString;

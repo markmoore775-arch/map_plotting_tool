@@ -814,7 +814,7 @@
 
         <header class="cl-header-block no-print">
             <h1 class="cl-page-title">M4T / TD</h1>
-            <p class="cl-lead">Pre-flight, flight, and post-flight checks. Send by email or use Export to PDF to save a copy. <strong>Flight Report</strong> in the header opens the structured report in this tab.</p>
+            <p class="cl-lead">Pre-flight, in-flight, and post-flight checks with per-section progress and <strong>Mark all complete</strong>. Send by email or use Export to PDF (print) to save a copy; a second action bar at the bottom matches the top. Your ticked items and notes stay in this browser until you reset or clear site data. <strong>Flight Report</strong> in the header opens the structured report in this tab.</p>
         </header>
 
         <div class="cl-toolbar">
@@ -1142,7 +1142,7 @@
 
             function buildChecklistPlainText() {
                 var lines = [];
-                lines.push('AirPlot v3 — M4T / TD checklist');
+                lines.push('AirPlot v3: M4T / TD checklist');
                 lines.push('Exported: ' + formatExportTimestamp());
                 lines.push('');
                 var sections = document.querySelectorAll('.cl-main .cl-section');

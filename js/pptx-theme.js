@@ -1,5 +1,5 @@
 /* ============================================
-   PPTX THEME — Shared branded slide masters
+   PPTX THEME: Shared branded slide masters
    Used by all PowerPoint export functions
    ============================================ */
 

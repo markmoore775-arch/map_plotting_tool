@@ -1064,13 +1064,13 @@
             if (hasRecce) {
                 // --- Slide 2: Recce Mission Details ---
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('Manual Recce — Mission Details', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('Manual Recce: Mission Details', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
                 const recceRows = [
                     [{ text: 'Parameter', options: headerOpts }, { text: 'Value', options: headerOpts }],
                     [{ text: 'Target (POI)', options: labelOpts }, { text: recceTarget.lat.toFixed(6) + ', ' + recceTarget.lng.toFixed(6), options: cellOpts }],
                     [{ text: 'Exclusion zone radius', options: labelOpts }, { text: getRadiusText(recceRadius), options: cellOpts }],
-                    [{ text: 'Flight mode', options: labelOpts }, { text: 'Manual — overlay only (no auto-flight)', options: cellOpts }],
+                    [{ text: 'Flight mode', options: labelOpts }, { text: 'Manual: overlay only (no auto-flight)', options: cellOpts }],
                     [{ text: 'Export format', options: labelOpts }, { text: 'KMZ for DJI Pilot 2', options: cellOpts }]
                 ];
                 slide.addTable(recceRows, { x: 0.5, y: 0.9, w: 8, colW: [3.5, 4.5], border: border, rowH: 0.4 });
@@ -1085,7 +1085,7 @@
             if (hasWaypoints || hasExclusions) {
                 // --- Slide 2: Mission Parameters ---
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('Waypoint Mission — Parameters', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('Waypoint Mission: Parameters', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
                 const paramRows = [
                     [{ text: 'Parameter', options: headerOpts }, { text: 'Value', options: headerOpts }],
@@ -1240,14 +1240,14 @@
 
             if (hasRecce) {
                 PdfTheme.newPage(doc);
-                PdfTheme.addHeader(doc, 'Manual Recce — Mission Details');
+                PdfTheme.addHeader(doc, 'Manual Recce: Mission Details');
                 doc.autoTable({
                     startY: 18,
                     head: [['Parameter', 'Value']],
                     body: [
                         ['Target (POI)', recceTarget.lat.toFixed(6) + ', ' + recceTarget.lng.toFixed(6)],
                         ['Exclusion zone radius', getRadiusText(recceRadius)],
-                        ['Flight mode', 'Manual — overlay only (no auto-flight)'],
+                        ['Flight mode', 'Manual: overlay only (no auto-flight)'],
                         ['Export format', 'KMZ for DJI Pilot 2']
                     ],
                     columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } },
@@ -1260,7 +1260,7 @@
 
             if (hasWp || hasExc) {
                 PdfTheme.newPage(doc);
-                PdfTheme.addHeader(doc, 'Waypoint Mission — Parameters');
+                PdfTheme.addHeader(doc, 'Waypoint Mission: Parameters');
                 doc.autoTable({
                     startY: 18,
                     head: [['Parameter', 'Value']],

@@ -11,11 +11,11 @@
         '<p><strong>Steps</strong></p>',
         '<ol class="weather-help-list">',
         '<li>Choose a <strong>Model</strong> (e.g. Best match, ECMWF, GFS) and time: <strong>Now</strong> or <strong>Date &amp; Time</strong>.</li>',
-        '<li>Set a location: tap <strong>Select Location</strong> then tap the map, or <strong>right-click</strong> the map and choose <strong>Get Weather</strong>.</li>',
+        '<li>Set a location: tap <strong>Select Location</strong> then tap the map, or <strong>right-click</strong> the map (or <strong>long-press</strong> on touch) and choose <strong>Get Weather</strong>.</li>',
         '<li>Tap <strong>Get Weather</strong> to open the report panel.</li>',
         '</ol>',
-        '<p><strong>Report tabs</strong> — <strong>Summary</strong> (wind by altitude, visibility, clouds, precipitation, temperature), <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>, <strong>Airspace</strong> (set <strong>Search radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map per item). Expand <strong>About this forecast model</strong> on the Summary tab for model notes.</p>',
-        '<p><strong>Export</strong> — <strong>PPTX</strong> or <strong>PDF</strong> branded reports. Under <strong>Export</strong>, choose <strong>Dark</strong> or <strong>Light</strong> for document colours (default <strong>Light</strong>; the on-screen report preview matches). NOTAM/airspace data uses the <strong>radius from the Airspace tab</strong> at export time. <strong>PPTX</strong> includes a mini map on each NOTAM and airspace slide plus an overview map; <strong>PDF</strong> includes summary tables, a <strong>map + details</strong> section per NOTAM/zone (same idea as Flight Report), and an overview map. The map <strong>ⓘ</strong> button opens or closes this instructions panel.</p>',
+        '<p><strong>Report tabs:</strong> <strong>Summary</strong> (wind by altitude, visibility, clouds, precipitation, temperature), <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>, <strong>Airspace</strong> (set <strong>Search radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map per item). Expand <strong>About this forecast model</strong> on the Summary tab for model notes.</p>',
+        '<p><strong>Export:</strong> <strong>PPTX</strong> or <strong>PDF</strong> branded reports. Under <strong>Export</strong>, choose <strong>Dark</strong> or <strong>Light</strong> for document colours (default <strong>Light</strong>; the on-screen report preview matches). NOTAM and airspace data uses the <strong>radius from the Airspace tab</strong> at export time. <strong>PPTX</strong> includes a mini map on each NOTAM and airspace slide plus an overview map; <strong>PDF</strong> includes summary tables, a <strong>map + details</strong> section per NOTAM/zone (same idea as Flight Report), and an overview map. The map <strong>ⓘ</strong> button opens or closes this instructions panel.</p>',
         '<p>From here you can also open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">M4T / TD Checklist</a> from the welcome screen; those pages link to each other in the header so you can move between the report and checklist without returning home. Use <strong>Welcome</strong> (top-left) to return to the AirPlot home screen. Attribution and data sources are shown in the report.</p>'
     ].join('');
 
@@ -44,24 +44,24 @@
     const MODEL_EXPLAINERS = {
         ecmwf_ifs: {
             name: 'ECMWF IFS',
-            fullName: 'European Centre for Medium-Range Weather Forecasts — Integrated Forecasting System',
+            fullName: 'European Centre for Medium-Range Weather Forecasts: Integrated Forecasting System',
             resolution: '9 km',
             provider: 'ECMWF (Reading, UK)',
             equiv: 'This is the <strong>primary model behind BBC Weather</strong> (via MeteoGroup/DTN) and the <strong>default model on Windy.com</strong>. ECMWF IFS is widely regarded as the most accurate global forecast model and is the standard reference across European aviation and meteorology.'
         },
         gfs_seamless: {
             name: 'GFS',
-            fullName: 'Global Forecast System — National Centers for Environmental Prediction',
+            fullName: 'Global Forecast System (US NOAA National Centers for Environmental Prediction)',
             resolution: '13–27 km',
             provider: 'NOAA / NWS (USA)',
             equiv: 'GFS is a <strong>secondary model used by BBC Weather</strong> (MeteoGroup blends it with ECMWF) and is <strong>available on Windy.com</strong> as an alternative view. It is the primary model for US domestic forecasts and is freely available worldwide.'
         },
         ukmo_seamless: {
             name: 'UK Met Office (Global + UKV)',
-            fullName: 'Met Office Unified Model — Global (10 km) with UKV high-resolution (2 km) for the UK',
+            fullName: 'Met Office Unified Model: global (10 km) with UKV high-resolution (2 km) for the UK',
             resolution: '2 km (UK) / 10 km (global)',
             provider: 'Met Office (Exeter, UK)',
-            equiv: 'This is the <strong>same model that powers the Met Office website and app</strong>. For UK locations it uses the UKV at 2 km resolution — the highest-resolution operational model available for the British Isles. MeteoGroup also incorporates Met Office data into BBC Weather forecasts.'
+            equiv: 'This is the <strong>same model that powers the Met Office website and app</strong>. For UK locations it uses the UKV at 2 km resolution, the highest-resolution operational model available for the British Isles. MeteoGroup also incorporates Met Office data into BBC Weather forecasts.'
         },
         gem_global: {
             name: 'GEM',
@@ -89,6 +89,7 @@
     let selectedMarker = null;
     let selectMode = false;
     let contextMenuLatLng = null;
+    let suppressNextMapClick = false;
 
     let lastReportData = null;
     let lastHourlySlice = null;
@@ -209,7 +210,7 @@
                 level: 'poor',
                 label: 'Red',
                 explainer: explainerPoor,
-                text: 'Red — ' + explainerPoor
+                text: 'Red: ' + explainerPoor
             };
         }
         if (sustained > 26 || gusts > 34 || vis < 5500 || precip > 0) {
@@ -217,14 +218,14 @@
                 level: 'caution',
                 label: 'Amber',
                 explainer: explainerCaution,
-                text: 'Amber — ' + explainerCaution
+                text: 'Amber: ' + explainerCaution
             };
         }
         return {
             level: 'good',
             label: 'Green',
             explainer: explainerGood,
-            text: 'Green — ' + explainerGood
+            text: 'Green: ' + explainerGood
         };
     }
 
@@ -811,7 +812,7 @@
         var info = MODEL_EXPLAINERS[model] || MODEL_EXPLAINERS['auto'];
 
         body.innerHTML =
-            '<p><strong>' + info.name + '</strong> — ' + info.fullName + '</p>' +
+            '<p><strong>' + info.name + '</strong>. ' + info.fullName + '</p>' +
             '<table class="model-equiv-table">' +
             '<tr><th>Resolution</th><th>Provider</th></tr>' +
             '<tr><td>' + info.resolution + '</td><td>' + info.provider + '</td></tr>' +
@@ -863,7 +864,7 @@
         weatherAirspaceItemMaps = [];
     }
 
-    /** Re-run view after layout: hidden Airspace tab (0×0) makes first fitBounds zoom wrong; aspect-ratio boxes can report 0 height briefly — never skip setView. */
+    /** Re-run view after layout: hidden Airspace tab (0×0) makes first fitBounds zoom wrong; aspect-ratio boxes can report 0 height briefly; never skip setView. */
     function deferWeatherMiniMapRefit(map, refitFn) {
         function run() {
             try {
@@ -1048,7 +1049,7 @@
 
     function buildWeatherAirspacePptxLines(a) {
         var lines = [];
-        lines.push(a.category + ' — ' + (a.name || a.designator || '—'));
+        lines.push(a.category + ': ' + (a.name || a.designator || '—'));
         lines.push('Designator: ' + (a.designator || '—'));
         lines.push('Lower / Upper: ' + a.lower + ' / ' + a.upper);
         if (a.type) lines.push('Type: ' + a.type);
@@ -1131,7 +1132,7 @@
     function buildWeatherPdfAirspaceDetail(kind, lat, lng, a, n) {
         if (kind === 'airspace' && a) {
             var lines = [];
-            lines.push(a.category + ' — ' + (a.name || a.designator));
+            lines.push(a.category + ': ' + (a.name || a.designator));
             lines.push('Designator: ' + a.designator);
             lines.push('Lower / Upper: ' + a.lower + ' / ' + a.upper);
             if (a.type) lines.push('Type: ' + a.type);
@@ -1949,7 +1950,7 @@
                 });
 
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('METAR / TAF — Aerodromes within 50 NM', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('METAR / TAF: Aerodromes within 50 NM', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
                 var maxY = 6.6;
                 let yPos = 0.85;
@@ -2035,7 +2036,7 @@
                 var mapElN = document.getElementById('weatherItemMap-notam-' + niPptx);
                 var imgN = mapElN ? await captureWeatherMinimapForPptx(mapElN) : null;
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('NOTAM — ' + (ntmP.id || '—'), {
+                slide.addText('NOTAM: ' + (ntmP.id || 'n/a'), {
                     x: 0.5,
                     y: 0.2,
                     w: 10,
@@ -2100,7 +2101,7 @@
                     var imgA = mapElA ? await captureWeatherMinimapForPptx(mapElA) : null;
                     slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
                     var catColorP = catColorsPptx[afP.category] || C.textPrimary;
-                    slide.addText(AIRSPACE_CATEGORY_LABEL[catP] + ' — ' + (afP.name || afP.designator || '—'), {
+                    slide.addText(AIRSPACE_CATEGORY_LABEL[catP] + ': ' + (afP.name || afP.designator || 'n/a'), {
                         x: 0.5,
                         y: 0.2,
                         w: 11,
@@ -2189,7 +2190,7 @@
                 map.setView(origView.center, origView.zoom, { animate: false });
 
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('NOTAMs & airspace map — ' + airspaceSearchRadiusKm + ' km radius', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('NOTAMs and airspace map: ' + airspaceSearchRadiusKm + ' km radius', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
                 var amapSize = 5.6;
                 slide.addShape('roundRect', { x: 0.42, y: 0.82, w: amapSize + 0.16, h: amapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
                 slide.addImage({ data: airspaceMapImg, x: 0.5, y: 0.9, w: amapSize, h: amapSize, rounding: false });
@@ -2256,7 +2257,7 @@
                     ], { x: 0.7, y: srcY + 0.55, w: 11.8, h: 0.55, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
                     slide.addText([
                         { text: 'Reliability: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
-                        { text: 'These are official published boundaries and are considered authoritative for planning purposes. However, Danger and Restricted areas may be temporarily activated or deactivated — always cross-reference with current NOTAMs. This data does not include temporary airspace reservations (RA(T)) which require a separate check.', options: { color: C.textPrimary, fontSize: 10 } }
+                        { text: 'These are official published boundaries and are considered authoritative for planning purposes. However, Danger and Restricted areas may be temporarily activated or deactivated; always cross-reference with current NOTAMs. This data does not include temporary airspace reservations (RA(T)) which require a separate check.', options: { color: C.textPrimary, fontSize: 10 } }
                     ], { x: 0.7, y: srcY + 1.15, w: 11.8, h: 0.85, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
                     srcY += 2.3;
                 }
@@ -2382,7 +2383,7 @@
                 startY: 18,
                 head: [['Parameter', 'Value']],
                 body: [
-                    ['Suitability', suitability.label + ' — ' + suitability.explainer],
+                    ['Suitability', suitability.label + ': ' + suitability.explainer],
                     ['Wind Direction', windDir],
                     ['Wind 10m (sustained)', w10],
                     ['Gusts 10m', g10],
@@ -2446,7 +2447,7 @@
             // Page 4: METAR / TAF
             if (lastAviationData && lastAviationData.nearby && lastAviationData.nearby.length > 0) {
                 PdfTheme.newPage(doc);
-                PdfTheme.addHeader(doc, 'METAR / TAF — Aerodromes within 50 NM');
+                PdfTheme.addHeader(doc, 'METAR / TAF: Aerodromes within 50 NM');
 
                 var metarByIcao = {};
                 (lastAviationData.metars || []).forEach(function (m) {
@@ -2525,7 +2526,7 @@
                 });
             }
 
-            // Page 5+: NOTAMs & Airspace (tables: NOTAM → FRZ → Restricted → …, then map — matches PPTX)
+            // Page 5+: NOTAMs and Airspace (tables: NOTAM, FRZ, Restricted, etc., then map; matches PPTX)
             airspaceSearchRadiusKm = readAirspaceRadiusFromInput();
             syncAirspaceRadiusInput();
             persistAirspaceRadiusKm();
@@ -2668,7 +2669,7 @@
                 map.setView(origView.center, origView.zoom, { animate: false });
 
                 PdfTheme.newPage(doc);
-                PdfTheme.addHeader(doc, 'NOTAMs & airspace map — ' + airspaceSearchRadiusKm + ' km radius');
+                PdfTheme.addHeader(doc, 'NOTAMs and airspace map: ' + airspaceSearchRadiusKm + ' km radius');
                 doc.addImage(airspaceMapImg, 'PNG', 10, 16, 120, 120);
 
                 var legX = 140;
@@ -2788,7 +2789,7 @@
                     doc.text('Reliability:', 14, srcY + 24);
                     doc.setFont('helvetica', 'normal');
                     doc.setTextColor(c.text[0], c.text[1], c.text[2]);
-                    var relLines2 = doc.splitTextToSize('These are official published boundaries and are considered authoritative for planning purposes. However, Danger and Restricted areas may be temporarily activated or deactivated — always cross-reference with current NOTAMs. This data does not include temporary airspace reservations (RA(T)) which require a separate check.', pdfSourceColTextW);
+                    var relLines2 = doc.splitTextToSize('These are official published boundaries and are considered authoritative for planning purposes. However, Danger and Restricted areas may be temporarily activated or deactivated; always cross-reference with current NOTAMs. This data does not include temporary airspace reservations (RA(T)) which require a separate check.', pdfSourceColTextW);
                     doc.text(relLines2, 30, srcY + 24);
                     srcY += 40;
                 }
@@ -2900,6 +2901,84 @@
         setSelectedPoint(contextMenuLatLng.lat, contextMenuLatLng.lng);
         hideWeatherContextMenu();
         fetchWeather();
+    }
+
+    // Long-press on touch devices: contextmenu is often not fired on the map (unlike desktop right-click).
+    function setupLongPressWeatherContextMenu() {
+        if (!('ontouchstart' in window) && navigator.maxTouchPoints === 0) return;
+
+        const LONG_PRESS_MS = 500;
+        const MOVE_THRESHOLD = 10;
+        let lpTimer = null;
+        let startX = 0;
+        let startY = 0;
+        let cancelled = false;
+
+        const mapContainer = map.getContainer();
+
+        mapContainer.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) {
+                if (lpTimer) {
+                    clearTimeout(lpTimer);
+                    lpTimer = null;
+                }
+                return;
+            }
+            if (selectMode) return;
+            if (e.target.closest('.leaflet-control')) return;
+
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            cancelled = false;
+
+            lpTimer = setTimeout(() => {
+                if (cancelled) return;
+                const rect = mapContainer.getBoundingClientRect();
+                const latlng = map.containerPointToLatLng(L.point(
+                    startX - rect.left,
+                    startY - rect.top
+                ));
+                suppressNextMapClick = true;
+                showWeatherContextMenu({
+                    latlng: latlng,
+                    originalEvent: {
+                        clientX: startX,
+                        clientY: startY,
+                        preventDefault: function () {},
+                        stopPropagation: function () {}
+                    }
+                });
+                lpTimer = null;
+            }, LONG_PRESS_MS);
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchmove', (e) => {
+            if (!lpTimer) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+            if (Math.sqrt(dx * dx + dy * dy) > MOVE_THRESHOLD) {
+                clearTimeout(lpTimer);
+                lpTimer = null;
+                cancelled = true;
+            }
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchend', () => {
+            if (lpTimer) {
+                clearTimeout(lpTimer);
+                lpTimer = null;
+            }
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchcancel', () => {
+            if (lpTimer) {
+                clearTimeout(lpTimer);
+                lpTimer = null;
+            }
+            cancelled = true;
+        }, { passive: true });
     }
 
     // ---- Event handlers ----
@@ -3044,9 +3123,16 @@
             }
         }, { passive: true });
 
-        map.on('click', onMapClick);
-        map.on('click', hideWeatherContextMenu);
+        map.on('click', function weatherMapClick(e) {
+            if (suppressNextMapClick) {
+                suppressNextMapClick = false;
+                return;
+            }
+            onMapClick(e);
+            hideWeatherContextMenu();
+        });
         setupTouchFallback();
+        setupLongPressWeatherContextMenu();
 
         map.on('contextmenu', (e) => {
             if (e.originalEvent.target.closest('.leaflet-control')) return;

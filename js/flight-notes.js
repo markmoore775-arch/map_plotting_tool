@@ -1,11 +1,14 @@
 /**
- * Flight Report — form serialization, GPS (HTTPS only), mailto + clipboard fallback, PDF via PdfTheme.
+ * Flight Report: form serialization, GPS (HTTPS only), mailto + clipboard fallback, PDF via PdfTheme.
  * Page Theme + PDF theme (Dark/Light) radios; Clear report (header) / Clear form share one confirmation modal.
  */
 (function () {
     'use strict';
 
-    /** Draft form fields — local only, same origin; cleared when user clears the form. */
+    /** Max battery slots on the Flight Report form (cards 2–this many can be revealed). */
+    var FN_BATTERY_MAX = 10;
+
+    /** Draft form fields: local only, same origin; cleared when user clears the form. */
     var FN_DRAFT_STORAGE_KEY = 'airplotFlightNotesDraft_v1';
     var FN_DRAFT_FIELD_IDS = [
         'fnDate',
@@ -13,24 +16,130 @@
         'fnLocation',
         'fnReference',
         'fnDeconflictions',
-        'fnRp1',
-        'fnRp2',
         'fnUas',
         'fnBattery1',
-        'fnBattery1Time',
+        'fnBattery1Rp1',
+        'fnBattery1Rp2',
+        'fnBattery1Launch',
+        'fnBattery1Land',
+        'fnBattery1FlightTime',
+        'fnBattery1Alos',
         'fnBattery2',
-        'fnBattery2Time',
+        'fnBattery2Rp1',
+        'fnBattery2Rp2',
+        'fnBattery2Launch',
+        'fnBattery2Land',
+        'fnBattery2FlightTime',
+        'fnBattery2Alos',
         'fnBattery3',
-        'fnBattery3Time',
+        'fnBattery3Rp1',
+        'fnBattery3Rp2',
+        'fnBattery3Launch',
+        'fnBattery3Land',
+        'fnBattery3FlightTime',
+        'fnBattery3Alos',
         'fnBattery4',
-        'fnBattery4Time',
-        'fnAlosRagNotes',
+        'fnBattery4Rp1',
+        'fnBattery4Rp2',
+        'fnBattery4Launch',
+        'fnBattery4Land',
+        'fnBattery4FlightTime',
+        'fnBattery4Alos',
+        'fnBattery5',
+        'fnBattery5Rp1',
+        'fnBattery5Rp2',
+        'fnBattery5Launch',
+        'fnBattery5Land',
+        'fnBattery5FlightTime',
+        'fnBattery5Alos',
+        'fnBattery6',
+        'fnBattery6Rp1',
+        'fnBattery6Rp2',
+        'fnBattery6Launch',
+        'fnBattery6Land',
+        'fnBattery6FlightTime',
+        'fnBattery6Alos',
+        'fnBattery7',
+        'fnBattery7Rp1',
+        'fnBattery7Rp2',
+        'fnBattery7Launch',
+        'fnBattery7Land',
+        'fnBattery7FlightTime',
+        'fnBattery7Alos',
+        'fnBattery8',
+        'fnBattery8Rp1',
+        'fnBattery8Rp2',
+        'fnBattery8Launch',
+        'fnBattery8Land',
+        'fnBattery8FlightTime',
+        'fnBattery8Alos',
+        'fnBattery9',
+        'fnBattery9Rp1',
+        'fnBattery9Rp2',
+        'fnBattery9Launch',
+        'fnBattery9Land',
+        'fnBattery9FlightTime',
+        'fnBattery9Alos',
+        'fnBattery10',
+        'fnBattery10Rp1',
+        'fnBattery10Rp2',
+        'fnBattery10Launch',
+        'fnBattery10Land',
+        'fnBattery10FlightTime',
+        'fnBattery10Alos',
         'fnWeather',
         'fnAirspaceRadiusKm',
         'fnNotes'
     ];
 
     var fnDraftSaveTimer = null;
+
+    /** How many battery cards (1–FN_BATTERY_MAX) are shown; exported to email/PDF and saved in draft (v2). */
+    var fnVisibleBatteryCount = 1;
+
+    var BATTERY_N_FIELD_SUFFIXES = ['', 'Rp1', 'Rp2', 'Launch', 'Land', 'FlightTime', 'Alos'];
+
+    function getVisibleBatteryCount() {
+        return fnVisibleBatteryCount;
+    }
+
+    function batteryNHasAnyValue(n) {
+        var b = 'fnBattery' + n;
+        var i;
+        for (i = 0; i < BATTERY_N_FIELD_SUFFIXES.length; i++) {
+            var id = b + BATTERY_N_FIELD_SUFFIXES[i];
+            var el = document.getElementById(id);
+            if (el && String(el.value || '').trim()) return true;
+        }
+        return false;
+    }
+
+    function deriveVisibleBatteryCountFromFields() {
+        var max = 1;
+        var n;
+        for (n = 2; n <= FN_BATTERY_MAX; n++) {
+            if (batteryNHasAnyValue(n)) max = n;
+        }
+        return max;
+    }
+
+    function setVisibleBatteryCount(count) {
+        fnVisibleBatteryCount = Math.min(FN_BATTERY_MAX, Math.max(1, count));
+        var i;
+        for (i = 2; i <= FN_BATTERY_MAX; i++) {
+            var card = document.getElementById('fnBatteryCard' + i);
+            if (card) card.hidden = i > fnVisibleBatteryCount;
+        }
+        var btn = document.getElementById('fnAddBatteryBtn');
+        if (btn) {
+            if (fnVisibleBatteryCount >= FN_BATTERY_MAX) {
+                btn.hidden = true;
+            } else {
+                btn.hidden = false;
+                btn.textContent = 'Add Battery ' + (fnVisibleBatteryCount + 1);
+            }
+        }
+    }
 
     function saveFlightNotesDraft() {
         try {
@@ -42,7 +151,14 @@
                     fields[id] = el.value || '';
                 }
             }
-            localStorage.setItem(FN_DRAFT_STORAGE_KEY, JSON.stringify({ v: 1, fields: fields }));
+            localStorage.setItem(
+                FN_DRAFT_STORAGE_KEY,
+                JSON.stringify({
+                    v: 2,
+                    fields: fields,
+                    visibleBatteryCount: fnVisibleBatteryCount
+                })
+            );
         } catch (e) {}
     }
 
@@ -54,12 +170,17 @@
         }, 250);
     }
 
+    /**
+     * Restores field values from localStorage. Returns suggested visible battery count (1–FN_BATTERY_MAX).
+     */
     function loadFlightNotesDraft() {
+        var visibleHint = 1;
         try {
             var raw = localStorage.getItem(FN_DRAFT_STORAGE_KEY);
-            if (!raw) return;
+            if (!raw) return visibleHint;
             var data = JSON.parse(raw);
-            if (!data || data.v !== 1 || !data.fields) return;
+            if (!data || !data.fields) return visibleHint;
+            if (data.v !== 1 && data.v !== 2) return visibleHint;
             var id;
             for (id in data.fields) {
                 if (!Object.prototype.hasOwnProperty.call(data.fields, id)) continue;
@@ -68,7 +189,15 @@
                     el.value = data.fields[id];
                 }
             }
-        } catch (e) {}
+            if (data.v === 2 && typeof data.visibleBatteryCount === 'number') {
+                visibleHint = Math.min(FN_BATTERY_MAX, Math.max(1, Math.round(data.visibleBatteryCount)));
+            } else {
+                visibleHint = deriveVisibleBatteryCountFromFields();
+            }
+            return visibleHint;
+        } catch (e) {
+            return visibleHint;
+        }
     }
 
     function clearFlightNotesDraftStorage() {
@@ -158,7 +287,7 @@
 
     function fnAirspaceSummaryForExport() {
         if (!fnAirspaceDataLoaded) {
-            return '— (set coordinates and tap Refresh in Airspace)';
+            return 'n/a (set coordinates and tap Refresh in Airspace)';
         }
         var na = (fnLastNotams || []).length;
         var nb = (fnLastAirspace || []).length;
@@ -309,6 +438,53 @@
         }
     }
 
+    /** Geographic bounds of a circle (Leaflet Circle.getBounds can be unreliable before layout). */
+    function latLngBoundsFromRadiusMeters(centerLat, centerLng, radiusM) {
+        var R = 6371000;
+        var latRad = (centerLat * Math.PI) / 180;
+        var dLat = (radiusM / R) * (180 / Math.PI);
+        var cosLat = Math.cos(latRad);
+        var dLng = cosLat > 1e-10 ? (radiusM / (R * cosLat)) * (180 / Math.PI) : dLat;
+        return L.latLngBounds(
+            [centerLat - dLat, centerLng - dLng],
+            [centerLat + dLat, centerLng + dLng]
+        );
+    }
+
+    function applyFnNotamMiniMapView(m, lat, lng, groupBounds) {
+        if (groupBounds.isValid()) {
+            var sw = groupBounds.getSouthWest();
+            var ne = groupBounds.getNorthEast();
+            var tiny = Math.abs(sw.lat - ne.lat) < 1e-5 && Math.abs(sw.lng - ne.lng) < 1e-5;
+            if (tiny) {
+                m.setView([lat, lng], 13);
+            } else {
+                m.fitBounds(groupBounds.pad(0.25), { maxZoom: 15 });
+            }
+        } else {
+            m.setView([lat, lng], 10);
+        }
+    }
+
+    /** Re-fit after container gets real size (0×0 or wrong aspect breaks first fitBounds; SVG circles misalign under html2canvas). */
+    function deferFnMiniMapRefit(map, refitFn) {
+        function run() {
+            try {
+                refitFn();
+            } catch (e) {}
+        }
+        if (!map || typeof map.whenReady !== 'function') return;
+        map.whenReady(function () {
+            run();
+            requestAnimationFrame(function () {
+                run();
+                setTimeout(run, 0);
+                setTimeout(run, 80);
+                setTimeout(run, 350);
+            });
+        });
+    }
+
     function populateFnAirspaceMaps(lat, lng, notams, airspace) {
         destroyFnAirspaceMaps();
         if (typeof L === 'undefined' || typeof AirspaceNearby === 'undefined') return;
@@ -350,26 +526,37 @@
             var el = document.getElementById('fnAirspaceMap-notam-' + i);
             if (!el) return;
             var map = L.map(el, { zoomControl: false, attributionControl: false });
+            var vectorRenderer = L.canvas({ padding: 0.5 });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, crossOrigin: true }).addTo(map);
             var overlay = L.layerGroup().addTo(map);
+            var nLat = parseFloat(n.lat);
+            var nLng = parseFloat(n.lng);
+            if (!isFinite(nLat) || !isFinite(nLng)) {
+                nLat = lat;
+                nLng = lng;
+            }
             L.marker([lat, lng], { title: 'Location' }).addTo(overlay);
-            L.marker([n.lat, n.lng], { title: 'NOTAM centre' }).addTo(overlay);
+            L.marker([nLat, nLng], { title: 'NOTAM centre' }).addTo(overlay);
+            var groupBounds = L.latLngBounds([lat, lng], [nLat, nLng]);
             if (n.radiusNm > 0 && n.radiusNm < 999) {
-                L.circle([n.lat, n.lng], {
-                    radius: n.radiusNm * 1852,
+                var radiusM = n.radiusNm * 1852;
+                L.circle([nLat, nLng], {
+                    renderer: vectorRenderer,
+                    radius: radiusM,
                     color: '#dc2626',
                     weight: 2,
                     fillColor: '#dc2626',
                     fillOpacity: 0.12
                 }).addTo(overlay);
+                groupBounds.extend(latLngBoundsFromRadiusMeters(nLat, nLng, radiusM));
             }
-            var groupBounds = L.latLngBounds([lat, lng], [n.lat, n.lng]);
-            if (groupBounds.isValid()) {
-                map.fitBounds(groupBounds.pad(0.25));
-            } else {
-                map.setView([lat, lng], 10);
+            function refitNotamMap() {
+                map.invalidateSize();
+                applyFnNotamMiniMapView(map, lat, lng, groupBounds);
             }
-            fnAirspaceMaps.push({ map: map });
+            applyFnNotamMiniMapView(map, lat, lng, groupBounds);
+            fnAirspaceMaps.push({ map: map, refit: refitNotamMap });
+            deferFnMiniMapRefit(map, refitNotamMap);
             setTimeout(function () {
                 map.invalidateSize();
             }, 100);
@@ -470,7 +657,7 @@
     function buildAirspaceDetailPdfForRow(kind, lat, lng, a, n) {
         if (kind === 'airspace' && a) {
             var lines = [];
-            lines.push(a.category + ' — ' + (a.name || a.designator));
+            lines.push(a.category + ': ' + (a.name || a.designator));
             lines.push('Designator: ' + a.designator);
             lines.push('Lower / Upper: ' + a.lower + ' / ' + a.upper);
             if (a.type) lines.push('Type: ' + a.type);
@@ -528,6 +715,9 @@
             if (fnAirspaceMaps[j] && fnAirspaceMaps[j].map) {
                 try {
                     fnAirspaceMaps[j].map.invalidateSize();
+                    if (typeof fnAirspaceMaps[j].refit === 'function') {
+                        fnAirspaceMaps[j].refit();
+                    }
                 } catch (e) {}
             }
             await new Promise(function (r) {
@@ -652,7 +842,7 @@
         return s;
     }
 
-    /** Fit image into a max box (mm) without stretching — preserves aspect ratio. */
+    /** Fit image into a max box (mm) without stretching; preserves aspect ratio. */
     function mapImageSizeMm(canvasW, canvasH, maxWMm, maxHMm) {
         if (!canvasW || !canvasH) return { w: maxWMm, h: maxHMm };
         var ar = canvasW / canvasH;
@@ -665,7 +855,7 @@
         return { w: w, h: h };
     }
 
-    /** Same map centre as Flight Report mini-map — for email (mailto is plain text only; no embedded images). */
+    /** Same map centre as Flight Report mini-map, for email (mailto is plain text only; no embedded images). */
     function openStreetMapLink(lat, lng) {
         return (
             'https://www.openstreetmap.org/?mlat=' +
@@ -684,7 +874,7 @@
      */
     function buildNotesPlainText() {
         var lines = [];
-        lines.push('AirPlot v3 — Flight Report');
+        lines.push('AirPlot v3: Flight Report');
         lines.push('');
 
         lines.push('Date: ' + dash(formatDateForExportDdMmYyyy(trimVal('fnDate'))));
@@ -696,20 +886,20 @@
         }
         lines.push('Reference: ' + dash(trimVal('fnReference')));
         lines.push('Deconflictions: ' + dash(trimVal('fnDeconflictions')));
-        lines.push('RP 1: ' + dash(trimVal('fnRp1')));
-        lines.push('RP 2: ' + dash(trimVal('fnRp2')));
         lines.push('UAS: ' + dash(trimVal('fnUas')));
 
-        lines.push('Battery 1: ' + dash(trimVal('fnBattery1')));
-        lines.push('Battery 1 time: ' + dash(trimVal('fnBattery1Time')));
-        lines.push('Battery 2: ' + dash(trimVal('fnBattery2')));
-        lines.push('Battery 2 time: ' + dash(trimVal('fnBattery2Time')));
-        lines.push('Battery 3: ' + dash(trimVal('fnBattery3')));
-        lines.push('Battery 3 time: ' + dash(trimVal('fnBattery3Time')));
-        lines.push('Battery 4: ' + dash(trimVal('fnBattery4')));
-        lines.push('Battery 4 time: ' + dash(trimVal('fnBattery4Time')));
-
-        lines.push('ALoS RAG Notes: ' + dash(trimVal('fnAlosRagNotes').replace(/\n/g, ' ')));
+        var bn;
+        var battMax = getVisibleBatteryCount();
+        for (bn = 1; bn <= battMax; bn++) {
+            var b = 'fnBattery' + bn;
+            lines.push('Battery ' + bn + ': ' + dash(trimVal(b)));
+            lines.push('Battery ' + bn + ' RP 1: ' + dash(trimVal(b + 'Rp1')));
+            lines.push('Battery ' + bn + ' RP 2: ' + dash(trimVal(b + 'Rp2')));
+            lines.push('Battery ' + bn + ' launch: ' + dash(trimVal(b + 'Launch')));
+            lines.push('Battery ' + bn + ' landing: ' + dash(trimVal(b + 'Land')));
+            lines.push('Battery ' + bn + ' flight time: ' + dash(trimVal(b + 'FlightTime')));
+            lines.push('Battery ' + bn + ' ALoS comments: ' + dash(trimVal(b + 'Alos').replace(/\n/g, ' ')));
+        }
         lines.push('Weather: ' + dash(trimVal('fnWeather').replace(/\n/g, ' ')));
         lines.push('Airspace: ' + fnAirspaceSummaryForExport());
         lines.push('');
@@ -720,38 +910,39 @@
     }
 
     function tableRowsForPdf() {
-        var alos = trimVal('fnAlosRagNotes');
         var w = trimVal('fnWeather');
         var llPdf = parseLatLngFromLocationString(trimVal('fnLocation'));
         var mapLinkRow = llPdf
             ? ['Map (OpenStreetMap)', openStreetMapLink(llPdf.lat, llPdf.lng)]
             : ['Map (OpenStreetMap)', '—'];
-        return [
+        var rows = [
             ['Date', dash(formatDateForExportDdMmYyyy(trimVal('fnDate')))],
             ['Time', dash(trimVal('fnTime'))],
             ['Location', dash(trimVal('fnLocation'))],
             mapLinkRow,
             ['Reference', dash(trimVal('fnReference'))],
             ['Deconflictions', dash(trimVal('fnDeconflictions'))],
-            ['RP 1', dash(trimVal('fnRp1'))],
-            ['RP 2', dash(trimVal('fnRp2'))],
-            ['UAS', dash(trimVal('fnUas'))],
-            ['Battery 1', dash(trimVal('fnBattery1'))],
-            ['Battery 1 time', dash(trimVal('fnBattery1Time'))],
-            ['Battery 2', dash(trimVal('fnBattery2'))],
-            ['Battery 2 time', dash(trimVal('fnBattery2Time'))],
-            ['Battery 3', dash(trimVal('fnBattery3'))],
-            ['Battery 3 time', dash(trimVal('fnBattery3Time'))],
-            ['Battery 4', dash(trimVal('fnBattery4'))],
-            ['Battery 4 time', dash(trimVal('fnBattery4Time'))],
-            ['ALoS RAG Notes', alos || '—'],
-            ['Weather', w || '—'],
-            ['Airspace', fnAirspaceSummaryForExport()],
-            ['Notes', trimVal('fnNotes') || '—']
+            ['UAS', dash(trimVal('fnUas'))]
         ];
+        var bn;
+        var battMaxPdf = getVisibleBatteryCount();
+        for (bn = 1; bn <= battMaxPdf; bn++) {
+            var b = 'fnBattery' + bn;
+            rows.push(['Battery ' + bn, dash(trimVal(b))]);
+            rows.push(['Battery ' + bn + ' RP 1', dash(trimVal(b + 'Rp1'))]);
+            rows.push(['Battery ' + bn + ' RP 2', dash(trimVal(b + 'Rp2'))]);
+            rows.push(['Battery ' + bn + ' launch', dash(trimVal(b + 'Launch'))]);
+            rows.push(['Battery ' + bn + ' landing', dash(trimVal(b + 'Land'))]);
+            rows.push(['Battery ' + bn + ' flight time', dash(trimVal(b + 'FlightTime'))]);
+            rows.push(['Battery ' + bn + ' ALoS comments', trimVal(b + 'Alos') || '—']);
+        }
+        rows.push(['Weather', w || '—']);
+        rows.push(['Airspace', fnAirspaceSummaryForExport()]);
+        rows.push(['Notes', trimVal('fnNotes') || '—']);
+        return rows;
     }
 
-    // ---- Open-Meteo (same API as js/weather.js — Flight Weather) ----
+    // ---- Open-Meteo (same API as js/weather.js, Flight Weather) ----
 
     var OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
     var HOURLY_PARAMS =
@@ -1064,7 +1255,7 @@
                 usedTarget
             );
             var existing = trimVal('fnWeather');
-            var sep = '\n\n--- Open-Meteo — ' + result.displayTime + ' ---\n';
+            var sep = '\n\n--- Open-Meteo: ' + result.displayTime + ' ---\n';
             if (existing) {
                 ta.value = existing + sep + block;
             } else {
@@ -1095,6 +1286,45 @@
         saveFlightNotesDraft();
     }
 
+    function parseHmToMinutes(hhmm) {
+        if (!hhmm || !/^\d{1,2}:\d{2}$/.test(String(hhmm).trim())) return null;
+        var p = String(hhmm).trim().split(':');
+        var h = parseInt(p[0], 10);
+        var m = parseInt(p[1], 10);
+        if (isNaN(h) || isNaN(m) || h > 23 || m > 59) return null;
+        return h * 60 + m;
+    }
+
+    function formatFlightDurationMins(totalMins) {
+        if (totalMins == null || totalMins < 0) return '';
+        var h = Math.floor(totalMins / 60);
+        var m = totalMins % 60;
+        if (h && m) return h + 'h ' + m + 'm';
+        if (h) return h + 'h';
+        return m + 'm';
+    }
+
+    function updateBatteryFlightTimeForIndex(n) {
+        var launch = document.getElementById('fnBattery' + n + 'Launch');
+        var land = document.getElementById('fnBattery' + n + 'Land');
+        var out = document.getElementById('fnBattery' + n + 'FlightTime');
+        if (!launch || !land || !out) return;
+        var a = parseHmToMinutes(launch.value);
+        var b = parseHmToMinutes(land.value);
+        if (a == null || b == null) {
+            out.value = '';
+            return;
+        }
+        var d = b - a;
+        if (d < 0) d += 24 * 60;
+        out.value = formatFlightDurationMins(d);
+    }
+
+    function updateAllBatteryFlightTimes() {
+        var n;
+        for (n = 1; n <= FN_BATTERY_MAX; n++) updateBatteryFlightTimeForIndex(n);
+    }
+
     function setTimeInputNow(inputId) {
         var el = document.getElementById(inputId);
         if (!el) return;
@@ -1102,6 +1332,8 @@
         var hh = String(now.getHours()).padStart(2, '0');
         var mm = String(now.getMinutes()).padStart(2, '0');
         el.value = hh + ':' + mm;
+        var bm = String(inputId).match(/^fnBattery(10|[1-9])(Launch|Land)$/);
+        if (bm) updateBatteryFlightTimeForIndex(parseInt(bm[1], 10));
         saveFlightNotesDraft();
     }
 
@@ -1282,7 +1514,7 @@
             setGpsStatus('Geolocation is not available in this browser.', 'error');
             return;
         }
-        // Secure context: HTTPS or localhost — required for geolocation in most browsers.
+        // Secure context: HTTPS or localhost, required for geolocation in most browsers.
         var btn = document.getElementById('fnGpsBtn');
         if (btn) btn.disabled = true;
         setGpsStatus('Getting location…', '');
@@ -1309,14 +1541,14 @@
 
     function emailSubject() {
         var d = formatDateForExportDdMmYyyy(trimVal('fnDate'));
-        return d ? 'Flight Report — ' + d : 'Flight Report';
+        return d ? 'Flight Report: ' + d : 'Flight Report';
     }
 
     async function onEmailClick() {
         var text = buildNotesPlainText();
         var subj = emailSubject();
         var shortBody =
-            'Your flight report is on the clipboard — paste into the email body below. (The full text was too long to put in the mail link automatically.)';
+            'Your flight report is on the clipboard. Paste into the email body below. (The full text was too long to put in the mail link automatically.)';
 
         if (text.length > MAILTO_BODY_MAX) {
             try {
@@ -1476,6 +1708,8 @@
         if (al) al.classList.add('hidden');
         var form = document.getElementById('flightReportForm');
         if (form) form.reset();
+        setVisibleBatteryCount(1);
+        updateAllBatteryFlightTimes();
         syncFnAirspaceIntroKm();
         var ta = document.getElementById('fnWeather');
         if (ta) {
@@ -1517,7 +1751,9 @@
             });
         }
 
-        loadFlightNotesDraft();
+        var initialBatterySlots = loadFlightNotesDraft();
+        setVisibleBatteryCount(initialBatterySlots);
+        updateAllBatteryFlightTimes();
         syncFnAirspaceIntroKm();
 
         var fnAirspaceRefresh = document.getElementById('fnAirspaceRefreshBtn');
@@ -1545,12 +1781,43 @@
         var clearConfirm = document.getElementById('fnClearModalConfirm');
 
         if (nowBtn) nowBtn.addEventListener('click', setNowDateTime);
-        document.querySelectorAll('.fn-btn-battery-time-now').forEach(function (btn) {
+        var addBatteryBtn = document.getElementById('fnAddBatteryBtn');
+        if (addBatteryBtn) {
+            addBatteryBtn.addEventListener('click', function () {
+                if (fnVisibleBatteryCount >= FN_BATTERY_MAX) return;
+                setVisibleBatteryCount(fnVisibleBatteryCount + 1);
+                scheduleFlightNotesDraftSave();
+            });
+        }
+        document.querySelectorAll('[data-launch-for]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                var id = btn.getAttribute('data-time-for');
+                var id = btn.getAttribute('data-launch-for');
                 if (id) setTimeInputNow(id);
             });
         });
+        document.querySelectorAll('[data-land-for]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-land-for');
+                if (id) setTimeInputNow(id);
+            });
+        });
+        var bi;
+        for (bi = 1; bi <= FN_BATTERY_MAX; bi++) {
+            (function (n) {
+                ['Launch', 'Land'].forEach(function (suffix) {
+                    var tel = document.getElementById('fnBattery' + n + suffix);
+                    if (!tel) return;
+                    tel.addEventListener('change', function () {
+                        updateBatteryFlightTimeForIndex(n);
+                        scheduleFlightNotesDraftSave();
+                    });
+                    tel.addEventListener('input', function () {
+                        updateBatteryFlightTimeForIndex(n);
+                        scheduleFlightNotesDraftSave();
+                    });
+                });
+            })(bi);
+        }
         if (searchLocationBtn) searchLocationBtn.addEventListener('click', onSearchLocationClick);
         if (gpsBtn) gpsBtn.addEventListener('click', onGpsClick);
         if (weatherFetchBtn) weatherFetchBtn.addEventListener('click', onWeatherFetchClick);

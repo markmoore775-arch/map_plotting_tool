@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css?v=5">
+    <link rel="stylesheet" href="css/flight-notes.css?v=10">
     <!-- Leaflet (mini map for GPS location) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -66,7 +66,7 @@
         </aside>
         <header class="fn-header">
             <h1 class="fn-title">Flight Report</h1>
-            <p class="fn-lead">Record key details from your flight. <strong>Theme</strong> (top right) sets page colours; <strong>PDF theme</strong> next to Export PDF sets PDF colours (default Light). <strong>Clear report</strong> (top) or <strong>Clear form</strong> (bottom) wipes the draft after confirmation. Export to PDF or send by email. Use <strong>Checklist</strong> in the header to open the M4T / TD checklist in this tab without returning to the welcome screen.</p>
+            <p class="fn-lead">Record key details from your flight. <strong>Theme</strong> (top right) sets page colours; <strong>PDF theme</strong> next to Export PDF sets PDF colours (default Light). <strong>Clear report</strong> (top) or <strong>Clear form</strong> (bottom) wipes the draft after confirmation. Use <strong>Fetch weather report</strong> and the <strong>Airspace</strong> section (NOTAMs and UK zones with small maps) when you have a location. Export to PDF or send by email. Use <strong>Checklist</strong> in the header to open the M4T / TD checklist in this tab without returning to the welcome screen.</p>
         </header>
 
         <form id="flightReportForm" class="fn-form" autocomplete="on">
@@ -124,14 +124,6 @@
                         <label class="fn-label" for="fnDeconflictions">Deconflictions</label>
                         <input type="text" id="fnDeconflictions" name="fnDeconflictions" class="fn-input">
                     </div>
-                    <div class="fn-field">
-                        <label class="fn-label" for="fnRp1">RP 1</label>
-                        <input type="text" id="fnRp1" name="fnRp1" class="fn-input">
-                    </div>
-                    <div class="fn-field">
-                        <label class="fn-label" for="fnRp2">RP 2</label>
-                        <input type="text" id="fnRp2" name="fnRp2" class="fn-input">
-                    </div>
                     <div class="fn-field fn-field-span-2">
                         <label class="fn-label" for="fnUas">UAS</label>
                         <input type="text" id="fnUas" name="fnUas" class="fn-input">
@@ -146,48 +138,237 @@
                         <h3 class="fn-battery-title">Battery 1</h3>
                         <label class="fn-label" for="fnBattery1">Details</label>
                         <input type="text" id="fnBattery1" name="fnBattery1" class="fn-input">
-                        <label class="fn-label" for="fnBattery1Time">Time</label>
+                        <label class="fn-label" for="fnBattery1Rp1">RP 1</label>
+                        <input type="text" id="fnBattery1Rp1" name="fnBattery1Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery1Rp2">RP 2</label>
+                        <input type="text" id="fnBattery1Rp2" name="fnBattery1Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery1Launch">Launch time</label>
                         <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery1Time" name="fnBattery1Time" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now" data-time-for="fnBattery1Time" title="Set time to now (local)">Time now</button>
+                            <input type="time" id="fnBattery1Launch" name="fnBattery1Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery1Launch" title="Set launch time to now (local)">Launch now</button>
                         </div>
+                        <label class="fn-label" for="fnBattery1Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery1Land" name="fnBattery1Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery1Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery1FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery1FlightTime" name="fnBattery1FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing (if landing is earlier than launch, same-day wrap assumes next calendar day)" aria-live="polite">
+                        <label class="fn-label" for="fnBattery1Alos">ALoS comments</label>
+                        <textarea id="fnBattery1Alos" name="fnBattery1Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
                     </div>
-                    <div class="fn-battery-card">
+                    <div id="fnBatteryCard2" class="fn-battery-card fn-battery-card--extra" hidden>
                         <h3 class="fn-battery-title">Battery 2</h3>
                         <label class="fn-label" for="fnBattery2">Details</label>
                         <input type="text" id="fnBattery2" name="fnBattery2" class="fn-input">
-                        <label class="fn-label" for="fnBattery2Time">Time</label>
+                        <label class="fn-label" for="fnBattery2Rp1">RP 1</label>
+                        <input type="text" id="fnBattery2Rp1" name="fnBattery2Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery2Rp2">RP 2</label>
+                        <input type="text" id="fnBattery2Rp2" name="fnBattery2Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery2Launch">Launch time</label>
                         <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery2Time" name="fnBattery2Time" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now" data-time-for="fnBattery2Time" title="Set time to now (local)">Time now</button>
+                            <input type="time" id="fnBattery2Launch" name="fnBattery2Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery2Launch" title="Set launch time to now (local)">Launch now</button>
                         </div>
+                        <label class="fn-label" for="fnBattery2Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery2Land" name="fnBattery2Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery2Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery2FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery2FlightTime" name="fnBattery2FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery2Alos">ALoS comments</label>
+                        <textarea id="fnBattery2Alos" name="fnBattery2Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
                     </div>
-                    <div class="fn-battery-card">
+                    <div id="fnBatteryCard3" class="fn-battery-card fn-battery-card--extra" hidden>
                         <h3 class="fn-battery-title">Battery 3</h3>
                         <label class="fn-label" for="fnBattery3">Details</label>
                         <input type="text" id="fnBattery3" name="fnBattery3" class="fn-input">
-                        <label class="fn-label" for="fnBattery3Time">Time</label>
+                        <label class="fn-label" for="fnBattery3Rp1">RP 1</label>
+                        <input type="text" id="fnBattery3Rp1" name="fnBattery3Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery3Rp2">RP 2</label>
+                        <input type="text" id="fnBattery3Rp2" name="fnBattery3Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery3Launch">Launch time</label>
                         <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery3Time" name="fnBattery3Time" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now" data-time-for="fnBattery3Time" title="Set time to now (local)">Time now</button>
+                            <input type="time" id="fnBattery3Launch" name="fnBattery3Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery3Launch" title="Set launch time to now (local)">Launch now</button>
                         </div>
+                        <label class="fn-label" for="fnBattery3Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery3Land" name="fnBattery3Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery3Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery3FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery3FlightTime" name="fnBattery3FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery3Alos">ALoS comments</label>
+                        <textarea id="fnBattery3Alos" name="fnBattery3Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
                     </div>
-                    <div class="fn-battery-card">
+                    <div id="fnBatteryCard4" class="fn-battery-card fn-battery-card--extra" hidden>
                         <h3 class="fn-battery-title">Battery 4</h3>
                         <label class="fn-label" for="fnBattery4">Details</label>
                         <input type="text" id="fnBattery4" name="fnBattery4" class="fn-input">
-                        <label class="fn-label" for="fnBattery4Time">Time</label>
+                        <label class="fn-label" for="fnBattery4Rp1">RP 1</label>
+                        <input type="text" id="fnBattery4Rp1" name="fnBattery4Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery4Rp2">RP 2</label>
+                        <input type="text" id="fnBattery4Rp2" name="fnBattery4Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery4Launch">Launch time</label>
                         <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery4Time" name="fnBattery4Time" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now" data-time-for="fnBattery4Time" title="Set time to now (local)">Time now</button>
+                            <input type="time" id="fnBattery4Launch" name="fnBattery4Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery4Launch" title="Set launch time to now (local)">Launch now</button>
                         </div>
+                        <label class="fn-label" for="fnBattery4Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery4Land" name="fnBattery4Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery4Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery4FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery4FlightTime" name="fnBattery4FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery4Alos">ALoS comments</label>
+                        <textarea id="fnBattery4Alos" name="fnBattery4Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
+                    </div>
+                    <div id="fnBatteryCard5" class="fn-battery-card fn-battery-card--extra" hidden>
+                        <h3 class="fn-battery-title">Battery 5</h3>
+                        <label class="fn-label" for="fnBattery5">Details</label>
+                        <input type="text" id="fnBattery5" name="fnBattery5" class="fn-input">
+                        <label class="fn-label" for="fnBattery5Rp1">RP 1</label>
+                        <input type="text" id="fnBattery5Rp1" name="fnBattery5Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery5Rp2">RP 2</label>
+                        <input type="text" id="fnBattery5Rp2" name="fnBattery5Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery5Launch">Launch time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery5Launch" name="fnBattery5Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery5Launch" title="Set launch time to now (local)">Launch now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery5Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery5Land" name="fnBattery5Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery5Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery5FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery5FlightTime" name="fnBattery5FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery5Alos">ALoS comments</label>
+                        <textarea id="fnBattery5Alos" name="fnBattery5Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
+                    </div>
+                    <div id="fnBatteryCard6" class="fn-battery-card fn-battery-card--extra" hidden>
+                        <h3 class="fn-battery-title">Battery 6</h3>
+                        <label class="fn-label" for="fnBattery6">Details</label>
+                        <input type="text" id="fnBattery6" name="fnBattery6" class="fn-input">
+                        <label class="fn-label" for="fnBattery6Rp1">RP 1</label>
+                        <input type="text" id="fnBattery6Rp1" name="fnBattery6Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery6Rp2">RP 2</label>
+                        <input type="text" id="fnBattery6Rp2" name="fnBattery6Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery6Launch">Launch time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery6Launch" name="fnBattery6Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery6Launch" title="Set launch time to now (local)">Launch now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery6Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery6Land" name="fnBattery6Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery6Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery6FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery6FlightTime" name="fnBattery6FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery6Alos">ALoS comments</label>
+                        <textarea id="fnBattery6Alos" name="fnBattery6Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
+                    </div>
+                    <div id="fnBatteryCard7" class="fn-battery-card fn-battery-card--extra" hidden>
+                        <h3 class="fn-battery-title">Battery 7</h3>
+                        <label class="fn-label" for="fnBattery7">Details</label>
+                        <input type="text" id="fnBattery7" name="fnBattery7" class="fn-input">
+                        <label class="fn-label" for="fnBattery7Rp1">RP 1</label>
+                        <input type="text" id="fnBattery7Rp1" name="fnBattery7Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery7Rp2">RP 2</label>
+                        <input type="text" id="fnBattery7Rp2" name="fnBattery7Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery7Launch">Launch time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery7Launch" name="fnBattery7Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery7Launch" title="Set launch time to now (local)">Launch now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery7Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery7Land" name="fnBattery7Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery7Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery7FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery7FlightTime" name="fnBattery7FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery7Alos">ALoS comments</label>
+                        <textarea id="fnBattery7Alos" name="fnBattery7Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
+                    </div>
+                    <div id="fnBatteryCard8" class="fn-battery-card fn-battery-card--extra" hidden>
+                        <h3 class="fn-battery-title">Battery 8</h3>
+                        <label class="fn-label" for="fnBattery8">Details</label>
+                        <input type="text" id="fnBattery8" name="fnBattery8" class="fn-input">
+                        <label class="fn-label" for="fnBattery8Rp1">RP 1</label>
+                        <input type="text" id="fnBattery8Rp1" name="fnBattery8Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery8Rp2">RP 2</label>
+                        <input type="text" id="fnBattery8Rp2" name="fnBattery8Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery8Launch">Launch time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery8Launch" name="fnBattery8Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery8Launch" title="Set launch time to now (local)">Launch now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery8Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery8Land" name="fnBattery8Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery8Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery8FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery8FlightTime" name="fnBattery8FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery8Alos">ALoS comments</label>
+                        <textarea id="fnBattery8Alos" name="fnBattery8Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
+                    </div>
+                    <div id="fnBatteryCard9" class="fn-battery-card fn-battery-card--extra" hidden>
+                        <h3 class="fn-battery-title">Battery 9</h3>
+                        <label class="fn-label" for="fnBattery9">Details</label>
+                        <input type="text" id="fnBattery9" name="fnBattery9" class="fn-input">
+                        <label class="fn-label" for="fnBattery9Rp1">RP 1</label>
+                        <input type="text" id="fnBattery9Rp1" name="fnBattery9Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery9Rp2">RP 2</label>
+                        <input type="text" id="fnBattery9Rp2" name="fnBattery9Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery9Launch">Launch time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery9Launch" name="fnBattery9Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery9Launch" title="Set launch time to now (local)">Launch now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery9Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery9Land" name="fnBattery9Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery9Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery9FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery9FlightTime" name="fnBattery9FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery9Alos">ALoS comments</label>
+                        <textarea id="fnBattery9Alos" name="fnBattery9Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
+                    </div>
+                    <div id="fnBatteryCard10" class="fn-battery-card fn-battery-card--extra" hidden>
+                        <h3 class="fn-battery-title">Battery 10</h3>
+                        <label class="fn-label" for="fnBattery10">Details</label>
+                        <input type="text" id="fnBattery10" name="fnBattery10" class="fn-input">
+                        <label class="fn-label" for="fnBattery10Rp1">RP 1</label>
+                        <input type="text" id="fnBattery10Rp1" name="fnBattery10Rp1" class="fn-input">
+                        <label class="fn-label" for="fnBattery10Rp2">RP 2</label>
+                        <input type="text" id="fnBattery10Rp2" name="fnBattery10Rp2" class="fn-input">
+                        <label class="fn-label" for="fnBattery10Launch">Launch time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery10Launch" name="fnBattery10Launch" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery10Launch" title="Set launch time to now (local)">Launch now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery10Land">Landing time</label>
+                        <div class="fn-battery-time-row">
+                            <input type="time" id="fnBattery10Land" name="fnBattery10Land" class="fn-input fn-battery-time-input">
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery10Land" title="Set landing time to now (local)">Land now</button>
+                        </div>
+                        <label class="fn-label" for="fnBattery10FlightTime">Flight time</label>
+                        <input type="text" id="fnBattery10FlightTime" name="fnBattery10FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
+                        <label class="fn-label" for="fnBattery10Alos">ALoS comments</label>
+                        <textarea id="fnBattery10Alos" name="fnBattery10Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Line-of-sight and site risk (red / amber / green); mitigations…"></textarea>
                     </div>
                 </div>
-            </section>
-
-            <section class="fn-section" aria-labelledby="fn-alos-rag-heading">
-                <h2 id="fn-alos-rag-heading" class="fn-section-title">ALoS RAG Notes</h2>
-                <textarea id="fnAlosRagNotes" name="fnAlosRagNotes" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Line-of-sight and site risk (red / amber / green); note mitigations for stronger wind at height, visibility, and sensor contrast…" aria-labelledby="fn-alos-rag-heading"></textarea>
+                <div class="fn-add-battery-wrap">
+                    <button type="button" class="fn-btn fn-btn-secondary" id="fnAddBatteryBtn"
+                        title="Show fields for the next battery (up to 10)">Add Battery 2</button>
+                </div>
             </section>
 
             <section class="fn-section" aria-labelledby="fn-weather-heading">

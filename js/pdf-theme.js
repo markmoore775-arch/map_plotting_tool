@@ -1,5 +1,5 @@
 /* ============================================
-   PDF THEME — Shared branded PDF generation
+   PDF THEME: Shared branded PDF generation
    Used by all PDF export functions
    ============================================ */
 
@@ -115,7 +115,7 @@ const PdfTheme = (() => {
         return null;
     }
 
-    /** A4 portrait (mm) — all PDF reports use this. */
+    /** A4 portrait (mm); all PDF reports use this. */
     var PAGE_W = 210;
     var PAGE_H = 297;
 

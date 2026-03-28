@@ -425,6 +425,10 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     gap: 14px;
 }
 
+.fn-add-battery-wrap {
+    margin-top: 14px;
+}
+
 .fn-battery-card {
     background: var(--input-bg, #33334a);
     border: 1px solid var(--sidebar-border);
@@ -439,22 +443,66 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     color: var(--primary, #5b8def);
 }
 
+.fn-battery-card > .fn-label {
+    margin-top: 10px;
+}
+
+.fn-battery-card > .fn-battery-title + .fn-label {
+    margin-top: 0;
+}
+
+.fn-battery-flight-readonly {
+    cursor: default;
+    opacity: 0.92;
+}
+
+.fn-textarea-battery-alos {
+    min-height: 3.5rem;
+    resize: vertical;
+}
+
+/* Fixed height so native time control matches stamp button (stretch + mixed padding looked uneven). */
 .fn-battery-time-row {
+    --fn-battery-time-h: 42px;
+    /* Wide enough for “Launch now”; keeps Land/Launch rows aligned */
+    --fn-battery-stamp-btn-w: 9rem;
     display: flex;
-    align-items: stretch;
+    align-items: center;
     gap: 8px;
 }
 
-.fn-battery-time-input {
-    flex: 1;
+.fn-battery-time-row .fn-battery-time-input {
+    flex: 1 1 0;
     min-width: 0;
+    width: 0;
+    height: var(--fn-battery-time-h);
+    min-height: var(--fn-battery-time-h);
+    max-height: var(--fn-battery-time-h);
+    box-sizing: border-box;
+    padding: 0 10px;
+    margin: 0;
+}
+
+.fn-battery-time-row .fn-battery-time-input::-webkit-calendar-picker-indicator {
+    margin: 0 0 0 4px;
+    padding: 0;
+    opacity: 0.85;
 }
 
 .fn-btn-battery-time-now {
-    flex-shrink: 0;
-    align-self: stretch;
-    padding: 8px 10px;
+    flex: 0 0 var(--fn-battery-stamp-btn-w);
+    width: var(--fn-battery-stamp-btn-w);
+    min-width: var(--fn-battery-stamp-btn-w);
+    max-width: var(--fn-battery-stamp-btn-w);
+    height: var(--fn-battery-time-h);
+    min-height: var(--fn-battery-time-h);
+    max-height: var(--fn-battery-time-h);
+    padding: 0 8px;
     margin: 0;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     white-space: nowrap;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: var(--radius-sm, 4px);
@@ -808,6 +856,11 @@ body.flight-notes-mode.fn-light-theme .fn-gps-status {
 body.flight-notes-mode.fn-light-theme .fn-battery-card {
     background: #f5f6f8;
     border-color: #d8d9dc;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-battery-flight-readonly {
+    background: #ebecef;
+    color: #333;
 }
 
 body.flight-notes-mode.fn-light-theme .fn-btn-battery-time-now {
