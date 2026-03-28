@@ -3,27 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {ArrowLeft} from 'lucide-react';
 import DroneGame from './components/DroneGame';
 
 export default function App() {
   return (
     <>
-      <header className="pointer-events-none fixed left-0 right-0 top-0 z-[100]">
-        <nav
-          className="pointer-events-auto flex items-center border-b border-slate-800/60 bg-slate-950/90 px-3 py-2 backdrop-blur-sm sm:px-4"
-          aria-label="AirPlot home"
-        >
-          <a
-            href="../index.html"
-            className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800 hover:text-white"
-          >
-            <span aria-hidden="true" className="text-slate-400">
-              ←
-            </span>
-            Welcome
-          </a>
-        </nav>
-      </header>
+      <a
+        href="../training.html"
+        className="fixed z-[100] inline-flex items-center gap-2 px-3 py-2 sm:px-4 rounded-full bg-black/55 text-slate-100 text-xs sm:text-sm font-semibold border border-white/15 hover:bg-black/75 pointer-events-auto backdrop-blur-sm max-w-[calc(100vw-1.5rem)]"
+        style={{
+          top: 'max(0.75rem, env(safe-area-inset-top))',
+          right: 'max(0.75rem, env(safe-area-inset-right))',
+        }}
+      >
+        <ArrowLeft size={18} className="shrink-0" />
+        Training menu
+      </a>
       <DroneGame />
     </>
   );

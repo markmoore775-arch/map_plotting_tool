@@ -1,0 +1,5 @@
+{
+  "name": "Drone Dash",
+  "description": "A side-scrolling drone survival game with simple hold-to-fly controls, inspired by Geometry Dash.",
+  "requestFramePermissions": []
+}

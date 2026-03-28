@@ -2,6 +2,7 @@ node_modules/
 
 # Vertical Drone Run (Vite); root node_modules/ already ignores nested installs
 vertical-drone-run/node_modules/
+vertical-drone-dash/node_modules/
 
 # Test screenshots (keep assets/ for app images)
 *.png

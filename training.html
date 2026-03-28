@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Training | AirPlot</title>
+    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body.training-menu .fp-welcome-bar {
+            z-index: 10001;
+        }
+        .intro-training-quip {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.82);
+            margin: -16px 0 28px;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body class="training-menu">
+    <nav class="fp-welcome-bar" aria-label="AirPlot home">
+        <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen" aria-label="Return to AirPlot welcome screen">
+            <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+            <span class="fp-welcome-title">AirPlot</span>
+            <span class="fp-welcome-cta">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                Welcome
+            </span>
+        </a>
+    </nav>
+
+    <div class="intro-overlay splash-done">
+        <div class="intro-content">
+            <div class="intro-logo-wrap">
+                <img src="assets/airplot-logo.png" alt="AirPlot" class="intro-logo">
+            </div>
+            <p class="intro-tagline">Training</p>
+            <p class="intro-description">
+                Practice with two arcade-style games: vertical flight in Drone Run, or side-scrolling survival in Drone Dash.
+            </p>
+            <p class="intro-training-quip">The CAA does not recognise your high score.</p>
+            <div class="intro-cta-stack">
+                <a href="drone-run/" class="intro-cta intro-cta-secondary">
+                    Drone Run
+                </a>
+                <a href="drone-dash/" class="intro-cta intro-cta-secondary">
+                    Drone Dash
+                </a>
+            </div>
+            <p class="intro-disclaimer" role="note">
+                For training and entertainment. Does not add to flight hours or currency.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
