@@ -22,11 +22,14 @@
         '<p><strong>Not for separation.</strong> Situational awareness only.</p>',
         '<p><strong>Steps</strong></p>',
         '<ol class="airspace-help-list">',
-        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. Each marker shows a <strong>type/category silhouette</strong> (ADS-B Radar icon set) tinted <strong>red by altitude band</strong> with <strong>altitude (ft)</strong> under the icon—tap the marker or label for full detail and the highlighted path.</li>',
+        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. Each marker shows a <strong>type/category silhouette</strong> (ADS-B Radar icon set) tinted <strong>red by altitude band</strong> with <strong>altitude (ft)</strong> under the icon—tap the marker or label for full detail and the highlighted path. Known <strong>NPAS</strong> police helicopter registrations use the <strong>rotorcraft</strong> icon and an <strong>NPAS</strong> altitude label.</li>',
         '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session—not full flight history (see ADSB.lol docs for archives).</li>',
         '</ol>',
         '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
     ].join('');
+
+    const DEFAULT_MAP_CENTER = [51.5074, -0.1278];
+    const GEO_INITIAL_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
     let map;
     let trafficLayer;
@@ -195,6 +198,47 @@
         return false;
     }
 
+    /** UK NPAS police helicopter registrations (ADS-B field <code>r</code>); force rotor icon + map label. */
+    function normalizeAircraftRegistration(r) {
+        if (r == null || r === '') return '';
+        return String(r)
+            .trim()
+            .toUpperCase()
+            .replace(/\s+/g, '');
+    }
+
+    const NPAS_REGISTRATION_SET = (function () {
+        const list = [
+            'G-POLA',
+            'G-POLB',
+            'G-POLC',
+            'G-POLD',
+            'G-POLF',
+            'G-POLG',
+            'G-POLH',
+            'G-POLJ',
+            'G-POLU',
+            'G-POLV',
+            'G-POLW',
+            'G-POLX',
+            'G-POL'
+        ];
+        const o = Object.create(null);
+        for (let i = 0; i < list.length; i++) {
+            o[normalizeAircraftRegistration(list[i])] = true;
+        }
+        return o;
+    })();
+
+    function isNpasPoliceHelicopter(a) {
+        const reg = normalizeAircraftRegistration(a && a.r);
+        return reg !== '' && !!NPAS_REGISTRATION_SET[reg];
+    }
+
+    function showHelicopterMarker(a) {
+        return isHelicopter(a) || isNpasPoliceHelicopter(a);
+    }
+
     /**
      * Aircraft mask SVGs: assets/aircraft-icons/ (ADS-B Radar free set; see ATTRIBUTION.txt there).
      * Colour = altitude tier via currentColor (CSS mask on .airspace-plane-rot).
@@ -330,7 +374,7 @@
 
     /** Relative path (from site root) to mask SVG for this aircraft. */
     function aircraftMaskRelPath(a) {
-        if (isHelicopter(a)) {
+        if (showHelicopterMarker(a)) {
             return AIRCRAFT_ICON_DIR + 'a7.svg';
         }
         const typeFile = icaoTypeToIconFile(a.t);
@@ -398,7 +442,7 @@
     function trafficAircraftDivIcon(a, aglMeters) {
         const tier = altitudeIconTier(a);
         const trk = a.track != null ? a.track : 0;
-        const heli = isHelicopter(a);
+        const heli = showHelicopterMarker(a);
         const hex = normalizeHex(a.hex);
         const altText = formatAltitudeLabel(a, aglMeters);
         const w = estimateAirspaceIconWidth(altText);
@@ -453,7 +497,10 @@
             getMapboxToken() &&
             aglEnabled
         ) {
-            return base + ' · ~' + Math.round(Number(aglMeters)) + 'm AGL';
+            base = base + ' · ~' + Math.round(Number(aglMeters)) + 'm AGL';
+        }
+        if (isNpasPoliceHelicopter(a)) {
+            return 'NPAS ' + base;
         }
         return base;
     }
@@ -501,7 +548,9 @@
         trailNote +=
             '. Full history is not in the public API—this path is built while the page is open.</p>';
 
+        const npas = isNpasPoliceHelicopter(a);
         const rows = [
+            npas ? ['Service', 'NPAS (police helicopter)'] : null,
             ['Altitude', alt + (altg ? ' · ' + altg : '')],
             [
                 'AGL (approx.)',
@@ -530,7 +579,7 @@
 
         let table = '<table class="airspace-popup-table">';
         for (let r = 0; r < rows.length; r++) {
-            if (rows[r][1] == null) {
+            if (rows[r] == null || rows[r][1] == null) {
                 continue;
             }
             if (
@@ -936,9 +985,25 @@
         }
     }
 
+    function tryInitialViewFromGeolocation() {
+        if (!navigator.geolocation || !map) return;
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                if (!map || !isFinite(lat) || !isFinite(lng)) return;
+                map.setView([lat, lng], map.getZoom(), { animate: false });
+            },
+            function () {
+                /* keep DEFAULT_MAP_CENTER */
+            },
+            GEO_INITIAL_OPTIONS
+        );
+    }
+
     function initMap() {
         map = L.map('map', {
-            center: [51.5074, -0.1278],
+            center: DEFAULT_MAP_CENTER,
             zoom: 13,
             zoomControl: true
         });
@@ -1021,6 +1086,8 @@
                 fetchTraffic();
             }
         });
+
+        tryInitialViewFromGeolocation();
     }
 
     function wireUi() {

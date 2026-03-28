@@ -141,6 +141,31 @@ body.drone-run-mode {
     pointer-events: auto;
 }
 
+.dr-intro-overlay {
+    z-index: 20;
+    background: rgba(5, 8, 14, 0.82);
+}
+
+.dr-intro-panel {
+    text-align: center;
+}
+
+.dr-intro-panel h1 {
+    margin-bottom: 14px;
+}
+
+.dr-intro-lead {
+    margin: 0 0 22px;
+    font-size: 1.05rem;
+    font-weight: 500;
+    line-height: 1.55;
+    color: var(--dr-text);
+}
+
+.dr-intro-actions {
+    justify-content: center;
+}
+
 .dr-overlay[hidden] {
     display: none;
 }
@@ -259,8 +284,10 @@ body.drone-run-mode {
     color: var(--dr-accent);
 }
 
+.dr-canvas-host:has(#drOverlayIntro:not([hidden])) .dr-hud,
 .dr-canvas-host:has(#drOverlayStart:not([hidden])) .dr-hud,
 .dr-canvas-host:has(#drOverlayGameOver:not([hidden])) .dr-hud,
+.dr-canvas-host:has(#drOverlayIntro:not([hidden])) .dr-mobile-fire,
 .dr-canvas-host:has(#drOverlayStart:not([hidden])) .dr-mobile-fire,
 .dr-canvas-host:has(#drOverlayGameOver:not([hidden])) .dr-mobile-fire {
     opacity: 0;

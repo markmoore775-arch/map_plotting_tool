@@ -17,8 +17,11 @@
 
     const canvas = document.getElementById('gameCanvas');
     const host = document.querySelector('.dr-canvas-host');
+    const overlayIntro = document.getElementById('drOverlayIntro');
     const overlayStart = document.getElementById('drOverlayStart');
     const overlayGameOver = document.getElementById('drOverlayGameOver');
+    const btnInstructionsContinue = document.getElementById('drBtnInstructionsContinue');
+    const btnBackToInstructions = document.getElementById('drBtnBackToInstructions');
     const btnStart = document.getElementById('drBtnStart');
     const btnRestart = document.getElementById('drBtnRestart');
     const elScoreFinal = document.getElementById('drScoreFinal');
@@ -866,6 +869,7 @@
     }
 
     function startGame() {
+        if (overlayIntro) overlayIntro.hidden = true;
         overlayStart.hidden = true;
         overlayGameOver.hidden = true;
         resetGame();
@@ -966,6 +970,35 @@
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+
+    function showPrePlayModal() {
+        if (overlayStart) overlayStart.hidden = true;
+        if (overlayIntro) overlayIntro.hidden = false;
+        if (btnStart) btnStart.focus();
+    }
+
+    function showInstructionsModal() {
+        if (overlayIntro) overlayIntro.hidden = true;
+        if (overlayStart) overlayStart.hidden = false;
+        if (btnInstructionsContinue) btnInstructionsContinue.focus();
+    }
+
+    if (btnInstructionsContinue) {
+        btnInstructionsContinue.addEventListener('click', showPrePlayModal);
+    }
+    if (btnBackToInstructions) {
+        btnBackToInstructions.addEventListener('click', showInstructionsModal);
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (overlayIntro && !overlayIntro.hidden) {
+            e.preventDefault();
+            showInstructionsModal();
+        }
+    });
+
+    if (btnInstructionsContinue) btnInstructionsContinue.focus();
 
     if (btnStart) btnStart.addEventListener('click', () => startGame());
     if (btnRestart) btnRestart.addEventListener('click', () => startGame());

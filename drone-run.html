@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/drone-run.css?v=3">
+    <link rel="stylesheet" href="css/drone-run.css?v=4">
 </head>
 <body class="drone-run-mode">
     <header class="dr-top-bar">
@@ -53,22 +53,33 @@
         <div class="dr-overlay" id="drOverlayStart" role="dialog" aria-modal="true" aria-labelledby="drStartTitle">
             <div class="dr-panel">
                 <h1 id="drStartTitle">Drone Run</h1>
-                <p class="dr-sub">Top-down arcade run: your craft uses the <strong>AirPlot</strong> logo. Dodge <strong>Airspace</strong>-style plane silhouettes (blue / teal / green / amber / purple—obstacles are never red). Destroy the <strong>red</strong> emblem targets. For fun only — not flight training.</p>
+                <p class="dr-sub">Top-down arcade run: your craft uses the <strong>AirPlot</strong> logo. Dodge <strong>Airspace</strong>-style plane silhouettes (blue / teal / green / amber / purple; obstacles are never red). Destroy the <strong>red</strong> emblem targets. For fun only, not flight training.</p>
                 <ul class="dr-instructions">
-                    <li><strong>Move</strong> — WASD or arrow keys; drag on touch.</li>
-                    <li><strong>Shoot</strong> — Space (desktop); on phones, auto-fire plus the Fire button.</li>
-                    <li><strong>Lives</strong> — Three hits; score from distance and destroyed targets.</li>
-                    <li><strong>Performance</strong> — Turn on if the game stutters (lower resolution, no map tiles, simpler effects).</li>
+                    <li><strong>Move</strong>: WASD or arrow keys; drag on touch.</li>
+                    <li><strong>Shoot</strong>: Space (desktop); on phones, auto-fire plus the Fire button.</li>
+                    <li><strong>Lives</strong>: Three hits; score from distance and destroyed targets.</li>
+                    <li><strong>Performance</strong>: Turn on if the game stutters (lower resolution, no map tiles, simpler effects).</li>
                 </ul>
                 <label class="dr-perf-row">
                     <input type="checkbox" id="drPerfToggle" />
                     <span>Performance mode (smoother on slower devices)</span>
                 </label>
                 <div class="dr-actions">
-                    <button type="button" class="dr-btn dr-btn-primary" id="drBtnStart">Start</button>
+                    <button type="button" class="dr-btn dr-btn-primary" id="drBtnInstructionsContinue">Continue</button>
                     <a href="index.html" class="dr-btn dr-btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;">Back to welcome</a>
                 </div>
                 <p class="dr-disclaimer">High score is stored only in this browser.</p>
+            </div>
+        </div>
+
+        <div class="dr-overlay dr-intro-overlay" id="drOverlayIntro" hidden role="dialog" aria-modal="true" aria-labelledby="drIntroTitle">
+            <div class="dr-panel dr-intro-panel">
+                <h1 id="drIntroTitle">Drone Run</h1>
+                <p class="dr-intro-lead">Dodge the planes. Shoot the drones. How long can you survive?</p>
+                <div class="dr-actions dr-intro-actions">
+                    <button type="button" class="dr-btn dr-btn-primary" id="drBtnStart">Start</button>
+                    <button type="button" class="dr-btn dr-btn-ghost" id="drBtnBackToInstructions">Instructions</button>
+                </div>
             </div>
         </div>
 
@@ -88,6 +99,6 @@
         </div>
     </div>
 
-    <script src="js/drone-run.js?v=6"></script>
+    <script src="js/drone-run.js?v=8"></script>
 </body>
 </html>

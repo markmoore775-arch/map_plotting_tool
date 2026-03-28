@@ -81,6 +81,9 @@
 
     const GUST_120M_MULTIPLIER = 1.3;
 
+    const DEFAULT_MAP_CENTER = [51.5074, -0.1278];
+    const GEO_INITIAL_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+
     let map;
     let selectedPoint = null;
     let selectedMarker = null;
@@ -225,10 +228,26 @@
         };
     }
 
+    function tryInitialViewFromGeolocation() {
+        if (!navigator.geolocation || !map) return;
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                if (!map || !isFinite(lat) || !isFinite(lng)) return;
+                map.setView([lat, lng], map.getZoom(), { animate: false });
+            },
+            function () {
+                /* keep DEFAULT_MAP_CENTER */
+            },
+            GEO_INITIAL_OPTIONS
+        );
+    }
+
     // ---- Map init ----
     function initMap() {
         map = L.map('map', {
-            center: [51.5074, -0.1278],
+            center: DEFAULT_MAP_CENTER,
             zoom: 11,
             zoomControl: true
         });
@@ -283,6 +302,8 @@
             }
         });
         new InfoControl({ position: 'topleft' }).addTo(map);
+
+        tryInitialViewFromGeolocation();
     }
 
     // ---- Point selection ----
