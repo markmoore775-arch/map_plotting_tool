@@ -15,6 +15,10 @@ export default {
       return handleAdsbApi(request);
     }
 
+    if (path === '/api/ogn') {
+      return handleOgnApi(request);
+    }
+
     // Temporary test mode: disable all password protection.
     if (path === '/unlock' || path === '/logout') {
       return new Response(null, {
@@ -124,6 +128,66 @@ async function handleAdsbApi(request) {
     status: 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store'
+    }
+  });
+}
+
+async function handleOgnApi(request) {
+  if (request.method.toUpperCase() !== 'GET') {
+    return jsonResponse({ error: 'Method not allowed' }, 405);
+  }
+
+  const url = new URL(request.url);
+  const a = String(url.searchParams.get('a') || '0');
+  const b = Number(url.searchParams.get('b'));
+  const c = Number(url.searchParams.get('c'));
+  const d = Number(url.searchParams.get('d'));
+  const e = Number(url.searchParams.get('e'));
+  const z = String(url.searchParams.get('z') || '0');
+
+  if (a !== '0' && a !== '1') {
+    return jsonResponse({ error: 'Invalid a (use 0 or 1)' }, 400);
+  }
+  if (!Number.isFinite(b) || b < -90 || b > 90) {
+    return jsonResponse({ error: 'Invalid b (north lat)' }, 400);
+  }
+  if (!Number.isFinite(c) || c < -90 || c > 90) {
+    return jsonResponse({ error: 'Invalid c (south lat)' }, 400);
+  }
+  if (!Number.isFinite(d) || d < -180 || d > 180) {
+    return jsonResponse({ error: 'Invalid d (east lon)' }, 400);
+  }
+  if (!Number.isFinite(e) || e < -180 || e > 180) {
+    return jsonResponse({ error: 'Invalid e (west lon)' }, 400);
+  }
+
+  const qs = new URLSearchParams({
+    a,
+    b: b.toFixed(6),
+    c: c.toFixed(6),
+    d: d.toFixed(6),
+    e: e.toFixed(6),
+    z
+  });
+  const upstreamUrl = 'https://live.glidernet.org/lxml.php?' + qs.toString();
+
+  const upstream = await fetch(upstreamUrl, {
+    headers: { Accept: 'application/xml, text/xml, */*' }
+  });
+
+  if (!upstream.ok) {
+    return jsonResponse(
+      { error: `Upstream returned HTTP ${upstream.status}` },
+      502
+    );
+  }
+
+  const body = await upstream.text();
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/xml; charset=utf-8',
       'Cache-Control': 'no-store'
     }
   });

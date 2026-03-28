@@ -193,6 +193,17 @@ body.airspace-mode .leaflet-popup-close-button {
     border-left: 3px solid var(--airspace-icon-high, #fca5a5);
 }
 
+/* OGN / glider-class (cyan) — distinct from ADS-B hazard reds */
+.airspace-icon--ogn .airspace-plane-img {
+    filter: brightness(0) saturate(100%) invert(72%) sepia(51%) saturate(536%) hue-rotate(149deg) brightness(95%) contrast(92%);
+}
+
+.airspace-marker-tier--ogn .airspace-marker-alt {
+    color: #a5f3fc;
+    border-color: rgba(34, 211, 238, 0.45);
+    border-left: 3px solid #22d3ee;
+}
+
 body.airspace-mode {
     overflow: hidden;
     --airspace-icon-ground: #b91c1c;

@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/airspace.css?v=22">
+    <link rel="stylesheet" href="css/airspace.css?v=23">
 </head>
 <body class="airspace-mode">
     <div id="map"></div>
@@ -54,6 +54,12 @@
                         Show traffic
                     </label>
                 </div>
+                <div class="airspace-toolbar-group">
+                    <label class="airspace-toolbar-label" for="airspaceOgnToggle">
+                        <input type="checkbox" id="airspaceOgnToggle" />
+                        OGN (FLARM-class)
+                    </label>
+                </div>
                 <div class="airspace-toolbar-group" id="airspaceAglWrap">
                     <label class="airspace-toolbar-label" for="airspaceAglToggle">
                         <input type="checkbox" id="airspaceAglToggle" />
@@ -82,6 +88,7 @@
     <p class="airspace-attribution">
         Traffic: <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a>
         (<a href="https://adsb.lol/" target="_blank" rel="noopener">adsb.lol</a>; coverage varies).
+        Optional <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> (gliders / FLARM-class; coverage varies).
         Optional AGL: Mapbox Terrain-RGB. Map: layer attribution in the map control.
     </p>
 
@@ -96,6 +103,6 @@
 
     <script src="js/config.js"></script>
     <script src="js/elevation.js"></script>
-    <script src="js/airspace.js?v=27"></script>
+    <script src="js/airspace.js?v=28"></script>
 </body>
 </html>

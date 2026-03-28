@@ -1,5 +1,5 @@
 /* ============================================
-   AIRSPACE PAGE — ADS-B traffic (ADSB.lol API)
+   AIRSPACE PAGE — ADS-B (ADSB.lol) + optional OGN (live.glidernet.org lxml)
    Plane markers, session trail, detail on click; optional AGL (Mapbox terrain)
    Loaded only by airspace.html. Planning UK layers: js/uk-airspace-layers.js (Airspace.init).
    ============================================ */
@@ -9,6 +9,7 @@
 
     const ADSB_LOL_BASE = 'https://api.adsb.lol/v2';
     const AGL_STORAGE_KEY = 'airspaceAglEnabled';
+    const OGN_STORAGE_KEY = 'airspaceOgnEnabled';
     const MIN_POLL_MS = 1100;
     const MOVE_DEBOUNCE_MS = 500;
     const RADIUS_MIN_NM = 5;
@@ -17,7 +18,7 @@
     const MAX_TRAIL_POINTS = 120;
 
     const HELP_HTML = [
-        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v3) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open.</p>',
+        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v3) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> uses the <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> live feed—<strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
         '<p>Optional <strong>approx. AGL</strong> (metres) uses the same <strong>Mapbox Terrain-RGB</strong> source as Planning mode when a token is set in <code>js/config.js</code>. It is <strong>barometric altitude vs terrain model</strong>—not for separation; DEM and altimeter errors apply.</p>',
         '<p><strong>Not for separation.</strong> Situational awareness only.</p>',
         '<p><strong>Steps</strong></p>',
@@ -25,7 +26,7 @@
         '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. Each marker shows a <strong>type/category silhouette</strong> (ADS-B Radar icon set) tinted <strong>red by altitude band</strong> with <strong>altitude (ft)</strong> under the icon—tap the marker or label for full detail and the highlighted path. Known <strong>NPAS</strong> police helicopter registrations use the <strong>rotorcraft</strong> icon and an <strong>NPAS</strong> altitude label.</li>',
         '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session—not full flight history (see ADSB.lol docs for archives).</li>',
         '</ol>',
-        '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
+        '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code> and <code>/api/ogn</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
     ].join('');
 
     const DEFAULT_MAP_CENTER = [51.5074, -0.1278];
@@ -33,6 +34,7 @@
 
     let map;
     let trafficLayer;
+    let ognLayer;
     let trafficEnabled = true;
     let pollTimer = null;
     let moveDebounce = null;
@@ -41,6 +43,8 @@
 
     /** @type {Map<string, number[][]>} */
     const trailByHex = new Map();
+    /** @type {Map<string, number[][]>} */
+    const trailByOgnId = new Map();
     /** @type {L.Polyline|null} */
     let selectedTrailPolyline = null;
 
@@ -48,11 +52,20 @@
     let trafficPopupOpen = false;
     /** ICAO hex of the open popup — preserved across forced re-renders (Refresh). */
     let pinnedHex = null;
+    /** OGN device id (hex) when its popup is open. */
+    let pinnedOgnId = null;
     /** Leaflet fires popupclose when clearing layers; suppress clearing our pinned state during re-render. */
     let suppressTrafficPopupClose = false;
+    let suppressOgnPopupClose = false;
+    /** Which trail is highlighted with the open detail panel. */
+    let selectedTrailKind = null;
+    /** @type {string|null} */
+    let selectedTrailKey = null;
 
     /** Last successful aircraft list (for AGL toggle refresh without a new API call). */
     let lastAircraftList = [];
+    /** @type {Array<{id:string,lat:number,lon:number,altM:number|null,speed:number|null,track:number|null,climb:number|null,callsign:string}>} */
+    let lastOgnList = [];
     /** Incremented each render so stale AGL tile callbacks do not update old markers. */
     let airspaceRenderGen = 0;
 
@@ -65,6 +78,16 @@
     }
 
     let aglEnabled = loadAglPreference();
+
+    function loadOgnPreference() {
+        try {
+            return localStorage.getItem(OGN_STORAGE_KEY) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    let ognEnabled = loadOgnPreference();
 
     function escapeHtml(s) {
         if (s == null || s === '') return '';
@@ -165,6 +188,12 @@
         suppressTrafficPopupClose = true;
         trafficLayer.clearLayers();
         suppressTrafficPopupClose = false;
+    }
+
+    function clearOgnTraffic() {
+        suppressOgnPopupClose = true;
+        ognLayer.clearLayers();
+        suppressOgnPopupClose = false;
     }
 
     function isGroundAircraft(a) {
@@ -454,6 +483,59 @@
         });
     }
 
+    const OGN_MARKER_SVG = AIRCRAFT_ICON_DIR + 'cessna.svg';
+
+    /** Altitude tier for OGN markers (cyan styling); alt in metres MSL. */
+    function ognAltitudeTier(rec) {
+        if (rec.altM == null) return 'low';
+        if (rec.altM < 120) return 'ground';
+        if (rec.altM >= 8000) return 'high';
+        if (rec.altM >= 3000) return 'mid';
+        return 'low';
+    }
+
+    function formatOgnAltitudeLabel(rec, aglMeters) {
+        let base;
+        if (rec.altM != null && !Number.isNaN(Number(rec.altM))) {
+            const ft = Math.round(Number(rec.altM) * 3.280839895);
+            base = ft + "' · " + Math.round(Number(rec.altM)) + 'm';
+        } else {
+            base = '—';
+        }
+        if (
+            aglMeters != null &&
+            !Number.isNaN(Number(aglMeters)) &&
+            getMapboxToken() &&
+            aglEnabled
+        ) {
+            base = base + ' · ~' + Math.round(Number(aglMeters)) + 'm AGL';
+        }
+        return 'OGN ' + base;
+    }
+
+    function ognTrafficDivIcon(rec, aglMeters) {
+        const tier = 'ogn';
+        const trk = rec.track != null && !Number.isNaN(Number(rec.track)) ? Number(rec.track) : 0;
+        const altText = formatOgnAltitudeLabel(rec, aglMeters);
+        const w = estimateAirspaceIconWidth(altText);
+        const idSafe = String(rec.id || '').replace(/[^0-9a-f]/gi, '');
+        return L.divIcon({
+            className: 'airspace-plane-marker airspace-plane-marker--ogn',
+            html: aircraftIconHtml(trk, tier, OGN_MARKER_SVG, altText, idSafe || 'ogn'),
+            iconSize: [w, AIRSPACE_MARKER_ICON_H],
+            iconAnchor: [Math.round(w / 2), AIRSPACE_MARKER_ANCHOR_Y]
+        });
+    }
+
+    function pseudoAircraftFromOgn(rec) {
+        if (!rec || rec.altM == null) return null;
+        return {
+            lat: rec.lat,
+            lon: rec.lon,
+            alt_baro: Number(rec.altM) * 3.280839895
+        };
+    }
+
     function recordTrailsFromList(ac) {
         if (!ac || !ac.length) return;
         for (let i = 0; i < ac.length; i++) {
@@ -471,6 +553,27 @@
                 arr = arr.slice(-MAX_TRAIL_POINTS);
             }
             trailByHex.set(hex, arr);
+        }
+    }
+
+    function recordOgnTrailsFromList(list) {
+        if (!list || !list.length) return;
+        for (let i = 0; i < list.length; i++) {
+            const rec = list[i];
+            if (!rec || !rec.id) continue;
+            const id = rec.id;
+            const lat = rec.lat;
+            const lon = rec.lon;
+            if (!isFinite(lat) || !isFinite(lon)) continue;
+            let arr = trailByOgnId.get(id);
+            if (!arr) arr = [];
+            const last = arr[arr.length - 1];
+            if (last && last[0] === lat && last[1] === lon) continue;
+            arr.push([lat, lon]);
+            if (arr.length > MAX_TRAIL_POINTS) {
+                arr = arr.slice(-MAX_TRAIL_POINTS);
+            }
+            trailByOgnId.set(id, arr);
         }
     }
 
@@ -613,19 +716,90 @@
         );
     }
 
+    function buildOgnPopupHtml(rec, trailPts, aglMeters) {
+        const id = rec && rec.id ? String(rec.id) : '';
+        const cs = rec && rec.callsign ? String(rec.callsign) : '';
+        const altM = rec && rec.altM != null ? Math.round(Number(rec.altM)) + ' m MSL' : '—';
+        const altFt =
+            rec && rec.altM != null ? Math.round(Number(rec.altM) * 3.280839895) + ' ft' : null;
+        const trk = rec && rec.track != null ? fmtNum(rec.track, '°') : '—';
+        const spd = rec && rec.speed != null ? String(rec.speed) : '—';
+        const clb = rec && rec.climb != null ? String(rec.climb) : '—';
+        const tlen = trailPts ? trailPts.length : 0;
+        let trailNote =
+            '<p class="airspace-popup-muted">Trail: <strong>' +
+            tlen +
+            '</strong> points in this session';
+        if (tlen >= 2) {
+            trailNote += ' (~' + Math.round((tlen - 1) * (MIN_POLL_MS / 1000)) + ' s of samples)';
+        }
+        trailNote +=
+            '. Open Glider Network — not for separation. Speed/climb are feed-specific units where shown.</p>';
+
+        const rows = [
+            ['Source', 'Open Glider Network (live.glidernet.org)'],
+            ['Device ID', id ? escapeHtml(id) : '—'],
+            ['Callsign / name', cs ? escapeHtml(cs) : '—'],
+            ['Altitude', altFt ? altM + ' · ' + altFt : altM],
+            [
+                'AGL (approx.)',
+                aglMeters != null && !Number.isNaN(Number(aglMeters))
+                    ? '~' + Math.round(Number(aglMeters)) + ' m (terrain vs MSL)'
+                    : null
+            ],
+            ['Track', trk],
+            ['Speed (raw)', spd],
+            ['Climb (raw)', clb]
+        ];
+
+        let table = '<table class="airspace-popup-table">';
+        for (let r = 0; r < rows.length; r++) {
+            if (rows[r] == null || rows[r][1] == null) continue;
+            table +=
+                '<tr><th>' +
+                escapeHtml(rows[r][0]) +
+                '</th><td>' +
+                rows[r][1] +
+                '</td></tr>';
+        }
+        table += '</table>';
+
+        return (
+            '<div class="airspace-popup-inner">' +
+            '<div class="airspace-popup-title">' +
+            escapeHtml(cs || id || 'OGN target') +
+            '</div>' +
+            '<div class="airspace-popup-sub">OGN · ' +
+            escapeHtml(id) +
+            '</div>' +
+            trailNote +
+            table +
+            '</div>'
+        );
+    }
+
     function clearSelectedTrail() {
         if (selectedTrailPolyline && map) {
             map.removeLayer(selectedTrailPolyline);
             selectedTrailPolyline = null;
         }
+        selectedTrailKind = null;
+        selectedTrailKey = null;
     }
 
-    function showSelectedTrail(hex) {
+    /**
+     * @param {'adsb'|'ogn'} kind
+     * @param {string} key - ICAO hex (ADS-B) or OGN device id
+     */
+    function showSelectedTrail(kind, key) {
         clearSelectedTrail();
-        const pts = trailByHex.get(hex);
+        const pts = kind === 'ogn' ? trailByOgnId.get(key) : trailByHex.get(key);
         if (!pts || pts.length < 2) return;
+        selectedTrailKind = kind;
+        selectedTrailKey = key;
+        const color = kind === 'ogn' ? '#22d3ee' : '#fb7185';
         selectedTrailPolyline = L.polyline(pts, {
-            color: '#fb7185',
+            color: color,
             weight: 4,
             opacity: 0.95,
             lineJoin: 'round',
@@ -731,6 +905,175 @@
         return fetchJsonWithProxy(upstream, qs);
     }
 
+    const OGN_LIVE_LXML = 'https://live.glidernet.org/lxml.php';
+
+    function buildOgnQueryString(bounds) {
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        return new URLSearchParams({
+            a: '0',
+            b: ne.lat.toFixed(6),
+            c: sw.lat.toFixed(6),
+            d: ne.lng.toFixed(6),
+            e: sw.lng.toFixed(6),
+            z: '0'
+        }).toString();
+    }
+
+    function buildOgnUpstreamUrl(bounds) {
+        return OGN_LIVE_LXML + '?' + buildOgnQueryString(bounds);
+    }
+
+    /**
+     * Same-origin /api/ogn then CORS relays (XML body as text; allorigins wraps JSON).
+     */
+    function fetchTextWithProxy(upstreamUrl, sameOriginQueryString) {
+        const sameOrigin = '/api/ogn?' + sameOriginQueryString;
+
+        return fetch(sameOrigin, {
+            method: 'GET',
+            credentials: 'omit',
+            cache: 'no-store'
+        })
+            .then(function (res) {
+                if (res.ok) return res.text();
+                throw new Error('same_origin_proxy');
+            })
+            .catch(function () {
+                return fetch(
+                    'https://api.allorigins.win/get?url=' + encodeURIComponent(upstreamUrl),
+                    {
+                        method: 'GET',
+                        credentials: 'omit',
+                        cache: 'no-store'
+                    }
+                )
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('allorigins');
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        if (typeof data.contents === 'string') {
+                            return data.contents;
+                        }
+                        throw new Error('allorigins_parse');
+                    });
+            })
+            .catch(function () {
+                return fetch('https://corsproxy.io/?' + encodeURIComponent(upstreamUrl), {
+                    method: 'GET',
+                    credentials: 'omit',
+                    cache: 'no-store'
+                }).then(function (res) {
+                    if (!res.ok) throw new Error('corsproxy');
+                    return res.text();
+                });
+            })
+            .catch(function () {
+                throw new Error('no_proxy');
+            });
+    }
+
+    function fetchOgnXmlForBounds(bounds) {
+        const qs = buildOgnQueryString(bounds);
+        const upstream = buildOgnUpstreamUrl(bounds);
+        return fetchTextWithProxy(upstream, qs);
+    }
+
+    /**
+     * @param {string|null} attr - OGN <m a="…"/> comma-separated payload
+     * @returns {{id:string,lat:number,lon:number,altM:number|null,speed:number|null,track:number|null,climb:number|null,callsign:string}|null}
+     */
+    function parseOgnMarkerAttribute(attr) {
+        if (attr == null || attr === '') return null;
+        const parts = String(attr).split(',');
+        if (parts.length < 5) return null;
+        const lat = parseFloat(parts[0]);
+        const lon = parseFloat(parts[1]);
+        if (!isFinite(lat) || !isFinite(lon)) return null;
+        let deviceId = '';
+        for (let i = parts.length - 1; i >= 0; i--) {
+            const p = parts[i].trim();
+            if (/^[0-9a-fA-F]{6,8}$/.test(p)) {
+                deviceId = p.toLowerCase();
+                break;
+            }
+        }
+        if (!deviceId) return null;
+
+        let altM = null;
+        for (let i = 2; i < Math.min(parts.length, 14); i++) {
+            const raw = parts[i].trim();
+            if (/^[0-9a-fA-F]{6,8}$/i.test(raw)) continue;
+            if (!/^-?\d+$/.test(raw)) continue;
+            const n = parseInt(raw, 10);
+            if (n >= 0 && n <= 20000) {
+                altM = n;
+                break;
+            }
+        }
+
+        let timeIdx = -1;
+        for (let i = 2; i < parts.length; i++) {
+            if (/^\d{1,2}:\d{2}:\d{2}$/.test(parts[i].trim())) {
+                timeIdx = i;
+                break;
+            }
+        }
+        let speed = null;
+        let track = null;
+        let climb = null;
+        if (timeIdx >= 0 && timeIdx + 3 < parts.length) {
+            const sp = parseInt(parts[timeIdx + 1], 10);
+            if (isFinite(sp)) speed = sp;
+            const tr = parseInt(parts[timeIdx + 2], 10);
+            if (isFinite(tr)) track = tr;
+            const cl = parseFloat(parts[timeIdx + 3]);
+            if (isFinite(cl)) climb = cl;
+        }
+
+        let callsign = '';
+        for (let i = 2; i < parts.length; i++) {
+            const t = parts[i].trim();
+            if (
+                t.length >= 2 &&
+                t.length <= 12 &&
+                /^[A-Za-z0-9][A-Za-z0-9\-]*$/.test(t) &&
+                !/^\d{1,2}:\d{2}/.test(t) &&
+                !/^[0-9a-fA-F]{6,8}$/i.test(t) &&
+                !/^-?\d+$/.test(t)
+            ) {
+                if (t.length > callsign.length) callsign = t;
+            }
+        }
+        if (!callsign) callsign = deviceId;
+
+        return {
+            id: deviceId,
+            lat: lat,
+            lon: lon,
+            altM: altM,
+            speed: speed,
+            track: track,
+            climb: climb,
+            callsign: callsign
+        };
+    }
+
+    function parseOgnXml(xmlText) {
+        if (!xmlText || typeof xmlText !== 'string') return [];
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlText, 'text/xml');
+        if (doc.querySelector('parsererror')) return [];
+        const nodes = doc.querySelectorAll('markers > m');
+        const out = [];
+        for (let i = 0; i < nodes.length; i++) {
+            const rec = parseOgnMarkerAttribute(nodes[i].getAttribute('a'));
+            if (rec) out.push(rec);
+        }
+        return out;
+    }
+
     /**
      * @param {function(number|null):void} cb - metres AGL or null
      */
@@ -782,6 +1125,30 @@
         }
     }
 
+    function scheduleAglForOgnList(list, renderGen) {
+        const token = getMapboxToken();
+        if (!aglEnabled || !token || typeof Elevation === 'undefined' || !ognLayer) {
+            return;
+        }
+        if (!list || !list.length) return;
+        for (let i = 0; i < list.length; i++) {
+            const rec = list[i];
+            if (!rec || !rec.id) continue;
+            const pseudo = pseudoAircraftFromOgn(rec);
+            if (!pseudo) continue;
+            (function (r, idKey) {
+                computeAglMeters(pseudo, function (aglM) {
+                    if (renderGen !== airspaceRenderGen) return;
+                    if (aglM == null) return;
+                    ognLayer.eachLayer(function (layer) {
+                        if (layer._airspaceOgnId !== idKey) return;
+                        layer.setIcon(ognTrafficDivIcon(r, aglM));
+                    });
+                });
+            })(rec, rec.id);
+        }
+    }
+
     function trafficPopupLeafletOptions() {
         const narrow =
             typeof window.matchMedia === 'function' &&
@@ -802,6 +1169,7 @@
             if (pinnedHex) {
                 trafficPopupOpen = false;
                 pinnedHex = null;
+                pinnedOgnId = null;
                 clearSelectedTrail();
             }
             return 0;
@@ -838,7 +1206,8 @@
             m.on('popupopen', function () {
                 trafficPopupOpen = true;
                 pinnedHex = hex;
-                showSelectedTrail(hex);
+                pinnedOgnId = null;
+                showSelectedTrail('adsb', hex);
                 setStatus(
                     '<strong>Details open</strong> · auto-refresh paused until you close.',
                     false
@@ -864,6 +1233,7 @@
                 if (suppressTrafficPopupClose) return;
                 trafficPopupOpen = false;
                 pinnedHex = null;
+                pinnedOgnId = null;
                 clearSelectedTrail();
                 lastFetchAt = 0;
                 fetchTraffic();
@@ -885,6 +1255,99 @@
             if (!found) {
                 trafficPopupOpen = false;
                 pinnedHex = null;
+                pinnedOgnId = null;
+                clearSelectedTrail();
+            }
+        }
+
+        return count;
+    }
+
+    function renderOgnList(list) {
+        const renderGen = ++airspaceRenderGen;
+        clearOgnTraffic();
+        recordOgnTrailsFromList(list);
+        if (!list || !list.length) {
+            if (pinnedOgnId) {
+                trafficPopupOpen = false;
+                pinnedOgnId = null;
+                pinnedHex = null;
+                clearSelectedTrail();
+            }
+            return 0;
+        }
+
+        const bounds = map.getBounds();
+        let count = 0;
+
+        for (let i = 0; i < list.length; i++) {
+            const rec = list[i];
+            if (!rec || !rec.id) continue;
+            if (!bounds.contains(L.latLng(rec.lat, rec.lon))) continue;
+
+            const icon = ognTrafficDivIcon(rec, undefined);
+            const m = L.marker([rec.lat, rec.lon], { icon: icon, interactive: true }).addTo(ognLayer);
+            m._airspaceOgnId = rec.id;
+
+            const popupId = 'airspace-ogn-popup-' + rec.id;
+            const trailPts = trailByOgnId.get(rec.id) || [];
+            m.bindPopup(
+                '<div class="airspace-popup" id="' +
+                    popupId +
+                    '">' +
+                    buildOgnPopupHtml(rec, trailPts) +
+                    '</div>',
+                trafficPopupLeafletOptions()
+            );
+
+            const ognId = rec.id;
+            m.on('popupopen', function () {
+                trafficPopupOpen = true;
+                pinnedOgnId = ognId;
+                pinnedHex = null;
+                showSelectedTrail('ogn', ognId);
+                setStatus(
+                    '<strong>Details open</strong> · auto-refresh paused until you close.',
+                    false
+                );
+                const pseudo = pseudoAircraftFromOgn(rec);
+                if (pseudo) {
+                    computeAglMeters(pseudo, function (agl) {
+                        const el = document.getElementById(popupId);
+                        if (!el || !trafficPopupOpen || pinnedOgnId !== ognId) return;
+                        const tp = trailByOgnId.get(ognId) || [];
+                        el.innerHTML = buildOgnPopupHtml(rec, tp, agl);
+                    });
+                }
+            });
+
+            m.on('popupclose', function () {
+                if (suppressOgnPopupClose) return;
+                trafficPopupOpen = false;
+                pinnedOgnId = null;
+                pinnedHex = null;
+                clearSelectedTrail();
+                lastFetchAt = 0;
+                fetchTraffic();
+            });
+
+            count++;
+        }
+
+        scheduleAglForOgnList(list, renderGen);
+
+        if (pinnedOgnId) {
+            let found = false;
+            ognLayer.eachLayer(function (layer) {
+                if (layer._airspaceOgnId === pinnedOgnId && typeof layer.openPopup === 'function') {
+                    layer.openPopup();
+                    found = true;
+                }
+            });
+            if (!found) {
+                trafficPopupOpen = false;
+                pinnedOgnId = null;
+                pinnedHex = null;
                 clearSelectedTrail();
             }
         }
@@ -893,7 +1356,7 @@
     }
 
     function fetchTraffic(force) {
-        if (!trafficEnabled || !map) return;
+        if ((!trafficEnabled && !ognEnabled) || !map) return;
         if (!force && trafficPopupOpen) return;
 
         const now = Date.now();
@@ -908,53 +1371,156 @@
             return;
         }
 
-        const rNm = radiusNmForMap();
-        if (rNm == null) {
-            setStatus('Could not compute view radius.', true);
-            return;
-        }
+        const wantAdsb = trafficEnabled;
+        const wantOgn = ognEnabled;
 
         const c = b.getCenter();
         const lat = c.lat;
         const lon = c.lng;
 
+        let rNm = null;
+        if (wantAdsb) {
+            rNm = radiusNmForMap();
+            if (rNm == null) {
+                setStatus('Could not compute view radius.', true);
+                return;
+            }
+        }
+
         isFetching = true;
         setStatus('Loading traffic…', false);
 
-        fetchAdsbJson(lat, lon, rNm)
-            .then(function (data) {
+        const pAdsb = wantAdsb
+            ? fetchAdsbJson(lat, lon, rNm)
+                  .then(function (data) {
+                      return { ok: true, data: data };
+                  })
+                  .catch(function (err) {
+                      return { ok: false, error: err };
+                  })
+            : Promise.resolve({ ok: false, skipped: true });
+
+        const pOgn = wantOgn
+            ? fetchOgnXmlForBounds(b)
+                  .then(function (text) {
+                      return { ok: true, text: text };
+                  })
+                  .catch(function (err) {
+                      return { ok: false, error: err };
+                  })
+            : Promise.resolve({ ok: false, skipped: true });
+
+        Promise.all([pAdsb, pOgn])
+            .then(function (pair) {
                 lastFetchAt = Date.now();
+                const adRes = pair[0];
+                const ognRes = pair[1];
 
-                const list = aircraftListFromResponse(data);
-                lastAircraftList = list.slice();
-                const n = renderAircraftList(list);
+                let nAdsb = 0;
+                let nOgn = 0;
+                let adsbTime = '—';
 
-                const t = formatTime(data.now != null ? data.now : data.ctime);
-                setStatus(
-                    '<strong>' +
-                        n +
-                        '</strong> in view · ~' +
+                if (wantAdsb) {
+                    if (adRes.ok && adRes.data) {
+                        const list = aircraftListFromResponse(adRes.data);
+                        lastAircraftList = list.slice();
+                        nAdsb = renderAircraftList(list);
+                        adsbTime = formatTime(
+                            adRes.data.now != null ? adRes.data.now : adRes.data.ctime
+                        );
+                    } else if (!adRes.skipped) {
+                        lastAircraftList = [];
+                        renderAircraftList([]);
+                    }
+                }
+
+                if (wantOgn) {
+                    if (ognRes.ok && ognRes.text) {
+                        const ognList = parseOgnXml(ognRes.text);
+                        lastOgnList = ognList;
+                        nOgn = renderOgnList(ognList);
+                    } else if (!ognRes.skipped) {
+                        lastOgnList = [];
+                        renderOgnList([]);
+                    }
+                }
+
+                const bits = [];
+                let hasErr = false;
+                if (wantAdsb) {
+                    if (adRes.ok) {
+                        bits.push('<strong>' + nAdsb + '</strong> ADS-B');
+                    } else {
+                        hasErr = true;
+                        bits.push(
+                            adRes.error && adRes.error.message === 'no_proxy'
+                                ? 'ADS-B: no proxy'
+                                : 'ADS-B: failed'
+                        );
+                    }
+                }
+                if (wantOgn) {
+                    if (ognRes.ok) {
+                        bits.push('<strong>' + nOgn + '</strong> OGN');
+                    } else {
+                        hasErr = true;
+                        bits.push(
+                            ognRes.error && ognRes.error.message === 'no_proxy'
+                                ? 'OGN: no proxy'
+                                : 'OGN: failed'
+                        );
+                    }
+                }
+
+                let detail = '';
+                if (wantAdsb && adRes.ok && rNm != null) {
+                    detail +=
+                        '~' +
                         rNm.toFixed(0) +
-                        ' NM · ADSB.lol · ' +
-                        (t !== '—' ? 'data ' + escapeHtml(t) : '') +
-                        ' · refresh ~1s',
-                    false
-                );
-            })
-            .catch(function (err) {
-                if (err && err.message === 'no_proxy') {
+                        ' NM · ADSB.lol' +
+                        (adsbTime !== '—' ? ' · data ' + escapeHtml(adsbTime) : '');
+                }
+                if (wantAdsb && wantOgn && detail) detail += ' · ';
+                if (wantOgn && ognRes.ok) {
+                    detail += 'OGN live';
+                }
+                if (detail) detail += ' · ';
+                detail += 'refresh ~1s';
+
+                const summary = bits.length ? bits.join(' · ') + ' in view · ' + detail : detail;
+
+                const adsbNoProxy =
+                    wantAdsb &&
+                    !adRes.ok &&
+                    !adRes.skipped &&
+                    adRes.error &&
+                    adRes.error.message === 'no_proxy';
+                const ognNoProxy =
+                    wantOgn &&
+                    !ognRes.ok &&
+                    !ognRes.skipped &&
+                    ognRes.error &&
+                    ognRes.error.message === 'no_proxy';
+
+                if (adsbNoProxy || ognNoProxy) {
+                    let extra = '';
+                    if (wantAdsb && adRes.ok) {
+                        extra += '<strong>' + nAdsb + '</strong> ADS-B in view. ';
+                    }
+                    if (wantOgn && ognRes.ok) {
+                        extra += '<strong>' + nOgn + '</strong> OGN in view. ';
+                    }
                     setStatus(
-                        '<strong>No ADSB proxy</strong>. Run <code>npm run serve</code> from the project folder (not <code>python -m http.server</code>). If port 8081 is busy, stop the other process or use the port shown in the terminal. Or use the deployed site.',
+                        extra +
+                            '<strong>No API proxy</strong>. Run <code>npm run serve</code> from the project folder (not <code>python -m http.server</code>) so <code>/api/adsb</code> and <code>/api/ogn</code> work. Or use the deployed site.',
                         true
                     );
                 } else {
-                    setStatus(
-                        'Could not load traffic (' +
-                            escapeHtml(err.message || 'network') +
-                            '). Try again later.',
-                        true
-                    );
+                    setStatus(summary, hasErr);
                 }
+            })
+            .catch(function () {
+                setStatus('Could not load traffic. Try again later.', true);
             })
             .finally(function () {
                 isFetching = false;
@@ -962,13 +1528,14 @@
     }
 
     function scheduleFetch() {
-        if (!trafficEnabled) return;
+        if (!trafficEnabled && !ognEnabled) return;
         clearTimeout(moveDebounce);
         moveDebounce = setTimeout(fetchTraffic, MOVE_DEBOUNCE_MS);
     }
 
     function startPolling() {
         stopPolling();
+        if (!trafficEnabled && !ognEnabled) return;
         lastFetchAt = 0;
         fetchTraffic();
         pollTimer = setInterval(function () {
@@ -1009,6 +1576,7 @@
         });
 
         trafficLayer = L.layerGroup().addTo(map);
+        ognLayer = L.layerGroup().addTo(map);
 
         const dark = L.tileLayer(
             'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -1081,7 +1649,11 @@
         map.on('moveend', scheduleFetch);
 
         document.addEventListener('visibilitychange', function () {
-            if (document.visibilityState === 'visible' && trafficEnabled && !trafficPopupOpen) {
+            if (
+                document.visibilityState === 'visible' &&
+                (trafficEnabled || ognEnabled) &&
+                !trafficPopupOpen
+            ) {
                 lastFetchAt = 0;
                 fetchTraffic();
             }
@@ -1134,6 +1706,44 @@
                 if (lastAircraftList.length) {
                     renderAircraftList(lastAircraftList.slice());
                 }
+                if (ognEnabled && lastOgnList.length) {
+                    renderOgnList(lastOgnList.slice());
+                }
+            });
+        }
+
+        const ognToggle = document.getElementById('airspaceOgnToggle');
+        if (ognToggle) {
+            ognToggle.checked = ognEnabled;
+            ognToggle.addEventListener('change', function () {
+                ognEnabled = !!ognToggle.checked;
+                try {
+                    localStorage.setItem(OGN_STORAGE_KEY, ognEnabled ? '1' : '0');
+                } catch (e) {}
+                if (!ognEnabled) {
+                    clearOgnTraffic();
+                    if (pinnedOgnId) {
+                        trafficPopupOpen = false;
+                        pinnedOgnId = null;
+                        pinnedHex = null;
+                        clearSelectedTrail();
+                    }
+                }
+                if (trafficEnabled || ognEnabled) {
+                    startPolling();
+                } else {
+                    stopPolling();
+                    trafficPopupOpen = false;
+                    pinnedHex = null;
+                    pinnedOgnId = null;
+                    clearTraffic();
+                    clearOgnTraffic();
+                    clearSelectedTrail();
+                    setStatus(
+                        'ADS-B and OGN are off. Enable <strong>Show traffic</strong> and/or <strong>OGN</strong> to load data.',
+                        false
+                    );
+                }
             });
         }
 
@@ -1141,16 +1751,27 @@
             toggle.checked = trafficEnabled;
             toggle.addEventListener('change', function () {
                 trafficEnabled = toggle.checked;
-                if (trafficEnabled) {
+                if (!trafficEnabled) {
+                    clearTraffic();
+                    if (pinnedHex) {
+                        trafficPopupOpen = false;
+                        pinnedHex = null;
+                        pinnedOgnId = null;
+                        clearSelectedTrail();
+                    }
+                }
+                if (trafficEnabled || ognEnabled) {
                     startPolling();
                 } else {
                     stopPolling();
                     trafficPopupOpen = false;
                     pinnedHex = null;
+                    pinnedOgnId = null;
                     clearTraffic();
+                    clearOgnTraffic();
                     clearSelectedTrail();
                     setStatus(
-                        'Traffic is off. Enable <strong>Show traffic</strong> to load data.',
+                        'ADS-B and OGN are off. Enable <strong>Show traffic</strong> and/or <strong>OGN</strong> to load data.',
                         false
                     );
                 }

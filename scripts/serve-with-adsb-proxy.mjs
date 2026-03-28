@@ -2,6 +2,7 @@
 /**
  * Serves the project root on PORT (default 8081, or next free if busy) and proxies:
  * - GET /api/adsb → ADSB.lol
+ * - GET /api/ogn → Open Glider Network live feed (lxml.php; CORS proxy for Airspace)
  * - GET /api/aviation → aviationweather.gov (METAR/TAF JSON; same contract as worker.js)
  * Browsers cannot call those APIs directly (CORS); use this instead of python -m http.server.
  */
@@ -85,6 +86,66 @@ function handleAdsbProxy(req, res) {
     });
 }
 
+function handleOgnProxy(req, res) {
+  const u = new URL(req.url, 'http://localhost');
+  const a = String(u.searchParams.get('a') || '0');
+  const b = Number(u.searchParams.get('b'));
+  const c = Number(u.searchParams.get('c'));
+  const d = Number(u.searchParams.get('d'));
+  const e = Number(u.searchParams.get('e'));
+  const z = String(u.searchParams.get('z') || '0');
+
+  if (a !== '0' && a !== '1') {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid a (use 0 or 1)' }));
+    return;
+  }
+  if (!Number.isFinite(b) || b < -90 || b > 90) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid b (north lat)' }));
+    return;
+  }
+  if (!Number.isFinite(c) || c < -90 || c > 90) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid c (south lat)' }));
+    return;
+  }
+  if (!Number.isFinite(d) || d < -180 || d > 180) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid d (east lon)' }));
+    return;
+  }
+  if (!Number.isFinite(e) || e < -180 || e > 180) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid e (west lon)' }));
+    return;
+  }
+
+  const qs = new URLSearchParams({
+    a,
+    b: b.toFixed(6),
+    c: c.toFixed(6),
+    d: d.toFixed(6),
+    e: e.toFixed(6),
+    z
+  });
+  const upstream = 'https://live.glidernet.org/lxml.php?' + qs.toString();
+
+  https
+    .get(upstream, { headers: { Accept: 'application/xml, text/xml, */*' } }, (upstreamRes) => {
+      const code = upstreamRes.statusCode || 502;
+      res.writeHead(code, {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      upstreamRes.pipe(res);
+    })
+    .on('error', () => {
+      res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Upstream fetch failed');
+    });
+}
+
 function handleAviationProxy(req, res) {
   const u = new URL(req.url, 'http://localhost');
   const type = String(u.searchParams.get('type') || '').toLowerCase();
@@ -134,6 +195,13 @@ function serveStatic(req, res) {
   let rel = decodeURIComponent(u.pathname);
   if (rel === '/') rel = '/index.html';
   rel = rel.replace(/^\/+/, '');
+  if (rel === 'favicon.ico') {
+    const rootIco = safePath('favicon.ico');
+    if (!rootIco || !fs.existsSync(rootIco)) {
+      const svg = safePath('assets/airplot-icon.svg');
+      if (svg && fs.existsSync(svg)) rel = 'assets/airplot-icon.svg';
+    }
+  }
   let filePath = safePath(rel);
   if (!filePath) {
     res.writeHead(403);
@@ -143,6 +211,9 @@ function serveStatic(req, res) {
   if (!fs.existsSync(filePath)) {
     const withHtml = filePath + '.html';
     if (fs.existsSync(withHtml)) filePath = withHtml;
+  }
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+    filePath = path.join(filePath, 'index.html');
   }
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     res.writeHead(404);
@@ -172,6 +243,13 @@ function handleRequest(req, res) {
   const pathname = normalizeApiPathname(u.pathname);
   if (pathname === '/api/adsb') {
     handleAdsbProxy(req, res);
+  } else if (pathname === '/api/ogn') {
+    if (req.method !== 'GET') {
+      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Method not allowed' }));
+      return;
+    }
+    handleOgnProxy(req, res);
   } else if (pathname === '/api/aviation') {
     if (req.method !== 'GET') {
       res.writeHead(405, { 'Content-Type': 'application/json' });
@@ -199,6 +277,7 @@ function listenFrom(port) {
   server.listen(port, function () {
     console.log('AirPlot dev: http://localhost:' + port + '/');
     console.log('  /api/adsb → https://api.adsb.lol (CORS proxy for Airspace)');
+    console.log('  /api/ogn → https://live.glidernet.org (OGN lxml; CORS proxy for Airspace)');
     console.log('  /api/aviation → aviationweather.gov METAR/TAF (CORS proxy for Flight Weather)');
   });
 }

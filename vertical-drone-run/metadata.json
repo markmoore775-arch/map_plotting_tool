@@ -1,0 +1,5 @@
+{
+  "name": "Vertical Drone Run",
+  "description": "A browser-based vertical scrolling drone survival game.",
+  "requestFramePermissions": []
+}
