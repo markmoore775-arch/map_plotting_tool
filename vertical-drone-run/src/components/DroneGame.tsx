@@ -5,7 +5,7 @@ import { Play, RotateCcw, Trophy, Zap, Heart } from 'lucide-react';
 const DRONE_SIZE = 30;
 const BASE_SPEED = 1.8;
 /** Peak scroll multiplier (start is 1×). Capped — difficulty does not rise forever. */
-const MAX_SPEED_MULTIPLIER = 1.58;
+const MAX_SPEED_MULTIPLIER = 1.58 * 1.2;
 /**
  * Wall-clock seconds until speed nears MAX_SPEED_MULTIPLIER (was 18_000 frames @ 60fps).
  * Uses real time so 120Hz / throttled RAF cannot rush difficulty.
@@ -13,8 +13,9 @@ const MAX_SPEED_MULTIPLIER = 1.58;
 const SPEED_RAMP_SECONDS = 18_000 / 60;
 /** Spawn chance ramps to cap over this many seconds (was 24_000 frames @ 60fps). */
 const SPAWN_RAMP_SECONDS = 24_000 / 60;
-const SPAWN_CHANCE_BASE = 0.08;
-const SPAWN_CHANCE_CAP = 0.28;
+/** +20% vs former 0.08 / 0.28 → more enemies at each spawn roll. */
+const SPAWN_CHANCE_BASE = 0.08 * 1.2;
+const SPAWN_CHANCE_CAP = 0.28 * 1.2;
 /** Normalize physics to this reference framerate (scroll, timers, shots). */
 const REFERENCE_FPS = 60;
 const MAX_DELTA_SEC = 0.05;
