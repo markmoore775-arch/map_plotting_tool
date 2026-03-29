@@ -9,6 +9,8 @@ const THRUST = 0.9;
 const MAX_VELOCITY = 12;
 const OBSTACLE_SPEED = 8;
 const DRONE_SIZE = 40;
+/** Spawn / rest position: center Y just above the floor (side-scroller “start at bottom”). */
+const DRONE_START_Y = FLOOR_Y - DRONE_SIZE / 2 - 8;
 /** Fixed sim step so gameplay speed is stable when rAF is throttled (e.g. mobile without touch). */
 const SIM_DT = 1 / 60;
 const MAX_SIM_STEPS_PER_FRAME = 5;
@@ -44,7 +46,7 @@ const THEMES = [
 ];
 
 // --- Types ---
-type GameState = 'start' | 'playing' | 'gameover';
+type GameState = 'start' | 'countdown' | 'playing' | 'gameover';
 
 interface Drone {
   x: number;
@@ -97,7 +99,10 @@ export default function App() {
 
   const [dimensions, setDimensions] = useState({ width: 1280, height: 720 });
   const [isPortrait, setIsPortrait] = useState(false);
+  const [countdownLabel, setCountdownLabel] = useState<'3' | '2' | '1' | 'go'>('3');
+  const [countdownEpoch, setCountdownEpoch] = useState(0);
   const dimRef = useRef({ width: 1280, height: 720 });
+  const countdownTokenRef = useRef(0);
 
   // Mutable game state refs
   const stateRef = useRef({
@@ -110,7 +115,7 @@ export default function App() {
 
   const droneRef = useRef<Drone>({
     x: 200,
-    y: 720 / 2,
+    y: DRONE_START_Y,
     vy: 0,
     rotation: 0,
   });
@@ -126,9 +131,11 @@ export default function App() {
   const handleThrustStart = (e?: React.SyntheticEvent | KeyboardEvent) => {
     if (e && 'code' in e && e.code !== 'Space') return;
     if (e) e.preventDefault();
-    
+
+    if (stateRef.current.gameState === 'countdown') return;
+
     if (stateRef.current.gameState === 'start' || stateRef.current.gameState === 'gameover') {
-      startGame();
+      beginCountdown();
       return;
     }
     stateRef.current.isThrusting = true;
@@ -191,35 +198,6 @@ export default function App() {
     }
   };
 
-  const startGame = () => {
-    requestFullscreen();
-    stateRef.current = {
-      gameState: 'playing',
-      score: 0,
-      frames: 0,
-      isThrusting: true,
-      themeIndex: 0,
-    };
-    droneRef.current = {
-      x: 200,
-      y: 720 / 2,
-      vy: 0,
-      rotation: 0,
-    };
-    obstaclesRef.current = [];
-    particlesRef.current = [];
-    bgElementsRef.current = [];
-    
-    // Pre-populate background
-    for (let i = 0; i < 10; i++) {
-      spawnBgElement(dimRef.current.width * (i / 10));
-    }
-
-    setGameState('playing');
-    setScore(0);
-    setCurrentThemeName(THEMES[0].name);
-  };
-
   const gameOver = () => {
     stateRef.current.gameState = 'gameover';
     stateRef.current.isThrusting = false;
@@ -273,6 +251,75 @@ export default function App() {
       seed: Math.random()
     });
   };
+
+  const beginCountdown = () => {
+    requestFullscreen();
+    droneRef.current = { x: 200, y: DRONE_START_Y, vy: 0, rotation: 0 };
+    stateRef.current = {
+      ...stateRef.current,
+      gameState: 'countdown',
+      isThrusting: false,
+    };
+    setCountdownLabel('3');
+    setCountdownEpoch((n) => n + 1);
+    setGameState('countdown');
+  };
+
+  const startGameActual = () => {
+    requestFullscreen();
+    stateRef.current = {
+      gameState: 'playing',
+      score: 0,
+      frames: 0,
+      isThrusting: false,
+      themeIndex: 0,
+    };
+    droneRef.current = {
+      x: 200,
+      y: DRONE_START_Y,
+      vy: 0,
+      rotation: 0,
+    };
+    obstaclesRef.current = [];
+    particlesRef.current = [];
+    bgElementsRef.current = [];
+
+    for (let i = 0; i < 10; i++) {
+      spawnBgElement(dimRef.current.width * (i / 10));
+    }
+
+    setGameState('playing');
+    setScore(0);
+    setCurrentThemeName(THEMES[0].name);
+  };
+
+  useEffect(() => {
+    if (gameState !== 'countdown') return;
+    const sessionId = ++countdownTokenRef.current;
+    let cancelled = false;
+    const steps: { label: '3' | '2' | '1' | 'go'; ms: number }[] = [
+      { label: '3', ms: 1000 },
+      { label: '2', ms: 1000 },
+      { label: '1', ms: 1000 },
+      { label: 'go', ms: 700 },
+    ];
+
+    const run = async () => {
+      for (const step of steps) {
+        if (cancelled || sessionId !== countdownTokenRef.current) return;
+        setCountdownLabel(step.label);
+        await new Promise((r) => setTimeout(r, step.ms));
+        if (cancelled || sessionId !== countdownTokenRef.current) return;
+      }
+      if (cancelled || sessionId !== countdownTokenRef.current) return;
+      startGameActual();
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [gameState, countdownEpoch]);
 
   const spawnObstacle = () => {
     const theme = THEMES[stateRef.current.themeIndex];
@@ -763,13 +810,24 @@ export default function App() {
             </p>
             <button 
               type="button"
-              onClick={(e) => { e.stopPropagation(); startGame(); }}
+              onClick={(e) => { e.stopPropagation(); beginCountdown(); }}
               className="pointer-events-auto group relative px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xl rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-3 touch-manipulation"
             >
               <Play fill="currentColor" />
               START SYSTEM
               <div className="absolute inset-0 rounded-full ring-4 ring-cyan-400/50 animate-ping opacity-20 group-hover:opacity-100"></div>
             </button>
+          </div>
+        )}
+
+        {gameState === 'countdown' && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/65 backdrop-blur-sm pointer-events-none">
+            <div
+              key={countdownLabel}
+              className="text-[min(22vw,7rem)] font-black tabular-nums tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 to-blue-500 drop-shadow-[0_0_36px_rgba(34,211,238,0.5)]"
+            >
+              {countdownLabel === 'go' ? 'GO!' : countdownLabel}
+            </div>
           </div>
         )}
 
@@ -790,7 +848,7 @@ export default function App() {
             </div>
             <button 
               type="button"
-              onClick={(e) => { e.stopPropagation(); startGame(); }}
+              onClick={(e) => { e.stopPropagation(); beginCountdown(); }}
               className="pointer-events-auto px-8 py-4 bg-white hover:bg-slate-200 text-rose-950 font-bold text-xl rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.3)] touch-manipulation"
             >
               <RotateCcw />
