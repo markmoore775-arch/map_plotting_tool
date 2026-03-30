@@ -276,11 +276,18 @@
         ).addTo(map);
 
         if (typeof L.control.locate === 'function') {
-            L.control.locate({
-                position: 'topleft',
-                strings: { title: 'Show my location' },
-                locateOptions: { enableHighAccuracy: true }
-            }).addTo(map);
+            var geoOkFp = typeof GeoLocate === 'undefined' || GeoLocate.isGeolocationEnvironmentOk();
+            if (geoOkFp) {
+                var locateOptsFp =
+                    typeof GeoLocate !== 'undefined' && GeoLocate.leafletLocateOptions
+                        ? GeoLocate.leafletLocateOptions()
+                        : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+                L.control.locate({
+                    position: 'topleft',
+                    strings: { title: 'Show my location' },
+                    locateOptions: locateOptsFp
+                }).addTo(map);
+            }
         }
 
         // Geoman for rectangle and circle

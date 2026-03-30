@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>M4T / TD | AirPlot</title>
     <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/flight-notes.css?v=11">
     <style>
         :root {
             --cl-bg: #1e1e2e;
@@ -176,28 +177,6 @@
             gap: 12px;
         }
 
-        .cl-theme-toggle {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .cl-theme-toggle input {
-            accent-color: var(--cl-primary);
-            cursor: pointer;
-            width: 15px;
-            height: 15px;
-        }
-
-        .cl-theme-toggle-label {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--cl-muted);
-            white-space: nowrap;
-        }
-
         @media (max-width: 900px) {
             .cl-top-bar {
                 flex-wrap: nowrap;
@@ -243,10 +222,6 @@
                 min-height: 40px;
                 padding: 8px 12px;
                 font-size: 13px;
-            }
-
-            .cl-theme-toggle-label {
-                font-size: 11px;
             }
         }
 
@@ -797,10 +772,19 @@
             <a href="flight-notes.html" class="cl-nav-link" title="Open Flight Report">Flight Report</a>
         </div>
         <div class="cl-top-bar-actions">
-            <label class="cl-theme-toggle" title="Light theme (better for reading / print preview)">
-                <input type="checkbox" id="clLightThemeToggle" />
-                <span class="cl-theme-toggle-label">&#9788; Light</span>
-            </label>
+            <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="clPageThemeLabel" title="Page colours (better for reading / print preview)">
+                <span id="clPageThemeLabel" class="fn-export-theme-label">Theme</span>
+                <div class="fn-export-theme-segments">
+                    <label class="fn-export-theme-segment-opt">
+                        <input type="radio" name="clPageTheme" value="dark" checked>
+                        <span class="fn-export-theme-segment-text">Dark</span>
+                    </label>
+                    <label class="fn-export-theme-segment-opt">
+                        <input type="radio" name="clPageTheme" value="light">
+                        <span class="fn-export-theme-segment-text">Light</span>
+                    </label>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -845,7 +829,7 @@
             </div>
 
             <div class="cl-row"><input type="checkbox" id="c1-1" data-section="1" /><div class="cl-label-wrap"><label for="c1-1">1. Inspect UAV airframe, body and camera - check for damage</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c1-2" data-section="1" /><div class="cl-label-wrap"><label for="c1-2">2. Check rotors spin freely and inspect for damage</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c1-2" data-section="1" /><div class="cl-label-wrap"><label for="c1-2">2. Check motors spin freely and inspect for damage</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c1-3" data-section="1" /><div class="cl-label-wrap"><label for="c1-3">3. Check and inspect propellers - attach and secure, ensure correct position</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c1-4" data-section="1" /><div class="cl-label-wrap"><label for="c1-4">4. Inspect battery - press and hold battery button to check charge, sufficient for task, check for damage/swelling</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c1-5" data-section="1" /><div class="cl-label-wrap"><label for="c1-5">5. Insert battery - confirm seated correctly - 2nd person to check battery seated correctly</label></div></div>
@@ -865,10 +849,10 @@
                 </div>
             </div>
 
-            <div class="cl-row"><input type="checkbox" id="c2-1" data-section="2" /><div class="cl-label-wrap"><label for="c2-1">1. Power on controller (single long press, or tap-tap-hold) - wait for DJI Pilot 2 to open</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c2-2" data-section="2" /><div class="cl-label-wrap"><label for="c2-2">2. Power on aircraft (single long press, or tap-tap-hold)</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c2-1" data-section="2" /><div class="cl-label-wrap"><label for="c2-1">1. Power on controller (Press once to check battery level, then press again and hold to power on/off) - wait for DJI Pilot 2 to open</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c2-2" data-section="2" /><div class="cl-label-wrap"><label for="c2-2">2. Power on aircraft (Press once to check battery level, then press again and hold to power on/off)</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c2-3" data-section="2" /><div class="cl-label-wrap"><label for="c2-3">3. Check Health Management System - all green - acknowledge any errors</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c2-4" data-section="2" /><div class="cl-label-wrap"><label for="c2-4">4. Exit to camera view</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c2-4" data-section="2" /><div class="cl-label-wrap"><label for="c2-4">4. Exit (X), then enter camera view</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c2-5" data-section="2" /><div class="cl-label-wrap"><label for="c2-5">5. Confirm flight mode (N) using rocker switch</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c2-6" data-section="2" /><div class="cl-label-wrap"><label for="c2-6">6. Set RTH height - minimum safe height, 30ft/10m over tallest feature</label></div></div>
 
@@ -894,7 +878,7 @@
                 <input type="checkbox" id="c2-15" data-section="2" />
                 <div class="cl-row-inner">
                     <label class="cl-label-main" for="c2-15">15. Max Flight Distance: Set according to operational objectives and risk assessment (max 1500m)</label>
-                    <input type="text" class="cl-note" id="n2-15" autocomplete="off" placeholder="Notes (optional)" aria-label="Notes for item 15: max flight distance" />
+                    <input type="text" class="cl-note" id="n2-15" autocomplete="off" placeholder="Rationale if planning to exceed 500m" aria-label="Notes for item 15: max flight distance; add rationale if planning to exceed 500m" />
                 </div>
             </div>
             <div class="cl-row"><input type="checkbox" id="c2-16" data-section="2" /><div class="cl-label-wrap"><label for="c2-16">16. Confirm stick mode - Mode 2</label></div></div>
@@ -906,7 +890,7 @@
             <div class="cl-section-head">
                 <h2 id="cl-s3" class="cl-section-title">Section 3: Take off</h2>
                 <div class="cl-section-meta">
-                    <span class="cl-section-count" data-section-count="3">0 / 14 complete</span>
+                    <span class="cl-section-count" data-section-count="3">0 / 13 complete</span>
                     <button type="button" class="cl-mark-all" data-mark-section="3">Mark all complete</button>
                 </div>
             </div>
@@ -917,14 +901,13 @@
             <div class="cl-row"><input type="checkbox" id="c3-4" data-section="3" /><div class="cl-label-wrap"><label for="c3-4">4. Consider beacons on and announce &quot;Taking Control&quot;</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c3-5" data-section="3" /><div class="cl-label-wrap"><label for="c3-5">5. Spin up - PIC to announce &quot;SPINNING UP&quot;</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c3-6" data-section="3" /><div class="cl-label-wrap"><label for="c3-6">6. Listen to system - confirm sounds normal</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c3-7" data-section="3" /><div class="cl-label-wrap"><label for="c3-7">7. Check battery and satellite status - confirm sufficient</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c3-8" data-section="3" /><div class="cl-label-wrap"><label for="c3-8">8. Confirm surrounding area free of incoming traffic (air, ground, hazards downwind)</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c3-9" data-section="3" /><div class="cl-label-wrap"><label for="c3-9">9. Take off - PIC to announce &quot;TAKING OFF&quot;</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c3-10" data-section="3" /><div class="cl-label-wrap"><label for="c3-10">10. Climb to 3m (or higher than nearby hazards) and hover - confirm holding location</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c3-11" data-section="3" /><div class="cl-label-wrap"><label for="c3-11">11. Check and confirm controls - yaw, pitch, roll, thrust</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c3-12" data-section="3" /><div class="cl-label-wrap"><label for="c3-12">12. Ascend to minimum safe height (tallest feature + 30ft/10m) and conduct 360 survey</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c3-13" data-section="3" /><div class="cl-label-wrap"><label for="c3-13">13. Fly mission - ensure objectives complete</label></div></div>
-            <div class="cl-row"><input type="checkbox" id="c3-14" data-section="3" /><div class="cl-label-wrap"><label for="c3-14">14. Consider recording as appropriate</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c3-7" data-section="3" /><div class="cl-label-wrap"><label for="c3-7">7. Confirm surrounding area free of incoming traffic (air, ground, hazards downwind)</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c3-8" data-section="3" /><div class="cl-label-wrap"><label for="c3-8">8. Take off - PIC to announce &quot;TAKING OFF&quot;</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c3-9" data-section="3" /><div class="cl-label-wrap"><label for="c3-9">9. Climb to 3m (or higher than nearby hazards) and hover - confirm holding location</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c3-10" data-section="3" /><div class="cl-label-wrap"><label for="c3-10">10. Check and confirm controls - yaw, pitch, roll, thrust</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c3-11" data-section="3" /><div class="cl-label-wrap"><label for="c3-11">11. Ascend to minimum safe height (tallest feature + 30ft/10m) and conduct 360 survey</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c3-12" data-section="3" /><div class="cl-label-wrap"><label for="c3-12">12. Fly mission - ensure objectives complete</label></div></div>
+            <div class="cl-row"><input type="checkbox" id="c3-13" data-section="3" /><div class="cl-label-wrap"><label for="c3-13">13. Consider recording as appropriate</label></div></div>
         </section>
 
         <!-- SECTION 4 -->
@@ -1011,6 +994,39 @@
                 return document.querySelectorAll('input[type="checkbox"][data-section]');
             };
 
+            function pageThemeIsLight() {
+                var r = document.querySelector('input[name="clPageTheme"][value="light"]');
+                return !!(r && r.checked);
+            }
+
+            function applyPageTheme(light) {
+                var rd = document.querySelector('input[name="clPageTheme"][value="dark"]');
+                var rl = document.querySelector('input[name="clPageTheme"][value="light"]');
+                if (rl && rd) {
+                    rl.checked = !!light;
+                    rd.checked = !light;
+                }
+                document.body.classList.toggle('cl-light-theme', !!light);
+            }
+
+            /** Map saved v1 Section 3 ids after removing old item 7 (c3-7) and renumbering. */
+            function migrateV1ChecksToV2(checks) {
+                var out = {};
+                for (var id in checks) {
+                    if (!Object.prototype.hasOwnProperty.call(checks, id)) continue;
+                    var m = id.match(/^c3-(\d+)$/);
+                    if (m) {
+                        var n = parseInt(m[1], 10);
+                        if (n === 7) continue;
+                        if (n >= 8) out['c3-' + (n - 1)] = checks[id];
+                        else out[id] = checks[id];
+                    } else {
+                        out[id] = checks[id];
+                    }
+                }
+                return out;
+            }
+
             function persistState() {
                 try {
                     var checks = {};
@@ -1021,14 +1037,13 @@
                     document.querySelectorAll('.cl-note').forEach(function (inp) {
                         notes[inp.id] = inp.value || '';
                     });
-                    var themeToggle = document.getElementById('clLightThemeToggle');
                     localStorage.setItem(
                         STORAGE_KEY,
                         JSON.stringify({
-                            v: 1,
+                            v: 2,
                             checks: checks,
                             notes: notes,
-                            lightTheme: themeToggle ? themeToggle.checked : false
+                            lightTheme: pageThemeIsLight()
                         })
                     );
                 } catch (e) {}
@@ -1039,7 +1054,13 @@
                     var raw = localStorage.getItem(STORAGE_KEY);
                     if (!raw) return;
                     var data = JSON.parse(raw);
-                    if (!data || data.v !== 1 || !data.checks) return;
+                    if (!data || !data.checks) return;
+                    var needMigrate = data.v === 1;
+                    if (needMigrate) {
+                        data.checks = migrateV1ChecksToV2(data.checks);
+                        data.v = 2;
+                    }
+                    if (data.v !== 2) return;
                     var id;
                     for (id in data.checks) {
                         if (!Object.prototype.hasOwnProperty.call(data.checks, id)) continue;
@@ -1053,11 +1074,10 @@
                             if (ne && ne.classList.contains('cl-note')) ne.value = data.notes[id];
                         }
                     }
-                    var themeToggle = document.getElementById('clLightThemeToggle');
-                    if (themeToggle && typeof data.lightTheme === 'boolean') {
-                        themeToggle.checked = data.lightTheme;
-                        document.body.classList.toggle('cl-light-theme', data.lightTheme);
+                    if (typeof data.lightTheme === 'boolean') {
+                        applyPageTheme(data.lightTheme);
                     }
+                    if (needMigrate) persistState();
                 } catch (e) {}
             }
 
@@ -1268,10 +1288,11 @@
                 });
             });
 
-            var themeToggle = document.getElementById('clLightThemeToggle');
-            themeToggle.addEventListener('change', function () {
-                document.body.classList.toggle('cl-light-theme', themeToggle.checked);
-                persistState();
+            document.querySelectorAll('input[name="clPageTheme"]').forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    document.body.classList.toggle('cl-light-theme', pageThemeIsLight());
+                    persistState();
+                });
             });
 
             loadPersistedState();

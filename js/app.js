@@ -219,15 +219,22 @@
 
         // Geolocation: show user's current location (Leaflet.Locate plugin)
         if (typeof L.control.locate === 'function') {
-            L.control.locate({
-                position: 'topleft',
-                strings: {
-                    title: 'Show my location',
-                    popup: 'You are within {distance} from this point',
-                    outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
-                },
-                locateOptions: { enableHighAccuracy: true }
-            }).addTo(map);
+            var geoOk = typeof GeoLocate === 'undefined' || GeoLocate.isGeolocationEnvironmentOk();
+            if (geoOk) {
+                var locateOpts =
+                    typeof GeoLocate !== 'undefined' && GeoLocate.leafletLocateOptions
+                        ? GeoLocate.leafletLocateOptions()
+                        : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+                L.control.locate({
+                    position: 'topleft',
+                    strings: {
+                        title: 'Show my location',
+                        popup: 'You are within {distance} from this point',
+                        outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
+                    },
+                    locateOptions: locateOpts
+                }).addTo(map);
+            }
         }
 
         // Undo button (between Locate and Save/Load)
@@ -1493,6 +1500,20 @@
 
     // ---- Help Modal ----
 
+    const helpModalEl = document.getElementById('helpModal');
+
+    function activateHelpTab(tabName) {
+        if (!helpModalEl || !tabName) return;
+        helpModalEl.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        helpModalEl.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        const tabBtn = helpModalEl.querySelector('.tab[data-tab="' + tabName + '"]');
+        const panel = document.getElementById('help-tab-' + tabName);
+        if (tabBtn) tabBtn.classList.add('active');
+        if (panel) panel.classList.add('active');
+        const helpBody = helpModalEl.querySelector('.modal-body');
+        if (helpBody) helpBody.scrollTop = 0;
+    }
+
     document.getElementById('helpBtn').addEventListener('click', () => {
         openModal('helpModal');
     });
@@ -1526,24 +1547,39 @@
     const footerDisclaimerBtn = document.getElementById('footerDisclaimerBtn');
     if (footerDisclaimerBtn) {
         footerDisclaimerBtn.addEventListener('click', () => {
-        openModal('helpModal');
-        document.querySelectorAll('#helpModal .tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('#helpModal .tab-panel').forEach(p => p.classList.remove('active'));
-        const disclaimerTab = document.querySelector('#helpModal .tab[data-tab="disclaimer"]');
-        const disclaimerPanel = document.getElementById('help-tab-disclaimer');
-        if (disclaimerTab) disclaimerTab.classList.add('active');
-        if (disclaimerPanel) disclaimerPanel.classList.add('active');
+            openModal('helpModal');
+            activateHelpTab('disclaimer');
         });
     }
 
     document.querySelectorAll('#helpModal .tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            document.querySelectorAll('#helpModal .tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('#helpModal .tab-panel').forEach(p => p.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById('help-tab-' + tab.dataset.tab).classList.add('active');
+            activateHelpTab(tab.dataset.tab);
         });
     });
+
+    if (helpModalEl) {
+        helpModalEl.addEventListener('click', (e) => {
+            const jump = e.target.closest('.help-panel-toc a[href^="#"]');
+            if (jump && helpModalEl.contains(jump)) {
+                const id = jump.getAttribute('href').slice(1);
+                const target = document.getElementById(id);
+                if (target && helpModalEl.contains(target)) {
+                    e.preventDefault();
+                    if (target.tagName === 'DETAILS' && !target.open) target.open = true;
+                    target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            }
+            const card = e.target.closest('[data-help-tab]');
+            if (card && helpModalEl.contains(card) && card.tagName === 'BUTTON') {
+                const tabName = card.getAttribute('data-help-tab');
+                if (tabName) {
+                    e.preventDefault();
+                    activateHelpTab(tabName);
+                }
+            }
+        });
+    }
 
     // ---- Edit Point Modal ----
 

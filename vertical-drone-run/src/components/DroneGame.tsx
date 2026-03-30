@@ -1614,9 +1614,15 @@ export default function DroneGame() {
       )}
 
       <div className="relative w-full h-screen overflow-hidden bg-slate-900">
-        {/* Score HUD — top left */}
-        <div className="absolute top-2 left-2 z-10 flex flex-col gap-2 pointer-events-none sm:top-3 sm:left-3">
-          <div className="bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/50 flex flex-col gap-0.5 items-start">
+        {/* Score, best, lives — top left (keeps top-right clear for Training menu link) */}
+        <div
+          className="absolute z-10 flex max-w-[calc(100vw-7rem)] flex-row flex-wrap items-start gap-2 pointer-events-none"
+          style={{
+            top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
+            left: 'max(0.5rem, env(safe-area-inset-left, 0px))',
+          }}
+        >
+          <div className="bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/50 flex flex-col gap-0.5 items-start shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Score</span>
               <span className="text-xl font-mono font-bold text-rose-400">{score.toString().padStart(5, '0')}</span>
@@ -1628,36 +1634,36 @@ export default function DroneGame() {
             )}
           </div>
 
-          <div className={`transition-all duration-300 ${multiplier > 1 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
-            <div className="bg-blue-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-blue-500/50 flex flex-col gap-1 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-blue-400 fill-blue-400 animate-pulse" />
-                <span className="text-lg font-black italic text-blue-400">x{multiplier}</span>
-              </div>
-              <div className="w-full h-1 bg-blue-950 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-400 transition-all duration-100 ease-linear"
-                  style={{ width: `${(multiplierTimeLeft / 300) * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Best score + health — top right */}
-        <div className="absolute top-2 right-2 z-10 flex flex-col gap-2 items-end pointer-events-none sm:top-3 sm:right-3">
-          <div className="bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-amber-400" />
+          <div className="bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2 shrink-0">
+            <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="text-xl font-mono font-bold text-amber-400">{trophyScore.toString().padStart(5, '0')}</span>
           </div>
-          <div className="flex gap-1">
+
+          <div className="flex gap-0.5 shrink-0 items-center py-0.5">
             {[...Array(3)].map((_, i) => (
               <Heart
                 key={i}
-                className={`w-6 h-6 ${i < health ? 'text-rose-500 fill-rose-500' : 'text-slate-700 fill-slate-800'}`}
+                className={`w-5 h-5 sm:w-6 sm:h-6 ${i < health ? 'text-rose-500 fill-rose-500' : 'text-slate-700 fill-slate-800'}`}
               />
             ))}
           </div>
+
+          {multiplier > 1 && (
+            <div className="w-full basis-full transition-all duration-300">
+              <div className="bg-blue-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-blue-500/50 flex max-w-[200px] flex-col gap-1 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-blue-400 fill-blue-400 animate-pulse" />
+                  <span className="text-lg font-black italic text-blue-400">x{multiplier}</span>
+                </div>
+                <div className="h-1 w-full rounded-full bg-blue-950 overflow-hidden">
+                  <div
+                    className="h-full bg-blue-400 transition-all duration-100 ease-linear"
+                    style={{ width: `${(multiplierTimeLeft / 300) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <canvas

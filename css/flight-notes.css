@@ -656,6 +656,38 @@ body.flight-notes-mode.fn-light-theme .fn-export-theme-segment-opt input:checked
     color: #fff;
 }
 
+/* Checklist page — same segmented Theme control as Flight Report */
+body.checklist-mode.cl-light-theme .fn-export-theme-segment-opt + .fn-export-theme-segment-opt .fn-export-theme-segment-text {
+    border-left-color: #c8c8c8;
+}
+
+body.checklist-mode.cl-light-theme .fn-export-theme-box {
+    border-color: #d0d0d0;
+    background: #e8e9ec;
+}
+
+body.checklist-mode.cl-light-theme .fn-export-theme-label {
+    color: #666;
+}
+
+body.checklist-mode.cl-light-theme .fn-export-theme-segments {
+    border-color: #c8c8c8;
+    background: #f0f1f3;
+}
+
+body.checklist-mode.cl-light-theme .fn-export-theme-segment-text {
+    color: #555;
+}
+
+body.checklist-mode.cl-light-theme .fn-export-theme-segment-opt:hover .fn-export-theme-segment-text {
+    color: #1a1a1a;
+}
+
+body.checklist-mode.cl-light-theme .fn-export-theme-segment-opt input:checked + .fn-export-theme-segment-text {
+    background: var(--primary, #5b8def);
+    color: #fff;
+}
+
 .fn-btn {
     display: inline-flex;
     align-items: center;
@@ -1260,7 +1292,8 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
         padding: 4px 8px;
     }
 
-    body.flight-notes-mode .fn-export-theme-label {
+    body.flight-notes-mode .fn-export-theme-label,
+    body.checklist-mode .fn-export-theme-label {
         position: absolute;
         width: 1px;
         height: 1px;

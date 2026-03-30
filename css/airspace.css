@@ -228,14 +228,15 @@ body.airspace-mode .leaflet-top.leaflet-left {
     top: calc(64px + env(safe-area-inset-top, 0px));
 }
 
-/* Floating toolbar — fixed outer size; controls don’t shift when status text changes */
+/* Floating toolbar — status on its own row on wide viewports so it isn’t squeezed to zero
+   (nowrap row + flex-shrink:0 controls made the status column collapse when controls > bar width). */
 .airspace-toolbar {
     position: fixed;
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
-    width: min(680px, calc(100vw - 24px));
+    width: min(920px, calc(100vw - 24px));
     box-sizing: border-box;
     padding: 12px 16px;
     background: var(--sidebar-bg, #1e1e2e);
@@ -246,19 +247,20 @@ body.airspace-mode .leaflet-top.leaflet-left {
 
 .airspace-toolbar-inner {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 14px;
+    gap: 10px 14px;
     width: 100%;
     min-height: 44px;
 }
 
 .airspace-toolbar-controls {
     display: flex;
-    flex-shrink: 0;
-    flex-wrap: nowrap;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
     align-items: center;
     gap: 12px;
+    min-width: 0;
 }
 
 .airspace-toolbar-group {
@@ -268,17 +270,15 @@ body.airspace-mode .leaflet-top.leaflet-left {
 }
 
 .airspace-toolbar-status {
-    flex: 1 1 0;
+    flex: 1 1 100%;
+    width: 100%;
     min-width: 0;
-    height: 40px;
+    min-height: 36px;
     font-size: 12px;
     color: var(--sidebar-muted, #a8a8b8);
-    text-align: right;
-    line-height: 1.25;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    text-align: left;
+    line-height: 1.35;
+    overflow: visible;
     word-break: break-word;
 }
 
@@ -475,12 +475,12 @@ a.airspace-btn.airspace-view-switch {
     flex-shrink: 0;
 }
 
-/* Bottom attribution strip — above floating toolbar */
+/* Bottom attribution strip — above floating toolbar (taller when status is on a second row) */
 .airspace-attribution {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 92px;
+    bottom: 158px;
     z-index: 999;
     padding: 6px 10px max(6px, env(safe-area-inset-bottom, 6px));
     padding-left: max(10px, env(safe-area-inset-left, 10px));
@@ -501,7 +501,7 @@ a.airspace-btn.airspace-view-switch {
 /* Logo corner — above attribution + toolbar */
 .airspace-logo {
     position: fixed;
-    bottom: max(132px, calc(132px + env(safe-area-inset-bottom, 0px)));
+    bottom: max(198px, calc(198px + env(safe-area-inset-bottom, 0px)));
     left: max(12px, env(safe-area-inset-left, 12px));
     z-index: 998;
     opacity: 0.35;
@@ -549,7 +549,6 @@ a.airspace-btn.airspace-view-switch {
     }
 
     .airspace-toolbar-status {
-        justify-content: center;
         text-align: center;
         max-height: none;
         min-height: 36px;

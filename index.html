@@ -73,11 +73,11 @@
                 <button type="button" class="intro-cta intro-cta-secondary" id="introAirspaceBtn">
                     Airspace
                 </button>
-                <a href="flight-notes.html" class="intro-cta intro-cta-secondary" id="introFlightReportBtn">
-                    Flight Report
-                </a>
                 <a href="checklist.html" class="intro-cta intro-cta-secondary" id="introChecklistBtn">
                     Checklist
+                </a>
+                <a href="flight-notes.html" class="intro-cta intro-cta-secondary" id="introFlightReportBtn">
+                    Flight Report
                 </a>
                 <a href="training.html" class="intro-cta intro-cta-secondary" id="introTrainingBtn">
                     Training
@@ -667,16 +667,77 @@
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p><strong>AirPlot</strong> (v3.0) is a set of browser tools for drone operations. From the welcome screen choose <strong>Planning</strong> (full-screen map), <strong>Weather</strong> (forecasts and aviation weather), <strong>Airspace</strong> (live ADS-B traffic with hazard awareness; see below), <strong>Flight Report</strong> (structured flight records), <strong>Checklist</strong> (M4T / TD pre-flight through post-flight checks), <strong>Training</strong> (optional arcade games: <strong>Drone Run</strong> and <strong>Drone Dash</strong> via <a href="training.html">training.html</a>), or <strong>View Instructions</strong> (this help). Install from the browser (&ldquo;Add to Home Screen&rdquo; or install app) for a standalone experience.</p>
-                    <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
-                    <p><strong>Weather:</strong> Tap the map to select a location, pick a forecast model (for example ECMWF IFS, GFS, UK Met Office, GEM Canada), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with small maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM and airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
-                    <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> opens a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
-                    <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear report</strong> (top), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Use the <strong>Checklist</strong> link in the header to open the M4T / TD checklist without returning to the welcome screen.</p>
-                    <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. Use <strong>Flight Report</strong> in the header to open it without going home.</p>
-                    <p><strong>What&rsquo;s new in v3:</strong> The <strong>Airspace</strong> page adds hazard-themed red aircraft icons, optional <strong>OGN</strong> glider-class traffic, <strong>altitude (ft)</strong> beside every track, session trails, and <strong>paused refresh</strong> while aircraft details are open (see above). <strong>Flight Weather</strong> exports use your Airspace search radius and optional Dark/Light report styling (default Light); PowerPoint includes per-NOTAM and per-zone map slides. <strong>Flight Report</strong> adds matching theme controls for the page and PDF, <strong>Clear report</strong> in the header, and the Airspace section on the form. Branded exports and footers show <strong>AirPlot v3</strong> where a version label is used.</p>
-                    <p><strong>Save files:</strong> Planning <strong>Save Project</strong> / <strong>Load Project</strong> JSON uses the same format as v2; older project files still load.</p>
-                    <p><strong>DJI Mission Planner:</strong> When shown on the welcome screen, <a href="flight-planning.html">flight-planning.html</a> builds waypoint and manual recce missions for DJI Pilot 2 (KMZ, optional PPTX/PDF, SD card import steps). Open its <strong>Help</strong> (?) for full instructions.</p>
-                    <p>The tabs below cover the <strong>Planning</strong> map in detail, and a <strong>Report &amp; Checklist</strong> tab describes the flight report and checklist tools. Use <strong>Welcome</strong> (top-left) from any tool to return to the welcome screen.</p>
+                    <p class="help-overview-lead"><strong>AirPlot</strong> (v3.0) is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail; other tools open from the welcome screen. Use <strong>Welcome</strong> (top-left) from any mode to return home.</p>
+                    <div class="help-tool-grid">
+                        <button type="button" class="help-tool-card" data-help-tab="points">
+                            <span class="help-tool-card-title">Planning</span>
+                            <span class="help-tool-card-desc">Points, shapes, UK airspace layers, import/export, and saved projects on the full-screen map.</span>
+                            <span class="help-tool-card-action">Open map help</span>
+                        </button>
+                        <button type="button" class="help-tool-card" data-help-tab="import">
+                            <span class="help-tool-card-title">Import &amp; export</span>
+                            <span class="help-tool-card-desc">CSV, KML, screenshots, PowerPoint/PDF reports, project JSON, undo.</span>
+                            <span class="help-tool-card-action">Open tab</span>
+                        </button>
+                        <button type="button" class="help-tool-card" data-help-tab="map">
+                            <span class="help-tool-card-title">Map &amp; settings</span>
+                            <span class="help-tool-card-desc">Toolbar, layers, UK airspace key, sidebar, API keys, shortcuts.</span>
+                            <span class="help-tool-card-action">Open tab</span>
+                        </button>
+                        <a href="weather.html" class="help-tool-card help-tool-card--link">
+                            <span class="help-tool-card-title">Weather</span>
+                            <span class="help-tool-card-desc">Forecasts, METAR/TAF, wind by height, NOTAMs and zones in a set radius, PPTX/PDF export.</span>
+                            <span class="help-tool-card-action">Open Weather →</span>
+                        </a>
+                        <a href="airspace.html" class="help-tool-card help-tool-card--link">
+                            <span class="help-tool-card-title">Airspace</span>
+                            <span class="help-tool-card-desc">Live ADS-B (and optional OGN) for hazard awareness—not for separation or compliance.</span>
+                            <span class="help-tool-card-action">Open Airspace →</span>
+                        </a>
+                        <button type="button" class="help-tool-card" data-help-tab="report-checklist">
+                            <span class="help-tool-card-title">Flight Report</span>
+                            <span class="help-tool-card-desc">Structured records, GPS, weather fetch, airspace snippets, PDF/email, local draft storage.</span>
+                            <span class="help-tool-card-action">Help: Report &amp; checklist</span>
+                        </button>
+                        <button type="button" class="help-tool-card" data-help-tab="report-checklist">
+                            <span class="help-tool-card-title">Checklist</span>
+                            <span class="help-tool-card-desc">M4T / TD pre-flight through post-flight checks, progress, email and PDF export.</span>
+                            <span class="help-tool-card-action">Help: Report &amp; checklist</span>
+                        </button>
+                        <a href="checklist.html" class="help-tool-card help-tool-card--link">
+                            <span class="help-tool-card-title">Open checklist page</span>
+                            <span class="help-tool-card-desc">Jump straight to the live checklist (same tab).</span>
+                            <span class="help-tool-card-action">checklist.html →</span>
+                        </a>
+                        <a href="flight-notes.html" class="help-tool-card help-tool-card--link">
+                            <span class="help-tool-card-title">Open flight report page</span>
+                            <span class="help-tool-card-desc">Jump straight to the flight report form (same tab).</span>
+                            <span class="help-tool-card-action">flight-notes.html →</span>
+                        </a>
+                        <a href="training.html" class="help-tool-card help-tool-card--link">
+                            <span class="help-tool-card-title">Training</span>
+                            <span class="help-tool-card-desc">Optional arcade games: Drone Run and Drone Dash.</span>
+                            <span class="help-tool-card-action">training.html →</span>
+                        </a>
+                        <a href="flight-planning.html" class="help-tool-card help-tool-card--link">
+                            <span class="help-tool-card-title">DJI Mission Planner</span>
+                            <span class="help-tool-card-desc">Waypoints and manual recce for DJI Pilot 2 (KMZ, PPTX/PDF, SD card steps)—use its ? help there.</span>
+                            <span class="help-tool-card-action">flight-planning.html →</span>
+                        </a>
+                    </div>
+                    <p class="help-overview-hint">Install from the browser (&ldquo;Add to Home Screen&rdquo; or install app) for a standalone experience. On small screens, swipe the tab row if not all tabs fit; scroll the content below.</p>
+                    <details class="help-overview-more">
+                        <summary>What&rsquo;s new in v3, save files, full tool summaries</summary>
+                        <div class="help-overview-more-body">
+                            <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
+                            <p><strong>Weather:</strong> Tap the map to select a location, pick a forecast model (for example ECMWF IFS, GFS, UK Met Office, GEM Canada), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with small maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM and airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
+                            <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> can open a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
+                            <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear report</strong> (top), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Use the <strong>Checklist</strong> link in the header to open the M4T / TD checklist without returning to the welcome screen.</p>
+                            <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. Use <strong>Flight Report</strong> in the header to open it without going home.</p>
+                            <p><strong>What&rsquo;s new in v3:</strong> The <strong>Airspace</strong> page adds hazard-themed red aircraft icons, optional <strong>OGN</strong> glider-class traffic, <strong>altitude (ft)</strong> beside every track, session trails, and <strong>paused refresh</strong> while aircraft details are open (see above). <strong>Flight Weather</strong> exports use your Airspace search radius and optional Dark/Light report styling (default Light); PowerPoint includes per-NOTAM and per-zone map slides. <strong>Flight Report</strong> adds matching theme controls for the page and PDF, <strong>Clear report</strong> in the header, and the Airspace section on the form. Branded exports and footers show <strong>AirPlot v3</strong> where a version label is used.</p>
+                            <p><strong>Save files:</strong> Planning <strong>Save Project</strong> / <strong>Load Project</strong> JSON uses the same format as v2; older project files still load.</p>
+                        </div>
+                    </details>
                 </div>
                 <div class="tabs help-tabs">
                     <button class="tab active" data-tab="points">Points</button>
@@ -688,140 +749,260 @@
                     <button class="tab" data-tab="disclaimer">Disclaimer</button>
                 </div>
                 <div class="tab-panel active" id="help-tab-points">
-                    <h3>Adding Points</h3>
-                    <p>Add points via the sidebar form, or use the <strong>pin (Drop Point)</strong> control on the map toolbar: open it, pick a point type from the <strong>icon strip</strong>, then click the map once to place. Optional <strong>Notes</strong> are stored with each point and appear when you edit the point.</p>
-                    <p><strong>Location formats supported:</strong> UK postcode, decimal lat/lng, Ordnance Survey grid reference, degrees/minutes/seconds (DMS), and What3Words (requires API key in Settings).</p>
-                    <h3>Point Types &amp; Icons</h3>
-                    <p>Address/Reference, Primary TOLA, Secondary TOLA, Custom TOLA, Emergency Landing Zone, No-Fly Marker, Hazard, Waypoint, Custom Point, House, and TOLA. <strong>Custom Point</strong> can use a 1–2 character symbol. Many types support <strong>icon colour</strong> (colour picker or palette) so you can distinguish markers on the map.</p>
-                    <h3>Managing Points</h3>
-                    <p>Use the search box to filter points. Click a point in the list to pan to it and highlight it. Use the edit and delete buttons, or right-click a marker on the map. Drag markers to move them. Click a marker to see a <strong>quick-edit popup</strong> with label, elevation, and links to View Details or Edit. Double-click a marker or use &ldquo;View Details&rdquo; for coordinates in multiple formats (Decimal, DMS, OS Grid Ref, What3Words, Elevation) with copy-to-clipboard. Use <strong>Copy All</strong> in the Point Details modal to copy all coordinate formats at once.</p>
-                    <h3>Elevation</h3>
-                    <p>Points can display elevation (metres AMSL) when a Mapbox token is configured. Use the <strong>Always display elevation on map</strong> checkbox when adding or editing a point to show elevation in the quick-edit popup and point list.</p>
+                    <section class="help-section" id="help-points-adding">
+                        <h3>Adding Points</h3>
+                        <p>Add points via the sidebar form, or use the <strong>pin (Drop Point)</strong> control on the map toolbar: open it, pick a point type from the <strong>icon strip</strong>, then click the map once to place. Optional <strong>Notes</strong> are stored with each point and appear when you edit the point.</p>
+                        <p><strong>Location formats supported:</strong> UK postcode, decimal lat/lng, Ordnance Survey grid reference, degrees/minutes/seconds (DMS), and What3Words (requires API key in Settings).</p>
+                    </section>
+                    <section class="help-section" id="help-points-types">
+                        <h3>Point Types &amp; Icons</h3>
+                        <p>Address/Reference, Primary TOLA, Secondary TOLA, Custom TOLA, Emergency Landing Zone, No-Fly Marker, Hazard, Waypoint, Custom Point, House, and TOLA. <strong>Custom Point</strong> can use a 1–2 character symbol. Many types support <strong>icon colour</strong> (colour picker or palette) so you can distinguish markers on the map.</p>
+                    </section>
+                    <section class="help-section" id="help-points-managing">
+                        <h3>Managing Points</h3>
+                        <p>Use the search box to filter points. Click a point in the list to pan to it and highlight it. Use the edit and delete buttons, or right-click a marker on the map. Drag markers to move them. Click a marker to see a <strong>quick-edit popup</strong> with label, elevation, and links to View Details or Edit. Double-click a marker or use &ldquo;View Details&rdquo; for coordinates in multiple formats (Decimal, DMS, OS Grid Ref, What3Words, Elevation) with copy-to-clipboard. Use <strong>Copy All</strong> in the Point Details modal to copy all coordinate formats at once.</p>
+                    </section>
+                    <section class="help-section" id="help-points-elevation">
+                        <h3>Elevation</h3>
+                        <p>Points can display elevation (metres AMSL) when a Mapbox token is configured. Use the <strong>Always display elevation on map</strong> checkbox when adding or editing a point to show elevation in the quick-edit popup and point list.</p>
+                    </section>
                 </div>
                 <div class="tab-panel" id="help-tab-shapes">
-                    <h3>Drawing Shapes</h3>
-                    <p><strong>Right-click</strong> anywhere on the map (or <strong>long-press</strong> on touch devices) to open the context menu. From there you can draw:</p>
-                    <ul>
-                        <li><strong>Circle</strong> - click centre, then edge</li>
-                        <li><strong>Rectangle</strong> - drag corners</li>
-                        <li><strong>Polygon</strong> - click vertices, double-click to finish</li>
-                        <li><strong>Line</strong> - click start and end points</li>
-                        <li><strong>Arrow</strong> - click tail, then tip</li>
-                        <li><strong>Flight Path</strong> - multi-point path with direction arrows</li>
-                        <li><strong>Text</strong> - add text on the map</li>
-                    </ul>
-                    <h3>Text on the map</h3>
-                    <p>For text shapes, the edit modal has <strong>Text on map</strong> (what is drawn), an optional <strong>Label</strong> for the sidebar list, and <strong>Text style</strong>: <em>Label</em> (dark pill, white text), <em>Highlight</em> (coloured text, no background), or <em>Custom</em> with your own text and background colours. You can set <strong>font size</strong> (px) for readability.</p>
-                    <h3>Editing Shapes</h3>
-                    <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu (or the vertices button in the sidebar) to adjust polygon/line points. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path. <strong>Measurement labels</strong> on circles and flight paths can be dragged to reposition them; you can also set <strong>label angle</strong> in the edit modal where shown.</p>
-                    <h3>Copy &amp; Paste</h3>
-                    <p>Right-click a shape to copy it (<strong>Ctrl+C</strong> when selected), then right-click elsewhere to paste (<strong>Ctrl+V</strong>). Press <strong>Esc</strong> to deselect.</p>
-                    <h3>Grid Overlay</h3>
-                    <p>Add a labelled grid over your map area for reference (e.g. search patterns, sector planning). Click the <strong>grid button</strong> on the map toolbar or choose <strong>Grid Overlay</strong> from the right-click context menu, then draw a rectangle to define the grid area. Set rows (1–50) and columns (1–26). Columns are labelled A–Z, rows 1–50. Right-click a grid cell to <strong>Edit Grid</strong> (change rows/columns or visibility) or <strong>Clear Grid</strong>.</p>
-                    <h3>Drawing Style</h3>
-                    <p>The <strong>Drawing Style</strong> section in the sidebar sets colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. Values apply to new shapes; when a shape is selected, they apply to that shape.</p>
-                    <h3>Flight Overview</h3>
-                    <p>For flight paths and lines, use <strong>Flight Overview</strong> to see altitude statistics. Click the altitude icon (▲) in the sidebar next to a flight path or line, or use the <strong>Flight Overview</strong> button when editing a shape. You can also right-click the path and choose Flight Overview, or tap the path and use <strong>Delete route</strong> in the popup. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. Use <strong>Delete route</strong> in the modal footer to remove the path (with confirmation). For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>. On touch devices, long-press on a shape opens the same context menu as right-click, including <strong>Delete Shape</strong>.</p>
-                    <h3>Flight Path Distance</h3>
-                    <p>Flight paths can show total distance on the map. Use the <strong>Show distance on map</strong> checkbox when editing a flight path, or enable <strong>Show flight path distance on map</strong> in Settings to apply to all flight paths by default.</p>
+                    <nav class="help-panel-toc" aria-label="On this page">
+                        <a href="#help-shapes-block-draw">Draw &amp; text</a>
+                        <a href="#help-shapes-block-edit">Edit &amp; copy</a>
+                        <a href="#help-shapes-block-grid">Grid &amp; style</a>
+                        <a href="#help-shapes-block-flight">Flight paths</a>
+                    </nav>
+                    <details class="help-subsection" id="help-shapes-block-draw" open>
+                        <summary>Drawing shapes &amp; text</summary>
+                        <div class="help-subsection-body">
+                            <section class="help-section" id="help-shapes-draw">
+                                <h3>Drawing Shapes</h3>
+                                <p><strong>Right-click</strong> anywhere on the map (or <strong>long-press</strong> on touch devices) to open the context menu. From there you can draw:</p>
+                                <ul>
+                                    <li><strong>Circle</strong> - click centre, then edge</li>
+                                    <li><strong>Rectangle</strong> - drag corners</li>
+                                    <li><strong>Polygon</strong> - click vertices, double-click to finish</li>
+                                    <li><strong>Line</strong> - click start and end points</li>
+                                    <li><strong>Arrow</strong> - click tail, then tip</li>
+                                    <li><strong>Flight Path</strong> - multi-point path with direction arrows</li>
+                                    <li><strong>Text</strong> - add text on the map</li>
+                                </ul>
+                            </section>
+                            <section class="help-section" id="help-shapes-text">
+                                <h3>Text on the map</h3>
+                                <p>For text shapes, the edit modal has <strong>Text on map</strong> (what is drawn), an optional <strong>Label</strong> for the sidebar list, and <strong>Text style</strong>: <em>Label</em> (dark pill, white text), <em>Highlight</em> (coloured text, no background), or <em>Custom</em> with your own text and background colours. You can set <strong>font size</strong> (px) for readability.</p>
+                            </section>
+                        </div>
+                    </details>
+                    <details class="help-subsection" id="help-shapes-block-edit" open>
+                        <summary>Editing &amp; copy / paste</summary>
+                        <div class="help-subsection-body">
+                            <section class="help-section" id="help-shapes-editing">
+                                <h3>Editing Shapes</h3>
+                                <p><strong>Double-click</strong> a shape to open the edit modal. Click a shape to select and drag it. For arrows, select the arrow then drag its handles to rotate or resize. Use <strong>Edit Vertices</strong> from the context menu (or the vertices button in the sidebar) to adjust polygon/line points. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path. <strong>Measurement labels</strong> on circles and flight paths can be dragged to reposition them; you can also set <strong>label angle</strong> in the edit modal where shown.</p>
+                            </section>
+                            <section class="help-section" id="help-shapes-copy">
+                                <h3>Copy &amp; Paste</h3>
+                                <p>Right-click a shape to copy it (<strong>Ctrl+C</strong> when selected), then right-click elsewhere to paste (<strong>Ctrl+V</strong>). Press <strong>Esc</strong> to deselect.</p>
+                            </section>
+                        </div>
+                    </details>
+                    <details class="help-subsection" id="help-shapes-block-grid" open>
+                        <summary>Grid overlay &amp; drawing style</summary>
+                        <div class="help-subsection-body">
+                            <section class="help-section" id="help-shapes-grid">
+                                <h3>Grid Overlay</h3>
+                                <p>Add a labelled grid over your map area for reference (e.g. search patterns, sector planning). Click the <strong>grid button</strong> on the map toolbar or choose <strong>Grid Overlay</strong> from the right-click context menu, then draw a rectangle to define the grid area. Set rows (1–50) and columns (1–26). Columns are labelled A–Z, rows 1–50. Right-click a grid cell to <strong>Edit Grid</strong> (change rows/columns or visibility) or <strong>Clear Grid</strong>.</p>
+                            </section>
+                            <section class="help-section" id="help-shapes-style">
+                                <h3>Drawing Style</h3>
+                                <p>The <strong>Drawing Style</strong> section in the sidebar sets colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. Values apply to new shapes; when a shape is selected, they apply to that shape.</p>
+                            </section>
+                        </div>
+                    </details>
+                    <details class="help-subsection" id="help-shapes-block-flight" open>
+                        <summary>Flight overview &amp; distance</summary>
+                        <div class="help-subsection-body">
+                            <section class="help-section" id="help-shapes-overview">
+                                <h3>Flight Overview</h3>
+                                <p>For flight paths and lines, use <strong>Flight Overview</strong> to see altitude statistics. Click the altitude icon (▲) in the sidebar next to a flight path or line, or use the <strong>Flight Overview</strong> button when editing a shape. You can also right-click the path and choose Flight Overview, or tap the path and use <strong>Delete route</strong> in the popup. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. Use <strong>Delete route</strong> in the modal footer to remove the path (with confirmation). For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>. On touch devices, long-press on a shape opens the same context menu as right-click, including <strong>Delete Shape</strong>.</p>
+                            </section>
+                            <section class="help-section" id="help-shapes-distance">
+                                <h3>Flight Path Distance</h3>
+                                <p>Flight paths can show total distance on the map. Use the <strong>Show distance on map</strong> checkbox when editing a flight path, or enable <strong>Show flight path distance on map</strong> in Settings to apply to all flight paths by default.</p>
+                            </section>
+                        </div>
+                    </details>
                 </div>
                 <div class="tab-panel" id="help-tab-import">
-                    <h3>Bulk Import</h3>
-                    <p>Import many points at once via <strong>Upload CSV</strong>, <strong>Paste Data</strong> (tabular), or <strong>Paste List</strong> (one location per line). After parsing, map columns to: <strong>Latitude / Northing</strong>, <strong>Longitude / Easting</strong>, or a single <strong>Location</strong> column; plus optional <strong>Name / Label</strong>, <strong>Notes</strong>, <strong>Icon Type</strong>, <strong>Icon Colour</strong> (or Icon Color in CSV headers), and <strong>Icon Symbol</strong>. UK postcodes are supported with bulk lookup.</p>
-                    <h3>Export</h3>
-                    <p>Export points as <strong>CSV</strong>, or points and shapes as <strong>KML</strong> for use in other mapping tools. <strong>Screenshot Map</strong> captures the current map view as an image. <strong>Export as PowerPoint</strong> or <strong>Export as PDF</strong> generates a branded report with a map screenshot, points table, and shapes summary.</p>
-                    <h3>Save &amp; Load Project</h3>
-                    <p>Save your entire project (points, shapes, settings) as a JSON file. Load it later to restore your work.</p>
-                    <h3>Undo</h3>
-                    <p>Use the <strong>Undo</strong> button in the sidebar or map toolbar, or <strong>Ctrl+Z</strong> (Cmd+Z on Mac) to revert the last action.</p>
+                    <section class="help-section" id="help-import-bulk">
+                        <h3>Bulk Import</h3>
+                        <p>Import many points at once via <strong>Upload CSV</strong>, <strong>Paste Data</strong> (tabular), or <strong>Paste List</strong> (one location per line). After parsing, map columns to: <strong>Latitude / Northing</strong>, <strong>Longitude / Easting</strong>, or a single <strong>Location</strong> column; plus optional <strong>Name / Label</strong>, <strong>Notes</strong>, <strong>Icon Type</strong>, <strong>Icon Colour</strong> (or Icon Color in CSV headers), and <strong>Icon Symbol</strong>. UK postcodes are supported with bulk lookup.</p>
+                    </section>
+                    <section class="help-section" id="help-import-export">
+                        <h3>Export</h3>
+                        <p>Export points as <strong>CSV</strong>, or points and shapes as <strong>KML</strong> for use in other mapping tools. <strong>Screenshot Map</strong> captures the current map view as an image. <strong>Export as PowerPoint</strong> or <strong>Export as PDF</strong> generates a branded report with a map screenshot, points table, and shapes summary.</p>
+                    </section>
+                    <section class="help-section" id="help-import-project">
+                        <h3>Save &amp; Load Project</h3>
+                        <p>Save your entire project (points, shapes, settings) as a JSON file. Load it later to restore your work.</p>
+                    </section>
+                    <section class="help-section" id="help-import-undo">
+                        <h3>Undo</h3>
+                        <p>Use the <strong>Undo</strong> button in the sidebar or map toolbar, or <strong>Ctrl+Z</strong> (Cmd+Z on Mac) to revert the last action.</p>
+                    </section>
                 </div>
                 <div class="tab-panel" id="help-tab-map">
-                    <h3>Map Toolbar</h3>
-                    <p>Along the top-left (several Leaflet controls): <strong>Locate</strong> (GPS position), <strong>Undo</strong>, <strong>Save Project</strong>, <strong>Load Project</strong>, <strong>Flight Path</strong> (dedicated draw control), then the main draw bar with <strong>Search</strong> (opens Search Location), <strong>Hand/Pan</strong> (exit draw modes and drag the map), <strong>Drop Point</strong> (opens the icon strip; pick a type, then click the map once), then Geoman tools: <strong>Circle</strong>, <strong>Grid Overlay</strong>, <strong>Rectangle</strong>, <strong>Polygon</strong>, <strong>Line</strong>, <strong>Arrow</strong>, and <strong>Text</strong>.</p>
-                    <h3>Search Location</h3>
-                    <p>Click the search button on the map toolbar to open the Search Location modal. Enter a postcode, lat/long, OS Grid ref, DMS, or What3Words address. The map will pan and zoom to that location.</p>
-                    <h3>Map Layers</h3>
-                    <p>Use the layer control (top-right) to switch between OpenStreetMap, Topographic, Satellite, and optionally Mapbox or Ordnance Survey (OS Maps requires an API key in Settings).</p>
-                    <h3>UK Airspace</h3>
-                    <p>The airspace key (bottom-right) shows all restriction types. Use <strong>Select all</strong> to show or hide all types, or tick individual types. Click the collapse button (▼) to minimise the panel.</p>
-                    <ul>
-                        <li><strong>Prohibited</strong> - No flying permitted</li>
-                        <li><strong>Restricted</strong> - Flying limited under certain conditions</li>
-                        <li><strong>Danger</strong> - Hazardous activities may occur</li>
-                        <li><strong>FRZ / Aerodrome</strong> - Flight Restriction Zones around protected aerodromes</li>
-                        <li><strong>NOTAM</strong> - Temporary restrictions from UK NOTAM Archive. Click the arrow (▼) for options: max radius (5-50 NM), drone-relevant only, and opacity. No API key required.</li>
-                        <li><strong>RA(T)</strong> - Restricted Area Temporary from BGA Airspace Service. Requires username and password in Settings (register at airspace.bgaladder.net).</li>
-                    </ul>
-                    <p>Data is sourced from UK AIP ENR 5.1 / NATS UAS. Click any zone for details including vertical limits and activation times. Use the refresh button (↻) to reload airspace data.</p>
-                    <p>To use real NATS data, see <code>docs/AIRSPACE_DATA.md</code> for download and conversion instructions.</p>
-                    <h3>Geolocation</h3>
-                    <p>Use the locate button to show your current position on the map.</p>
-                    <h3>Sidebar &amp; footer</h3>
-                    <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes a <strong>Disclaimer</strong> link (same content as the Disclaimer tab).</p>
-                    <h3>Small screens</h3>
-                    <p>On narrow viewports the left toolbar may collapse behind a <strong>Tools</strong> (☰) button; tap to expand. The <strong>Welcome</strong> control (top-left, same pattern as on the Weather, Airspace, Flight Report, and Checklist pages) returns to the welcome screen. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
-                    <h3>Settings</h3>
-                    <p>Configure optional API keys (What3Words, OS Maps, BGA Airspace for RA(T)), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
-                    <h3>Keyboard Shortcuts</h3>
-                    <p><strong>Escape</strong> - close modals, exit drawing/drop-point mode, deselect shapes. <strong>Ctrl+Z</strong> (Cmd+Z) - undo last action. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> - copy and paste shapes.</p>
+                    <nav class="help-panel-toc" aria-label="On this page">
+                        <a href="#help-map-block-toolbar">Toolbar &amp; search</a>
+                        <a href="#help-map-block-layers">Layers &amp; airspace</a>
+                        <a href="#help-map-block-ui">Sidebar &amp; mobile</a>
+                        <a href="#help-map-block-settings">Settings &amp; keys</a>
+                    </nav>
+                    <details class="help-subsection" id="help-map-block-toolbar" open>
+                        <summary>Toolbar, search &amp; geolocation</summary>
+                        <div class="help-subsection-body">
+                            <section class="help-section" id="help-map-toolbar">
+                                <h3>Map Toolbar</h3>
+                                <p>Along the top-left (several Leaflet controls): <strong>Locate</strong> (GPS position), <strong>Undo</strong>, <strong>Save Project</strong>, <strong>Load Project</strong>, <strong>Flight Path</strong> (dedicated draw control), then the main draw bar with <strong>Search</strong> (opens Search Location), <strong>Hand/Pan</strong> (exit draw modes and drag the map), <strong>Drop Point</strong> (opens the icon strip; pick a type, then click the map once), then Geoman tools: <strong>Circle</strong>, <strong>Grid Overlay</strong>, <strong>Rectangle</strong>, <strong>Polygon</strong>, <strong>Line</strong>, <strong>Arrow</strong>, and <strong>Text</strong>.</p>
+                            </section>
+                            <section class="help-section" id="help-map-search">
+                                <h3>Search Location</h3>
+                                <p>Click the search button on the map toolbar to open the Search Location modal. Enter a postcode, lat/long, OS Grid ref, DMS, or What3Words address. The map will pan and zoom to that location.</p>
+                            </section>
+                            <section class="help-section" id="help-map-geo">
+                                <h3>Geolocation</h3>
+                                <p>Use the locate button to show your current position on the map.</p>
+                            </section>
+                        </div>
+                    </details>
+                    <details class="help-subsection" id="help-map-block-layers" open>
+                        <summary>Map layers &amp; UK airspace</summary>
+                        <div class="help-subsection-body">
+                            <section class="help-section" id="help-map-layers">
+                                <h3>Map Layers</h3>
+                                <p>Use the layer control (top-right) to switch between OpenStreetMap, Topographic, Satellite, and optionally Mapbox or Ordnance Survey (OS Maps requires an API key in Settings).</p>
+                            </section>
+                            <section class="help-section" id="help-map-airspace">
+                                <h3>UK Airspace</h3>
+                                <p>The airspace key (bottom-right) shows all restriction types. Use <strong>Select all</strong> to show or hide all types, or tick individual types. Click the collapse button (▼) to minimise the panel.</p>
+                                <ul>
+                                    <li><strong>Prohibited</strong> - No flying permitted</li>
+                                    <li><strong>Restricted</strong> - Flying limited under certain conditions</li>
+                                    <li><strong>Danger</strong> - Hazardous activities may occur</li>
+                                    <li><strong>FRZ / Aerodrome</strong> - Flight Restriction Zones around protected aerodromes</li>
+                                    <li><strong>NOTAM</strong> - Temporary restrictions from UK NOTAM Archive. Click the arrow (▼) for options: max radius (5-50 NM), drone-relevant only, and opacity. No API key required.</li>
+                                    <li><strong>RA(T)</strong> - Restricted Area Temporary from BGA Airspace Service. Requires username and password in Settings (register at airspace.bgaladder.net).</li>
+                                </ul>
+                                <p>Data is sourced from UK AIP ENR 5.1 / NATS UAS. Click any zone for details including vertical limits and activation times. Use the refresh button (↻) to reload airspace data.</p>
+                                <p>To use real NATS data, see <code>docs/AIRSPACE_DATA.md</code> for download and conversion instructions.</p>
+                            </section>
+                        </div>
+                    </details>
+                    <details class="help-subsection" id="help-map-block-ui" open>
+                        <summary>Sidebar, footer &amp; small screens</summary>
+                        <div class="help-subsection-body">
+                            <section class="help-section" id="help-map-sidebar">
+                                <h3>Sidebar &amp; footer</h3>
+                                <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes a <strong>Disclaimer</strong> link (same content as the Disclaimer tab).</p>
+                            </section>
+                            <section class="help-section" id="help-map-mobile">
+                                <h3>Small screens</h3>
+                                <p>On narrow viewports the left toolbar may collapse behind a <strong>Tools</strong> (☰) button; tap to expand. The <strong>Welcome</strong> control (top-left, same pattern as on the Weather, Airspace, Flight Report, and Checklist pages) returns to the welcome screen. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
+                            </section>
+                        </div>
+                    </details>
+                    <details class="help-subsection" id="help-map-block-settings" open>
+                        <summary>Settings &amp; keyboard shortcuts</summary>
+                        <div class="help-subsection-body">
+                            <section class="help-section" id="help-map-settings">
+                                <h3>Settings</h3>
+                                <p>Configure optional API keys (What3Words, OS Maps, BGA Airspace for RA(T)), and toggle display of point labels, shape measurements, shape labels, and flight path distance.</p>
+                            </section>
+                            <section class="help-section" id="help-map-keys">
+                                <h3>Keyboard Shortcuts</h3>
+                                <p><strong>Escape</strong> - close modals, exit drawing/drop-point mode, deselect shapes. <strong>Ctrl+Z</strong> (Cmd+Z) - undo last action. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> - copy and paste shapes.</p>
+                            </section>
+                        </div>
+                    </details>
                 </div>
                 <div class="tab-panel" id="help-tab-report-checklist">
-                    <h3>Flight Report</h3>
-                    <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use current GPS</strong> on HTTPS), mission fields (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send by email</strong>.</p>
-                    <p><strong>Local draft:</strong> What you type is saved in this browser until you use <strong>Clear report</strong> (top of the page), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Nothing is sent to AirPlot servers.</p>
-                    <p><strong>Switch to Checklist:</strong> On Flight Report, the <strong>Checklist</strong> link in the top bar (next to <strong>Welcome</strong>) opens the M4T / TD checklist in the same tab so you can move between the report and the checklist without returning to the welcome screen.</p>
-                    <h3>Checklist (M4T / TD)</h3>
-                    <p>Open <strong>Checklist</strong> from the welcome screen or via <a href="checklist.html">checklist.html</a>. The page lists pre-flight, take-off, landing, and post-flight sections with checkboxes, overall and per-section progress, <strong>Mark all complete</strong> per section, and optional short notes beside selected items (e.g. max altitude and max flight distance). Use <strong>Reset All</strong> to clear everything; confirmation uses the same modal style as elsewhere in AirPlot.</p>
-                    <p><strong>Exports:</strong> <strong>Send by email</strong> builds a plain-text summary (mailto opens your mail app; long text may copy to the clipboard first). <strong>Export to PDF</strong> uses the browser print dialog (save as PDF). Both include an <strong>exported</strong> date and time. A duplicate progress and action bar appears at the bottom of the page so you do not need to scroll back to the top to reset or export.</p>
-                    <p><strong>Local state:</strong> Checklist progress and notes are stored in this browser (not on our servers) until you reset or clear site data.</p>
-                    <p><strong>Switch to Flight Report:</strong> On the checklist page, the <strong>Flight Report</strong> link in the top bar opens that page without going home.</p>
-                    <h3>Welcome</h3>
-                    <p>From any tool, <strong>Welcome</strong> (top-left) returns to the AirPlot welcome screen to choose another mode.</p>
+                    <section class="help-section" id="help-rc-report">
+                        <h3>Flight Report</h3>
+                        <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use current GPS</strong> on HTTPS), mission fields (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send by email</strong>.</p>
+                        <p><strong>Local draft:</strong> What you type is saved in this browser until you use <strong>Clear report</strong> (top of the page), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Nothing is sent to AirPlot servers.</p>
+                        <p><strong>Switch to Checklist:</strong> On Flight Report, the <strong>Checklist</strong> link in the top bar (next to <strong>Welcome</strong>) opens the M4T / TD checklist in the same tab so you can move between the report and the checklist without returning to the welcome screen.</p>
+                    </section>
+                    <section class="help-section" id="help-rc-checklist">
+                        <h3>Checklist (M4T / TD)</h3>
+                        <p>Open <strong>Checklist</strong> from the welcome screen or via <a href="checklist.html">checklist.html</a>. The page lists pre-flight, take-off, landing, and post-flight sections with checkboxes, overall and per-section progress, <strong>Mark all complete</strong> per section, and optional short notes beside selected items (e.g. max altitude and max flight distance). Use <strong>Reset All</strong> to clear everything; confirmation uses the same modal style as elsewhere in AirPlot.</p>
+                        <p><strong>Exports:</strong> <strong>Send by email</strong> builds a plain-text summary (mailto opens your mail app; long text may copy to the clipboard first). <strong>Export to PDF</strong> uses the browser print dialog (save as PDF). Both include an <strong>exported</strong> date and time. A duplicate progress and action bar appears at the bottom of the page so you do not need to scroll back to the top to reset or export.</p>
+                        <p><strong>Local state:</strong> Checklist progress and notes are stored in this browser (not on our servers) until you reset or clear site data.</p>
+                        <p><strong>Switch to Flight Report:</strong> On the checklist page, the <strong>Flight Report</strong> link in the top bar opens that page without going home.</p>
+                    </section>
+                    <section class="help-section" id="help-rc-welcome">
+                        <h3>Welcome</h3>
+                        <p>From any tool, <strong>Welcome</strong> (top-left) returns to the AirPlot welcome screen to choose another mode.</p>
+                    </section>
                 </div>
                 <div class="tab-panel" id="help-tab-references">
-                    <h3>Data Sources</h3>
-                    <ul>
-                        <li><strong>UK Postcodes</strong> - <a href="https://postcodes.io/" target="_blank" rel="noopener">postcodes.io</a> (free, no API key required)</li>
-                        <li><strong>What3Words</strong> - <a href="https://what3words.com/developer" target="_blank" rel="noopener">What3Words API</a> (requires API key)</li>
-                        <li><strong>Ordnance Survey Maps</strong> - <a href="https://osdatahub.os.uk/" target="_blank" rel="noopener">OS Data Hub</a> (requires API key)</li>
-                        <li><strong>OpenStreetMap</strong> - <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (map tiles)</li>
-                        <li><strong>OpenTopoMap</strong> - <a href="https://opentopomap.org/" target="_blank" rel="noopener">OpenTopoMap</a> (topographic tiles, SRTM elevation)</li>
-                        <li><strong>Mapbox</strong> - <a href="https://www.mapbox.com/" target="_blank" rel="noopener">Mapbox</a> (map tiles, Terrain-RGB elevation; requires token in config)</li>
-                        <li><strong>UK Airspace</strong> - UK AIP ENR 5.1 / <a href="https://nats-uk.ead-it.com/" target="_blank" rel="noopener">NATS UAS</a> (Prohibited, Restricted, Danger, FRZ)</li>
-                        <li><strong>UK NOTAM</strong> - <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS Contingency PIB, hourly updated)</li>
-                        <li><strong>RA(T) Airspace</strong> - <a href="https://airspace.bgaladder.net/" target="_blank" rel="noopener">BGA Airspace Service</a> (requires username/password)</li>
-                        <li><strong>Open-Meteo</strong> - <a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a> (forecast data for the <a href="weather.html">Weather</a> page and optional fetch in Flight Report)</li>
-                        <li><strong>ADSB.lol</strong> - <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">api.adsb.lol</a> (live ADS-B JSON for the <a href="airspace.html">Airspace</a> page)</li>
-                        <li><strong>Open Glider Network (OGN)</strong> - <a href="https://www.glidernet.org/" target="_blank" rel="noopener">glidernet.org</a> (optional FLARM-class live feed on the <a href="airspace.html">Airspace</a> page)</li>
-                    </ul>
-                    <h3>Libraries &amp; Tools</h3>
-                    <ul>
-                        <li><strong>Leaflet</strong> 1.9.4 - <a href="https://leafletjs.com/" target="_blank" rel="noopener">leafletjs.com</a> - interactive maps</li>
-                        <li><strong>Leaflet-Geoman</strong> 2.16.0 - <a href="https://geoman.io/leaflet-geoman" target="_blank" rel="noopener">geoman.io</a> - drawing and editing shapes</li>
-                        <li><strong>Leaflet.Locate</strong> 0.79.0 - <a href="https://github.com/domoritz/leaflet-locatecontrol" target="_blank" rel="noopener">GitHub</a> - geolocation control</li>
-                        <li><strong>Leaflet.Curve</strong> 0.9.2 - <a href="https://github.com/elfalem/Leaflet.curve" target="_blank" rel="noopener">GitHub</a> - bezier curves</li>
-                        <li><strong>Lucide Icons</strong> 0.468.0 - <a href="https://lucide.dev/" target="_blank" rel="noopener">lucide.dev</a> - icons</li>
-                        <li><strong>html2canvas</strong> 1.4.1 - <a href="https://html2canvas.hertzen.com/" target="_blank" rel="noopener">html2canvas</a> - map screenshots</li>
-                        <li><strong>PptxGenJS</strong> 3.12.0 - <a href="https://gitbrent.github.io/PptxGenJS/" target="_blank" rel="noopener">PptxGenJS</a> - PowerPoint export</li>
-                        <li><strong>jsPDF</strong> 2.5.1 &amp; <strong>jsPDF-AutoTable</strong> 3.8.2 - <a href="https://github.com/parallax/jsPDF" target="_blank" rel="noopener">jsPDF</a> - PDF export</li>
-                        <li><strong>Google Fonts</strong> - <a href="https://fonts.google.com/" target="_blank" rel="noopener">fonts.google.com</a> - Inter font</li>
-                    </ul>
-                    <h3>Coordinate Systems</h3>
-                    <p>OS Grid Reference conversion uses Ordnance Survey National Grid (OSGB36) to WGS84 transformation (Airy 1830 ellipsoid).</p>
+                    <div class="help-references-layout">
+                        <section class="help-section" id="help-ref-data">
+                            <h3>Data Sources</h3>
+                            <ul>
+                                <li><strong>UK Postcodes</strong> - <a href="https://postcodes.io/" target="_blank" rel="noopener">postcodes.io</a> (free, no API key required)</li>
+                                <li><strong>What3Words</strong> - <a href="https://what3words.com/developer" target="_blank" rel="noopener">What3Words API</a> (requires API key)</li>
+                                <li><strong>Ordnance Survey Maps</strong> - <a href="https://osdatahub.os.uk/" target="_blank" rel="noopener">OS Data Hub</a> (requires API key)</li>
+                                <li><strong>OpenStreetMap</strong> - <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (map tiles)</li>
+                                <li><strong>OpenTopoMap</strong> - <a href="https://opentopomap.org/" target="_blank" rel="noopener">OpenTopoMap</a> (topographic tiles, SRTM elevation)</li>
+                                <li><strong>Mapbox</strong> - <a href="https://www.mapbox.com/" target="_blank" rel="noopener">Mapbox</a> (map tiles, Terrain-RGB elevation; requires token in config)</li>
+                                <li><strong>UK Airspace</strong> - UK AIP ENR 5.1 / <a href="https://nats-uk.ead-it.com/" target="_blank" rel="noopener">NATS UAS</a> (Prohibited, Restricted, Danger, FRZ)</li>
+                                <li><strong>UK NOTAM</strong> - <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS Contingency PIB, hourly updated)</li>
+                                <li><strong>RA(T) Airspace</strong> - <a href="https://airspace.bgaladder.net/" target="_blank" rel="noopener">BGA Airspace Service</a> (requires username/password)</li>
+                                <li><strong>Open-Meteo</strong> - <a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a> (forecast data for the <a href="weather.html">Weather</a> page and optional fetch in Flight Report)</li>
+                                <li><strong>ADSB.lol</strong> - <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">api.adsb.lol</a> (live ADS-B JSON for the <a href="airspace.html">Airspace</a> page)</li>
+                                <li><strong>Open Glider Network (OGN)</strong> - <a href="https://www.glidernet.org/" target="_blank" rel="noopener">glidernet.org</a> (optional FLARM-class live feed on the <a href="airspace.html">Airspace</a> page)</li>
+                            </ul>
+                        </section>
+                        <section class="help-section" id="help-ref-libs">
+                            <h3>Libraries &amp; Tools</h3>
+                            <ul>
+                                <li><strong>Leaflet</strong> 1.9.4 - <a href="https://leafletjs.com/" target="_blank" rel="noopener">leafletjs.com</a> - interactive maps</li>
+                                <li><strong>Leaflet-Geoman</strong> 2.16.0 - <a href="https://geoman.io/leaflet-geoman" target="_blank" rel="noopener">geoman.io</a> - drawing and editing shapes</li>
+                                <li><strong>Leaflet.Locate</strong> 0.79.0 - <a href="https://github.com/domoritz/leaflet-locatecontrol" target="_blank" rel="noopener">GitHub</a> - geolocation control</li>
+                                <li><strong>Leaflet.Curve</strong> 0.9.2 - <a href="https://github.com/elfalem/Leaflet.curve" target="_blank" rel="noopener">GitHub</a> - bezier curves</li>
+                                <li><strong>Lucide Icons</strong> 0.468.0 - <a href="https://lucide.dev/" target="_blank" rel="noopener">lucide.dev</a> - icons</li>
+                                <li><strong>html2canvas</strong> 1.4.1 - <a href="https://html2canvas.hertzen.com/" target="_blank" rel="noopener">html2canvas</a> - map screenshots</li>
+                                <li><strong>PptxGenJS</strong> 3.12.0 - <a href="https://gitbrent.github.io/PptxGenJS/" target="_blank" rel="noopener">PptxGenJS</a> - PowerPoint export</li>
+                                <li><strong>jsPDF</strong> 2.5.1 &amp; <strong>jsPDF-AutoTable</strong> 3.8.2 - <a href="https://github.com/parallax/jsPDF" target="_blank" rel="noopener">jsPDF</a> - PDF export</li>
+                                <li><strong>Google Fonts</strong> - <a href="https://fonts.google.com/" target="_blank" rel="noopener">fonts.google.com</a> - Inter font</li>
+                            </ul>
+                        </section>
+                    </div>
+                    <section class="help-section help-section--full" id="help-ref-coords">
+                        <h3>Coordinate Systems</h3>
+                        <p>OS Grid Reference conversion uses Ordnance Survey National Grid (OSGB36) to WGS84 transformation (Airy 1830 ellipsoid).</p>
+                    </section>
                 </div>
                 <div class="tab-panel" id="help-tab-disclaimer">
-                    <h3>Disclaimer</h3>
-                    <p>AirPlot is a planning and visualisation tool for drone operations. Please read the following carefully.</p>
-                    <h4>Use at your own risk</h4>
-                    <p>This application is provided &ldquo;as is&rdquo; without warranty of any kind. The developer accepts no liability for any loss, damage, injury, or consequential loss arising from the use of this application or reliance on its outputs.</p>
-                    <h4>Development status</h4>
-                    <p>This application is currently in development. It may contain errors, bugs, or omissions. Features may change without notice. The application is not guaranteed to be complete, accurate, or fit for any particular purpose.</p>
-                    <h4>Operational decisions</h4>
-                    <p>The outputs of this application must not be used as the sole basis for operational decisions. You should always verify information against official sources (e.g. CAA, NATS, relevant aviation authorities) and exercise your own professional judgement. This tool is intended to support planning and visualisation only; it is not a substitute for proper flight planning, risk assessment, or regulatory compliance.</p>
-                    <h4>Data accuracy</h4>
-                    <p>Map data, airspace information, elevation data, and other outputs are derived from third-party sources and may be incomplete, inaccurate, or out of date. You are responsible for verifying all information before use.</p>
-                    <h4>Regulatory compliance</h4>
-                    <p>It is your responsibility to ensure that any flight operations comply with all applicable laws, regulations, and permissions. This application does not constitute legal or professional advice.</p>
+                    <section class="help-section" id="help-disclaimer-intro">
+                        <h3>Disclaimer</h3>
+                        <p>AirPlot is a planning and visualisation tool for drone operations. Please read the following carefully.</p>
+                    </section>
+                    <section class="help-section help-section--legal" id="help-disclaimer-body">
+                        <h4>Use at your own risk</h4>
+                        <p>This application is provided &ldquo;as is&rdquo; without warranty of any kind. The developer accepts no liability for any loss, damage, injury, or consequential loss arising from the use of this application or reliance on its outputs.</p>
+                        <h4>Development status</h4>
+                        <p>This application is currently in development. It may contain errors, bugs, or omissions. Features may change without notice. The application is not guaranteed to be complete, accurate, or fit for any particular purpose.</p>
+                        <h4>Operational decisions</h4>
+                        <p>The outputs of this application must not be used as the sole basis for operational decisions. You should always verify information against official sources (e.g. CAA, NATS, relevant aviation authorities) and exercise your own professional judgement. This tool is intended to support planning and visualisation only; it is not a substitute for proper flight planning, risk assessment, or regulatory compliance.</p>
+                        <h4>Data accuracy</h4>
+                        <p>Map data, airspace information, elevation data, and other outputs are derived from third-party sources and may be incomplete, inaccurate, or out of date. You are responsible for verifying all information before use.</p>
+                        <h4>Regulatory compliance</h4>
+                        <p>It is your responsibility to ensure that any flight operations comply with all applicable laws, regulations, and permissions. This application does not constitute legal or professional advice.</p>
+                    </section>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1152,6 +1333,7 @@
 
     <!-- Leaflet.Locate -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+    <script src="js/geolocation-helpers.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@0.468.0"></script>
     <!-- Simple bezier curves -->

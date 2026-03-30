@@ -1545,19 +1545,21 @@
     }
 
     function tryInitialViewFromGeolocation() {
-        if (!navigator.geolocation || !map) return;
-        navigator.geolocation.getCurrentPosition(
-            function (pos) {
-                var lat = pos.coords.latitude;
-                var lng = pos.coords.longitude;
-                if (!map || !isFinite(lat) || !isFinite(lng)) return;
-                map.setView([lat, lng], map.getZoom(), { animate: false });
-            },
-            function () {
+        if (!map) return;
+        function applyPos(pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+            if (!map || !isFinite(lat) || !isFinite(lng)) return;
+            map.setView([lat, lng], map.getZoom(), { animate: false });
+        }
+        if (typeof GeoLocate !== 'undefined' && GeoLocate.getCurrentPositionRobust) {
+            GeoLocate.getCurrentPositionRobust(applyPos, function () {
                 /* keep DEFAULT_MAP_CENTER */
-            },
-            GEO_INITIAL_OPTIONS
-        );
+            });
+            return;
+        }
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(applyPos, function () {}, GEO_INITIAL_OPTIONS);
     }
 
     function initMap() {
@@ -1611,15 +1613,22 @@
         ).addTo(map);
 
         if (typeof L.control.locate === 'function') {
-            L.control.locate({
-                position: 'topleft',
-                strings: {
-                    title: 'Show my location',
-                    popup: 'You are within {distance} from this point',
-                    outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
-                },
-                locateOptions: { enableHighAccuracy: true }
-            }).addTo(map);
+            var geoOkAs = typeof GeoLocate === 'undefined' || GeoLocate.isGeolocationEnvironmentOk();
+            if (geoOkAs) {
+                var locateOptsAs =
+                    typeof GeoLocate !== 'undefined' && GeoLocate.leafletLocateOptions
+                        ? GeoLocate.leafletLocateOptions()
+                        : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+                L.control.locate({
+                    position: 'topleft',
+                    strings: {
+                        title: 'Show my location',
+                        popup: 'You are within {distance} from this point',
+                        outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
+                    },
+                    locateOptions: locateOptsAs
+                }).addTo(map);
+            }
         }
 
         const InfoControl = L.Control.extend({

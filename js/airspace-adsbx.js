@@ -74,30 +74,47 @@
     }
 
     function onLocate() {
+        var blocked =
+            typeof GeoLocate !== 'undefined' && GeoLocate.secureContextBlockedMessage
+                ? GeoLocate.secureContextBlockedMessage()
+                : null;
+        if (blocked) {
+            setStatus(blocked, true);
+            return;
+        }
         if (!navigator.geolocation) {
             setStatus('Location is not available in this browser.', true);
             return;
         }
         setStatus('Getting your location…', false);
         locateBtn.disabled = true;
-        navigator.geolocation.getCurrentPosition(
-            function (pos) {
-                lat = pos.coords.latitude;
-                lon = pos.coords.longitude;
-                zoom = LOCATE_ZOOM;
-                applyView();
-                setStatus('', false);
-                locateBtn.disabled = false;
-            },
-            function () {
-                setStatus(
-                    'Could not get your location. Allow access when prompted, or use HTTPS / localhost.',
-                    true
-                );
-                locateBtn.disabled = false;
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-        );
+
+        function onOk(pos) {
+            lat = pos.coords.latitude;
+            lon = pos.coords.longitude;
+            zoom = LOCATE_ZOOM;
+            applyView();
+            setStatus('', false);
+            locateBtn.disabled = false;
+        }
+        function onFail(err) {
+            var msg =
+                typeof GeoLocate !== 'undefined' && GeoLocate.geolocationErrorMessage
+                    ? GeoLocate.geolocationErrorMessage(err)
+                    : 'Could not get your location. Allow access when prompted, or use HTTPS / localhost.';
+            setStatus(msg, true);
+            locateBtn.disabled = false;
+        }
+
+        if (typeof GeoLocate !== 'undefined' && GeoLocate.getCurrentPositionRobust) {
+            GeoLocate.getCurrentPositionRobust(onOk, onFail);
+        } else {
+            navigator.geolocation.getCurrentPosition(
+                onOk,
+                onFail,
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+            );
+        }
     }
 
     if (zoomInBtn) zoomInBtn.addEventListener('click', onZoomIn);

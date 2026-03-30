@@ -7,19 +7,41 @@
     'use strict';
 
     const WEATHER_STATUS_HTML_DEFAULT = [
-        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlot v3.0) shows forecast and aviation information for a point on the map.</p>',
-        '<p><strong>Steps</strong></p>',
+        '<div class="weather-help-doc">',
+        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlot v3.0) shows forecast and aviation data for one point on the map. The map <strong>info (ⓘ)</strong> control opens or closes this panel.</p>',
+        '<section class="weather-help-section" aria-labelledby="weather-help-steps-title">',
+        '<h3 class="weather-help-section-title" id="weather-help-steps-title">Quick steps</h3>',
         '<ol class="weather-help-list">',
         '<li>Choose a <strong>Model</strong> (e.g. Best match, ECMWF, GFS) and time: <strong>Now</strong> or <strong>Date &amp; Time</strong>.</li>',
-        '<li>Set a location: tap <strong>Select Location</strong> then tap the map, or <strong>right-click</strong> the map (or <strong>long-press</strong> on touch) and choose <strong>Get Weather</strong>.</li>',
+        '<li>Set a location: tap <strong>Select Location</strong> then tap the map, or <strong>right-click</strong> (or <strong>long-press</strong> on touch) and choose <strong>Get Weather</strong>.</li>',
         '<li>Tap <strong>Get Weather</strong> to open the report panel.</li>',
         '</ol>',
-        '<p><strong>Report tabs:</strong> <strong>Summary</strong> (wind by altitude, visibility, clouds, precipitation, temperature), <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>, <strong>Airspace</strong> (set <strong>Search radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map per item). Expand <strong>About this forecast model</strong> on the Summary tab for model notes.</p>',
-        '<p><strong>Export:</strong> <strong>PPTX</strong> or <strong>PDF</strong> branded reports. Under <strong>Export</strong>, choose <strong>Dark</strong> or <strong>Light</strong> for document colours (default <strong>Light</strong>; the on-screen report preview matches). NOTAM and airspace data uses the <strong>radius from the Airspace tab</strong> at export time. <strong>PPTX</strong> includes a mini map on each NOTAM and airspace slide plus an overview map; <strong>PDF</strong> includes summary tables, a <strong>map + details</strong> section per NOTAM/zone (same idea as Flight Report), and an overview map. The map <strong>ⓘ</strong> button opens or closes this instructions panel.</p>',
-        '<p>From here you can also open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">M4T / TD Checklist</a> from the welcome screen; those pages link to each other in the header so you can move between the report and checklist without returning home. Use <strong>Welcome</strong> (top-left) to return to the AirPlot home screen. Attribution and data sources are shown in the report.</p>'
+        '</section>',
+        '<section class="weather-help-section" aria-labelledby="weather-help-report-title">',
+        '<h3 class="weather-help-section-title" id="weather-help-report-title">Inside the report</h3>',
+        '<p class="weather-help-section-text"><strong>Summary</strong> — wind by altitude, visibility, clouds, precipitation, temperature. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>. <strong>Airspace</strong> — set <strong>Search radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About this forecast model</strong> for model notes.</p>',
+        '</section>',
+        '<details class="weather-help-details">',
+        '<summary>Export (PPTX &amp; PDF)</summary>',
+        '<div class="weather-help-details-body">',
+        '<p><strong>PPTX</strong> or <strong>PDF</strong> branded reports. Under <strong>Export</strong>, pick <strong>Dark</strong> or <strong>Light</strong> (default <strong>Light</strong>; the on-screen preview matches). NOTAM and airspace use the <strong>radius from the Airspace tab</strong> at export time.</p>',
+        '<p><strong>PPTX</strong> adds a mini map on each NOTAM and airspace slide plus an overview map. <strong>PDF</strong> adds summary tables, a <strong>map + details</strong> block per NOTAM/zone (like Flight Report), and an overview map.</p>',
+        '</div>',
+        '</details>',
+        '<section class="weather-help-section" aria-labelledby="weather-help-related-title">',
+        '<h3 class="weather-help-section-title" id="weather-help-related-title">Elsewhere in AirPlot</h3>',
+        '<p class="weather-help-section-text weather-help-section-text--muted">Attribution and data sources appear in the report. <strong>Welcome</strong> (top-left) returns to the home screen.</p>',
+        '<div class="weather-help-links">',
+        '<a href="index.html" class="weather-help-link-chip">Home</a>',
+        '<a href="flight-notes.html" class="weather-help-link-chip">Flight Report</a>',
+        '<a href="checklist.html" class="weather-help-link-chip">Checklist</a>',
+        '</div>',
+        '<p class="weather-help-footnote">Flight Report and Checklist pages link to each other in the header so you can switch without going home.</p>',
+        '</section>',
+        '</div>'
     ].join('');
 
-    const WEATHER_STATUS_HTML_SELECTED = 'Location selected. Set time and tap <strong>Get Weather</strong>.';
+    const WEATHER_STATUS_HTML_SELECTED = '<p class="weather-help-status-selected">Location selected. Set time and tap <strong>Get Weather</strong>.</p>';
 
     const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
     const HOURLY_PARAMS = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_120m,wind_direction_120m,visibility,cloud_cover,cloud_cover_low,precipitation,precipitation_probability,temperature_2m';
@@ -230,19 +252,21 @@
     }
 
     function tryInitialViewFromGeolocation() {
-        if (!navigator.geolocation || !map) return;
-        navigator.geolocation.getCurrentPosition(
-            function (pos) {
-                var lat = pos.coords.latitude;
-                var lng = pos.coords.longitude;
-                if (!map || !isFinite(lat) || !isFinite(lng)) return;
-                map.setView([lat, lng], map.getZoom(), { animate: false });
-            },
-            function () {
+        if (!map) return;
+        function applyPos(pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+            if (!map || !isFinite(lat) || !isFinite(lng)) return;
+            map.setView([lat, lng], map.getZoom(), { animate: false });
+        }
+        if (typeof GeoLocate !== 'undefined' && GeoLocate.getCurrentPositionRobust) {
+            GeoLocate.getCurrentPositionRobust(applyPos, function () {
                 /* keep DEFAULT_MAP_CENTER */
-            },
-            GEO_INITIAL_OPTIONS
-        );
+            });
+            return;
+        }
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(applyPos, function () {}, GEO_INITIAL_OPTIONS);
     }
 
     // ---- Map init ----
@@ -277,15 +301,22 @@
         ).addTo(map);
 
         if (typeof L.control.locate === 'function') {
-            L.control.locate({
-                position: 'topleft',
-                strings: {
-                    title: 'Show my location',
-                    popup: 'You are within {distance} from this point',
-                    outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
-                },
-                locateOptions: { enableHighAccuracy: true }
-            }).addTo(map);
+            var geoOkW = typeof GeoLocate === 'undefined' || GeoLocate.isGeolocationEnvironmentOk();
+            if (geoOkW) {
+                var locateOptsW =
+                    typeof GeoLocate !== 'undefined' && GeoLocate.leafletLocateOptions
+                        ? GeoLocate.leafletLocateOptions()
+                        : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+                L.control.locate({
+                    position: 'topleft',
+                    strings: {
+                        title: 'Show my location',
+                        popup: 'You are within {distance} from this point',
+                        outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
+                    },
+                    locateOptions: locateOptsW
+                }).addTo(map);
+            }
         }
 
         const InfoControl = L.Control.extend({
@@ -1546,6 +1577,15 @@
     }
 
     const MI_TO_KM = 1.609344;
+    /** 1 kt = 1.852 km/h (exact). */
+    const KT_TO_KPH = 1.852;
+
+    function ktWithKphBracket(kt) {
+        const n = Number(kt);
+        if (!Number.isFinite(n)) return String(kt) + ' kt';
+        const kph = Math.round(n * KT_TO_KPH);
+        return n + ' kt (' + kph + ' kph)';
+    }
 
     function kmBracketFromMiles(mi) {
         const km = mi * MI_TO_KM;
@@ -1607,11 +1647,15 @@
         if (!m) return '';
         const parts = [];
         if (m.wdir != null && m.wspd != null) {
-            let wind = 'Wind ' + (m.wspd >= 7 ? directionToCardinal(m.wdir) + ' at ' + m.wspd : 'calm');
-            if (m.wdir === 0 && m.wspd === 0) wind = 'Wind calm';
-            else if (m.wspd < 7) wind = 'Wind variable at ' + m.wspd + ' kt';
-            if (m.wgst != null && m.wgst > m.wspd) wind += ' gusting ' + m.wgst;
-            wind += ' kt';
+            let wind;
+            if (m.wdir === 0 && m.wspd === 0) {
+                wind = 'Wind calm';
+            } else if (m.wspd < 7) {
+                wind = 'Wind variable at ' + ktWithKphBracket(m.wspd);
+            } else {
+                wind = 'Wind ' + directionToCardinal(m.wdir) + ' at ' + ktWithKphBracket(m.wspd);
+            }
+            if (m.wgst != null && m.wgst > m.wspd) wind += ' gusting ' + ktWithKphBracket(m.wgst);
             parts.push(wind);
         }
         parts.push('Visibility ' + formatVisib(m.visib));
@@ -1635,8 +1679,8 @@
             const parts = [];
             if (from && to) parts.push(from + ' – ' + to + change);
             if (f.wdir != null && f.wspd != null) {
-                let w = 'Wind ' + directionToCardinal(f.wdir) + ' ' + f.wspd + ' kt';
-                if (f.wgst) w += ' gusting ' + f.wgst + ' kt';
+                let w = 'Wind ' + directionToCardinal(f.wdir) + ' ' + ktWithKphBracket(f.wspd);
+                if (f.wgst) w += ' gusting ' + ktWithKphBracket(f.wgst);
                 parts.push(w);
             }
             if (f.visib != null) parts.push('Visibility ' + formatVisib(f.visib));

@@ -207,7 +207,6 @@
     }
 
     var MAILTO_BODY_MAX = 1800;
-    var GPS_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
     var miniMap = null;
 
@@ -1510,33 +1509,52 @@
     }
 
     function onGpsClick() {
+        var blocked =
+            typeof GeoLocate !== 'undefined' && GeoLocate.secureContextBlockedMessage
+                ? GeoLocate.secureContextBlockedMessage()
+                : null;
+        if (blocked) {
+            setGpsStatus(blocked, 'error');
+            return;
+        }
         if (!navigator.geolocation) {
             setGpsStatus('Geolocation is not available in this browser.', 'error');
             return;
         }
-        // Secure context: HTTPS or localhost, required for geolocation in most browsers.
         var btn = document.getElementById('fnGpsBtn');
         if (btn) btn.disabled = true;
         setGpsStatus('Getting location…', '');
 
-        navigator.geolocation.getCurrentPosition(
-            function (pos) {
-                var lat = pos.coords.latitude;
-                var lng = pos.coords.longitude;
-                if (btn) btn.disabled = false;
-                showLocationResolved(lat, lng, null, 'Location updated from GPS.');
-            },
-            function (err) {
-                hideLocationResult();
-                var msg = 'Could not get location.';
+        function onOk(pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+            if (btn) btn.disabled = false;
+            showLocationResolved(lat, lng, null, 'Location updated from GPS.');
+        }
+        function onFail(err) {
+            hideLocationResult();
+            var msg;
+            if (typeof GeoLocate !== 'undefined' && GeoLocate.geolocationErrorMessage) {
+                msg = GeoLocate.geolocationErrorMessage(err);
+            } else {
+                msg = 'Could not get location.';
                 if (err && err.code === 1) msg = 'Location permission denied.';
                 else if (err && err.code === 2) msg = 'Location unavailable.';
                 else if (err && err.code === 3) msg = 'Location request timed out.';
-                setGpsStatus(msg, 'error');
-                if (btn) btn.disabled = false;
-            },
-            GPS_OPTIONS
-        );
+            }
+            setGpsStatus(msg, 'error');
+            if (btn) btn.disabled = false;
+        }
+
+        if (typeof GeoLocate !== 'undefined' && GeoLocate.getCurrentPositionRobust) {
+            GeoLocate.getCurrentPositionRobust(onOk, onFail);
+        } else {
+            navigator.geolocation.getCurrentPosition(
+                onOk,
+                onFail,
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        }
     }
 
     function emailSubject() {
