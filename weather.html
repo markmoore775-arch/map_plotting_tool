@@ -21,7 +21,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/weather.css?v=24">
+    <link rel="stylesheet" href="css/weather.css?v=25">
 </head>
 <body class="weather-mode">
     <div id="map"></div>
@@ -236,6 +236,12 @@
                             <input type="number" class="weather-airspace-radius-input" id="weatherAirspaceRadiusKm" min="1" max="100" step="1" value="5" inputmode="numeric">
                             <button type="button" class="btn btn-secondary weather-airspace-refresh-btn" id="weatherAirspaceRefreshBtn">Refresh</button>
                         </div>
+                        <div class="weather-airspace-notam-filters" role="group" aria-label="NOTAM filters">
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamDroneOnly"> Drone-keyword filter</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamHideAd"> Hide airfield ops</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamPrioritise"> Prioritise for UAS</label>
+                        </div>
+                        <p class="weather-airspace-vertical-hint">Vertical limits show Q-line values from the PIB where present; verify on the official NATS briefing if critical.</p>
                         <div id="weatherAirspaceLoading" class="weather-airspace-loading hidden">
                             <div class="spinner"></div>
                             <p>Loading airspace data…</p>
@@ -279,7 +285,8 @@
 
     <script src="js/pptx-theme.js?v=10"></script>
     <script src="js/pdf-theme.js?v=6"></script>
-    <script src="js/airspace-nearby.js?v=2"></script>
-    <script src="js/weather.js?v=21"></script>
+    <script src="js/notam-pib.js?v=1"></script>
+    <script src="js/airspace-nearby.js?v=3"></script>
+    <script src="js/weather.js?v=22"></script>
 </body>
 </html>

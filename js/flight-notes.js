@@ -268,6 +268,22 @@
         return Math.min(100, Math.max(1, Math.round(v)));
     }
 
+    function fnNotamFetchOptions() {
+        function on(id) {
+            var el = document.getElementById(id);
+            return !!(el && el.checked);
+        }
+        return {
+            droneRelevantOnly: on('fnNotamDroneOnly'),
+            hideAerodromeGround: on('fnNotamHideAd'),
+            prioritiseUas: on('fnNotamPrioritise')
+        };
+    }
+
+    function fnNotamCatClass(cat) {
+        return 'fn-notam-' + String(cat || 'other').replace(/_/g, '-');
+    }
+
     function syncFnAirspaceIntroKm() {
         var intro = document.getElementById('fnAirspaceIntroKm');
         var v = readFnAirspaceRadiusFromInput();
@@ -393,11 +409,24 @@
                 var validStr = validStart + ' – ' + validEnd;
                 var descText = (n.text || '').replace(/\s+/g, ' ');
                 if (descText.length > 300) descText = descText.slice(0, 297) + '…';
+                var cat = n.uasCategory || 'other';
+                var badge =
+                    typeof NotamPib !== 'undefined'
+                        ? NotamPib.notamBadgeMeta(cat)
+                        : { label: 'NOTAM', cssClass: 'badge-notam-general' };
+                var vert = n.verticalSummary ? escapeHtmlFn(n.verticalSummary) : '—';
+                var adNote = n.itemA ? '<br>AD: ' + escapeHtmlFn(n.itemA) : '';
                 content.insertAdjacentHTML(
                     'beforeend',
-                    '<div class="fn-airspace-item category-notam">' +
+                    '<div class="fn-airspace-item category-notam ' +
+                        fnNotamCatClass(cat) +
+                        '">' +
                         '<div class="fn-airspace-item-header">' +
-                        '<span class="fn-airspace-badge badge-notam">NOTAM</span>' +
+                        '<span class="fn-airspace-badge ' +
+                        badge.cssClass +
+                        '">' +
+                        escapeHtmlFn(badge.label) +
+                        '</span>' +
                         '<span class="fn-airspace-item-name">' +
                         escapeHtmlFn(n.id || 'NOTAM') +
                         '</span>' +
@@ -406,6 +435,9 @@
                         dist +
                         ' km away' +
                         (n.radiusNm > 0 && n.radiusNm < 999 ? ' · Radius: ' + n.radiusNm + ' NM' : '') +
+                        '<br>Vertical (Q-line / text): ' +
+                        vert +
+                        adNote +
                         '<br>Valid: ' +
                         escapeHtmlFn(validStr) +
                         '<br>' +
@@ -418,6 +450,9 @@
                         ' km</p>' +
                         '<p><strong>Radius</strong> ' +
                         escapeHtmlFn(n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm + ' NM' : '—') +
+                        '</p>' +
+                        '<p><strong>Vertical</strong> ' +
+                        vert +
                         '</p>' +
                         '<p><strong>Valid</strong> ' +
                         escapeHtmlFn(validStart) +
@@ -588,7 +623,7 @@
         var content = document.getElementById('fnAirspaceContent');
         if (loading) loading.classList.remove('hidden');
         try {
-            var notams = await AirspaceNearby.fetchNearbyNotams(ll.lat, ll.lng, r);
+            var notams = await AirspaceNearby.fetchNearbyNotams(ll.lat, ll.lng, r, fnNotamFetchOptions());
             var air = await AirspaceNearby.fetchNearbyAirspace(ll.lat, ll.lng, r);
             fnLastNotams = notams;
             fnLastAirspace = air;
@@ -622,7 +657,7 @@
         fnAirspaceRadiusKm = r;
         syncFnAirspaceIntroKm();
         try {
-            var notams = await AirspaceNearby.fetchNearbyNotams(ll.lat, ll.lng, r);
+            var notams = await AirspaceNearby.fetchNearbyNotams(ll.lat, ll.lng, r, fnNotamFetchOptions());
             var air = await AirspaceNearby.fetchNearbyAirspace(ll.lat, ll.lng, r);
             fnLastNotams = notams;
             fnLastAirspace = air;
@@ -671,9 +706,14 @@
         if (kind === 'notam' && n) {
             var dist = AirspaceNearby.haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
             var lines = [];
-            lines.push('NOTAM ' + (n.id || '—'));
+            var tag =
+                typeof NotamPib !== 'undefined'
+                    ? NotamPib.notamBadgeMeta(n.uasCategory || 'other').label
+                    : 'NOTAM';
+            lines.push('NOTAM ' + (n.id || '—') + ' (' + tag + ')');
             lines.push('Distance: ' + dist + ' km from your location');
             if (n.radiusNm > 0 && n.radiusNm < 999) lines.push('Radius: ' + n.radiusNm + ' NM');
+            if (n.verticalSummary) lines.push('Vertical (Q-line / text): ' + n.verticalSummary);
             lines.push('Valid: ' + formatNotamDateFn(n.startValidity) + ' – ' + formatNotamDateFn(n.endValidity));
             var txt = (n.text || '').replace(/\s+/g, ' ').trim();
             if (txt.length > 1100) txt = txt.slice(0, 1097) + '…';

@@ -6,6 +6,8 @@
 var AirspaceNearby = (function () {
     'use strict';
 
+    var NP = typeof NotamPib !== 'undefined' ? NotamPib : null;
+
     /**
      * UK AIP / NATS airspace descriptions are often HTML tables. Strip to readable plain text
      * for UI and exports (avoids showing raw tags when escaped, or unsafe innerHTML).
@@ -88,55 +90,48 @@ var AirspaceNearby = (function () {
         return null;
     }
 
-    async function fetchNearbyNotams(lat, lng, radiusKm) {
+    /**
+     * @param {number} lat
+     * @param {number} lng
+     * @param {number} radiusKm
+     * @param {object} [options]
+     * @param {boolean} [options.droneRelevantOnly] — keyword filter (UAS, danger, crane, …)
+     * @param {boolean} [options.hideAerodromeGround] — drop heuristic “airfield ops” NOTAMs
+     * @param {boolean} [options.prioritiseUas] — sort UAS-relevant categories first
+     */
+    async function fetchNearbyNotams(lat, lng, radiusKm, options) {
+        options = options || {};
         try {
-            var resp = await fetch('https://jonty.github.io/uk-notam-archive/data/PIB.xml?t=' + Date.now());
-            if (!resp.ok) return [];
-            var xmlText = await resp.text();
-            var parser = new DOMParser();
-            var doc = parser.parseFromString(xmlText, 'text/xml');
-            var notamEls = doc.querySelectorAll('Notam');
-            var all = [];
-            notamEls.forEach(function (el) {
-                var coords = el.querySelector('Coordinates');
-                var radius = el.querySelector('Radius');
-                var itemE = el.querySelector('ItemE');
-                var startVal = el.querySelector('StartValidity');
-                var endVal = el.querySelector('EndValidity');
-                var nof = el.querySelector('NOF');
-                var series = el.querySelector('Series');
-                var number = el.querySelector('Number');
-                var year = el.querySelector('Year');
-                if (!coords || !coords.textContent) return;
-                var cStr = coords.textContent.trim();
-                var m = cStr.match(/^(\d{4})([NS])(\d{5})([EW])$/);
-                if (!m) return;
-                var nLat = parseInt(m[1].slice(0, 2), 10) + parseInt(m[1].slice(2, 4), 10) / 60;
-                if (m[2] === 'S') nLat = -nLat;
-                var nLng = parseInt(m[3].slice(0, 3), 10) + parseInt(m[3].slice(3, 5), 10) / 60;
-                if (m[4] === 'W') nLng = -nLng;
-                var radiusNm = radius && radius.textContent ? parseInt(radius.textContent.trim(), 10) || 0 : 0;
-                var id =
-                    (nof ? nof.textContent : '') +
-                    (series ? series.textContent : '') +
-                    (number ? number.textContent : '') +
-                    '/' +
-                    (year ? year.textContent : '');
-                all.push({
-                    id: id.trim(),
-                    lat: nLat,
-                    lng: nLng,
-                    radiusNm: radiusNm,
-                    text: itemE ? itemE.textContent.trim() : '',
-                    startValidity: startVal ? startVal.textContent : '',
-                    endValidity: endVal ? endVal.textContent : ''
-                });
-            });
-            return all.filter(function (n) {
+            if (!NP) {
+                console.warn('NotamPib not loaded; NOTAM list unavailable');
+                return [];
+            }
+            var xmlText = await NP.fetchPibXml();
+            var doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+            var all = NP.parsePibNotamsFromDoc(doc);
+            var filtered = all.filter(function (n) {
                 var dist = haversineKm(lat, lng, n.lat, n.lng);
                 var notamRadiusKm = n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm * 1.852 : 0;
                 return dist - notamRadiusKm <= radiusKm;
             });
+            if (options.droneRelevantOnly) {
+                filtered = filtered.filter(function (n) {
+                    return NP.isDroneKeywordRelevant(n);
+                });
+            }
+            if (options.hideAerodromeGround) {
+                filtered = filtered.filter(function (n) {
+                    return n.uasCategory !== 'aerodrome_ground';
+                });
+            }
+            if (options.prioritiseUas) {
+                filtered = filtered.slice().sort(function (a, b) {
+                    var c = NP.compareNotamsUasPriority(a, b);
+                    if (c !== 0) return c;
+                    return haversineKm(lat, lng, a.lat, a.lng) - haversineKm(lat, lng, b.lat, b.lng);
+                });
+            }
+            return filtered;
         } catch (e) {
             console.warn('NOTAM fetch failed:', e);
             return [];

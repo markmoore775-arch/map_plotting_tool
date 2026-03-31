@@ -503,32 +503,7 @@
     }
 
     function initCollapsibleControls() {
-        // Collapsible attribution (bottom-right) - mobile only; larger screens use default Leaflet attribution
-        if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
-            const attrCtrl = document.querySelector('.leaflet-control-attribution');
-            if (attrCtrl) {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'attribution-collapsible';
-                attrCtrl.parentNode.insertBefore(wrapper, attrCtrl);
-                wrapper.appendChild(attrCtrl);
-
-                const toggle = document.createElement('button');
-                toggle.type = 'button';
-                toggle.className = 'attribution-collapsible-toggle';
-                toggle.title = 'Map attribution';
-                toggle.textContent = '\u00A9';
-                toggle.setAttribute('aria-expanded', 'false');
-                L.DomEvent.disableClickPropagation(toggle);
-                L.DomEvent.on(toggle, 'click', function () {
-                    const collapsed = attrCtrl.classList.toggle('attribution-collapsible-collapsed');
-                    toggle.setAttribute('aria-expanded', String(!collapsed));
-                    toggle.textContent = collapsed ? '\u00A9' : '\u00D7';
-                });
-                wrapper.insertBefore(toggle, attrCtrl);
-
-                attrCtrl.classList.add('attribution-collapsible-collapsed');
-            }
-        }
+        /* Attribution: single-row strip on small screens via css/style.css (no © toggle). */
 
         // Collapsible tool menu (left toolbar) - mobile only
         const leftPane = document.querySelector('.leaflet-top.leaflet-left');

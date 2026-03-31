@@ -1120,6 +1120,30 @@ body.weather-mode .leaflet-top.leaflet-left {
     font-size: 12px;
 }
 
+.weather-airspace-notam-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.weather-airspace-filter-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.weather-airspace-vertical-hint {
+    font-size: 10px;
+    color: var(--sidebar-text-muted, #888);
+    margin: 0 0 12px;
+    line-height: 1.4;
+}
+
 .weather-airspace-item-body {
     border-top: 1px solid var(--sidebar-border, #3a3a50);
     padding: 10px 12px 12px;
@@ -1262,6 +1286,16 @@ body.weather-mode .leaflet-top.leaflet-left {
 .weather-airspace-badge.badge-restricted { background: #dc2626; }
 .weather-airspace-badge.badge-danger { background: #ca8a04; }
 .weather-airspace-badge.badge-notam { background: #dc2626; }
+
+.weather-airspace-badge.badge-notam-uas-high { background: #d97706; }
+.weather-airspace-badge.badge-notam-uas-maybe { background: #ea580c; }
+.weather-airspace-badge.badge-notam-ad { background: #9333ea; }
+.weather-airspace-badge.badge-notam-general { background: #64748b; }
+
+.weather-airspace-item.category-notam.weather-notam-uas-high { border-left-color: #f59e0b; }
+.weather-airspace-item.category-notam.weather-notam-uas-maybe { border-left-color: #ea580c; }
+.weather-airspace-item.category-notam.weather-notam-aerodrome-ground { border-left-color: #9333ea; }
+.weather-airspace-item.category-notam.weather-notam-other { border-left-color: #64748b; }
 
 .weather-airspace-item-name {
     font-size: 12px;

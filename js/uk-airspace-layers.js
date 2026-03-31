@@ -438,9 +438,11 @@
                         lbl.textContent = 'NOTAM';
                         const expandBtn = L.DomUtil.create('button', 'airspace-notam-expand', itemLabel);
                         expandBtn.type = 'button';
-                        expandBtn.title = 'NOTAM options';
-                        expandBtn.textContent = '\u25BC';
-                        expandBtn.style.display = 'none';
+                        expandBtn.title = 'Hide or show NOTAM options';
+                        expandBtn.textContent = '\u25B2';
+                        expandBtn.style.display = '';
+                        const optsWrap = L.DomUtil.create('div', 'airspace-notam-options', li);
+                        optsWrap.style.display = 'block';
                         L.DomEvent.on(expandBtn, 'click', function (e) {
                             e.preventDefault();
                             e.stopPropagation();
@@ -457,8 +459,6 @@
                                 notamModule.removeFromMap();
                             }
                         });
-                        const optsWrap = L.DomUtil.create('div', 'airspace-notam-options', li);
-                        optsWrap.style.display = 'none';
                         const maxRadiusRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
                         const maxRadiusLabel = L.DomUtil.create('label', 'airspace-notam-option-label', maxRadiusRow);
                         maxRadiusLabel.textContent = 'Max radius';
@@ -481,6 +481,15 @@
                         L.DomEvent.on(droneCb, 'change', function () {
                             notamModule.setOptions({ droneRelevantOnly: droneCb.checked });
                         });
+                        const adRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
+                        const adLabel = L.DomUtil.create('label', 'airspace-notam-option-label airspace-notam-check-label', adRow);
+                        const adCb = L.DomUtil.create('input', 'airspace-notam-ad-cb', adLabel);
+                        adCb.type = 'checkbox';
+                        adCb.title = 'Hide typical aerodrome ground-ops NOTAMs (taxiway, lighting, comms, etc.)';
+                        adLabel.appendChild(document.createTextNode(' Hide airfield ops'));
+                        L.DomEvent.on(adCb, 'change', function () {
+                            notamModule.setOptions({ hideAerodromeGround: adCb.checked });
+                        });
                         const opacityRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
                         const opacityLabel = L.DomUtil.create('label', 'airspace-notam-option-label', opacityRow);
                         opacityLabel.textContent = 'Opacity';
@@ -494,15 +503,6 @@
                         L.DomEvent.on(opacityRange, 'input', function () {
                             const val = parseFloat(opacityRange.value);
                             notamModule.setOptions({ fillOpacity: val });
-                        });
-                        cb.addEventListener('change', function () {
-                            if (cb.checked) {
-                                expandBtn.style.display = '';
-                            } else {
-                                expandBtn.style.display = 'none';
-                                optsWrap.style.display = 'none';
-                                expandBtn.textContent = '\u25BC';
-                            }
                         });
                     }
                     if (ratModule) {

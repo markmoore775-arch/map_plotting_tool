@@ -1992,7 +1992,8 @@ a.airspace-choice-btn {
         opacity: 1;
     }
 
-    .leaflet-control a,
+    /* Do not target attribution links — flex + 44px min turns each <a> into a row and wraps the bar */
+    .leaflet-control:not(.leaflet-control-attribution) a,
     .leaflet-control-locate a {
         min-width: 44px;
         min-height: 44px;
@@ -2259,6 +2260,80 @@ a.airspace-choice-btn {
     display: none !important;
 }
 
+/*
+ * Mobile: Leaflet's .leaflet-bottom.leaflet-right only sets bottom+right (no left), so the
+ * corner box shrink-wraps to ~legend width — attribution then wraps in a tall narrow strip.
+ * Pin left:0 + right:0 so the bar spans the full map; stack legend (end) then full-width attribution.
+ */
+@media (max-width: 768px) {
+    .leaflet-bottom.leaflet-right {
+        left: 0 !important;
+        right: 0 !important;
+        width: auto !important;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        padding-left: max(8px, env(safe-area-inset-left, 0px));
+        padding-right: max(8px, env(safe-area-inset-right, 0px));
+        padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+        box-sizing: border-box;
+        pointer-events: none;
+    }
+
+    .leaflet-bottom.leaflet-right .leaflet-control {
+        float: none !important;
+        clear: none !important;
+        pointer-events: auto;
+    }
+
+    .leaflet-bottom.leaflet-right .leaflet-control.airspace-legend {
+        order: 1;
+        width: auto;
+        max-width: min(320px, calc(100% - 16px));
+        flex-shrink: 0;
+    }
+
+    .leaflet-bottom.leaflet-right .leaflet-control-attribution {
+        order: 2;
+        align-self: stretch;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+        overflow-wrap: normal !important;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        font-size: 10px;
+        line-height: 1.25;
+        padding: 4px 8px !important;
+        box-sizing: border-box;
+        text-align: center;
+    }
+
+    .leaflet-bottom.leaflet-right .leaflet-control-attribution a,
+    .leaflet-bottom.leaflet-right .leaflet-control-attribution span {
+        white-space: nowrap !important;
+    }
+
+    /* Reset any touch-target rules: attribution links must stay inline in one row */
+    .leaflet-control-attribution a {
+        display: inline !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+    }
+
+    .leaflet-control-attribution img.leaflet-attribution-flag {
+        display: inline !important;
+        vertical-align: -0.15em;
+    }
+}
+
 /* ---- Collapsible tool menu (mobile) ---- */
 @media (max-width: 600px) {
     .toolbar-collapsible-container {
@@ -2394,6 +2469,12 @@ a.airspace-choice-btn {
     font-size: 10px;
     color: #9ca3af;
     font-family: monospace;
+}
+.airspace-popup-muted {
+    font-size: 10px;
+    color: #9ca3af;
+    margin-bottom: 8px;
+    line-height: 1.35;
 }
 .airspace-popup-body {
     max-height: 360px;
@@ -2643,6 +2724,11 @@ a.airspace-choice-btn {
     width: 12px;
     height: 12px;
     accent-color: #dc2626;
+}
+.airspace-notam-ad-cb {
+    width: 12px;
+    height: 12px;
+    accent-color: #9333ea;
 }
 
 /* ---- Drawing Style Panel ---- */

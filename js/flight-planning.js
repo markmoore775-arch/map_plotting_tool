@@ -315,6 +315,98 @@
         });
 
         map.on('pm:create', onExclusionCreated);
+
+        if (typeof Notam !== 'undefined' && Notam.init) {
+            const fpNotamModule = Notam.init({ map });
+            const FpNotamControl = L.Control.extend({
+                options: { position: 'bottomleft' },
+                onAdd: function () {
+                    const root = L.DomUtil.create('div', 'fp-notam-control leaflet-control');
+                    L.DomEvent.disableClickPropagation(root);
+                    const mainRow = L.DomUtil.create('div', 'fp-notam-control-main', root);
+                    const toggleLabel = L.DomUtil.create('label', 'fp-notam-toggle-label', mainRow);
+                    const notamCb = L.DomUtil.create('input', '', toggleLabel);
+                    notamCb.type = 'checkbox';
+                    toggleLabel.appendChild(document.createTextNode(' NOTAM'));
+                    const expandBtn = L.DomUtil.create('button', 'fp-notam-expand', mainRow);
+                    expandBtn.type = 'button';
+                    expandBtn.title = 'NOTAM options';
+                    expandBtn.textContent = '\u25BC';
+                    expandBtn.style.display = 'none';
+                    const optsEl = L.DomUtil.create('div', 'fp-notam-options', root);
+                    optsEl.style.display = 'none';
+                    L.DomEvent.on(expandBtn, 'click', function (e) {
+                        L.DomEvent.stop(e);
+                        const open = optsEl.style.display !== 'none';
+                        optsEl.style.display = open ? 'none' : 'block';
+                        expandBtn.textContent = open ? '\u25BC' : '\u25B2';
+                    });
+                    const maxRow = L.DomUtil.create('div', 'fp-notam-opt-row', optsEl);
+                    const maxLbl = L.DomUtil.create('span', 'fp-notam-opt-lbl', maxRow);
+                    maxLbl.textContent = 'Max radius ';
+                    const maxSel = L.DomUtil.create('select', 'fp-notam-select', maxRow);
+                    [
+                        [5, '5 NM'],
+                        [10, '10 NM'],
+                        [12, '12 NM'],
+                        [20, '20 NM'],
+                        [50, '50 NM'],
+                        [999, 'All']
+                    ].forEach(function (pair) {
+                        const op = L.DomUtil.create('option', '', maxSel);
+                        op.value = String(pair[0]);
+                        op.textContent = pair[1];
+                        if (pair[0] === 12) op.selected = true;
+                    });
+                    L.DomEvent.on(maxSel, 'change', function () {
+                        fpNotamModule.setOptions({ maxRadius: parseInt(maxSel.value, 10) });
+                    });
+                    const droneRow = L.DomUtil.create('div', 'fp-notam-opt-row', optsEl);
+                    const droneLbl = L.DomUtil.create('label', 'fp-notam-check', droneRow);
+                    const droneCb = L.DomUtil.create('input', '', droneLbl);
+                    droneCb.type = 'checkbox';
+                    droneLbl.appendChild(document.createTextNode(' Drone-keyword only'));
+                    L.DomEvent.on(droneCb, 'change', function () {
+                        fpNotamModule.setOptions({ droneRelevantOnly: droneCb.checked });
+                    });
+                    const adRow = L.DomUtil.create('div', 'fp-notam-opt-row', optsEl);
+                    const adLbl = L.DomUtil.create('label', 'fp-notam-check', adRow);
+                    const adCb = L.DomUtil.create('input', '', adLbl);
+                    adCb.type = 'checkbox';
+                    adLbl.appendChild(document.createTextNode(' Hide airfield ops'));
+                    L.DomEvent.on(adCb, 'change', function () {
+                        fpNotamModule.setOptions({ hideAerodromeGround: adCb.checked });
+                    });
+                    const opRow = L.DomUtil.create('div', 'fp-notam-opt-row', optsEl);
+                    const opLbl = L.DomUtil.create('label', 'fp-notam-opacity-lbl', opRow);
+                    opLbl.textContent = 'Opacity ';
+                    const opRg = L.DomUtil.create('input', '', opLbl);
+                    opRg.type = 'range';
+                    opRg.min = '0.03';
+                    opRg.max = '0.2';
+                    opRg.step = '0.01';
+                    opRg.value = '0.08';
+                    L.DomEvent.on(opRg, 'input', function () {
+                        fpNotamModule.setOptions({ fillOpacity: parseFloat(opRg.value) });
+                    });
+                    L.DomEvent.on(notamCb, 'change', function () {
+                        if (notamCb.checked) {
+                            expandBtn.style.display = '';
+                            fpNotamModule.loadNotams(function () {
+                                fpNotamModule.addToMap();
+                            });
+                        } else {
+                            fpNotamModule.removeFromMap();
+                            expandBtn.style.display = 'none';
+                            optsEl.style.display = 'none';
+                            expandBtn.textContent = '\u25BC';
+                        }
+                    });
+                    return root;
+                }
+            });
+            map.addControl(new FpNotamControl());
+        }
     }
 
     // ---- Waypoints ----
@@ -1414,32 +1506,7 @@
             updateRecceUI();
         });
 
-        /* Collapsible attribution on mobile only; larger screens use default Leaflet attribution */
-        requestAnimationFrame(function initCollapsibleAttribution() {
-            if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) {
-                const attrCtrl = document.querySelector('.leaflet-control-attribution');
-                if (attrCtrl) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'attribution-collapsible';
-                    attrCtrl.parentNode.insertBefore(wrapper, attrCtrl);
-                    wrapper.appendChild(attrCtrl);
-                    const toggle = document.createElement('button');
-                    toggle.type = 'button';
-                    toggle.className = 'attribution-collapsible-toggle';
-                    toggle.title = 'Map attribution';
-                    toggle.textContent = '\u00A9';
-                    toggle.setAttribute('aria-expanded', 'false');
-                    L.DomEvent.disableClickPropagation(toggle);
-                    L.DomEvent.on(toggle, 'click', function () {
-                        const collapsed = attrCtrl.classList.toggle('attribution-collapsible-collapsed');
-                        toggle.setAttribute('aria-expanded', String(!collapsed));
-                        toggle.textContent = collapsed ? '\u00A9' : '\u00D7';
-                    });
-                    wrapper.insertBefore(toggle, attrCtrl);
-                    attrCtrl.classList.add('attribution-collapsible-collapsed');
-                }
-            }
-        });
+        /* Attribution: single-row strip on small screens via css/style.css */
     }
 
     window.addEventListener('load', init);

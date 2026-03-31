@@ -149,6 +149,22 @@
         return clampAirspaceRadiusKm(input ? input.value : airspaceSearchRadiusKm);
     }
 
+    function readWeatherNotamOptions() {
+        function on(id) {
+            var el = document.getElementById(id);
+            return !!(el && el.checked);
+        }
+        return {
+            droneRelevantOnly: on('weatherNotamDroneOnly'),
+            hideAerodromeGround: on('weatherNotamHideAd'),
+            prioritiseUas: on('weatherNotamPrioritise')
+        };
+    }
+
+    function weatherNotamCatClass(cat) {
+        return 'weather-notam-' + String(cat || 'other').replace(/_/g, '-');
+    }
+
     function persistAirspaceRadiusKm() {
         try {
             sessionStorage.setItem(AIRSPACE_RADIUS_STORAGE_KEY, String(airspaceSearchRadiusKm));
@@ -1069,9 +1085,14 @@
     function buildWeatherNotamPptxLines(n, lat, lng) {
         var dist = AirspaceNearby.haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
         var lines = [];
-        lines.push('NOTAM ' + (n.id || '—'));
+        var tag =
+            typeof NotamPib !== 'undefined'
+                ? NotamPib.notamBadgeMeta(n.uasCategory || 'other').label
+                : 'NOTAM';
+        lines.push('NOTAM ' + (n.id || '—') + ' — ' + tag);
         lines.push('Distance: ' + dist + ' km from selected location');
         if (n.radiusNm > 0 && n.radiusNm < 999) lines.push('Radius: ' + n.radiusNm + ' NM');
+        if (n.verticalSummary) lines.push('Vertical (Q-line / text): ' + n.verticalSummary);
         lines.push('Valid: ' + formatNotamDate(n.startValidity) + ' – ' + formatNotamDate(n.endValidity));
         lines.push('');
         lines.push((n.text || '').trim());
@@ -1178,9 +1199,14 @@
         if (kind === 'notam' && n) {
             var dist = AirspaceNearby.haversineKm(lat, lng, n.lat, n.lng).toFixed(1);
             var linesN = [];
-            linesN.push('NOTAM ' + (n.id || '—'));
+            var tagN =
+                typeof NotamPib !== 'undefined'
+                    ? NotamPib.notamBadgeMeta(n.uasCategory || 'other').label
+                    : 'NOTAM';
+            linesN.push('NOTAM ' + (n.id || '—') + ' (' + tagN + ')');
             linesN.push('Distance: ' + dist + ' km from selected location');
             if (n.radiusNm > 0 && n.radiusNm < 999) linesN.push('Radius: ' + n.radiusNm + ' NM');
+            if (n.verticalSummary) linesN.push('Vertical (Q-line / text): ' + n.verticalSummary);
             linesN.push('Valid: ' + formatNotamDate(n.startValidity) + ' – ' + formatNotamDate(n.endValidity));
             var txt = (n.text || '').replace(/\s+/g, ' ').trim();
             if (txt.length > 1100) txt = txt.slice(0, 1097) + '…';
@@ -1362,7 +1388,7 @@
         content.innerHTML = '';
 
         var results = await Promise.all([
-            AirspaceNearby.fetchNearbyNotams(lat, lng, airspaceSearchRadiusKm),
+            AirspaceNearby.fetchNearbyNotams(lat, lng, airspaceSearchRadiusKm, readWeatherNotamOptions()),
             AirspaceNearby.fetchNearbyAirspace(lat, lng, airspaceSearchRadiusKm)
         ]);
         lastNotamData = results[0];
@@ -1415,11 +1441,24 @@
                 var validStr = validStart + ' – ' + validEnd;
                 var descPreview = (n.text || '').replace(/\s+/g, ' ');
                 if (descPreview.length > 220) descPreview = descPreview.slice(0, 217) + '…';
+                var wCat = n.uasCategory || 'other';
+                var wBadge =
+                    typeof NotamPib !== 'undefined'
+                        ? NotamPib.notamBadgeMeta(wCat)
+                        : { label: 'NOTAM', cssClass: 'badge-notam-general' };
+                var vertW = n.verticalSummary ? escapeHtml(n.verticalSummary) : '—';
+                var adW = n.itemA ? '<br>AD: ' + escapeHtml(n.itemA) : '';
                 content.insertAdjacentHTML(
                     'beforeend',
-                    '<div class="weather-airspace-item category-notam">' +
+                    '<div class="weather-airspace-item category-notam ' +
+                        weatherNotamCatClass(wCat) +
+                        '">' +
                         '<div class="weather-airspace-item-header">' +
-                        '<span class="weather-airspace-badge badge-notam">NOTAM</span>' +
+                        '<span class="weather-airspace-badge ' +
+                        wBadge.cssClass +
+                        '">' +
+                        escapeHtml(wBadge.label) +
+                        '</span>' +
                         '<span class="weather-airspace-item-name">' +
                         escapeHtml(n.id || 'NOTAM') +
                         '</span>' +
@@ -1428,6 +1467,9 @@
                         dist +
                         ' km away' +
                         (n.radiusNm > 0 && n.radiusNm < 999 ? ' · Radius: ' + n.radiusNm + ' NM' : '') +
+                        '<br>Vertical (Q-line / text): ' +
+                        vertW +
+                        adW +
                         '<br>Valid: ' +
                         escapeHtml(validStr) +
                         '<br>' +
@@ -1440,6 +1482,9 @@
                         ' km from selected location</p>' +
                         '<p><strong>Radius</strong> ' +
                         escapeHtml(n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm + ' NM' : '—') +
+                        '</p>' +
+                        '<p><strong>Vertical</strong> ' +
+                        vertW +
                         '</p>' +
                         '<p><strong>Valid</strong> ' +
                         escapeHtml(validStart) +
@@ -2055,7 +2100,12 @@
             airspaceSearchRadiusKm = exportRadiusKm;
             syncAirspaceRadiusInput();
             persistAirspaceRadiusKm();
-            var notamSlides = await AirspaceNearby.fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, exportRadiusKm);
+            var notamSlides = await AirspaceNearby.fetchNearbyNotams(
+                selectedPoint.lat,
+                selectedPoint.lng,
+                exportRadiusKm,
+                readWeatherNotamOptions()
+            );
             var airspaceFeatures = sortAirspaceForReport(
                 await AirspaceNearby.fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, exportRadiusKm)
             );
@@ -2574,7 +2624,12 @@
             airspaceSearchRadiusKm = readAirspaceRadiusFromInput();
             syncAirspaceRadiusInput();
             persistAirspaceRadiusKm();
-            var notams = await AirspaceNearby.fetchNearbyNotams(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
+            var notams = await AirspaceNearby.fetchNearbyNotams(
+                selectedPoint.lat,
+                selectedPoint.lng,
+                airspaceSearchRadiusKm,
+                readWeatherNotamOptions()
+            );
             var airspace = sortAirspaceForReport(
                 await AirspaceNearby.fetchNearbyAirspace(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm)
             );
@@ -2591,14 +2646,27 @@
                     var validStart = formatNotamDate(n.startValidity);
                     var validEnd = formatNotamDate(n.endValidity);
                     var desc = (n.text || '').replace(/\s+/g, ' ');
-                    if (desc.length > 150) desc = desc.slice(0, 147) + '…';
-                    return [n.id || '—', dist, n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm + ' NM' : '—', (validStart || '?') + ' – ' + (validEnd || '?'), desc];
+                    if (desc.length > 120) desc = desc.slice(0, 117) + '…';
+                    var tagPdf =
+                        typeof NotamPib !== 'undefined'
+                            ? NotamPib.notamBadgeMeta(n.uasCategory || 'other').label
+                            : 'NOTAM';
+                    var vertPdf = n.verticalSummary || '—';
+                    return [
+                        n.id || '—',
+                        tagPdf,
+                        dist,
+                        n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm + ' NM' : '—',
+                        vertPdf,
+                        (validStart || '?') + ' – ' + (validEnd || '?'),
+                        desc
+                    ];
                 });
                 doc.autoTable({
                     startY: 18,
-                    head: [['NOTAM ID', 'Distance', 'Radius', 'Validity', 'Description']],
+                    head: [['NOTAM ID', 'Tag', 'Distance', 'Radius', 'Vertical', 'Validity', 'Description']],
                     body: nBody,
-                    columnStyles: { 4: { cellWidth: 80 } },
+                    columnStyles: { 6: { cellWidth: 58 } },
                     ...ts
                 });
             }

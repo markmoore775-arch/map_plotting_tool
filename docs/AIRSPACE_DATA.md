@@ -115,12 +115,36 @@ npm install @tmcw/togeojson @xmldom/xmldom adm-zip
 
 ## NOTAM (Temporary Restrictions)
 
-AirPlot fetches NOTAMs from the [UK NOTAM Archive](https://jonty.github.io/uk-notam-archive/) (NATS AIS Contingency, hourly updated). Enable the **NOTAM** layer in the airspace key to display temporary restrictions. No API key required.
+AirPlot fetches NOTAMs from the [UK NOTAM Archive](https://jonty.github.io/uk-notam-archive/) (NATS AIS Contingency, hourly updated). The PIB XML is parsed in one shared module ([`js/notam-pib.js`](../js/notam-pib.js)) so the main map, Flight Weather, Flight Report, and DJI Mission Planner stay consistent.
 
-When NOTAM is enabled, click the arrow (▼) next to the label to reveal options:
+**Geometry:** the feed supplies a centre coordinate and a radius, which AirPlot draws as a circle. Complex boundaries described only in NOTAM text are not plotted.
+
+### Main map (index)
+
+Enable **NOTAM** in the UK airspace key. Click the arrow (▼) for options:
+
 - **Max radius**: Cap displayed circle size (5–50 NM or All). Default 12 NM reduces clutter from very large NOTAMs.
-- **Drone-relevant only**: Show only NOTAMs mentioning UAS, cranes, TDA, BVLOS, etc.
-- **Opacity**: Adjust fill opacity (3–20%).
+- **Drone-relevant only**: Keep NOTAMs that match UAS/hazard keywords (e.g. UAS, crane, TDA, BVLOS, danger area).
+- **Hide airfield ops**: Hide typical aerodrome ground-ops NOTAMs (taxiway, lighting, comms, runway works, etc.) when they are not also tagged as UAS-relevant by keywords. Heuristic only—always confirm on the official NATS PIB.
+- **Opacity**: Fill opacity (about 3–20%).
+
+Popups show **vertical limits** from the PIB **Q-line** (`Lower` / `Upper`, shown as e.g. SFC–UNL or flight levels) where present, plus a short note to verify on an official briefing for flight-critical use.
+
+Circle colours reflect triage: **amber** (strong UAS/hazard keywords), **orange** (“check” — e.g. temporary restricted wording), **purple** (airfield-ops class), **slate** (other).
+
+### Flight Weather and Flight Report
+
+The Airspace tab / section uses the same data. After setting **Search radius**, use **Refresh**. Optional NOTAM controls:
+
+- **Drone-keyword filter** — same idea as “Drone-relevant only” on the map.
+- **Hide airfield ops** — same heuristic as on the map.
+- **Prioritise for UAS** — sort so UAS-relevant categories appear first.
+
+List rows use coloured **tags** (UAS / hazard, UAS check, Airfield ops, NOTAM). **Vertical (Q-line / text)** uses structured Q-line values when the PIB includes them, with a few simple text fallbacks; treat as advisory and cross-check NATS AIS if altitude matters.
+
+### DJI Mission Planner (`flight-planning.html`)
+
+The map includes a **NOTAM** control (bottom-left) with the same toggle, max radius, filters, and opacity as the main app, so temporary areas can be seen while building KMZ missions.
 
 ## RA(T) – Restricted Area Temporary
 

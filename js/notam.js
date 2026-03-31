@@ -7,113 +7,32 @@
 (function (global) {
     'use strict';
 
-    const PIB_URL = 'https://jonty.github.io/uk-notam-archive/data/PIB.xml';
+    var NP = global.NotamPib;
+    if (!NP) {
+        console.error('notam.js requires notam-pib.js');
+    }
 
-    /** Keywords indicating drone/UAS-relevant NOTAMs (from ItemE / Q-line) */
-    const DRONE_KEYWORDS = [
-        'UAS', 'WU LW', 'RD CS', 'OB CE', 'CRANE', 'TDA', 'BVLOS', 'UAS OPR',
-        'UAS OPS', 'DANGER AREA', 'TEMP DANGER', 'EGD', 'EGRU', 'AR-20'
-    ];
-
-    /** Parse ICAO NOTAM date (YYMMDDHHMM) or ISO to readable string e.g. "8 Jan 2026 00:00 UTC" */
     function formatNotamDate(str) {
-        if (str == null || str === '') return '';
-        const raw = String(str).trim();
-        var d, months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        var fmt = function (d) {
-            return d.getUTCDate() + ' ' + months[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ' ' +
-                String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0') + ' UTC';
-        };
-        var m = raw.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-        if (m) {
-            d = new Date(Date.UTC(+m[1], parseInt(m[2], 10) - 1, +m[3], +m[4], +m[5]));
-            if (!isNaN(d.getTime())) return fmt(d);
-        }
-        m = raw.match(/\d{10}/);
-        if (!m) return '';
-        const s = m[0];
-        const yy = parseInt(s.slice(0, 2), 10);
-        const mm = parseInt(s.slice(2, 4), 10) - 1;
-        const dd = parseInt(s.slice(4, 6), 10);
-        const hh = parseInt(s.slice(6, 8), 10);
-        const min = parseInt(s.slice(8, 10), 10);
-        const year = yy >= 50 ? 1900 + yy : 2000 + yy;
-        if (mm < 0 || mm > 11 || dd < 1 || dd > 31) return '';
-        d = new Date(Date.UTC(year, mm, dd, hh, min));
-        return fmt(d);
-    }
-
-    function parseCoord(coordStr) {
-        if (!coordStr || coordStr.length < 9) return null;
-        const m = coordStr.match(/^(\d{4})([NS])(\d{5})([EW])$/);
-        if (!m) return null;
-        let lat = parseInt(m[1].slice(0, 2), 10) + parseInt(m[1].slice(2, 4), 10) / 60;
-        if (m[2] === 'S') lat = -lat;
-        let lng = parseInt(m[3].slice(0, 3), 10) + parseInt(m[3].slice(3, 5), 10) / 60;
-        if (m[4] === 'W') lng = -lng;
-        return [lat, lng];
-    }
-
-    function isDroneRelevant(notam) {
-        const text = (notam.text || '').toUpperCase();
-        return DRONE_KEYWORDS.some(function (kw) { return text.includes(kw.toUpperCase()); });
-    }
-
-    function parsePIBXml(xmlText) {
-        const notams = [];
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(xmlText, 'text/xml');
-        const notamEls = doc.querySelectorAll('Notam');
-        notamEls.forEach(function (el) {
-            const coords = el.querySelector('Coordinates');
-            const radius = el.querySelector('Radius');
-            const itemE = el.querySelector('ItemE');
-            const startVal = el.querySelector('StartValidity');
-            const endVal = el.querySelector('EndValidity');
-            const nof = el.querySelector('NOF');
-            const series = el.querySelector('Series');
-            const number = el.querySelector('Number');
-            const year = el.querySelector('Year');
-            if (!coords || !coords.textContent) return;
-            const latLng = parseCoord(coords.textContent.trim());
-            if (!latLng) return;
-            const radiusNm = radius && radius.textContent ? parseInt(radius.textContent.trim(), 10) || 0 : 0;
-            const id = (nof ? nof.textContent : '') + (series ? series.textContent : '') + (number ? number.textContent : '') + '/' + (year ? year.textContent : '');
-            notams.push({
-                id: id.trim(),
-                lat: latLng[0],
-                lng: latLng[1],
-                radiusNm: radiusNm,
-                text: itemE ? itemE.textContent.trim() : '',
-                startValidity: startVal ? startVal.textContent : '',
-                endValidity: endVal ? endVal.textContent : ''
-            });
-        });
-        return notams;
+        return NP ? NP.formatNotamDate(str) : '';
     }
 
     function createCircleLayer(notam, opts) {
         opts = opts || {};
-        const maxRadius = opts.maxRadius != null ? opts.maxRadius : 12;
-        const fillOpacity = opts.fillOpacity != null ? opts.fillOpacity : 0.08;
+        var maxRadius = opts.maxRadius != null ? opts.maxRadius : 12;
+        var fillOpacity = opts.fillOpacity != null ? opts.fillOpacity : 0.08;
 
-        let radiusNm = notam.radiusNm;
+        var radiusNm = notam.radiusNm;
         if (radiusNm <= 0) return null;
         if (radiusNm >= 999) return null;
         radiusNm = Math.min(radiusNm, maxRadius);
 
-        const radiusM = radiusNm * 1852;
+        var radiusM = radiusNm * 1852;
+        var cat = notam.uasCategory || 'other';
+        var style = NP ? NP.circleStyleForCategory(cat, radiusNm, fillOpacity) : {
+            color: '#64748b', fillColor: '#64748b', weight: 1.5, fillOpacity: fillOpacity
+        };
 
-        var style;
-        if (radiusNm <= 3) {
-            style = { color: '#dc2626', weight: 2, fillColor: '#dc2626', fillOpacity: Math.min(fillOpacity * 1.5, 0.2) };
-        } else if (radiusNm <= 10) {
-            style = { color: '#dc2626', weight: 1.5, fillColor: '#dc2626', fillOpacity: fillOpacity };
-        } else {
-            style = { color: '#dc2626', weight: 1, fillColor: '#dc2626', fillOpacity: fillOpacity * 0.5 };
-        }
-
-        const circle = L.circle([notam.lat, notam.lng], {
+        var circle = L.circle([notam.lat, notam.lng], {
             radius: radiusM,
             color: style.color,
             weight: style.weight,
@@ -121,19 +40,31 @@
             fillOpacity: style.fillOpacity
         });
 
-        let html = '<div class="airspace-popup"><div class="airspace-popup-header">';
+        var badge = NP ? NP.notamBadgeMeta(cat) : { label: 'NOTAM', cssClass: 'badge-notam-general' };
+        var badgeBg =
+            cat === 'uas_high' ? '#d97706' :
+            cat === 'uas_maybe' ? '#ea580c' :
+            cat === 'aerodrome_ground' ? '#9333ea' : '#64748b';
+
+        var html = '<div class="airspace-popup"><div class="airspace-popup-header">';
         html += '<div class="airspace-popup-title">' + (notam.id || 'NOTAM') + '</div>';
-        html += '<span class="airspace-popup-badge" style="background:#dc2626;color:white">NOTAM</span></div>';
+        html += '<span class="airspace-popup-badge airspace-popup-badge--notam-' + cat + '" style="background:' + badgeBg + ';color:white">' +
+            badge.label + '</span></div>';
         if (notam.startValidity || notam.endValidity) {
-            const startReadable = formatNotamDate(notam.startValidity);
-            const endReadable = formatNotamDate(notam.endValidity);
-            const endRaw = (notam.endValidity || '').trim().toUpperCase();
-            const endDisplay = endReadable || (endRaw === 'PERM' || endRaw === 'UFN' ? endRaw : (notam.endValidity || ''));
-            const startDisplay = startReadable || (notam.startValidity || '');
+            var startReadable = formatNotamDate(notam.startValidity);
+            var endReadable = formatNotamDate(notam.endValidity);
+            var endRaw = (notam.endValidity || '').trim().toUpperCase();
+            var endDisplay = endReadable || (endRaw === 'PERM' || endRaw === 'UFN' ? endRaw : (notam.endValidity || ''));
+            var startDisplay = startReadable || (notam.startValidity || '');
             if (startDisplay || endDisplay) {
                 html += '<div class="airspace-popup-designator">Valid: ' + startDisplay + ' – ' + endDisplay + '</div>';
             }
             html += '<div class="airspace-popup-designator airspace-popup-validity-raw">' + (notam.startValidity || '') + ' – ' + (notam.endValidity || '') + '</div>';
+        }
+        if (notam.verticalSummary) {
+            html += '<div class="airspace-popup-designator">Vertical (Q-line): ' +
+                String(notam.verticalSummary).replace(/</g, '&lt;') + '</div>';
+            html += '<div class="airspace-popup-designator airspace-popup-muted">Use official PIB for flight-critical vertical limits.</div>';
         }
         if (notam.radiusNm > 0 && notam.radiusNm < 999) {
             html += '<div class="airspace-popup-designator">Radius: ' + notam.radiusNm + ' NM</div>';
@@ -151,7 +82,7 @@
 
     function circleIntersectsBounds(circle, bounds) {
         try {
-            const circleBounds = circle.getBounds();
+            var circleBounds = circle.getBounds();
             return bounds.intersects(circleBounds);
         } catch (e) {
             return true;
@@ -160,26 +91,26 @@
 
     function init(options) {
         options = options || {};
-        const map = options.map;
-        let notamLayer = null;
-        let lastValidity = null;
-        let allNotams = [];
-        let allCircles = [];
-        let isVisible = false;
-        /** Skip viewport refreshes while a NOTAM popup is open (avoids clearLayers removing the popup). */
-        let notamPopupOpen = false;
+        var map = options.map;
+        var notamLayer = null;
+        var lastValidity = null;
+        var allNotams = [];
+        var allCircles = [];
+        var isVisible = false;
+        var notamPopupOpen = false;
 
         var config = {
             maxRadius: 12,
             excludeRadius999: true,
             droneRelevantOnly: false,
+            hideAerodromeGround: false,
             fillOpacity: 0.08,
             zoomFilterRadius: 10
         };
 
         function getZoomMaxRadius() {
             if (!map) return config.maxRadius;
-            const zoom = map.getZoom();
+            var zoom = map.getZoom();
             if (zoom >= 12) return Math.min(10, config.maxRadius);
             if (zoom >= 10) return Math.min(20, config.maxRadius);
             if (zoom >= 8) return Math.min(50, config.maxRadius);
@@ -187,21 +118,22 @@
         }
 
         function applyFilters() {
-            const bounds = map ? map.getBounds() : null;
-            const effectiveMaxRadius = map ? getZoomMaxRadius() : config.maxRadius;
+            var bounds = map ? map.getBounds() : null;
+            var effectiveMaxRadius = map ? getZoomMaxRadius() : config.maxRadius;
 
             var toShow = allCircles.filter(function (c) {
-                const notam = c._notamData;
+                var notam = c._notamData;
                 if (!notam) return false;
-                if (config.droneRelevantOnly && !isDroneRelevant(notam)) return false;
+                if (config.droneRelevantOnly && NP && !NP.isDroneKeywordRelevant(notam)) return false;
+                if (config.hideAerodromeGround && notam.uasCategory === 'aerodrome_ground') return false;
                 if (notam.radiusNm > effectiveMaxRadius) return false;
                 if (bounds && !circleIntersectsBounds(c, bounds)) return false;
                 return true;
             });
 
             toShow.sort(function (a, b) {
-                const ra = a.getRadius ? a.getRadius() : 0;
-                const rb = b.getRadius ? b.getRadius() : 0;
+                var ra = a.getRadius ? a.getRadius() : 0;
+                var rb = b.getRadius ? b.getRadius() : 0;
                 return rb - ra;
             });
 
@@ -213,7 +145,7 @@
             if (force) notamPopupOpen = false;
             else if (notamPopupOpen) return;
             notamLayer.clearLayers();
-            const toShow = applyFilters();
+            var toShow = applyFilters();
             toShow.forEach(function (c) { notamLayer.addLayer(c); });
         }
 
@@ -222,7 +154,7 @@
             allNotams.forEach(function (notam) {
                 if (config.excludeRadius999 && notam.radiusNm >= 999) return;
                 if (notam.radiusNm <= 0) return;
-                const circle = createCircleLayer(notam, {
+                var circle = createCircleLayer(notam, {
                     maxRadius: config.maxRadius,
                     fillOpacity: config.fillOpacity
                 });
@@ -231,19 +163,15 @@
         }
 
         function loadNotams(callback) {
-            fetch(PIB_URL + '?t=' + Date.now())
-                .then(function (r) { return r.text(); })
+            if (!NP) {
+                if (callback) callback({ error: new Error('NotamPib missing'), count: 0 });
+                return;
+            }
+            NP.fetchPibXml()
                 .then(function (xmlText) {
-                    const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
-                    const validFrom = doc.querySelector('AreaPIBHeader ValidFrom') || doc.querySelector('ValidFrom');
-                    const validTo = doc.querySelector('AreaPIBHeader ValidTo') || doc.querySelector('ValidTo');
-                    if (validFrom && validTo) {
-                        lastValidity = {
-                            effectiveFrom: validFrom.textContent.slice(0, 10),
-                            effectiveTo: validTo.textContent.slice(0, 10)
-                        };
-                    }
-                    allNotams = parsePIBXml(xmlText);
+                    var doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+                    lastValidity = NP.extractPibValidity(doc);
+                    allNotams = NP.parsePibNotamsFromDoc(doc);
                     buildCircles();
                     if (isVisible) updateDisplay(true);
                     if (callback) callback({ notams: allNotams, count: allCircles.length, validity: lastValidity });
@@ -257,11 +185,11 @@
 
         if (map) {
             map.on('popupopen', function (e) {
-                const src = e.popup && e.popup._source;
+                var src = e.popup && e.popup._source;
                 if (src && src._notamData) notamPopupOpen = true;
             });
             map.on('popupclose', function (e) {
-                const src = e.popup && e.popup._source;
+                var src = e.popup && e.popup._source;
                 if (!(src && src._notamData) || !notamPopupOpen) return;
                 notamPopupOpen = false;
                 updateDisplay(false);
@@ -289,6 +217,7 @@
                 if (opts.maxRadius != null) config.maxRadius = opts.maxRadius;
                 if (opts.excludeRadius999 != null) config.excludeRadius999 = opts.excludeRadius999;
                 if (opts.droneRelevantOnly != null) config.droneRelevantOnly = opts.droneRelevantOnly;
+                if (opts.hideAerodromeGround != null) config.hideAerodromeGround = opts.hideAerodromeGround;
                 if (opts.fillOpacity != null) config.fillOpacity = opts.fillOpacity;
                 if (opts.zoomFilterRadius != null) config.zoomFilterRadius = opts.zoomFilterRadius;
                 buildCircles();
