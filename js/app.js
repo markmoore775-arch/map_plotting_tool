@@ -237,28 +237,43 @@
             }
         }
 
-        // Undo button (between Locate and Save/Load)
-        const UndoControl = L.Control.extend({
+        // Undo / Redo (between Locate and Save/Load)
+        const UndoRedoControl = L.Control.extend({
             options: { position: 'topleft' },
             onAdd: function () {
-                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-undo-wrap');
-                const btn = L.DomUtil.create('a', 'leaflet-control-undo leaflet-buttons-control-button disabled', container);
-                btn.href = '#';
-                btn.title = 'Undo last action (Ctrl+Z)';
-                btn.setAttribute('aria-disabled', 'true');
-                btn.innerHTML = '<span class="control-icon lucide-undo2-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-undo2-icon lucide-undo-2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></span>';
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-undo-redo-wrap');
+                const undoBtn = L.DomUtil.create('a', 'leaflet-control-undo leaflet-buttons-control-button disabled', container);
+                undoBtn.href = '#';
+                undoBtn.title = 'Undo last action (Ctrl+Z or Cmd+Z)';
+                undoBtn.setAttribute('role', 'button');
+                undoBtn.setAttribute('aria-disabled', 'true');
+                const undoRedoIconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>';
+                undoBtn.innerHTML = `<span class="control-icon lucide-undo2-icon">${undoRedoIconSvg}</span>`;
+                const redoBtn = L.DomUtil.create('a', 'leaflet-control-redo leaflet-buttons-control-button disabled', container);
+                redoBtn.href = '#';
+                redoBtn.title = 'Redo (Ctrl+Y, Ctrl+Shift+Z, or Cmd+Shift+Z)';
+                redoBtn.setAttribute('role', 'button');
+                redoBtn.setAttribute('aria-disabled', 'true');
+                redoBtn.innerHTML = `<span class="control-icon lucide-redo2-icon">${undoRedoIconSvg}</span>`;
                 L.DomEvent.disableClickPropagation(container);
-                L.DomEvent.on(btn, 'click', (e) => {
+                L.DomEvent.on(undoBtn, 'click', (e) => {
                     L.DomEvent.stop(e);
                     L.DomEvent.preventDefault(e);
                     if (typeof UndoHistory !== 'undefined' && UndoHistory.undo()) {
                         refreshHandToolState();
                     }
                 });
+                L.DomEvent.on(redoBtn, 'click', (e) => {
+                    L.DomEvent.stop(e);
+                    L.DomEvent.preventDefault(e);
+                    if (typeof UndoHistory !== 'undefined' && UndoHistory.redo()) {
+                        refreshHandToolState();
+                    }
+                });
                 return container;
             }
         });
-        map.addControl(new UndoControl());
+        map.addControl(new UndoRedoControl());
 
         // Save / Load project buttons (toolbar)
         const SaveLoadControl = L.Control.extend({
@@ -1600,11 +1615,20 @@
         if (w3wKey) {
             w3wEl.textContent = 'Loading…';
             w3wHint.style.display = 'none';
-            Converters.reverseW3W(point.lat, point.lng, w3wKey).then(words => {
-                if (words) {
-                    w3wEl.innerHTML = '<span class="detail-w3w-prefix">///</span>' + escapeHtml(words);
+            Converters.reverseW3W(point.lat, point.lng, w3wKey).then(result => {
+                if (result && result.words) {
+                    w3wEl.innerHTML = '<span class="detail-w3w-prefix">///</span>' + escapeHtml(result.words);
+                    w3wEl.removeAttribute('title');
+                } else if (result && result.error) {
+                    const short =
+                        result.code === 'QuotaExceeded'
+                            ? 'API quota exceeded or plan lacks this feature — upgrade at what3words.com/select-plan'
+                            : result.error;
+                    w3wEl.textContent = short;
+                    w3wEl.title = result.code ? `${result.code}: ${result.error}` : result.error;
                 } else {
                     w3wEl.textContent = 'Not available';
+                    w3wEl.removeAttribute('title');
                 }
             }).catch(() => {
                 w3wEl.textContent = 'Error';
@@ -3046,10 +3070,23 @@ ${summaryRows}
             }
             document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
         }
+        const active = document.activeElement;
+        const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable);
+
         if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
-            const active = document.activeElement;
-            const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable);
             if (!isInput && typeof UndoHistory !== 'undefined' && UndoHistory.undo()) {
+                e.preventDefault();
+                refreshHandToolState();
+            }
+        }
+        if (e.key === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+            if (!isInput && typeof UndoHistory !== 'undefined' && UndoHistory.redo()) {
+                e.preventDefault();
+                refreshHandToolState();
+            }
+        }
+        if (e.key === 'y' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+            if (!isInput && typeof UndoHistory !== 'undefined' && UndoHistory.redo()) {
                 e.preventDefault();
                 refreshHandToolState();
             }
@@ -3094,7 +3131,6 @@ ${summaryRows}
                     document.getElementById('shapeEditModal').classList.add('hidden');
                     restorePointsFromSnapshot(snapshot.points);
                     Drawings.loadShapes(snapshot.shapes || [], { preserveIds: true });
-                    if (typeof UndoHistory !== 'undefined') UndoHistory.updateUndoButtonState();
                 }
             });
             const undoBtn = document.getElementById('undoBtn');
@@ -3102,8 +3138,14 @@ ${summaryRows}
                 undoBtn.addEventListener('click', () => {
                     if (UndoHistory.undo()) refreshHandToolState();
                 });
-                UndoHistory.updateUndoButtonState();
             }
+            const redoBtn = document.getElementById('redoBtn');
+            if (redoBtn) {
+                redoBtn.addEventListener('click', () => {
+                    if (UndoHistory.redo()) refreshHandToolState();
+                });
+            }
+            UndoHistory.updateUndoButtonState();
         }
 
         // Shape edit modal buttons

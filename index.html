@@ -177,7 +177,8 @@
             <h2 class="section-title">Actions</h2>
             <div class="action-buttons">
 
-                <button class="btn btn-secondary" id="undoBtn" title="Undo last action (Ctrl+Z)" disabled>Undo</button>
+                <button class="btn btn-secondary" id="undoBtn" title="Undo last action (Ctrl+Z or Cmd+Z)" disabled>Undo</button>
+                <button class="btn btn-secondary" id="redoBtn" title="Redo (Ctrl+Y, Ctrl+Shift+Z, or Cmd+Shift+Z)" disabled>Redo</button>
                 <button class="btn btn-secondary" id="bulkImportBtn">Bulk Import</button>
                 <button class="btn btn-secondary" id="exportBtn">Export</button>
                 <button class="btn btn-secondary" id="saveProjectBtn">Save Project</button>
@@ -676,7 +677,7 @@
                         </button>
                         <button type="button" class="help-tool-card" data-help-tab="import">
                             <span class="help-tool-card-title">Import &amp; export</span>
-                            <span class="help-tool-card-desc">CSV, KML, screenshots, PowerPoint/PDF reports, project JSON, undo.</span>
+                            <span class="help-tool-card-desc">CSV, KML, screenshots, PowerPoint/PDF reports, project JSON, undo/redo.</span>
                             <span class="help-tool-card-action">Open tab</span>
                         </button>
                         <button type="button" class="help-tool-card" data-help-tab="map">
@@ -729,7 +730,7 @@
                     <details class="help-overview-more">
                         <summary>What&rsquo;s new in v3, save files, full tool summaries</summary>
                         <div class="help-overview-more-body">
-                            <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
+                            <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo and redo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
                             <p><strong>Weather:</strong> Tap the map to select a location, pick a forecast model (for example ECMWF IFS, GFS, UK Met Office, GEM Canada), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with small maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM and airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
                             <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> can open a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
                             <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear report</strong> (top), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Use the <strong>Checklist</strong> link in the header to open the M4T / TD checklist without returning to the welcome screen.</p>
@@ -850,8 +851,8 @@
                         <p>Save your entire project (points, shapes, settings) as a JSON file. Load it later to restore your work.</p>
                     </section>
                     <section class="help-section" id="help-import-undo">
-                        <h3>Undo</h3>
-                        <p>Use the <strong>Undo</strong> button in the sidebar or map toolbar, or <strong>Ctrl+Z</strong> (Cmd+Z on Mac) to revert the last action.</p>
+                        <h3>Undo &amp; redo</h3>
+                        <p>Use <strong>Undo</strong> in the sidebar or map toolbar, or <strong>Ctrl+Z</strong> (Cmd+Z on Mac), to revert the last change. Use <strong>Redo</strong>, or <strong>Ctrl+Y</strong>, <strong>Ctrl+Shift+Z</strong> (Cmd+Shift+Z on Mac), to reapply a change you undid. Starting a new edit clears the redo history.</p>
                     </section>
                 </div>
                 <div class="tab-panel" id="help-tab-map">
@@ -866,7 +867,7 @@
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-toolbar">
                                 <h3>Map Toolbar</h3>
-                                <p>Along the top-left (several Leaflet controls): <strong>Locate</strong> (GPS position), <strong>Undo</strong>, <strong>Save Project</strong>, <strong>Load Project</strong>, <strong>Flight Path</strong> (dedicated draw control), then the main draw bar with <strong>Search</strong> (opens Search Location), <strong>Hand/Pan</strong> (exit draw modes and drag the map), <strong>Drop Point</strong> (opens the icon strip; pick a type, then click the map once), then Geoman tools: <strong>Circle</strong>, <strong>Grid Overlay</strong>, <strong>Rectangle</strong>, <strong>Polygon</strong>, <strong>Line</strong>, <strong>Arrow</strong>, and <strong>Text</strong>.</p>
+                                <p>Along the top-left (several Leaflet controls): <strong>Locate</strong> (GPS position), <strong>Undo</strong> and <strong>Redo</strong> (stacked), <strong>Save Project</strong>, <strong>Load Project</strong>, <strong>Flight Path</strong> (dedicated draw control), then the main draw bar with <strong>Search</strong> (opens Search Location), <strong>Hand/Pan</strong> (exit draw modes and drag the map), <strong>Drop Point</strong> (opens the icon strip; pick a type, then click the map once), then Geoman tools: <strong>Circle</strong>, <strong>Grid Overlay</strong>, <strong>Rectangle</strong>, <strong>Polygon</strong>, <strong>Line</strong>, <strong>Arrow</strong>, and <strong>Text</strong>.</p>
                             </section>
                             <section class="help-section" id="help-map-search">
                                 <h3>Search Location</h3>
@@ -923,7 +924,7 @@
                             </section>
                             <section class="help-section" id="help-map-keys">
                                 <h3>Keyboard Shortcuts</h3>
-                                <p><strong>Escape</strong> - close modals, exit drawing/drop-point mode, deselect shapes. <strong>Ctrl+Z</strong> (Cmd+Z) - undo last action. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> - copy and paste shapes.</p>
+                                <p><strong>Escape</strong> - close modals, exit drawing/drop-point mode, deselect shapes. <strong>Ctrl+Z</strong> (Cmd+Z) - undo; <strong>Ctrl+Y</strong> or <strong>Ctrl+Shift+Z</strong> (Cmd+Shift+Z) - redo. <strong>Ctrl+C</strong> / <strong>Ctrl+V</strong> - copy and paste shapes.</p>
                             </section>
                         </div>
                     </details>

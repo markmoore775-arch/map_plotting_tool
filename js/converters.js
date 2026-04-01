@@ -549,12 +549,16 @@ const Converters = (() => {
             );
             const data = await resp.json();
             if (data.words) {
-                return data.words;
+                return { words: data.words };
+            }
+            if (data.error && data.error.message) {
+                return { error: data.error.message, code: data.error.code };
             }
         } catch (e) {
             console.error('W3W reverse lookup failed:', e);
+            return { error: e.message || 'Network error' };
         }
-        return null;
+        return { error: 'Unknown response from What3Words' };
     }
 
     // ---- Public API ----

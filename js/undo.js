@@ -1,19 +1,21 @@
 /* ============================================
-   UNDO HISTORY
+   UNDO / REDO HISTORY
    ============================================ */
 
 const UndoHistory = (() => {
     'use strict';
 
     const MAX_HISTORY = 50;
-    let stack = [];
+    let undoStack = [];
+    let redoStack = [];
     let getState = null;
     let restoreState = null;
 
     function init(callbacks) {
         getState = callbacks.getState;
         restoreState = callbacks.restoreState;
-        stack = [];
+        undoStack = [];
+        redoStack = [];
     }
 
     function pushSnapshot() {
@@ -21,8 +23,9 @@ const UndoHistory = (() => {
         try {
             const state = getState();
             if (!state) return;
-            stack.push(state);
-            if (stack.length > MAX_HISTORY) stack.shift();
+            redoStack = [];
+            undoStack.push(state);
+            if (undoStack.length > MAX_HISTORY) undoStack.shift();
             updateUndoButtonState();
         } catch (e) {
             console.warn('Undo: failed to push snapshot', e);
@@ -30,9 +33,14 @@ const UndoHistory = (() => {
     }
 
     function undo() {
-        if (!restoreState || stack.length === 0) return false;
+        if (!getState || !restoreState || undoStack.length === 0) return false;
         try {
-            const snapshot = stack.pop();
+            const current = getState();
+            const snapshot = undoStack.pop();
+            if (current) {
+                redoStack.push(current);
+                if (redoStack.length > MAX_HISTORY) redoStack.shift();
+            }
             restoreState(snapshot);
             updateUndoButtonState();
             return true;
@@ -42,17 +50,46 @@ const UndoHistory = (() => {
         }
     }
 
+    function redo() {
+        if (!getState || !restoreState || redoStack.length === 0) return false;
+        try {
+            const current = getState();
+            const snapshot = redoStack.pop();
+            if (current) {
+                undoStack.push(current);
+                if (undoStack.length > MAX_HISTORY) undoStack.shift();
+            }
+            restoreState(snapshot);
+            updateUndoButtonState();
+            return true;
+        } catch (e) {
+            console.warn('Redo: failed to restore', e);
+            return false;
+        }
+    }
+
     function canUndo() {
-        return stack.length > 0;
+        return undoStack.length > 0;
+    }
+
+    function canRedo() {
+        return redoStack.length > 0;
     }
 
     function updateUndoButtonState() {
-        const enabled = canUndo();
-        const sidebarBtn = document.getElementById('undoBtn');
-        if (sidebarBtn) sidebarBtn.disabled = !enabled;
+        const undoEnabled = canUndo();
+        const redoEnabled = canRedo();
+        const sidebarUndo = document.getElementById('undoBtn');
+        if (sidebarUndo) sidebarUndo.disabled = !undoEnabled;
+        const sidebarRedo = document.getElementById('redoBtn');
+        if (sidebarRedo) sidebarRedo.disabled = !redoEnabled;
         document.querySelectorAll('.leaflet-control-undo').forEach(el => {
-            el.classList.toggle('disabled', !enabled);
-            el.setAttribute('aria-disabled', !enabled);
+            el.classList.toggle('disabled', !undoEnabled);
+            el.setAttribute('aria-disabled', String(!undoEnabled));
+        });
+        document.querySelectorAll('.leaflet-control-redo').forEach(el => {
+            el.classList.toggle('disabled', !redoEnabled);
+            el.setAttribute('aria-disabled', String(!redoEnabled));
         });
     }
 
@@ -60,7 +97,9 @@ const UndoHistory = (() => {
         init,
         pushSnapshot,
         undo,
+        redo,
         canUndo,
+        canRedo,
         updateUndoButtonState
     };
 
