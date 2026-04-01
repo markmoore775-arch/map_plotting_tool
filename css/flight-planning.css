@@ -343,3 +343,9 @@ body.flight-planning-mode .leaflet-bottom.leaflet-left .fp-notam-control {
     vertical-align: middle;
     margin-left: 4px;
 }
+
+@media (max-width: 600px) {
+    body.flight-planning-mode #fpHelpBtn {
+        display: none;
+    }
+}

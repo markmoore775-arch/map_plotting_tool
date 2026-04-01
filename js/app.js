@@ -1389,6 +1389,24 @@
         setTimeout(() => map.invalidateSize(), 300);
     });
 
+    /* Collapse when entering the mobile layout (matches css @media max-width: 600px). */
+    const MOBILE_SIDEBAR_MAX = 600;
+    const mobileSidebarMq = window.matchMedia(`(max-width: ${MOBILE_SIDEBAR_MAX}px)`);
+
+    function enforceSidebarCollapsedOnSmallScreens() {
+        if (!mobileSidebarMq.matches || !sidebarOpen) return;
+        document.body.classList.add('sidebar-collapsed');
+        sidebarOpen.classList.remove('hidden');
+        setTimeout(() => map.invalidateSize(), 300);
+    }
+
+    if (mobileSidebarMq.addEventListener) {
+        mobileSidebarMq.addEventListener('change', enforceSidebarCollapsedOnSmallScreens);
+    } else if (mobileSidebarMq.addListener) {
+        mobileSidebarMq.addListener(enforceSidebarCollapsedOnSmallScreens);
+    }
+    enforceSidebarCollapsedOnSmallScreens();
+
     // Sidebar starts collapsed via HTML class; no layout shift before map init.
 
     // ---- Clear All / Fit All ----

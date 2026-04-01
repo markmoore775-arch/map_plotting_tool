@@ -1887,10 +1887,9 @@ a.airspace-choice-btn {
         width: clamp(68px, 20vw, 100px);
     }
 
-    /* Footer - safe area and compact */
+    /* Footer: full-width row; bottom offset for attribution is in max-width: 768px block */
     .app-footer {
         left: 0;
-        bottom: max(8px, env(safe-area-inset-bottom, 8px));
         font-size: 10px;
     }
 
@@ -1981,11 +1980,24 @@ a.airspace-choice-btn {
         padding-right: 20px;
     }
 
-    /* Touch-friendly targets (Apple HIG: 44px min) */
-    .btn,
-    .ctx-item,
-    .point-item {
+    /*
+     * Touch targets: floating UI only. Do not force min-height on .sidebar .btn / .point-item —
+     * that made controls taller on phones than on desktop (same padding should yield same size).
+     */
+    .ctx-item {
         min-height: 44px;
+    }
+
+    .modal-footer .btn {
+        min-height: 44px;
+    }
+
+    .modal-close {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .point-item-actions {
@@ -2114,7 +2126,8 @@ a.airspace-choice-btn {
         flex-direction: column;
         gap: 8px;
         position: fixed;
-        top: max(52px, env(safe-area-inset-top, 0px) + 8px);
+        /* Under default top-right layers control only: safe + Leaflet’s ~10px margin + 44px toggle + gap */
+        top: calc(env(safe-area-inset-top, 0px) + 10px + 44px + 20px);
         right: max(8px, env(safe-area-inset-right, 0px));
         z-index: 1000;
     }
@@ -2331,6 +2344,22 @@ a.airspace-choice-btn {
     .leaflet-control-attribution img.leaflet-attribution-flag {
         display: inline !important;
         vertical-align: -0.15em;
+    }
+
+    /* App footer (© line) — just above Leaflet attribution row */
+    body:not(.weather-mode):not(.flight-planning-mode) .app-footer {
+        bottom: calc(20px + max(8px, env(safe-area-inset-bottom, 0px)));
+    }
+
+    /*
+     * Mapbox wordmark + “Improve this map” sit bottom-center by default and sit under our
+     * full-width Leaflet attribution strip — lift them above it (Mapbox raster + Leaflet).
+     */
+    .leaflet-container .mapbox-logo,
+    .leaflet-container .mapbox-map-logo,
+    .leaflet-container a.mapbox-improve-map {
+        bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
+        top: auto !important;
     }
 }
 

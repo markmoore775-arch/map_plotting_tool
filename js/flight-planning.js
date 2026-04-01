@@ -1473,6 +1473,11 @@
 
         document.getElementById('fpHelpBtn').addEventListener('click', openHelpModal);
 
+        const mobileHelpBtn = document.getElementById('mobileHelpBtn');
+        if (mobileHelpBtn) {
+            mobileHelpBtn.addEventListener('click', openHelpModal);
+        }
+
         const helpModal = document.getElementById('fpHelpModal');
         if (helpModal) {
             helpModal.querySelector('.modal-backdrop').addEventListener('click', closeHelpModal);
