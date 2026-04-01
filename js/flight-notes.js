@@ -987,6 +987,22 @@
     var HOURLY_PARAMS =
         'wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_120m,wind_direction_120m,visibility,cloud_cover,cloud_cover_low,precipitation,precipitation_probability,temperature_2m';
     var GUST_120M_MULTIPLIER = 1.3;
+
+    /** Keep in sync with weather.js deriveSuitability thresholds. */
+    var SUIT_SUSTAINED_AMBER_KMH = 26;
+    var SUIT_SUSTAINED_RED_KMH = 38;
+    var SUIT_GUST_AMBER_KMH = 34;
+    var SUIT_GUST_RED_KMH = 47;
+    var SUIT_VIS_AMBER_M = 5500;
+    var SUIT_VIS_RED_M = 4000;
+    var SUIT_PRECIP_AMBER_MM = 0.5;
+    var SUIT_PRECIP_RED_MM = 1.5;
+
+    function suitFormatPrecipMmFn(p) {
+        if (p == null || p <= 0) return '0';
+        var r = Math.round(p * 10) / 10;
+        return r % 1 === 0 ? String(Math.round(r)) : String(r);
+    }
     var WX_MODEL_LABELS = {
         auto: 'Best match',
         ecmwf_ifs: 'ECMWF IFS (EU)',
@@ -1049,25 +1065,126 @@
         var vis = data.visibility != null ? data.visibility : 10000;
         var precip = data.precipitation != null ? data.precipitation : 0;
 
-        if (sustained > 38 || gusts > 47 || vis < 4000 || precip > 1.5) {
-            return {
-                level: 'poor',
-                text:
-                    'Red: conditions exceed safe margins for typical enterprise-class multi-rotor wind limits and visibility; postpone or re-plan.'
-            };
+        var tailPoor =
+            'Conditions exceed safe margins for typical enterprise-class multi-rotor wind limits and visibility; postpone or re-plan.';
+        var tailCaution =
+            'Marginal for heavier multi-rotor thermal and optical work; keep flights shorter, allow extra height margin, watch for stronger gusts higher up, and keep battery in reserve.';
+        var tailGood =
+            'Within usual operating margins for DJI enterprise-class aircraft; still check wind and visibility on site before take-off.';
+
+        var redHits = [];
+        if (sustained > SUIT_SUSTAINED_RED_KMH) {
+            redHits.push(
+                'sustained wind ~' +
+                    Math.round(sustained) +
+                    ' km/h (red above ' +
+                    SUIT_SUSTAINED_RED_KMH +
+                    ' km/h; max of 10 m and 120 m)'
+            );
         }
-        if (sustained > 26 || gusts > 34 || vis < 5500 || precip > 0) {
-            return {
-                level: 'caution',
-                text:
-                    'Amber: marginal for heavier multi-rotor thermal and optical work; keep flights shorter, allow extra height margin, watch for stronger gusts higher up, and keep battery in reserve.'
-            };
+        if (gusts > SUIT_GUST_RED_KMH) {
+            redHits.push(
+                'gusts ~' +
+                    Math.round(gusts) +
+                    ' km/h (red above ' +
+                    SUIT_GUST_RED_KMH +
+                    ' km/h; includes 120 m estimate where available)'
+            );
         }
-        return {
-            level: 'good',
-                text:
-                'Green: within usual operating margins for DJI enterprise-class aircraft; still check wind and visibility on site before take-off.'
-        };
+        if (vis < SUIT_VIS_RED_M) {
+            redHits.push(
+                'visibility ' + formatVisibility(vis) + ' (red below ~' + SUIT_VIS_RED_M / 1000 + ' km)'
+            );
+        }
+        if (precip > SUIT_PRECIP_RED_MM) {
+            redHits.push(
+                'forecast rain ~' +
+                    suitFormatPrecipMmFn(precip) +
+                    ' mm in the hour (red above ' +
+                    SUIT_PRECIP_RED_MM +
+                    ' mm)'
+            );
+        }
+
+        var isRed =
+            sustained > SUIT_SUSTAINED_RED_KMH ||
+            gusts > SUIT_GUST_RED_KMH ||
+            vis < SUIT_VIS_RED_M ||
+            precip > SUIT_PRECIP_RED_MM;
+
+        if (isRed) {
+            var whyR = redHits.length ? 'Red because: ' + redHits.join('; ') + '. ' : '';
+            return { level: 'poor', text: 'Red: ' + whyR + tailPoor };
+        }
+
+        var amberHits = [];
+        if (sustained > SUIT_SUSTAINED_AMBER_KMH) {
+            amberHits.push(
+                'sustained wind ~' +
+                    Math.round(sustained) +
+                    ' km/h (amber above ' +
+                    SUIT_SUSTAINED_AMBER_KMH +
+                    ' km/h)'
+            );
+        }
+        if (gusts > SUIT_GUST_AMBER_KMH) {
+            amberHits.push(
+                'gusts ~' +
+                    Math.round(gusts) +
+                    ' km/h (amber above ' +
+                    SUIT_GUST_AMBER_KMH +
+                    ' km/h)'
+            );
+        }
+        if (vis < SUIT_VIS_AMBER_M) {
+            amberHits.push(
+                'visibility ' + formatVisibility(vis) + ' (amber below ~' + SUIT_VIS_AMBER_M / 1000 + ' km)'
+            );
+        }
+        if (precip > SUIT_PRECIP_AMBER_MM) {
+            amberHits.push(
+                'forecast rain ~' +
+                    suitFormatPrecipMmFn(precip) +
+                    ' mm in the hour (amber above ' +
+                    SUIT_PRECIP_AMBER_MM +
+                    ' mm; trace drizzle up to that stays green)'
+            );
+        }
+
+        var isAmber =
+            sustained > SUIT_SUSTAINED_AMBER_KMH ||
+            gusts > SUIT_GUST_AMBER_KMH ||
+            vis < SUIT_VIS_AMBER_M ||
+            precip > SUIT_PRECIP_AMBER_MM;
+
+        if (isAmber) {
+            var whyA = amberHits.length ? 'Amber because: ' + amberHits.join('; ') + '. ' : '';
+            return { level: 'caution', text: 'Amber: ' + whyA + tailCaution };
+        }
+
+        var precipPhrase =
+            precip <= 0
+                ? 'no meaningful rain in the forecast hour'
+                : '~' + suitFormatPrecipMmFn(precip) + ' mm rain in the hour (green at ≤ ' + SUIT_PRECIP_AMBER_MM + ' mm)';
+        var whyG =
+            'Green band: ~' +
+            Math.round(sustained) +
+            ' km/h sustained and ~' +
+            Math.round(gusts) +
+            ' km/h gusts, visibility ' +
+            formatVisibility(vis) +
+            ', ' +
+            precipPhrase +
+            '. Amber would be wind or gusts above ~' +
+            SUIT_SUSTAINED_AMBER_KMH +
+            ' / ~' +
+            SUIT_GUST_AMBER_KMH +
+            ' km/h, visibility below ~' +
+            SUIT_VIS_AMBER_M / 1000 +
+            ' km, or rain above ~' +
+            SUIT_PRECIP_AMBER_MM +
+            ' mm. ';
+        return { level: 'good', text: 'Green: ' + whyG + tailGood };
     }
 
     function deriveSummaryText(hourlySlice, suitability) {

@@ -95,6 +95,8 @@ const CASH_BASE_POINTS: Record<DifficultyId, number> = {
 
 const HIGH_SCORE_STORAGE_KEY = 'airplot_vertical_drone_highscores_v1';
 
+const DRONE_RUN_BGM_URL = `${import.meta.env.BASE_URL}music/drone-run.mp3`;
+
 function loadHighScores(): Record<DifficultyId, number> {
   if (typeof window === 'undefined') return { easy: 0, medium: 0, hard: 0 };
   try {
@@ -229,6 +231,7 @@ export default function DroneGame() {
 
   const countdownTokenRef = useRef(0);
   const countdownDifficultyRef = useRef<DifficultyId>('easy');
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
   const applyGameSessionInit = useCallback((difficulty: DifficultyId) => {
     const w = window.innerWidth;
@@ -1557,6 +1560,15 @@ export default function DroneGame() {
     setMultiplier(1);
     setMultiplierTimeLeft(0);
     setGameState('countdown');
+    if (!bgMusicRef.current) {
+      const a = new Audio(DRONE_RUN_BGM_URL);
+      a.loop = true;
+      a.volume = 0.45;
+      bgMusicRef.current = a;
+    }
+    const bg = bgMusicRef.current;
+    bg.currentTime = 0;
+    void bg.play().catch(() => {});
   };
 
   useEffect(() => {
@@ -1589,6 +1601,7 @@ export default function DroneGame() {
 
   useEffect(() => {
     if (gameState !== 'gameover') return;
+    bgMusicRef.current?.pause();
     setHighScores((prev) => {
       if (score <= prev[activeDifficulty]) return prev;
       const next = { ...prev, [activeDifficulty]: score };
@@ -1596,6 +1609,16 @@ export default function DroneGame() {
       return next;
     });
   }, [gameState, score, activeDifficulty]);
+
+  useEffect(() => {
+    return () => {
+      const a = bgMusicRef.current;
+      if (a) {
+        a.pause();
+        bgMusicRef.current = null;
+      }
+    };
+  }, []);
 
   const trophyScore =
     gameState === 'start' || gameState === 'countdown'

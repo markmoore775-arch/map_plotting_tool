@@ -879,6 +879,76 @@ body.weather-mode .leaflet-top.leaflet-left {
     margin-bottom: 16px;
 }
 
+/* RAG key — matches table cell tints so Green / Amber / Red are not confused */
+.weather-hourly-rag-key {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    background: var(--sidebar-surface, #2a2a3d);
+}
+
+.weather-hourly-rag-key-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--sidebar-text-muted, #9999aa);
+    flex-shrink: 0;
+}
+
+.weather-hourly-rag-key-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 20px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.weather-hourly-rag-key-list li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 12px;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-hourly-rag-key-label strong {
+    font-weight: 700;
+}
+
+.weather-hourly-rag-swatch {
+    display: inline-block;
+    width: 22px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-sizing: border-box;
+}
+
+.weather-hourly-rag-swatch--good {
+    background: rgba(102, 187, 106, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(129, 199, 132, 0.35);
+}
+
+.weather-hourly-rag-swatch--caution {
+    background: linear-gradient(180deg, rgba(255, 171, 0, 0.55) 0%, rgba(245, 124, 0, 0.5) 100%);
+    border-color: rgba(255, 193, 7, 0.35);
+}
+
+.weather-hourly-rag-swatch--poor {
+    background: rgba(211, 47, 47, 0.5);
+    border-color: rgba(229, 115, 115, 0.4);
+}
+
 .weather-hourly-empty {
     padding: 24px 0;
     color: var(--sidebar-text-muted, #9999aa);
@@ -915,6 +985,37 @@ body.weather-mode .leaflet-top.leaflet-left {
 
 .weather-hourly-table tbody tr:hover {
     background: rgba(255, 255, 255, 0.03);
+}
+
+.weather-hourly-table tbody tr:hover td.weather-hourly-cell {
+    filter: brightness(1.08);
+}
+
+.weather-hourly-cell--good {
+    background: rgba(102, 187, 106, 0.22);
+}
+
+/* True amber / orange — kept separate from red (pink) tints */
+.weather-hourly-cell--caution {
+    background: rgba(255, 152, 0, 0.28);
+    box-shadow: inset 3px 0 0 0 rgba(255, 193, 7, 0.85);
+}
+
+.weather-hourly-cell--poor {
+    background: rgba(211, 47, 47, 0.22);
+}
+
+.weather-hourly-rag-legend {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--sidebar-text-muted, #9999aa);
+    margin: 10px 0 0 0;
+    max-width: 52em;
+}
+
+.weather-hourly-rag-legend strong {
+    font-weight: 600;
+    color: var(--sidebar-text, #e0e0e8);
 }
 
 /* Aviation (METAR/TAF) tab */
@@ -1650,6 +1751,59 @@ body.weather-mode .leaflet-top.leaflet-left {
 
 .weather-light-theme .weather-hourly-table tbody tr:hover {
     background: rgba(0, 0, 0, 0.04);
+}
+
+.weather-light-theme .weather-hourly-cell--good {
+    background: rgba(46, 125, 50, 0.14);
+}
+
+.weather-light-theme .weather-hourly-cell--caution {
+    background: rgba(255, 152, 0, 0.22);
+    box-shadow: inset 3px 0 0 0 #f57c00;
+}
+
+.weather-light-theme .weather-hourly-cell--poor {
+    background: rgba(198, 40, 40, 0.16);
+}
+
+.weather-light-theme .weather-hourly-rag-key {
+    background: #f0f1f3;
+    border-color: #d8d9dc;
+}
+
+.weather-light-theme .weather-hourly-rag-key-title {
+    color: #666;
+}
+
+.weather-light-theme .weather-hourly-rag-key-list li {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-hourly-rag-swatch {
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.weather-light-theme .weather-hourly-rag-swatch--good {
+    background: rgba(46, 125, 50, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(46, 125, 50, 0.2);
+}
+
+.weather-light-theme .weather-hourly-rag-swatch--caution {
+    background: linear-gradient(180deg, rgba(255, 193, 7, 0.65) 0%, rgba(245, 124, 0, 0.55) 100%);
+    border-color: rgba(245, 124, 0, 0.45);
+}
+
+.weather-light-theme .weather-hourly-rag-swatch--poor {
+    background: rgba(198, 40, 40, 0.45);
+    border-color: rgba(198, 40, 40, 0.35);
+}
+
+.weather-light-theme .weather-hourly-rag-legend {
+    color: #666;
+}
+
+.weather-light-theme .weather-hourly-rag-legend strong {
+    color: #1a1a1a;
 }
 
 .weather-light-theme .weather-hourly-empty {

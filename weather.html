@@ -193,6 +193,23 @@
                     <div class="weather-tab-panel" id="weatherTabHourly">
                         <div id="weatherHourlySection" class="weather-hourly-section">
                             <div class="weather-hourly-table-wrap">
+                                <div class="weather-hourly-rag-key" role="group" aria-labelledby="weatherHourlyRagKeyTitle">
+                                    <span id="weatherHourlyRagKeyTitle" class="weather-hourly-rag-key-title">Cell colours</span>
+                                    <ul class="weather-hourly-rag-key-list">
+                                        <li>
+                                            <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--good" aria-hidden="true"></span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Green</strong> - favourable</span>
+                                        </li>
+                                        <li>
+                                            <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--caution" aria-hidden="true"></span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Amber</strong> - marginal (caution band)</span>
+                                        </li>
+                                        <li>
+                                            <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--poor" aria-hidden="true"></span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Red</strong> - postpone</span>
+                                        </li>
+                                    </ul>
+                                </div>
                                 <table class="weather-hourly-table">
                                     <thead>
                                         <tr>
@@ -209,6 +226,7 @@
                                     </thead>
                                     <tbody id="weatherHourlyBody"></tbody>
                                 </table>
+                                <p class="weather-hourly-rag-legend">Forecast cells use the same rules as the Summary. Each colour states <strong>why</strong> (wind, gusts, visibility, and rain in the hour—including a drizzle allowance before rain counts as amber). Hover a row for the full wording.</p>
                             </div>
                         </div>
                         <div id="weatherHourlyEmpty" class="weather-hourly-empty hidden">

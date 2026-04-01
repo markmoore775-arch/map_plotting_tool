@@ -103,6 +103,17 @@
 
     const GUST_120M_MULTIPLIER = 1.3;
 
+    /** Flight suitability thresholds (km/h, metres, mm in the hour). Keep in sync with flight-notes.js. */
+    const SUIT_SUSTAINED_AMBER_KMH = 26;
+    const SUIT_SUSTAINED_RED_KMH = 38;
+    const SUIT_GUST_AMBER_KMH = 34;
+    const SUIT_GUST_RED_KMH = 47;
+    const SUIT_VIS_AMBER_M = 5500;
+    const SUIT_VIS_RED_M = 4000;
+    /** Above this mm/h → amber; at or below still counts as flyable drizzle / trace. */
+    const SUIT_PRECIP_AMBER_MM = 0.5;
+    const SUIT_PRECIP_RED_MM = 1.5;
+
     const DEFAULT_MAP_CENTER = [51.5074, -0.1278];
     const GEO_INITIAL_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
@@ -225,6 +236,12 @@
         return Math.round(m) + ' m';
     }
 
+    function suitFormatPrecipMm(p) {
+        if (p == null || p <= 0) return '0';
+        const r = Math.round(p * 10) / 10;
+        return r % 1 === 0 ? String(Math.round(r)) : String(r);
+    }
+
     /** RAG suitability: ~12 m/s-class enterprise multi-rotor, thermal + optical; 120 m wind/gust estimates included. */
     function deriveSuitability(data) {
         const w10 = data.wind_speed_10m ?? 0;
@@ -236,35 +253,144 @@
         const vis = data.visibility ?? 10000;
         const precip = data.precipitation ?? 0;
 
-        const explainerGood =
+        const explainerGoodTail =
             'Within usual operating margins for DJI enterprise-class aircraft. Still check wind and visibility on site before take-off.';
-        const explainerCaution =
+        const explainerCautionTail =
             'Marginal for heavier multi-rotor thermal and optical work. Keep flights shorter, allow extra height margin, watch for stronger gusts higher up, and keep battery in reserve.';
-        const explainerPoor =
+        const explainerPoorTail =
             'Conditions exceed safe margins for typical enterprise-class multi-rotor wind limits and visibility. Postpone or re-plan.';
 
-        if (sustained > 38 || gusts > 47 || vis < 4000 || precip > 1.5) {
+        const redHits = [];
+        if (sustained > SUIT_SUSTAINED_RED_KMH) {
+            redHits.push(
+                `sustained wind ~${Math.round(sustained)} km/h (red above ${SUIT_SUSTAINED_RED_KMH} km/h; uses the higher of 10 m and 120 m)`
+            );
+        }
+        if (gusts > SUIT_GUST_RED_KMH) {
+            redHits.push(
+                `gusts ~${Math.round(gusts)} km/h (red above ${SUIT_GUST_RED_KMH} km/h; includes 120 m estimate where available)`
+            );
+        }
+        if (vis < SUIT_VIS_RED_M) {
+            redHits.push(
+                `visibility ${formatVisibility(vis)} (red below ~${SUIT_VIS_RED_M / 1000} km)`
+            );
+        }
+        if (precip > SUIT_PRECIP_RED_MM) {
+            redHits.push(
+                `forecast rain ~${suitFormatPrecipMm(precip)} mm in the hour (red above ${SUIT_PRECIP_RED_MM} mm)`
+            );
+        }
+
+        const isRed =
+            sustained > SUIT_SUSTAINED_RED_KMH ||
+            gusts > SUIT_GUST_RED_KMH ||
+            vis < SUIT_VIS_RED_M ||
+            precip > SUIT_PRECIP_RED_MM;
+
+        if (isRed) {
+            const why =
+                redHits.length > 0
+                    ? 'Red because: ' + redHits.join('; ') + '. '
+                    : '';
+            const explainer = why + explainerPoorTail;
             return {
                 level: 'poor',
                 label: 'Red',
-                explainer: explainerPoor,
-                text: 'Red: ' + explainerPoor
+                explainer,
+                text: 'Red: ' + explainer
             };
         }
-        if (sustained > 26 || gusts > 34 || vis < 5500 || precip > 0) {
+
+        const amberHits = [];
+        if (sustained > SUIT_SUSTAINED_AMBER_KMH) {
+            amberHits.push(
+                `sustained wind ~${Math.round(sustained)} km/h (amber above ${SUIT_SUSTAINED_AMBER_KMH} km/h)`
+            );
+        }
+        if (gusts > SUIT_GUST_AMBER_KMH) {
+            amberHits.push(`gusts ~${Math.round(gusts)} km/h (amber above ${SUIT_GUST_AMBER_KMH} km/h)`);
+        }
+        if (vis < SUIT_VIS_AMBER_M) {
+            amberHits.push(
+                `visibility ${formatVisibility(vis)} (amber below ~${SUIT_VIS_AMBER_M / 1000} km)`
+            );
+        }
+        if (precip > SUIT_PRECIP_AMBER_MM) {
+            amberHits.push(
+                `forecast rain ~${suitFormatPrecipMm(precip)} mm in the hour (amber above ${SUIT_PRECIP_AMBER_MM} mm; trace drizzle up to that stays green)`
+            );
+        }
+
+        const isAmber =
+            sustained > SUIT_SUSTAINED_AMBER_KMH ||
+            gusts > SUIT_GUST_AMBER_KMH ||
+            vis < SUIT_VIS_AMBER_M ||
+            precip > SUIT_PRECIP_AMBER_MM;
+
+        if (isAmber) {
+            const why =
+                amberHits.length > 0
+                    ? 'Amber because: ' + amberHits.join('; ') + '. '
+                    : '';
+            const explainer = why + explainerCautionTail;
             return {
                 level: 'caution',
                 label: 'Amber',
-                explainer: explainerCaution,
-                text: 'Amber: ' + explainerCaution
+                explainer,
+                text: 'Amber: ' + explainer
             };
         }
+
+        const precipPhrase =
+            precip <= 0
+                ? 'no meaningful rain in the forecast hour'
+                : `~${suitFormatPrecipMm(precip)} mm rain in the hour (green at ≤ ${SUIT_PRECIP_AMBER_MM} mm)`;
+        const greenWhy =
+            `Green band: ~${Math.round(sustained)} km/h sustained and ~${Math.round(gusts)} km/h gusts, visibility ${formatVisibility(vis)}, ${precipPhrase}. ` +
+            `Amber would be wind or gusts above ~${SUIT_SUSTAINED_AMBER_KMH} / ~${SUIT_GUST_AMBER_KMH} km/h, visibility below ~${SUIT_VIS_AMBER_M / 1000} km, or rain above ~${SUIT_PRECIP_AMBER_MM} mm. `;
+        const explainer = greenWhy + explainerGoodTail;
         return {
             level: 'good',
             label: 'Green',
-            explainer: explainerGood,
-            text: 'Green: ' + explainerGood
+            explainer,
+            text: 'Green: ' + explainer
         };
+    }
+
+    /** Per-hour RAG using the same rules as deriveSuitability (Open-Meteo hourly arrays). */
+    function deriveSuitabilityForHourlyIndex(h, idx) {
+        return deriveSuitability({
+            wind_speed_10m: h.wind_speed_10m != null ? h.wind_speed_10m[idx] : undefined,
+            wind_speed_120m: h.wind_speed_120m != null ? h.wind_speed_120m[idx] : undefined,
+            wind_gusts_10m: h.wind_gusts_10m != null ? h.wind_gusts_10m[idx] : undefined,
+            visibility: h.visibility != null ? h.visibility[idx] : undefined,
+            precipitation: h.precipitation != null ? h.precipitation[idx] : undefined
+        });
+    }
+
+    /** PPTX table cell fill for hourly RAG (amber is orange-tinted, not pink, vs red). */
+    function hourlyForecastPptxFillHex(level, lightExport) {
+        if (lightExport) {
+            if (level === 'good') return 'E8F5E9';
+            if (level === 'caution') return 'FFE0B2';
+            return 'FFEBEE';
+        }
+        if (level === 'good') return '1E3D26';
+        if (level === 'caution') return '4A3818';
+        return '3D2222';
+    }
+
+    /** PDF autoTable cell fill (RGB) for hourly RAG. */
+    function hourlyForecastPdfFillRgb(level, lightExport) {
+        if (lightExport) {
+            if (level === 'good') return [232, 245, 233];
+            if (level === 'caution') return [255, 224, 178];
+            return [255, 235, 238];
+        }
+        if (level === 'good') return [30, 61, 38];
+        if (level === 'caution') return [74, 56, 24];
+        return [61, 34, 34];
     }
 
     function tryInitialViewFromGeolocation() {
@@ -815,6 +941,9 @@
             hourlyBody.innerHTML = '';
             for (let i = 0; i < count; i++) {
                 const idx = start + i;
+                const hourSuit = deriveSuitabilityForHourlyIndex(h, idx);
+                const ragClass = 'weather-hourly-cell weather-hourly-cell--' + hourSuit.level;
+                const ragTitle = hourSuit.label + ': ' + hourSuit.explainer;
                 const timeStr = h.time[idx] ? new Date(h.time[idx]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
                 const w10 = h.wind_speed_10m?.[idx];
                 const gusts10 = h.wind_gusts_10m?.[idx];
@@ -829,7 +958,27 @@
                     ? (pProb != null ? `${(p * 10) / 10} mm (${Math.round(pProb)}%)` : `${(p * 10) / 10} mm`)
                     : (pProb != null ? `${Math.round(pProb)}%` : '0');
                 const row = document.createElement('tr');
-                row.innerHTML = `<td>${timeStr}</td><td>${w10 != null ? Math.round(w10) + ' km/h' : '—'}</td><td>${gusts10 != null ? Math.round(gusts10) + ' km/h' : '—'}</td><td>${w120 != null ? Math.round(w120) + ' km/h' : '—'}</td><td>${gusts120Est != null ? gusts120Est + ' km/h' : '—'}</td><td>${formatVisibility(vis)}</td><td>${cloud != null ? Math.round(cloud) + '%' : '—'}</td><td>${precipCell}</td><td>${t != null ? Math.round(t) + '°' : '—'}</td>`;
+                row.setAttribute('title', ragTitle);
+
+                function appendCell(text, withRag) {
+                    const td = document.createElement('td');
+                    td.textContent = text;
+                    if (withRag) {
+                        td.className = ragClass;
+                        td.title = ragTitle;
+                    }
+                    row.appendChild(td);
+                }
+
+                appendCell(timeStr, false);
+                appendCell(w10 != null ? Math.round(w10) + ' km/h' : '—', true);
+                appendCell(gusts10 != null ? Math.round(gusts10) + ' km/h' : '—', true);
+                appendCell(w120 != null ? Math.round(w120) + ' km/h' : '—', true);
+                appendCell(gusts120Est != null ? gusts120Est + ' km/h' : '—', true);
+                appendCell(formatVisibility(vis), true);
+                appendCell(cloud != null ? Math.round(cloud) + '%' : '—', true);
+                appendCell(precipCell, true);
+                appendCell(t != null ? Math.round(t) + '°' : '—', true);
                 hourlyBody.appendChild(row);
             }
         } else {
@@ -1996,8 +2145,12 @@
                 ];
                 const forecastRows = [forecastHeader];
 
+                const pptxHourlyLight = isWeatherExportLightTheme();
                 for (let i = 0; i < count; i++) {
                     const idx = start + i;
+                    const hourSuit = deriveSuitabilityForHourlyIndex(h, idx);
+                    const ragFill = { color: hourlyForecastPptxFillHex(hourSuit.level, pptxHourlyLight) };
+                    const ragCell = Object.assign({}, cellOpts, { fill: ragFill });
                     const timeStr = h.time[idx] ? new Date(h.time[idx]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
                     const w10 = h.wind_speed_10m?.[idx];
                     const g10 = h.wind_gusts_10m?.[idx];
@@ -2010,18 +2163,18 @@
 
                     forecastRows.push([
                         { text: timeStr, options: cellOpts },
-                        { text: w10 != null ? Math.round(w10) + '' : '—', options: cellOpts },
-                        { text: g10 != null ? Math.round(g10) + '' : '—', options: cellOpts },
-                        { text: w120 != null ? Math.round(w120) + '' : '—', options: cellOpts },
-                        { text: g120Est != null ? g120Est + '' : '—', options: cellOpts },
-                        { text: formatVisibility(vis), options: cellOpts },
-                        { text: cloud != null ? Math.round(cloud) + '%' : '—', options: cellOpts },
-                        { text: p != null ? (Math.round(p * 10) / 10) + ' mm' : '0', options: cellOpts },
-                        { text: t != null ? Math.round(t) + '°C' : '—', options: cellOpts }
+                        { text: w10 != null ? Math.round(w10) + '' : '—', options: ragCell },
+                        { text: g10 != null ? Math.round(g10) + '' : '—', options: ragCell },
+                        { text: w120 != null ? Math.round(w120) + '' : '—', options: ragCell },
+                        { text: g120Est != null ? g120Est + '' : '—', options: ragCell },
+                        { text: formatVisibility(vis), options: ragCell },
+                        { text: cloud != null ? Math.round(cloud) + '%' : '—', options: ragCell },
+                        { text: p != null ? (Math.round(p * 10) / 10) + ' mm' : '0', options: ragCell },
+                        { text: t != null ? Math.round(t) + '°C' : '—', options: ragCell }
                     ]);
                 }
 
-                slide.addText('All wind speeds in km/h', { x: 0.5, y: 0.7, w: 8, h: 0.3, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
+                slide.addText('All wind speeds in km/h. Cell colours match Summary flight suitability (Green / Amber / Red).', { x: 0.5, y: 0.7, w: 12, h: 0.35, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
                 slide.addTable(forecastRows, { x: 0.3, y: 1.05, w: 12.6, colW: [1.2, 1.3, 1.3, 1.3, 1.3, 1.5, 1.2, 1.3, 1.2], border: border, rowH: 0.4, fontSize: 9 });
             }
 
@@ -2501,14 +2654,18 @@
                 var startIdx = lastHourlySlice.startIdx || 0;
                 var forecastCount = Math.min(12, (hourly.time ? hourly.time.length : 0) - startIdx);
                 var fRows = [];
+                var forecastHourLevels = [];
+                var pdfHourlyLight = isWeatherExportLightTheme();
                 for (var hi = 0; hi < forecastCount; hi++) {
                     var idx = startIdx + hi;
+                    var hourSuitPdf = deriveSuitabilityForHourlyIndex(hourly, idx);
+                    forecastHourLevels.push(hourSuitPdf.level);
                     var tDate = new Date(hourly.time[idx]);
                     var timeStr = String(tDate.getHours()).padStart(2, '0') + ':' + String(tDate.getMinutes()).padStart(2, '0');
                     var hw10 = hourly.wind_speed_10m ? hourly.wind_speed_10m[idx] : null;
                     var hg10 = hourly.wind_gusts_10m ? hourly.wind_gusts_10m[idx] : null;
                     var hw120 = hourly.wind_speed_120m ? hourly.wind_speed_120m[idx] : null;
-                    var hg120Est = hg10 != null ? Math.round(hg10 * GUST_120M_MULTIPLIER) : null;
+                    var hg120Est = hw120 != null ? Math.round(hw120 * GUST_120M_MULTIPLIER) : null;
                     var hvis = hourly.visibility ? hourly.visibility[idx] : null;
                     var hcloud = hourly.cloud_cover ? hourly.cloud_cover[idx] : null;
                     var hp = hourly.precipitation ? hourly.precipitation[idx] : null;
@@ -2531,11 +2688,23 @@
                     body: fRows,
                     ...ts,
                     styles: { ...ts.styles, fontSize: 6.5 },
-                    headStyles: { ...ts.headStyles, fontSize: 6.5 }
+                    headStyles: { ...ts.headStyles, fontSize: 6.5 },
+                    alternateRowStyles: {
+                        fillColor: ts.bodyStyles.fillColor,
+                        textColor: ts.bodyStyles.textColor
+                    },
+                    didParseCell: function (data) {
+                        if (data.section === 'body' && data.column.index > 0) {
+                            var lev = forecastHourLevels[data.row.index];
+                            if (lev) {
+                                data.cell.styles.fillColor = hourlyForecastPdfFillRgb(lev, pdfHourlyLight);
+                            }
+                        }
+                    }
                 });
                 doc.setFontSize(7);
                 doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-                doc.text('All wind speeds in km/h', 10, doc.lastAutoTable.finalY + 5);
+                doc.text('All wind speeds in km/h. Shaded cells use the same Green / Amber / Red flight suitability as the Summary.', 10, doc.lastAutoTable.finalY + 5);
             }
 
             // Page 4: METAR / TAF

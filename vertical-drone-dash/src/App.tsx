@@ -15,6 +15,8 @@ const DRONE_START_Y = FLOOR_Y - DRONE_SIZE / 2 - 8;
 const SIM_DT = 1 / 60;
 const MAX_SIM_STEPS_PER_FRAME = 5;
 
+const DRONE_DASH_BGM_URL = `${import.meta.env.BASE_URL}music/drone-dash.mp3`;
+
 const THEMES = [
   {
     name: 'Cyber City',
@@ -126,6 +128,7 @@ export default function App() {
   const animationFrameId = useRef<number>(0);
   const lastLoopTimeRef = useRef<number | null>(null);
   const simAccumulatorRef = useRef(0);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
   // --- Input Handling ---
   const handleThrustStart = (e?: React.SyntheticEvent | KeyboardEvent) => {
@@ -263,6 +266,15 @@ export default function App() {
     setCountdownLabel('3');
     setCountdownEpoch((n) => n + 1);
     setGameState('countdown');
+    if (!bgMusicRef.current) {
+      const a = new Audio(DRONE_DASH_BGM_URL);
+      a.loop = true;
+      a.volume = 0.45;
+      bgMusicRef.current = a;
+    }
+    const bg = bgMusicRef.current;
+    bg.currentTime = 0;
+    void bg.play().catch(() => {});
   };
 
   const startGameActual = () => {
@@ -320,6 +332,21 @@ export default function App() {
       cancelled = true;
     };
   }, [gameState, countdownEpoch]);
+
+  useEffect(() => {
+    if (gameState !== 'gameover') return;
+    bgMusicRef.current?.pause();
+  }, [gameState]);
+
+  useEffect(() => {
+    return () => {
+      const a = bgMusicRef.current;
+      if (a) {
+        a.pause();
+        bgMusicRef.current = null;
+      }
+    };
+  }, []);
 
   const spawnObstacle = () => {
     const theme = THEMES[stateRef.current.themeIndex];

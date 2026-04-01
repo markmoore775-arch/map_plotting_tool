@@ -380,7 +380,7 @@
                     </button>
                     <span id="fnWeatherFetchStatus" class="fn-weather-fetch-status" role="status" aria-live="polite"></span>
                 </div>
-                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Time uses <strong>Date</strong> and <strong>Time</strong> above when both are set; otherwise the current hour. <span class="fn-weather-hint-sub">RAG lines assume DJI enterprise-class wind and visibility margins.</span></p>
+                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Time uses <strong>Date</strong> and <strong>Time</strong> above when both are set; otherwise the current hour. <span class="fn-weather-hint-sub">RAG uses the same rules as Flight Weather (wind, gusts, visibility, rain in the hour; trace drizzle up to 0.5 mm/h stays in the green band).</span></p>
                 <label class="fn-label" for="fnWeather">Conditions</label>
                 <textarea id="fnWeather" name="fnWeather" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Wind, visibility, cloud, etc."></textarea>
             </section>
