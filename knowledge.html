@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en" class="knowledge-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>UK Pilot Knowledge | AirPlot</title>
+    <meta name="description" content="UK drone pilot knowledge base: 2026 regulatory framework, class marks, Remote ID, Open and Specific Category, airspace and FRZs, insurance, GDPR, plus CAA links and public-sector UAS (ALOS). Reference only, not legal advice.">
+    <link rel="canonical" href="https://airplot.app/knowledge.html">
+    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/legal.css">
+</head>
+<body class="legal-page knowledge-page">
+    <header class="knowledge-top-bar">
+        <nav class="fp-welcome-bar" aria-label="AirPlot home">
+            <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen" aria-label="Return to AirPlot welcome screen">
+                <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+                <span class="fp-welcome-title">AirPlot</span>
+                <span class="fp-welcome-cta">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                    Welcome
+                </span>
+            </a>
+        </nav>
+        <div class="knowledge-top-bar-actions">
+            <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="kbPageThemeLabel" title="Page colours (same as Flight Report; stored in this browser)">
+                <span id="kbPageThemeLabel" class="fn-export-theme-label">Theme</span>
+                <div class="fn-export-theme-segments">
+                    <label class="fn-export-theme-segment-opt">
+                        <input type="radio" name="fnPageTheme" value="dark" checked>
+                        <span class="fn-export-theme-segment-text">Dark</span>
+                    </label>
+                    <label class="fn-export-theme-segment-opt">
+                        <input type="radio" name="fnPageTheme" value="light">
+                        <span class="fn-export-theme-segment-text">Light</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="legal-main" id="main">
+        <h1>UK Pilot Knowledge</h1>
+        <p class="legal-updated">Last updated: 4 April 2026</p>
+
+        <nav class="knowledge-toc" id="toc" aria-label="On this page">
+            <h2>On this page</h2>
+            <p class="knowledge-audience-intro"><strong>Suggested paths</strong> (all sections still apply; use what matches your operation.)</p>
+            <ul class="knowledge-audience-list">
+                <li><strong>Newcomer:</strong> <a href="#caa-official">CAA hub</a>, <a href="#registration">Flyer ID &amp; Operator ID</a>, <a href="#categories-open-specific">Open Category</a>, <a href="#airspace-planning">Where to fly</a>.</li>
+                <li><strong>Pro / working pilot:</strong> <a href="#categories-open-specific">A2 CofC &amp; Specific Category</a>, <a href="#insurance-liability">Insurance &amp; commercial</a>, <a href="#remote-id">Remote ID</a>, <a href="#public-sector-uas">Public-sector / advanced</a>.</li>
+                <li><strong>Tech &amp; aircraft:</strong> <a href="#framework-2026">2026 framework &amp; class marks</a>, <a href="#remote-id">Remote ID</a>, <a href="#technical-maintenance">Batteries, firmware, night flying</a>.</li>
+                <li><strong>Pre-flight checklist:</strong> use AirPlot&rsquo;s <a href="checklist.html">checklist page</a> alongside your manual and current CAA rules.</li>
+            </ul>
+            <ul class="knowledge-toc-outline">
+                <li><a href="#disclaimer">Disclaimer</a></li>
+                <li><a href="#caa-official">Civil Aviation Authority (official)</a></li>
+                <li><a href="#framework-2026">2026 regulatory framework (overview)</a></li>
+                <li><a href="#registration">Registration, Flyer ID, and Operator ID</a></li>
+                <li><a href="#remote-id">Remote ID (RID)</a></li>
+                <li><a href="#categories-open-specific">Operational categories (Open &amp; Specific)</a></li>
+                <li><a href="#rule-updates">Rule changes and updates</a></li>
+                <li><a href="#airspace-planning">Flight planning, FRZs, NOTAMs, sensitive sites</a></li>
+                <li><a href="#technical-maintenance">Technical maintenance &amp; in-flight safety</a></li>
+                <li><a href="#insurance-liability">Insurance, liability, and commercial work</a></li>
+                <li><a href="#privacy-data">Data protection, privacy, and surveillance</a></li>
+                <li><a href="#public-sector-uas">UK agencies and public-sector UAS (incl. ALOS)</a></li>
+                <li><a href="#third-party-tools">Third-party planning tools</a></li>
+            </ul>
+        </nav>
+
+        <h2 id="disclaimer">Disclaimer</h2>
+        <p>This page is <strong>reference material only</strong>. It is not legal advice. UK drone and model-aircraft rules change; distances, categories, class marks, Remote ID dates, and registration thresholds on third-party sites (including summaries here) can be wrong or out of date. <strong>Always confirm</strong> requirements with the <strong>Civil Aviation Authority (CAA)</strong>, the <strong>Drone Code</strong>, and official publications before you plan or fly. AirPlot does not guarantee the accuracy of external links or the timeliness of this page.</p>
+
+        <h2 id="caa-official">Civil Aviation Authority (official)</h2>
+        <p>The CAA sets and explains the rules for drones and model aircraft in the UK. Start from the main hub and follow the Drone Code material from there.</p>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/" target="_blank" rel="noopener noreferrer">Drones and model aircraft (CAA hub)</a>: entry point for regulation, safety, and registration topics.</li>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/drone-code/" target="_blank" rel="noopener noreferrer">The Drone Code</a>: core rules and how to fly safely and legally; links to PDF and further guidance from the same section of the site.</li>
+            <li><a href="https://www.caa.co.uk/media/q1il5nqs/the-drone-code-january-2026.pdf" target="_blank" rel="noopener noreferrer">The Drone Code (PDF, January 2026 edition)</a>: official consolidated publication; use alongside the live website in case either is updated separately.</li>
+        </ul>
+
+        <h2 id="framework-2026">2026 regulatory framework (overview)</h2>
+        <p>From <strong>1 January 2026</strong>, the UK UAS framework was extensively updated: lower registration triggers, UK class marking on new products, and Remote ID timelines among other changes. The bullets below are a <strong>working summary</strong> for professional orientation; they are not a substitute for the CAA&rsquo;s own wording, CAPs, or your aircraft documentation.</p>
+        <ul>
+            <li><strong>Registration thresholds:</strong> Industry and CAA materials describe a move toward registering lighter aircraft. Commonly quoted pilot-facing rules include: <strong>Flyer ID</strong> when flying a drone <strong>over 100&nbsp;g</strong>, and <strong>Operator ID</strong> when the drone is <strong>over 100&nbsp;g and has a camera</strong> (or at <strong>250&nbsp;g</strong> and above regardless of camera). Exact wording and edge cases are on the CAA &ldquo;getting what you need&rdquo; pages.</li>
+            <li><strong>UK class marks (UK0 to UK6):</strong> New drones <strong>placed on the UK market</strong> from 2026 are expected to carry a <strong>UK marking</strong> that ties the aircraft to defined technical capabilities (geo-awareness, Remote ID, lighting, and so on). The mark supports which <strong>Open Category</strong> subcategory (<strong>A1</strong>, <strong>A2</strong>, <strong>A3</strong>) you can use without a full Specific Category permission, subject to pilot competency. See the CAA&rsquo;s class-marking programme for the authoritative description.</li>
+            <li><strong>Legacy / transitional aircraft:</strong> Older drones (for example pre-2026 DJI or Autel units <strong>without</strong> a UK class mark) are often discussed in terms of a <strong>transitional period</strong> (commonly cited through <strong>December 2027</strong>) during which you may still operate under adapted Open Category rules if you meet the CAA&rsquo;s legacy conditions. Confirm aircraft status, firmware, and labelling against the CAA and manufacturer guidance.</li>
+        </ul>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/regulations-consultations-and-policy-programmes/policy-programmes/uas-class-marking/" target="_blank" rel="noopener noreferrer">UAS class marking (CAA policy programme)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/drone-code/getting-what-you-need-to-fly-legally/" target="_blank" rel="noopener noreferrer">Getting what you need to fly legally</a>: thresholds, IDs, and tests.</li>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/registering-to-fly-drones-and-model-aircraft/" target="_blank" rel="noopener noreferrer">Registering to fly drones and model aircraft (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/class-marks/" target="_blank" rel="noopener noreferrer">Class marks (CAA)</a>: consumer-facing summary tied to Open Category flying.</li>
+        </ul>
+
+        <h2 id="registration">Registration, Flyer ID, and Operator ID</h2>
+        <p>Whether you need a <strong>Flyer ID</strong>, an <strong>Operator ID</strong>, or both depends on aircraft mass, sensors (especially cameras), how you fly, and (from 2026) class marking and legacy status. The CAA remains the source of truth.</p>
+        <ul>
+            <li><strong>Flyer ID:</strong> Demonstrates completion of the CAA&rsquo;s basic flying and safety test; required when you must register as a flyer under current rules.</li>
+            <li><strong>Operator ID:</strong> Labels the person or organisation responsible for the aircraft; the ID must be displayed on the drone when required. Operator registration is a separate charge and renewal cycle from the flyer test.</li>
+            <li><strong>Practical tip:</strong> If you are close to a threshold (for example around <strong>100&nbsp;g</strong> or <strong>250&nbsp;g</strong>), read the live CAA tables rather than forum summaries; small configuration changes (camera modules, batteries) can change which side of a limit you sit on.</li>
+        </ul>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/drone-code/getting-what-you-need-to-fly-legally/" target="_blank" rel="noopener noreferrer">Getting what you need to fly legally</a>.</li>
+            <li><a href="https://register-drones.caa.co.uk/" target="_blank" rel="noopener noreferrer">Register drones (CAA)</a>: official registration and theory-test flows.</li>
+        </ul>
+
+        <h2 id="remote-id">Remote ID (RID)</h2>
+        <p><strong>Remote identification</strong> lets observers with suitable receivers (and, for some architectures, authorised services) see that a drone is airborne and tie it to registration-related data. It is a major pillar of the 2026 UK package alongside class marking.</p>
+        <ul>
+            <li><strong>Mandatory broadcasting (day-one 2026):</strong> CAA policy describes <strong>Direct Remote ID</strong> requirements for many <strong>new UK-marked</strong> aircraft (commonly cited classes include <strong>UK1, UK2, UK3, UK5, and UK6</strong>). Implementation detail (protocols, display apps, range) evolves; follow CAA Remote ID publications and your manufacturer&rsquo;s instructions.</li>
+            <li><strong>Legacy path:</strong> For <strong>legacy / unmarked</strong> drones over <strong>100&nbsp;g</strong> with a camera, policy discussions reference a requirement for Remote ID by <strong>1 January 2028</strong>, with a preparatory period to retrofit or replace aircraft. Verify timelines on the live CAA site.</li>
+            <li><strong>Privacy vs compliance:</strong> Broadcast data typically includes identifiers and positional information needed for safety and enforcement; it is <strong>not</strong> the same as posting footage online. Pilots capturing images or video of people or property still need to think about <a href="#privacy-data">data protection and surveillance rules</a> separately from RID.</li>
+        </ul>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/regulations-consultations-and-policy-programmes/policy-programmes/remote-id-rid/" target="_blank" rel="noopener noreferrer">Remote ID (RID) policy programme (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/updates-and-publications/remote-id/" target="_blank" rel="noopener noreferrer">Remote ID updates and publications (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/moving-on-to-more-advanced-flying/remote-id-rid/" target="_blank" rel="noopener noreferrer">Remote ID (RID): more advanced flying (CAA)</a>.</li>
+        </ul>
+
+        <h2 id="categories-open-specific">Operational categories (Open and Specific)</h2>
+        <p>UK operations are usually described under the <strong>Open Category</strong> (standardised low-risk flying with defined limits) or the <strong>Specific Category</strong> (permission-based, with a documented safety case or published assessment).</p>
+        <h3>Open Category (A1, A2, A3)</h3>
+        <ul>
+            <li><strong>Subcategories A1, A2, and A3</strong> describe how close you may fly to <strong>uninvolved people</strong>, what kind of aircraft you may use, and what competency you need. Distances and definitions change with rules and aircraft class; use the current Drone Code and CAA tables, not memorised numbers from old blog posts.</li>
+            <li><strong>&ldquo;No-fly&rdquo; distances from people</strong> are central: who counts as uninvolved, what &ldquo;over&rdquo; means, and how transitions work between modes are all spelled out in official material.</li>
+        </ul>
+        <h3>A2 Certificate of Competence (A2 CofC)</h3>
+        <ul>
+            <li>The <strong>A2 CofC</strong> is a recognised qualification that, with an appropriately class-marked aircraft, can allow <strong>closer &ldquo;near people&rdquo; working</strong> than the A3 baseline, often discussed alongside <strong>low-speed mode</strong> for suitable <strong>UK2</strong> class drones. Training must come from a CAA-recognised provider; your certificate and aircraft class must match the operation you fly.</li>
+        </ul>
+        <h3>Specific Category (PDRA, UK SORA, bespoke safety cases)</h3>
+        <ul>
+            <li><strong>Operational Authorisation (OA)</strong> from the CAA is required when you step outside Open Category limits (for example complex environments, certain EVLOS/BVLOS concepts, swarms, or heavier mitigations).</li>
+            <li><strong>Pre-Defined Risk Assessments (PDRAs)</strong> give standardised risk cases for eligible operations so you are not always writing a full document from scratch.</li>
+            <li><strong>UK SORA</strong> (<strong>Specific Operations Risk Assessment</strong>) is the modern structured method many operators use to build evidence for an OA. Older references to a full bespoke <strong>Operating Safety Case (OSC)</strong> still describe the same underlying idea (demonstrate risk is acceptable), but today&rsquo;s applications are often framed through SORA methodology and CAA expectations in CAP 722 family publications.</li>
+        </ul>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/where-you-can-fly/" target="_blank" rel="noopener noreferrer">Where you can fly (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/remote-pilot-qualifications/a2-certificate-of-competency-a2-cofc/" target="_blank" rel="noopener noreferrer">A2 Certificate of Competency (A2 CofC) (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/specific-category/specific-category-overview/" target="_blank" rel="noopener noreferrer">Specific Category overview (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/specific-category/uk-sora-based-operational-authorisations/" target="_blank" rel="noopener noreferrer">UK SORA-based Operational Authorisations (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/specific-category/moving-from-osc-to-uk-sora/" target="_blank" rel="noopener noreferrer">Moving from OSC to UK SORA (CAA)</a>.</li>
+        </ul>
+
+        <h2 id="rule-updates">Rule changes and updates</h2>
+        <p>Categories, class marks, Remote ID, and operational requirements will continue to evolve. Use the CAA updates pages alongside the main Drone Code so you are not relying on stale summaries.</p>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/drone-code/updates/" target="_blank" rel="noopener noreferrer">Drone Code updates</a>: official notices of changes and clarifications.</li>
+            <li><a href="https://www.caa.co.uk/drones/updates-and-publications/" target="_blank" rel="noopener noreferrer">Drones: updates and publications (CAA)</a>: wider index of news and documents.</li>
+        </ul>
+
+        <h2 id="airspace-planning">Flight planning, FRZs, NOTAMs, and sensitive sites</h2>
+        <p>Where you may fly depends on airspace class, <strong>Flight Restriction Zones (FRZs)</strong> around protected aerodromes, <strong>NOTAMs</strong>, and temporary restrictions. Use official sources and approved services for pre-flight checks; AirPlot&rsquo;s maps and traffic views are for planning and awareness only, not for compliance on their own.</p>
+        <ul>
+            <li><strong>FRZs:</strong> Restricted volumes around airports and related sites are often described in terms of radii (commonly discussed as roughly <strong>2&nbsp;NM</strong> / <strong>5&nbsp;km</strong> style geometries depending on site and rule set). Entering or operating in these zones without permission is a serious matter. Commercial drone services and NATS provide application routes where appropriate; read the CAA &ldquo;where you can fly&rdquo; material first.</li>
+            <li><strong>NOTAMs and temporary areas:</strong> Check for short-notice restrictions (events, VIP movements, military activity, wildfire or incident TFR-style measures). Your map tool is not a replacement for official briefing products appropriate to your operation.</li>
+            <li><strong>Sensitive and critical sites:</strong> Even where airspace is &ldquo;open&rdquo; on a chart, flying adjacent to <strong>critical national infrastructure</strong> (power stations, prisons, defence sites, some government buildings) can trigger security response, separate bylaws, or landowner conditions. Research site-specific rules and land permission; do not assume Open Category alone makes an overflight acceptable.</li>
+        </ul>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/where-you-can-fly/" target="_blank" rel="noopener noreferrer">Where you can fly (CAA)</a>.</li>
+            <li><a href="https://www.nats.aero/operations/drones/" target="_blank" rel="noopener noreferrer">NATS: drones and UAS</a>: integration context and operational links (not a substitute for the Drone Code).</li>
+        </ul>
+
+        <h2 id="technical-maintenance">Technical maintenance and in-flight safety</h2>
+        <p>Good maintenance records support safety and, after an incident, demonstrate diligence. This is practical guidance, not a mandated AirPlot form.</p>
+        <ul>
+            <li><strong>Battery care (LiPo / smart packs):</strong> Store at manufacturer-recommended charge levels; avoid puncture, crush, and extreme temperatures; retire packs that are <strong>swollen</strong>, unusually hot, or behave erratically. Use &ldquo;hibernation&rdquo; or storage modes where the manufacturer provides them before long idle periods.</li>
+            <li><strong>Firmware and fly-safe databases:</strong> Manufacturers push <strong>geo</strong>, <strong>NFZ</strong>, and airspace-related updates for a reason. Flying with obsolete databases can breach manufacturer limitations and, in some contexts, undermine insurance or OA assumptions. Schedule updates when you have time to verify behaviour on the ground.</li>
+            <li><strong>Night flying:</strong> 2026-oriented rules emphasise <strong>conspicuity lighting</strong> so small drones can be distinguished from manned aircraft. Policy and class-marking discussions reference requirements such as a <strong>flashing green strobe</strong> for night operations on certain marked aircraft; confirm the exact requirement for your class mark and OM against the CAA and aircraft manual. See <a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/flying-at-night-in-the-open-category/" target="_blank" rel="noopener noreferrer">Flying at night in the Open Category (CAA)</a>.</li>
+        </ul>
+
+        <h2 id="insurance-liability">Insurance, liability, and commercial work</h2>
+        <p>If you fly for work or as part of a business, additional obligations apply. Recreational pilots should still understand liability exposure.</p>
+        <ul>
+            <li><strong>EC No 785/2004 (as applied in the UK):</strong> Air carriers and commercial aviation operators must hold insurance meeting regulation-specified minimums. For <strong>commercial / professional UAS work</strong>, suitable aviation liability insurance is a <strong>legal requirement</strong>, not merely best practice. Recreational flying may still be uninsured by law in some cases, but <strong>public liability</strong> cover is widely recommended because third-party claims can be ruinous.</li>
+            <li><strong>Public liability vs hull:</strong> <strong>Public liability</strong> (third-party) covers injury or damage your aircraft causes to others. <strong>Hull</strong> or equipment cover insures your drone and payloads. Many business policies bundle elements differently; read schedules, exclusions (BVLOS, certain territories, night), and minimum sums insured.</li>
+            <li><strong>Commercial operations:</strong> Qualifications, OA, and client contracts stack on top of insurance; the CAA hub explains the regulatory side.</li>
+        </ul>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/commercial-drone-operations/" target="_blank" rel="noopener noreferrer">Commercial drone operations (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/moving-on-to-more-advanced-flying/insurance-requirements/" target="_blank" rel="noopener noreferrer">Insurance requirements (CAA)</a>.</li>
+            <li><a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/drone-code/getting-what-you-need-to-fly-legally/" target="_blank" rel="noopener noreferrer">Getting what you need to fly legally</a> (also covers basics relevant to all pilots).</li>
+        </ul>
+
+        <h2 id="privacy-data">Data protection, privacy, and surveillance</h2>
+        <p>Drones with cameras can process <strong>personal data</strong>. For many operators that brings <strong>UK GDPR</strong> and the <strong>Data Protection Act 2018</strong> into play, plus sector-specific expectations.</p>
+        <ul>
+            <li><strong>Surveillance Camera Code of Practice:</strong> The UK treats many UAS camera operations as capable of meeting the definition of surveillance in public-space contexts. The Surveillance Camera Commissioner&rsquo;s guidance helps public bodies and informs good practice for others on transparency, retention, and proportionality.</li>
+            <li><strong>ICO:</strong> The Information Commissioner&rsquo;s Office publishes guidance on drones, CCTV-style processing, and individual rights (access, erasure, complaints). If you routinely film people or identifiable property, plan <strong>lawful basis</strong>, minimisation, and how you respond to subject access requests.</li>
+            <li><strong>Practical pilot habits:</strong> Avoid unnecessary overflight of private gardens; be cautious around schools, hospitals, and protests; understand that &ldquo;I was legal in the air&rdquo; does not automatically make image capture fair or lawful.</li>
+        </ul>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/moving-on-to-more-advanced-flying/privacy-rules-when-flying-drones/" target="_blank" rel="noopener noreferrer">Privacy rules when flying drones (CAA)</a>.</li>
+            <li><a href="https://www.gov.uk/government/collections/surveillance-camera-code-of-practice" target="_blank" rel="noopener noreferrer">Surveillance camera code of practice (GOV.UK collection)</a>.</li>
+            <li><a href="https://ico.org.uk/for-the-public/drones/" target="_blank" rel="noopener noreferrer">Drones and personal data (ICO)</a>.</li>
+        </ul>
+
+        <h2 id="public-sector-uas">UK agencies and public-sector UAS</h2>
+        <p>Police forces, other law enforcement bodies, and emergency services use unmanned aircraft under the same overarching UK regulatory system as everyone else, but their operations are usually planned and approved in a different lane from everyday <strong>Open Category</strong> flying. National coordination (for example the <strong>National Police Chiefs&rsquo; Council (NPCC)</strong> drones portfolio and related programmes) sits alongside <strong>CAA</strong> permissions, governance, and published guidance. The points below summarise common language used in that world; they are <strong>not</strong> a substitute for <abbr title="Civil Aviation Authority">CAA</abbr> publications or any organisation&rsquo;s approved Operations Manual.</p>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/regulations-consultations-and-policy-programmes/drone-regulations-for-police-forces/" target="_blank" rel="noopener noreferrer">Drone regulations for police forces (CAA)</a>: how policing fits in the UK UAS framework.</li>
+            <li><a href="https://news.npcc.police.uk/releases/police-use-of-drones" target="_blank" rel="noopener noreferrer">Police use of drones (NPCC news)</a>: high-level context on national policing use of UAS.</li>
+            <li><a href="https://news.npcc.police.uk/editorial/t/drones-in-policing" target="_blank" rel="noopener noreferrer">Drones in policing (NPCC editorial)</a>: strategic and operational themes (not operational law).</li>
+        </ul>
+
+        <h3 id="alos-overview">UAS ALOS (Automated Line of Sight)</h3>
+        <p><strong>ALOS</strong> is a specialised operational concept used in some <strong>UK law enforcement and emergency-service</strong> programmes (often discussed alongside national policing aviation strategy and capability roadmaps). In plain terms, it is a permission-led way to fly when the remote pilot does <strong>not</strong> keep the aircraft in continuous <strong>direct, unaided visual contact</strong> like a typical Open Category pilot must, but also does not treat the flight as unrestricted <strong>BVLOS</strong>. Instead, mitigations (usually technical and procedural) are intended to give an equivalent level of situational awareness and control while the aircraft is briefly obscured (for example by buildings, vegetation, or terrain).</p>
+        <ul>
+            <li><strong>Intent:</strong> support time-critical tasks (pursuits, missing-person search, building or site reconnaissance) where a strict VLOS-only posture would break the mission, while remaining inside an approved safety case.</li>
+            <li><strong>Compared with EVLOS:</strong> <strong>Extended VLOS (EVLOS)</strong> classically extends the pilot&rsquo;s awareness using trained <strong>human observers</strong> relaying what they see. <strong>ALOS</strong> language usually emphasises <strong>automated</strong> aids (sensor fusion, geo-constraints, supervised autonomy) documented in the operator&rsquo;s CAA package; exactly what is allowed is spelled out in that package, not in a single public &ldquo;ALOS rule&rdquo;.</li>
+        </ul>
+
+        <h3>Technical pillars (typical themes in authorisations)</h3>
+        <p>What appears in a real <strong>Operational Authorisation</strong> depends on the CAA-approved risk assessment and Operations Manual. The following are typical <strong>themes</strong> discussed in industry and public-sector UAS material, not a checklist you can apply without a permission.</p>
+        <ul>
+            <li><strong>Low-latency, high-integrity downlinks:</strong> encrypted, high-definition video and telemetry so the remote pilot can maintain awareness when the aircraft is not in direct sight; link performance is part of the safety argument.</li>
+            <li><strong>Detect-and-avoid / obstacle awareness:</strong> radars, lidar, ultrasonics, vision systems, or fused autonomy that reduce collision risk when the pilot cannot see the airframe, often with automatic hold, reroute, or stop behaviours where the OA allows.</li>
+            <li><strong>Geospatial containment:</strong> precise geofencing or mission volumes so the aircraft cannot drift into unassessed airspace or &ldquo;dark&rdquo; volumes outside the approved operation.</li>
+            <li><strong>Lost-link and return behaviours:</strong> pre-planned responses if command-and-control degrades (hover, climb to min safe altitude, rejoin VLOS, or return along a cleared path, exactly as defined in the OM).</li>
+        </ul>
+
+        <h3>Regulatory anchors (CAA)</h3>
+        <p>ALOS-style concepts sit in the <strong>Specific Category</strong>: you need an <strong>Operational Authorisation (OA)</strong> from the CAA that accepts your risk assessment and Operations Manual. The umbrella guidance is <strong>CAP 722</strong> and its related CAPs; police and similar operators still work inside that system.</p>
+        <ul>
+            <li><a href="https://www.caa.co.uk/our-work/publications/documents/content/cap-722/" target="_blank" rel="noopener noreferrer">CAP 722: UAS operations in UK airspace (CAA)</a>: primary guidance document (check the current edition on the CAA site).</li>
+            <li><a href="https://www.caa.co.uk/our-work/publications/documents/content/cap-722a/" target="_blank" rel="noopener noreferrer">CAP 722A: Operating safety cases (CAA)</a>: safety-case expectations relevant to OA applications.</li>
+            <li><a href="https://www.caa.co.uk/drones/specific-category/specific-category-overview/" target="_blank" rel="noopener noreferrer">Specific Category overview (CAA)</a>: OA, risk assessment, and how Specific Category differs from Open Category.</li>
+            <li><a href="https://www.caa.co.uk/drones/specific-category/uk-sora-based-operational-authorisations/" target="_blank" rel="noopener noreferrer">UK SORA-based Operational Authorisations (CAA)</a>: how <abbr title="Specific Operations Risk Assessment">SORA</abbr>-style assessments support many modern OAs.</li>
+        </ul>
+        <p>An OA for ALOS-like flying will normally reference how loss of &ldquo;technological sight&rdquo; is detected, what the crew does next, and how command-and-control quality is demonstrated, mirroring the structure of a full safety case, not a consumer Drone Code summary.</p>
+
+        <h3>VLOS, EVLOS, ALOS, BVLOS (orientation)</h3>
+        <p>Distances below are <strong>illustrative</strong> only; real limits come from your category, aircraft, permission, and airspace. The table is for mental models, not for flight planning.</p>
+        <div class="legal-table-wrap">
+            <table>
+                <caption>Line-of-sight models (simplified)</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Model</th>
+                        <th scope="col">View / awareness</th>
+                        <th scope="col">Typical range idea</th>
+                        <th scope="col">Crew / setup</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">VLOS</th>
+                        <td>Direct, unaided visual contact with the aircraft</td>
+                        <td>Short range (environment-dependent)</td>
+                        <td>Remote pilot; Open Category baseline</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">EVLOS</th>
+                        <td>Visual contact extended using approved observer relay</td>
+                        <td>Beyond unaided VLOS, as approved</td>
+                        <td>Pilot plus observer(s); permission-led</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">ALOS</th>
+                        <td>Technological mitigations maintain awareness when direct sight breaks</td>
+                        <td>Variable (&ldquo;tactical&rdquo;), as in OA</td>
+                        <td>Pilot plus documented tech / procedures</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">BVLOS</th>
+                        <td>No continuous direct visual contact with the aircraft</td>
+                        <td>As approved; can be long-range</td>
+                        <td>Heavy mitigations; specialised OA</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p>For CAA framing of BVLOS and advanced operations, see <a href="https://www.caa.co.uk/drones/moving-on-to-more-advanced-flying/beyond-visual-line-of-sight-bvlos/" target="_blank" rel="noopener noreferrer">Beyond Visual Line of Sight (BVLOS) (CAA)</a>.</p>
+
+        <h3>Example use cases (law enforcement / emergency services)</h3>
+        <p>These are the sorts of scenarios national programmes and force OAs often discuss, always subject to local policy and CAA approval.</p>
+        <ul>
+            <li><strong>Complex urban tracking:</strong> following a dynamic incident where buildings or street geometry would break continuous direct sight from a single ground position.</li>
+            <li><strong>Internal or enclosed structures:</strong> flying inside large buildings or industrial sites while the pilot remains outside or at a safer stand-off, using feeds and containment defined in the OA.</li>
+            <li><strong>Drone as first responder (DFR) style concepts:</strong> launching from a fixed site toward an incident to arrive ahead of ground units, usually tied to BVLOS or advanced OA workstreams rather than consumer rules.</li>
+        </ul>
+
+        <h3>Training and competency</h3>
+        <p>Public-sector tactical pilots generally hold CAA-recognised qualifications appropriate to their OA (for example pathways related to the <strong>GVC</strong> and further remote-pilot certificates), plus <strong>force-level</strong> training on the approved aircraft, lost-link drills, and screen-based (&ldquo;monitor-only&rdquo;) flying where their OM allows it. The exact syllabus is not universal; it matches the authorised concept of operations.</p>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/remote-pilot-qualifications/overview/" target="_blank" rel="noopener noreferrer">Remote pilot qualifications (CAA)</a>: official qualification routes.</li>
+            <li><a href="https://www.caa.co.uk/drones/moving-on-to-more-advanced-flying/flying-drones-for-work/" target="_blank" rel="noopener noreferrer">Flying drones for work (CAA)</a>: bridges Open Category thinking to more advanced, permission-based work.</li>
+        </ul>
+
+        <h3>Permission-led reality and PDRAs</h3>
+        <p>There is <strong>no</strong> single published &ldquo;ALOS rule&rdquo; that replaces an Operational Authorisation. Each force or agency flies only what its <strong>annual (or revised) OA</strong> and <strong>Operations Manual</strong> say, including any ALOS-like provisions.</p>
+        <p><strong>Pre-Defined Risk Assessments (PDRAs)</strong> are CAA-published scenarios that let eligible operators apply for an OA against a standard risk case instead of writing every assessment from a blank page. They are widely used across Specific Category operations; whether a given police or blue-light concept maps to a PDRA, a UK SORA package, or a bespoke operating safety case depends on the operation. Start from the Specific Category pages and the current list of PDRAs on the CAA site.</p>
+        <ul>
+            <li><a href="https://www.caa.co.uk/drones/specific-category/pdra01-operational-authorisation/" target="_blank" rel="noopener noreferrer">PDRA01 Operational Authorisation (CAA)</a>: example of a published PDRA entry point (check for others and current versions).</li>
+        </ul>
+
+        <h2 id="third-party-tools">Third-party planning tools (non-official)</h2>
+        <p>These are <strong>not</strong> government sources. They can help with situational awareness if you still comply with the CAA and check NOTAMs and official airspace data.</p>
+        <ul>
+            <li><a href="https://www.altitudeangel.com/" target="_blank" rel="noopener noreferrer">Altitude Angel</a>: airspace and UTM-style services used by many operators.</li>
+            <li><a href="https://www.dronescene.uk/" target="_blank" rel="noopener noreferrer">Drone Scene (third-party)</a>: UK-oriented map-style planning aid; always cross-check with official data.</li>
+        </ul>
+
+        <p class="legal-footer-note"><a href="index.html">Back to AirPlot</a> · <a href="privacy.html">Privacy Policy</a> · <a href="robots.txt">robots.txt</a> · <a href="sitemap.xml">Sitemap</a></p>
+    </main>
+    <script src="js/knowledge-theme.js"></script>
+</body>
+</html>

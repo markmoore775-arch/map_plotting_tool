@@ -82,6 +82,9 @@
                 <a href="training.html" class="intro-cta intro-cta-secondary" id="introTrainingBtn">
                     Training
                 </a>
+                <a href="knowledge.html" class="intro-cta intro-cta-secondary" id="introKnowledgeBtn">
+                    Knowledge
+                </a>
                 <button type="button" class="intro-cta intro-cta-secondary" id="introHelpBtn">
                     View Instructions
                 </button>
@@ -98,6 +101,8 @@
             <div class="intro-disclaimer">
                 <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in Help.
             </div>
+            <p class="intro-support">Questions, feedback, or bugs: <a href="mailto:support@airplot.app">support@airplot.app</a></p>
+            <p class="intro-privacy"><a href="privacy.html">Privacy Policy</a></p>
             <p class="intro-version">v3.0</p>
             <p class="intro-copyright">&copy; M Moore</p>
         </div>
@@ -292,6 +297,10 @@
     <footer class="app-footer">
         <img src="assets/airplot-icon.svg" alt="" class="app-footer-logo" aria-hidden="true">
         <span>&copy; M Moore</span>
+        <span class="app-footer-sep">|</span>
+        <a href="mailto:support@airplot.app" class="app-footer-disclaimer-link" title="Email support">Support</a>
+        <span class="app-footer-sep">|</span>
+        <a href="privacy.html" class="app-footer-disclaimer-link" title="Privacy Policy">Privacy</a>
         <span class="app-footer-sep">|</span>
         <button type="button" class="app-footer-disclaimer-link" id="footerDisclaimerBtn" title="View disclaimer">Disclaimer</button>
     </footer>
@@ -662,13 +671,30 @@
     <div id="helpModal" class="modal hidden">
         <div class="modal-backdrop"></div>
         <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h2>AirPlot Help</h2>
-                <button class="modal-close">&times;</button>
+            <div class="modal-header help-modal-header">
+                <h2 id="helpModalTitle">AirPlot Help</h2>
+                <div class="help-modal-header-end">
+                    <div class="fn-export-theme-box help-modal-theme-box" role="radiogroup" aria-labelledby="helpPageThemeLabel" title="Help window colours (same as Flight Report; stored in this browser)">
+                        <span id="helpPageThemeLabel" class="fn-export-theme-label">Theme</span>
+                        <div class="fn-export-theme-segments">
+                            <label class="fn-export-theme-segment-opt">
+                                <input type="radio" name="helpPageTheme" value="dark" checked>
+                                <span class="fn-export-theme-segment-text">Dark</span>
+                            </label>
+                            <label class="fn-export-theme-segment-opt">
+                                <input type="radio" name="helpPageTheme" value="light">
+                                <span class="fn-export-theme-segment-text">Light</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="button" class="modal-close" aria-label="Close help">&times;</button>
+                </div>
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p class="help-overview-lead"><strong>AirPlot</strong> (v3.0) is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail; other tools open from the welcome screen. Use <strong>Welcome</strong> (top-left) from any mode to return home.</p>
+                    <p class="help-overview-lead"><strong>AirPlot</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail; other tools open from the welcome screen. Use <strong>Welcome</strong> (top-left) from any mode to return home. <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
+                    <p class="help-overview-support">Questions, feedback, or bug reports: <a href="mailto:support@airplot.app">support@airplot.app</a></p>
+                    <p class="help-overview-legal"><a href="privacy.html">Privacy Policy</a> · <a href="robots.txt">robots.txt</a> · <a href="sitemap.xml">Sitemap</a></p>
                     <div class="help-tool-grid">
                         <button type="button" class="help-tool-card" data-help-tab="points">
                             <span class="help-tool-card-title">Planning</span>
@@ -720,6 +746,11 @@
                             <span class="help-tool-card-desc">Optional arcade games: Drone Run and Drone Dash.</span>
                             <span class="help-tool-card-action">training.html →</span>
                         </a>
+                        <a href="knowledge.html" class="help-tool-card help-tool-card--link">
+                            <span class="help-tool-card-title">Knowledge</span>
+                            <span class="help-tool-card-desc">UK pilot reference: CAA Drone Code, registration, airspace links (not legal advice).</span>
+                            <span class="help-tool-card-action">knowledge.html →</span>
+                        </a>
                         <a href="flight-planning.html" class="help-tool-card help-tool-card--link">
                             <span class="help-tool-card-title">DJI Mission Planner</span>
                             <span class="help-tool-card-desc">Waypoints and manual recce for DJI Pilot 2 (KMZ, PPTX/PDF, SD card steps)—use its ? help there.</span>
@@ -728,14 +759,13 @@
                     </div>
                     <p class="help-overview-hint">Install from the browser (&ldquo;Add to Home Screen&rdquo; or install app) for a standalone experience. On small screens, swipe the tab row if not all tabs fit; scroll the content below.</p>
                     <details class="help-overview-more">
-                        <summary>What&rsquo;s new in v3, save files, full tool summaries</summary>
+                        <summary>Save files, full tool summaries</summary>
                         <div class="help-overview-more-body">
                             <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo and redo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
                             <p><strong>Weather:</strong> Tap the map to select a location, pick a forecast model (for example ECMWF IFS, GFS, UK Met Office, GEM Canada), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with small maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM and airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
                             <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> can open a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
                             <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear report</strong> (top), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Use the <strong>Checklist</strong> link in the header to open the M4T / TD checklist without returning to the welcome screen.</p>
                             <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. Use <strong>Flight Report</strong> in the header to open it without going home.</p>
-                            <p><strong>What&rsquo;s new in v3:</strong> The <strong>Airspace</strong> page adds hazard-themed red aircraft icons, optional <strong>OGN</strong> glider-class traffic, <strong>altitude (ft)</strong> beside every track, session trails, and <strong>paused refresh</strong> while aircraft details are open (see above). <strong>Flight Weather</strong> exports use your Airspace search radius and optional Dark/Light report styling (default Light); PowerPoint includes per-NOTAM and per-zone map slides. <strong>Flight Report</strong> adds matching theme controls for the page and PDF, <strong>Clear report</strong> in the header, and the Airspace section on the form. Branded exports and footers show <strong>AirPlot v3</strong> where a version label is used.</p>
                             <p><strong>Save files:</strong> Planning <strong>Save Project</strong> / <strong>Load Project</strong> JSON uses the same format as v2; older project files still load.</p>
                         </div>
                     </details>
@@ -907,7 +937,7 @@
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-sidebar">
                                 <h3>Sidebar &amp; footer</h3>
-                                <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes a <strong>Disclaimer</strong> link (same content as the Disclaimer tab).</p>
+                                <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes <strong>Support</strong> (<a href="mailto:support@airplot.app">support@airplot.app</a>), <strong>Privacy</strong> (<a href="privacy.html">policy</a>), and <strong>Disclaimer</strong> (same content as the Disclaimer tab).</p>
                             </section>
                             <section class="help-section" id="help-map-mobile">
                                 <h3>Small screens</h3>

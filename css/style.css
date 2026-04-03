@@ -260,7 +260,10 @@ body.sidebar-collapsed #map {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     text-align: center;
-    padding: clamp(20px, 4vw, 40px) clamp(16px, 4vw, 32px);
+    padding:
+        clamp(20px, 4vw, 40px)
+        clamp(16px, 4vw, 32px)
+        clamp(10px, 2vw, 18px);
     background: rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -426,17 +429,49 @@ body.sidebar-collapsed #map {
     color: rgba(255, 255, 255, 0.85);
 }
 
-/* Version badge */
+/* Version badge (tight to privacy link; card bottom padding handles safe area) */
 .intro-version {
-    margin-top: clamp(16px, 4vw, 32px);
+    margin-top: clamp(4px, 1.2vw, 10px);
     font-size: clamp(0.62rem, 1.8vw, 0.7rem);
     letter-spacing: 1px;
     color: rgba(255,255,255,0.2);
     text-transform: uppercase;
 }
 
+.intro-support {
+    margin-top: clamp(12px, 3vw, 18px);
+    margin-bottom: 0;
+    font-size: clamp(0.68rem, 2vw, 0.76rem);
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.intro-support a {
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: underline;
+}
+
+.intro-support a:hover {
+    color: #fff;
+}
+
+.intro-privacy {
+    margin: 8px 0 0;
+    font-size: clamp(0.62rem, 1.8vw, 0.7rem);
+}
+
+.intro-privacy a {
+    color: rgba(255, 255, 255, 0.35);
+    text-decoration: underline;
+}
+
+.intro-privacy a:hover {
+    color: rgba(255, 255, 255, 0.65);
+}
+
 .intro-copyright {
-    margin-top: 8px;
+    margin-top: 2px;
+    margin-bottom: 0;
     font-size: clamp(0.62rem, 1.8vw, 0.7rem);
     color: rgba(255,255,255,0.2);
 }
@@ -477,7 +512,7 @@ body.sidebar-collapsed #map {
     }
 
     .intro-version {
-        margin-top: 12px;
+        margin-top: 6px;
     }
 }
 
@@ -1301,6 +1336,318 @@ a.airspace-choice-btn {
 
 /* ---- Help Modal ---- */
 
+.help-modal-header {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.help-modal-header-end {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Flight Report–style Theme segmented control (Help modal) */
+#helpModal .fn-export-theme-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 6px 10px;
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+#helpModal .fn-export-theme-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+#helpModal .fn-export-theme-segments {
+    display: inline-flex;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.35);
+}
+
+#helpModal .fn-export-theme-segment-opt {
+    position: relative;
+    display: block;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+#helpModal .fn-export-theme-segment-opt input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+}
+
+#helpModal .fn-export-theme-segment-opt + .fn-export-theme-segment-opt .fn-export-theme-segment-text {
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#helpModal .fn-export-theme-segment-text {
+    display: block;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--sidebar-text-muted, #a0a0b8);
+    background: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+#helpModal .fn-export-theme-segment-opt:hover .fn-export-theme-segment-text {
+    color: var(--sidebar-text, #e8e8f0);
+}
+
+#helpModal .fn-export-theme-segment-opt input:checked + .fn-export-theme-segment-text {
+    background: var(--primary, #5b8def);
+    color: #fff;
+}
+
+#helpModal .fn-export-theme-segment-opt input:focus-visible + .fn-export-theme-segment-text {
+    outline: 2px solid var(--primary, #5b8def);
+    outline-offset: 2px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Help modal light theme (synced with Flight Report via fnLightTheme) */
+#helpModal.help-modal--light .modal-content {
+    background: #f8f9fb;
+    border-color: #d0d0d0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+#helpModal.help-modal--light .modal-header,
+#helpModal.help-modal--light .modal-footer {
+    border-color: #d8dbe6;
+}
+
+#helpModal.help-modal--light .modal-header h2 {
+    color: #1a1d26;
+}
+
+#helpModal.help-modal--light .modal-close {
+    color: #5c6378;
+}
+
+#helpModal.help-modal--light .modal-close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #1a1d26;
+}
+
+#helpModal.help-modal--light .fn-export-theme-segment-opt + .fn-export-theme-segment-opt .fn-export-theme-segment-text {
+    border-left-color: #c8c8c8;
+}
+
+#helpModal.help-modal--light .fn-export-theme-box {
+    border-color: #d0d0d0;
+    background: #e8e9ec;
+}
+
+#helpModal.help-modal--light .fn-export-theme-label {
+    color: #666;
+}
+
+#helpModal.help-modal--light .fn-export-theme-segments {
+    border-color: #c8c8c8;
+    background: #f0f1f3;
+}
+
+#helpModal.help-modal--light .fn-export-theme-segment-text {
+    color: #555;
+}
+
+#helpModal.help-modal--light .fn-export-theme-segment-opt:hover .fn-export-theme-segment-text {
+    color: #1a1a1a;
+}
+
+#helpModal.help-modal--light .fn-export-theme-segment-opt input:checked + .fn-export-theme-segment-text {
+    background: var(--primary, #5b8def);
+    color: #fff;
+}
+
+#helpModal.help-modal--light .help-overview {
+    border-bottom-color: #d8dbe6;
+}
+
+#helpModal.help-modal--light .help-overview-lead {
+    color: #374151;
+}
+
+#helpModal.help-modal--light .help-overview-lead strong {
+    color: #111827;
+}
+
+#helpModal.help-modal--light .help-overview-support,
+#helpModal.help-modal--light .help-overview-legal,
+#helpModal.help-modal--light .help-overview-hint {
+    color: #6b7280;
+}
+
+#helpModal.help-modal--light .help-overview-legal a {
+    color: #4b5563;
+}
+
+#helpModal.help-modal--light .help-overview-legal a:hover {
+    color: var(--primary);
+}
+
+#helpModal.help-modal--light .help-tool-card {
+    border-color: #d8dbe6;
+    background: #ffffff;
+    color: #374151;
+}
+
+#helpModal.help-modal--light .help-tool-card:hover {
+    background: #f3f4f6;
+    border-color: #c4c9d4;
+}
+
+#helpModal.help-modal--light .help-tool-card-title {
+    color: #111827;
+}
+
+#helpModal.help-modal--light .help-tool-card-desc {
+    color: #6b7280;
+}
+
+#helpModal.help-modal--light .help-overview-more {
+    border-color: #d8dbe6;
+    background: #f0f1f3;
+}
+
+#helpModal.help-modal--light .help-overview-more summary {
+    color: #374151;
+}
+
+#helpModal.help-modal--light .help-overview-more summary:hover {
+    color: #111827;
+}
+
+#helpModal.help-modal--light .help-overview-more-body {
+    border-top-color: #d8dbe6;
+}
+
+#helpModal.help-modal--light .help-overview-more-body p {
+    color: #374151;
+}
+
+#helpModal.help-modal--light .help-overview-more-body strong {
+    color: #111827;
+}
+
+#helpModal.help-modal--light .tabs {
+    border-bottom-color: #d8dbe6;
+}
+
+#helpModal.help-modal--light .tab {
+    color: #6b7280;
+}
+
+#helpModal.help-modal--light .tab:hover {
+    background: #e8e9ec;
+    color: #374151;
+}
+
+#helpModal.help-modal--light .tab.active {
+    background: var(--primary);
+    color: #fff;
+}
+
+#helpModal.help-modal--light .tab-panel h3 {
+    color: #111827;
+}
+
+#helpModal.help-modal--light .tab-panel h4 {
+    color: #6b7280;
+}
+
+#helpModal.help-modal--light .tab-panel p,
+#helpModal.help-modal--light .tab-panel li {
+    color: #374151;
+}
+
+#helpModal.help-modal--light .tab-panel a {
+    color: var(--primary);
+}
+
+#helpModal.help-modal--light .help-panel-toc a {
+    color: #374151;
+    border-color: #d8dbe6;
+    background: #ffffff;
+}
+
+#helpModal.help-modal--light .help-panel-toc a:hover {
+    color: #111827;
+    border-color: #c4c9d4;
+    background: #f3f4f6;
+}
+
+#helpModal.help-modal--light .help-section.help-section--legal {
+    border-color: #d8dbe6;
+    background: #f0f1f3;
+}
+
+#helpModal.help-modal--light .help-subsection {
+    border-color: #d8dbe6;
+    background: #f0f1f3;
+}
+
+#helpModal.help-modal--light .help-subsection summary {
+    color: #111827;
+}
+
+#helpModal.help-modal--light .help-subsection summary:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+#helpModal.help-modal--light .help-subsection-body {
+    border-top-color: #d8dbe6;
+}
+
+#helpModal.help-modal--light .help-section {
+    border-bottom-color: #e5e7eb;
+}
+
+#helpModal.help-modal--light .help-section.help-section--full,
+#helpModal.help-modal--light .help-references-layout .help-section {
+    border-color: #d8dbe6;
+    background: #f0f1f3;
+}
+
+#helpModal.help-modal--light .modal-body {
+    color: #374151;
+}
+
+#helpModal.help-modal--light .modal-footer .btn.btn-secondary {
+    background: #e8e9ec;
+    color: #1a1a1a;
+    border-color: #d0d0d0;
+}
+
+#helpModal.help-modal--light .modal-footer .btn.btn-secondary:hover {
+    background: #d8d9dc;
+}
+
 .help-overview {
     margin-bottom: 16px;
     padding-bottom: 16px;
@@ -1317,6 +1664,38 @@ a.airspace-choice-btn {
 .help-overview-lead strong {
     color: #fff;
     font-weight: 600;
+}
+
+.help-overview-support {
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--sidebar-text-muted);
+}
+
+.help-overview-support a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.help-overview-support a:hover {
+    color: var(--primary-hover, #6a9af0);
+}
+
+.help-overview-legal {
+    margin: 0 0 14px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--sidebar-text-muted);
+}
+
+.help-overview-legal a {
+    color: var(--sidebar-text-muted);
+    text-decoration: underline;
+}
+
+.help-overview-legal a:hover {
+    color: var(--primary);
 }
 
 .help-overview-hint {

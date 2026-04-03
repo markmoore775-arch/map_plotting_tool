@@ -1,0 +1,5 @@
+# https://airplot.app/
+User-agent: *
+Allow: /
+
+Sitemap: https://airplot.app/sitemap.xml
