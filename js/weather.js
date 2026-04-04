@@ -991,6 +991,12 @@
         return `${Math.round(speed)} km/h ${directionToCardinal(dir)}`;
     }
 
+    /** 12-hour forecast table / exports: always 24-hour clock regardless of device locale. */
+    function formatForecastHourTime(isoTime) {
+        if (!isoTime) return '—';
+        return new Date(isoTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
     function deriveSummaryText(hourlySlice, suitability) {
         if (!hourlySlice || !hourlySlice.hourly) return '';
         const h = hourlySlice.hourly;
@@ -1224,7 +1230,7 @@
                 const hourSuit = deriveSuitabilityForHourlyIndex(h, idx);
                 const ragClass = 'weather-hourly-cell weather-hourly-cell--' + hourSuit.level;
                 const ragTitle = hourSuit.label + ': ' + hourSuit.explainer;
-                const timeStr = h.time[idx] ? new Date(h.time[idx]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                const timeStr = formatForecastHourTime(h.time[idx]);
                 const w10 = h.wind_speed_10m?.[idx];
                 const gusts10 = h.wind_gusts_10m?.[idx];
                 const w120 = h.wind_speed_120m?.[idx];
@@ -2433,7 +2439,7 @@
                     const hourSuit = deriveSuitabilityForHourlyIndex(h, idx);
                     const ragFill = { color: hourlyForecastPptxFillHex(hourSuit.level, pptxHourlyLight) };
                     const ragCell = Object.assign({}, cellOpts, { fill: ragFill });
-                    const timeStr = h.time[idx] ? new Date(h.time[idx]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                    const timeStr = formatForecastHourTime(h.time[idx]);
                     const w10 = h.wind_speed_10m?.[idx];
                     const g10 = h.wind_gusts_10m?.[idx];
                     const w120 = h.wind_speed_120m?.[idx];
