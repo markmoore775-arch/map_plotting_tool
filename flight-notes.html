@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css?v=12">
+    <link rel="stylesheet" href="css/flight-notes.css?v=13">
     <!-- Leaflet (mini map for GPS location) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -23,67 +23,114 @@
     <header class="fn-top-bar">
         <div class="fn-top-bar-start">
             <nav class="fp-welcome-bar" aria-label="AirPlot home">
-                <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
-                    <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
+                    <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
                     <span class="fp-welcome-title">AirPlot</span>
-                    <span class="fp-welcome-cta">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-                        Welcome
-                    </span>
                 </a>
             </nav>
-            <a href="checklist.html" class="fn-nav-link" title="Open M4T / TD checklist">Checklist</a>
+            <nav class="ap-tool-nav" aria-label="AirPlot tools">
+                <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></a>
+                <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></a>
+                <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
+                <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></a>
+                <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Flight Report, current page"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></span>
+            </nav>
         </div>
         <div class="fn-top-bar-actions">
-            <button type="button" class="fn-top-clear-btn" id="fnClearNotesTopBtn" title="Clear all entered flight report fields" aria-label="Clear all entered flight report fields">
-                <span class="fn-clear-btn-label fn-clear-btn-label--long" aria-hidden="true">Clear report</span>
-                <span class="fn-clear-btn-label fn-clear-btn-label--short" aria-hidden="true">Clear</span>
+            <button type="button" class="fn-theme-toggle" id="fnThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
+                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
+                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
             </button>
-            <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="fnPageThemeLabel" title="Page colours (better for copy/paste in light mode)">
-                <span id="fnPageThemeLabel" class="fn-export-theme-label">Theme</span>
-                <div class="fn-export-theme-segments">
-                    <label class="fn-export-theme-segment-opt">
-                        <input type="radio" name="fnPageTheme" value="dark" checked>
-                        <span class="fn-export-theme-segment-text">Dark</span>
-                    </label>
-                    <label class="fn-export-theme-segment-opt">
-                        <input type="radio" name="fnPageTheme" value="light">
-                        <span class="fn-export-theme-segment-text">Light</span>
-                    </label>
-                </div>
-            </div>
         </div>
     </header>
 
     <main class="fn-main">
-        <aside class="fn-disclaimer" role="note" aria-label="Privacy and data">
-            <p>
-                <strong>Privacy:</strong> AirPlot does not save your flight report on our servers. What you enter stays in this browser on this device and is not uploaded to us.
-                Your draft is saved locally so you can leave this page and return later; use <strong>Clear report</strong> at the top of the page or <strong>Clear form</strong> at the bottom to wipe it from this browser.
-                For a portable copy, use <strong>export to PDF</strong> or <strong>send by email</strong>.
-                Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch weather report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed report text is not sent to those services.
-            </p>
-        </aside>
         <header class="fn-header">
+            <div class="fn-header-clear-row">
+                <button type="button" class="fn-top-clear-btn" id="fnClearNotesTopBtn" title="Clear all entered flight report fields" aria-label="Clear all entered flight report fields">
+                    <span class="fn-clear-btn-label fn-clear-btn-label--long" aria-hidden="true">Clear Report</span>
+                    <span class="fn-clear-btn-label fn-clear-btn-label--short" aria-hidden="true">Clear</span>
+                </button>
+            </div>
             <h1 class="fn-title">Flight Report</h1>
-            <p class="fn-lead">Record key details from your flight. <strong>Theme</strong> (top right) sets page colours; <strong>PDF theme</strong> next to Export PDF sets PDF colours (default Light). <strong>Clear report</strong> (top) or <strong>Clear form</strong> (bottom) wipes the draft after confirmation. Use <strong>Fetch weather report</strong> and the <strong>Airspace</strong> section (NOTAMs and UK zones with small maps) when you have a location. Export to PDF or send by email. Use <strong>Checklist</strong> in the header to open the M4T / TD checklist in this tab without returning to the welcome screen.</p>
+            <details class="fn-privacy-details" id="fnPrivacyDetails">
+                <summary class="fn-privacy-summary"><span class="fn-privacy-summary-icon" aria-hidden="true">ℹ️</span> Privacy info</summary>
+                <div class="fn-disclaimer-body" role="note">
+                    <p>
+                        <strong>Privacy:</strong> AirPlot does not save your flight report on our servers. What you enter stays in this browser on this device and is not uploaded to us.
+                        Your draft is saved locally so you can leave this page and return later; use <strong>Clear Report</strong> at the start of the report (above the title) or <strong>Clear form</strong> at the bottom to wipe it from this browser.
+                        For a portable copy, use <strong>export to PDF</strong> or <strong>send by email</strong>.
+                        Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch Weather Report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed report text is not sent to those services.
+                    </p>
+                </div>
+            </details>
+            <p class="fn-lead">Record key details from your flight. The <strong>sun/moon button</strong> (top right) toggles page colours; <strong>PDF theme</strong> next to Export PDF sets PDF colours (default Light). <strong>Clear Report</strong> (start of report) or <strong>Clear form</strong> (bottom) wipes the draft after confirmation. Use <strong>Fetch Weather Report</strong> and <strong>Clear Weather Report</strong> (Conditions) and the <strong>Airspace</strong> section (NOTAMs and UK zones with small maps) when you have a location. Export to PDF or send by email. The header <strong>tool strip</strong> switches to Checklist, Planner, Weather, or the live Airspace map in this tab without returning to the welcome screen.</p>
         </header>
 
         <form id="flightReportForm" class="fn-form" autocomplete="on">
+            <section class="fn-section" aria-labelledby="fn-mission-heading">
+                <h2 id="fn-mission-heading" class="fn-section-title">Mission</h2>
+                <div class="fn-grid-2">
+                    <div class="fn-field">
+                        <label class="fn-label" for="fnReference">Reference</label>
+                        <input type="text" id="fnReference" name="fnReference" class="fn-input">
+                    </div>
+                    <div class="fn-field">
+                        <label class="fn-label" for="fnDeconflictions">Deconflictions</label>
+                        <input type="text" id="fnDeconflictions" name="fnDeconflictions" class="fn-input">
+                    </div>
+                    <div class="fn-field fn-field-span-2">
+                        <label class="fn-label" for="fnUas">UAS</label>
+                        <input type="text" id="fnUas" name="fnUas" class="fn-input">
+                    </div>
+                </div>
+            </section>
+
             <section class="fn-section" aria-labelledby="fn-when-heading">
                 <h2 id="fn-when-heading" class="fn-section-title">When</h2>
-                <div class="fn-row fn-row-2">
-                    <label class="fn-label" for="fnDate">Date</label>
-                    <input type="date" id="fnDate" name="fnDate" class="fn-input">
-
-                    <label class="fn-label" for="fnTime">Time</label>
-                    <input type="time" id="fnTime" name="fnTime" class="fn-input">
+                <div class="fn-row fn-row-2 fn-date-primary-row">
+                    <div class="fn-field-grow">
+                        <label class="fn-label" for="fnDate">Date</label>
+                        <div class="fn-date-input-row">
+                            <input type="date" id="fnDate" name="fnDate" class="fn-input fn-date-input">
+                            <button type="button" class="fn-btn fn-btn-secondary fn-date-picker-btn" id="fnDatePickerBtn" title="Open calendar picker" aria-label="Open calendar picker">
+                                Calendar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="fn-field-grow">
+                        <label class="fn-label" for="fnTime">Time</label>
+                        <input type="time" id="fnTime" name="fnTime" class="fn-input">
+                    </div>
                 </div>
                 <div class="fn-now-row">
+                    <button type="button" class="fn-btn fn-btn-now" id="fnTodayBtn" title="Set date to today (local); leave time unchanged">
+                        Today
+                    </button>
                     <button type="button" class="fn-btn fn-btn-now" id="fnNowBtn" title="Set date and time to now (local)">
                         Now
                     </button>
                 </div>
+                <details class="fn-date-manual-fallback">
+                    <summary class="fn-date-manual-summary">Enter date manually (if the calendar is awkward on your device)</summary>
+                    <div class="fn-date-manual-inner">
+                        <p id="fnDateManualHint" class="fn-date-manual-hint hidden" role="status"></p>
+                        <div class="fn-date-manual-selects">
+                            <div class="fn-field-grow">
+                                <label class="fn-label" for="fnDateManualDay">Day</label>
+                                <select id="fnDateManualDay" class="fn-input" aria-label="Day"></select>
+                            </div>
+                            <div class="fn-field-grow">
+                                <label class="fn-label" for="fnDateManualMonth">Month</label>
+                                <select id="fnDateManualMonth" class="fn-input" aria-label="Month"></select>
+                            </div>
+                            <div class="fn-field-grow">
+                                <label class="fn-label" for="fnDateManualYear">Year</label>
+                                <select id="fnDateManualYear" class="fn-input" aria-label="Year"></select>
+                            </div>
+                        </div>
+                    </div>
+                </details>
             </section>
 
             <section class="fn-section" aria-labelledby="fn-loc-heading">
@@ -113,24 +160,6 @@
                 </div>
             </section>
 
-            <section class="fn-section" aria-labelledby="fn-mission-heading">
-                <h2 id="fn-mission-heading" class="fn-section-title">Mission</h2>
-                <div class="fn-grid-2">
-                    <div class="fn-field">
-                        <label class="fn-label" for="fnReference">Reference</label>
-                        <input type="text" id="fnReference" name="fnReference" class="fn-input">
-                    </div>
-                    <div class="fn-field">
-                        <label class="fn-label" for="fnDeconflictions">Deconflictions</label>
-                        <input type="text" id="fnDeconflictions" name="fnDeconflictions" class="fn-input">
-                    </div>
-                    <div class="fn-field fn-field-span-2">
-                        <label class="fn-label" for="fnUas">UAS</label>
-                        <input type="text" id="fnUas" name="fnUas" class="fn-input">
-                    </div>
-                </div>
-            </section>
-
             <section class="fn-section" aria-labelledby="fn-batt-heading">
                 <h2 id="fn-batt-heading" class="fn-section-title">Batteries</h2>
                 <div class="fn-battery-grid">
@@ -138,9 +167,9 @@
                         <h3 class="fn-battery-title">Battery 1</h3>
                         <label class="fn-label" for="fnBattery1">Details</label>
                         <input type="text" id="fnBattery1" name="fnBattery1" class="fn-input">
-                        <label class="fn-label" for="fnBattery1Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery1Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery1Rp1" name="fnBattery1Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery1Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery1Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery1Rp2" name="fnBattery1Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery1Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -161,9 +190,9 @@
                         <h3 class="fn-battery-title">Battery 2</h3>
                         <label class="fn-label" for="fnBattery2">Details</label>
                         <input type="text" id="fnBattery2" name="fnBattery2" class="fn-input">
-                        <label class="fn-label" for="fnBattery2Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery2Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery2Rp1" name="fnBattery2Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery2Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery2Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery2Rp2" name="fnBattery2Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery2Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -184,9 +213,9 @@
                         <h3 class="fn-battery-title">Battery 3</h3>
                         <label class="fn-label" for="fnBattery3">Details</label>
                         <input type="text" id="fnBattery3" name="fnBattery3" class="fn-input">
-                        <label class="fn-label" for="fnBattery3Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery3Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery3Rp1" name="fnBattery3Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery3Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery3Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery3Rp2" name="fnBattery3Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery3Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -207,9 +236,9 @@
                         <h3 class="fn-battery-title">Battery 4</h3>
                         <label class="fn-label" for="fnBattery4">Details</label>
                         <input type="text" id="fnBattery4" name="fnBattery4" class="fn-input">
-                        <label class="fn-label" for="fnBattery4Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery4Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery4Rp1" name="fnBattery4Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery4Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery4Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery4Rp2" name="fnBattery4Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery4Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -230,9 +259,9 @@
                         <h3 class="fn-battery-title">Battery 5</h3>
                         <label class="fn-label" for="fnBattery5">Details</label>
                         <input type="text" id="fnBattery5" name="fnBattery5" class="fn-input">
-                        <label class="fn-label" for="fnBattery5Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery5Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery5Rp1" name="fnBattery5Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery5Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery5Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery5Rp2" name="fnBattery5Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery5Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -253,9 +282,9 @@
                         <h3 class="fn-battery-title">Battery 6</h3>
                         <label class="fn-label" for="fnBattery6">Details</label>
                         <input type="text" id="fnBattery6" name="fnBattery6" class="fn-input">
-                        <label class="fn-label" for="fnBattery6Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery6Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery6Rp1" name="fnBattery6Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery6Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery6Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery6Rp2" name="fnBattery6Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery6Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -276,9 +305,9 @@
                         <h3 class="fn-battery-title">Battery 7</h3>
                         <label class="fn-label" for="fnBattery7">Details</label>
                         <input type="text" id="fnBattery7" name="fnBattery7" class="fn-input">
-                        <label class="fn-label" for="fnBattery7Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery7Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery7Rp1" name="fnBattery7Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery7Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery7Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery7Rp2" name="fnBattery7Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery7Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -299,9 +328,9 @@
                         <h3 class="fn-battery-title">Battery 8</h3>
                         <label class="fn-label" for="fnBattery8">Details</label>
                         <input type="text" id="fnBattery8" name="fnBattery8" class="fn-input">
-                        <label class="fn-label" for="fnBattery8Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery8Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery8Rp1" name="fnBattery8Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery8Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery8Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery8Rp2" name="fnBattery8Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery8Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -322,9 +351,9 @@
                         <h3 class="fn-battery-title">Battery 9</h3>
                         <label class="fn-label" for="fnBattery9">Details</label>
                         <input type="text" id="fnBattery9" name="fnBattery9" class="fn-input">
-                        <label class="fn-label" for="fnBattery9Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery9Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery9Rp1" name="fnBattery9Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery9Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery9Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery9Rp2" name="fnBattery9Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery9Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -345,9 +374,9 @@
                         <h3 class="fn-battery-title">Battery 10</h3>
                         <label class="fn-label" for="fnBattery10">Details</label>
                         <input type="text" id="fnBattery10" name="fnBattery10" class="fn-input">
-                        <label class="fn-label" for="fnBattery10Rp1">RP 1</label>
+                        <label class="fn-label" for="fnBattery10Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery10Rp1" name="fnBattery10Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery10Rp2">RP 2</label>
+                        <label class="fn-label" for="fnBattery10Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery10Rp2" name="fnBattery10Rp2" class="fn-input">
                         <label class="fn-label" for="fnBattery10Launch">Launch time</label>
                         <div class="fn-battery-time-row">
@@ -366,6 +395,10 @@
                     </div>
                 </div>
                 <div class="fn-add-battery-wrap">
+                    <button type="button" class="fn-btn fn-btn-secondary fn-remove-last-battery-btn" id="fnRemoveLastBatteryBtn"
+                        title="Remove the last battery slot" aria-label="Remove last battery" hidden>
+                        Remove Battery 2
+                    </button>
                     <button type="button" class="fn-btn fn-btn-secondary" id="fnAddBatteryBtn"
                         title="Show fields for the next battery (up to 10)">Add Battery 2</button>
                 </div>
@@ -376,7 +409,11 @@
                 <div class="fn-weather-actions">
                     <button type="button" class="fn-btn fn-btn-now" id="fnWeatherFetchBtn"
                         title="Fetches forecast from Open-Meteo (same source as Flight Weather). Location must include latitude and longitude; use Use current GPS or paste coordinates.">
-                        Fetch weather report
+                        Fetch Weather Report
+                    </button>
+                    <button type="button" class="fn-btn fn-btn-secondary" id="fnWeatherClearBtn"
+                        title="Remove all text from the Conditions box (after confirmation)">
+                        Clear Weather Report
                     </button>
                     <span id="fnWeatherFetchStatus" class="fn-weather-fetch-status" role="status" aria-live="polite"></span>
                 </div>
@@ -460,7 +497,7 @@
         <div class="modal-backdrop" id="fnClearModalBackdrop" aria-hidden="true"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="fnClearModalTitle">Clear report?</h2>
+                <h2 id="fnClearModalTitle">Clear Report?</h2>
                 <button type="button" class="modal-close" id="fnClearModalClose" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
@@ -468,7 +505,41 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="fnClearModalCancel">Cancel</button>
-                <button type="button" class="btn btn-danger" id="fnClearModalConfirm">Clear report</button>
+                <button type="button" class="btn btn-danger" id="fnClearModalConfirm">Clear Report</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fnRemoveBatteryModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="fnRemoveBatteryModalTitle">
+        <div class="modal-backdrop" id="fnRemoveBatteryModalBackdrop" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="fnRemoveBatteryModalTitle">Remove battery?</h2>
+                <button type="button" class="modal-close" id="fnRemoveBatteryModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="fnRemoveBatteryModalBody">This battery has details entered. Remove it and hide this battery slot? This cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="fnRemoveBatteryModalCancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="fnRemoveBatteryModalConfirm">Remove battery</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fnWeatherClearModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="fnWeatherClearModalTitle">
+        <div class="modal-backdrop" id="fnWeatherClearModalBackdrop" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="fnWeatherClearModalTitle">Clear weather conditions?</h2>
+                <button type="button" class="modal-close" id="fnWeatherClearModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>This will remove all text from the <strong>Conditions</strong> box only. The rest of your flight report will stay as it is.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="fnWeatherClearModalCancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="fnWeatherClearModalConfirm">Clear Conditions</button>
             </div>
         </div>
     </div>
@@ -484,6 +555,6 @@
     <script src="js/notam-pib.js?v=1"></script>
     <script src="js/airspace-nearby.js?v=3"></script>
     <script src="js/geolocation-helpers.js"></script>
-    <script src="js/flight-notes.js?v=30"></script>
+    <script src="js/flight-notes.js?v=32"></script>
 </body>
 </html>

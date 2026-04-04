@@ -19,9 +19,23 @@
 
     if (!frame) return;
 
+    const ADSBX_VIEW_KEY = 'airplotAdsbxView_v1';
+
     let lat = 51.5074;
     let lon = -0.1278;
     let zoom = 10;
+
+    try {
+        var stored = localStorage.getItem(ADSBX_VIEW_KEY);
+        if (stored) {
+            var sv = JSON.parse(stored);
+            if (sv && sv.v === 1 && sv.lat != null && sv.lon != null) {
+                lat = sv.lat;
+                lon = sv.lon;
+                if (sv.zoom != null) zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, sv.zoom));
+            }
+        }
+    } catch (e) { /* ignore */ }
 
     let statusClearTimer = null;
 
@@ -53,10 +67,20 @@
         );
     }
 
+    function persistAdsbxView() {
+        try {
+            localStorage.setItem(
+                ADSBX_VIEW_KEY,
+                JSON.stringify({ v: 1, lat: lat, lon: lon, zoom: zoom })
+            );
+        } catch (e) { /* ignore */ }
+    }
+
     function applyView() {
         frame.src = buildSrc();
         if (zoomInBtn) zoomInBtn.disabled = zoom >= ZOOM_MAX;
         if (zoomOutBtn) zoomOutBtn.disabled = zoom <= ZOOM_MIN;
+        persistAdsbxView();
     }
 
     function onZoomIn() {
@@ -120,6 +144,8 @@
     if (zoomInBtn) zoomInBtn.addEventListener('click', onZoomIn);
     if (zoomOutBtn) zoomOutBtn.addEventListener('click', onZoomOut);
     if (locateBtn) locateBtn.addEventListener('click', onLocate);
+
+    window.addEventListener('pagehide', persistAdsbxView);
 
     applyView();
 })();

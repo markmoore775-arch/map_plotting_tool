@@ -199,7 +199,7 @@ const Exporters = (() => {
 
         const pptx = new PptxGenJS();
         pptx.layout = 'LAYOUT_WIDE';
-        pptx.author = 'AirPlot v3';
+        pptx.author = 'AirPlot v4';
         pptx.subject = 'Map Report';
 
         const logo = await PptxTheme.loadLogo();

@@ -18,41 +18,144 @@ body.weather-mode #map {
     pointer-events: auto;
 }
 
-/* Welcome pill: shared in css/style.css (.fp-welcome-*). */
-
-/* Zoom + locate + info — below welcome bar */
-body.weather-mode .leaflet-top.leaflet-left {
-    top: calc(64px + env(safe-area-inset-top, 0px));
+/* Welcome + tool strip: top-left row (overrides global fixed .fp-welcome-bar) */
+body.weather-mode .ap-top-chrome--map {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top, 12px));
+    left: max(12px, env(safe-area-inset-left, 12px));
+    z-index: 1002;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    pointer-events: none;
+    overflow-x: visible;
+    min-width: 0;
 }
 
-/* Floating toolbar - bottom centre */
-.weather-toolbar {
+body.weather-mode .ap-top-chrome--map > * {
+    pointer-events: auto;
+}
+
+@media (max-width: 900px) {
+    body.weather-mode .ap-top-chrome--map {
+        width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    }
+}
+
+body.weather-mode .ap-top-chrome--map .fp-welcome-bar {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    flex-shrink: 0;
+    max-width: none;
+}
+
+/* Zoom + locate + info — below welcome + tool strip */
+body.weather-mode .leaflet-top.leaflet-left {
+    top: calc(52px + env(safe-area-inset-top, 0px));
+}
+
+/*
+ * Narrow viewports: top chrome is full-width (segmented tool nav) at z-index 1002 and
+ * covers the default top-right layers control. Drop the right stack to clear the bar.
+ */
+@media (max-width: 900px) {
+    body.weather-mode .leaflet-top.leaflet-right {
+        top: calc(52px + env(safe-area-inset-top, 0px));
+    }
+}
+
+/* Bottom chrome: map hint + toolbar + expectation (fixed as one unit) */
+/* Desktop: shrink-wrap to toolbar width, centered (not full viewport). */
+.weather-bottom-chrome {
     position: fixed;
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+    padding-bottom: max(0px, env(safe-area-inset-bottom, 0px));
+    pointer-events: none;
+}
+
+.weather-bottom-chrome > * {
+    pointer-events: auto;
+}
+
+.weather-map-hint {
+    margin: 0;
+    padding: 8px 14px;
+    max-width: min(100%, calc(100vw - 24px));
+    box-sizing: border-box;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
+    color: var(--sidebar-text, #e0e0e8);
+    background: var(--sidebar-bg, #1e1e2e);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 8px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+.weather-toolbar-expectation {
+    margin: 0;
+    padding: 0 12px 2px;
+    box-sizing: border-box;
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--sidebar-text-muted, #9999aa);
+    /* Stay ≤ toolbar width so shrink-wrapped chrome isn’t widened by this line */
+    max-width: min(52rem, calc(100vw - 32px));
+}
+
+/* Floating toolbar row (positioned inside .weather-bottom-chrome) */
+.weather-toolbar {
+    position: relative;
+    display: flex;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
-    min-width: min(640px, 95vw);
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
     padding: 12px 20px;
     background: var(--sidebar-bg, #1e1e2e);
     border: 1px solid var(--sidebar-border, #3a3a50);
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    overflow: visible;
 }
 
 .weather-toolbar-group {
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .weather-time-group {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .weather-time-group {
+        flex-wrap: wrap;
+    }
 }
 
 .weather-btn {
@@ -95,11 +198,19 @@ body.weather-mode .leaflet-top.leaflet-left {
     background: var(--primary, #5b8def);
     border-color: var(--primary, #5b8def);
     color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .weather-btn-primary:hover:not(:disabled) {
     background: var(--primary-hover, #4a7de0);
     border-color: var(--primary-hover, #4a7de0);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+}
+
+.weather-btn-primary:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
 }
 
 .weather-btn-primary .weather-fetch-label--short {
@@ -108,46 +219,122 @@ body.weather-mode .leaflet-top.leaflet-left {
 
 /* Narrow viewports: single-row toolbar, horizontal scroll (phones, small tablets, landscape) */
 @media (max-width: 900px) {
+    .weather-bottom-chrome {
+        left: 8px;
+        right: 8px;
+        transform: none;
+        bottom: max(10px, env(safe-area-inset-bottom, 10px));
+        max-width: none;
+        width: auto;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .weather-toolbar-expectation {
+        max-width: 100%;
+    }
+
+    .weather-map-hint {
+        font-size: 11px;
+        padding: 5px 9px;
+        line-height: 1.3;
+        border-radius: 6px;
+    }
+
+    .weather-toolbar-expectation {
+        font-size: 10px;
+        padding: 0 6px;
+        line-height: 1.35;
+    }
+
+    /* Two-row layout: Select + Get Weather always visible; model/time below (scroll if needed) */
     .weather-toolbar {
-        flex-wrap: nowrap;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 7px 6px;
+        padding: 8px 9px 10px;
+        border-radius: 8px;
+        min-width: 0;
+        max-width: none;
+        width: auto;
+        overflow-x: visible;
+        overflow-y: visible;
+    }
+
+    .weather-toolbar-group--select {
+        grid-column: 1;
+        grid-row: 1;
+        min-width: 0;
+    }
+
+    .weather-toolbar-group--fetch {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+    }
+
+    .weather-toolbar-group.weather-model-group {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        flex-shrink: 0;
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
-        gap: 8px;
-        padding: 8px 10px;
-        padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
-        bottom: max(10px, env(safe-area-inset-bottom, 10px));
-        left: 8px;
-        right: 8px;
-        transform: none;
-        min-width: 0;
-        max-width: none;
-        width: auto;
-        justify-content: flex-start;
+        padding-bottom: 2px;
+        gap: 6px;
     }
 
-    .weather-toolbar::-webkit-scrollbar {
-        height: 4px;
+    .weather-toolbar-group.weather-model-group::-webkit-scrollbar {
+        height: 3px;
     }
 
-    .weather-toolbar::-webkit-scrollbar-thumb {
+    .weather-toolbar-group.weather-model-group::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.2);
         border-radius: 2px;
     }
 
-    .weather-toolbar-group {
-        flex-shrink: 0;
-        gap: 6px;
+    .weather-toolbar-group.weather-time-group {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        flex-wrap: wrap;
+        row-gap: 4px;
     }
 
-    .weather-time-group {
-        flex-wrap: nowrap;
+    .weather-toolbar-group {
+        gap: 5px;
+    }
+
+    .weather-toolbar-group--select .weather-btn,
+    .weather-toolbar-group--fetch .weather-btn-primary {
+        width: 100%;
+        min-height: 40px;
+        justify-content: center;
+    }
+
+    .weather-toolbar-group--select .weather-btn svg,
+    .weather-toolbar-group--fetch .weather-btn-primary svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .weather-toolbar-group--fetch .weather-btn-primary {
+        font-size: 12px;
+        box-shadow: 0 2px 10px rgba(91, 141, 239, 0.45);
+    }
+
+    .weather-toolbar-group--fetch .weather-btn-primary:not(:disabled) {
+        box-shadow: 0 2px 14px rgba(91, 141, 239, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    }
+
+    .weather-toolbar-group--fetch .weather-btn-primary:disabled {
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     }
 
     .weather-btn {
-        min-height: 36px;
-        padding: 6px 10px;
+        min-height: 34px;
+        padding: 5px 9px;
         font-size: 12px;
     }
 
@@ -156,10 +343,21 @@ body.weather-mode .leaflet-top.leaflet-left {
         display: none;
     }
 
+    .weather-model-info-btn {
+        display: inline-flex;
+        width: 26px;
+        height: 26px;
+    }
+
+    .weather-model-info-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
     .weather-model-select {
-        min-width: 88px;
+        min-width: 80px;
         font-size: 11px;
-        padding: 5px 8px;
+        padding: 4px 7px;
     }
 
     .weather-btn-primary {
@@ -175,20 +373,104 @@ body.weather-mode .leaflet-top.leaflet-left {
     }
 
     .weather-time-label {
-        font-size: 12px;
+        font-size: 11px;
+        gap: 5px;
     }
 
     .weather-datetime {
-        font-size: 12px;
-        padding: 5px 8px;
+        font-size: 11px;
+        padding: 4px 7px;
     }
 
     .weather-side-toolbar {
-        top: calc(64px + env(safe-area-inset-top, 0px));
+        top: calc(52px + env(safe-area-inset-top, 0px));
     }
 
     .weather-side-panel {
         width: min(320px, calc(100vw - 48px));
+    }
+}
+
+/* Phones: compress bottom chrome further */
+@media (max-width: 600px) {
+    .weather-bottom-chrome {
+        gap: 4px;
+        bottom: max(8px, env(safe-area-inset-bottom, 8px));
+    }
+
+    .weather-map-hint {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+
+    .weather-toolbar-expectation {
+        font-size: 9px;
+        padding: 0 4px;
+        line-height: 1.3;
+    }
+
+    .weather-toolbar {
+        gap: 5px 5px;
+        padding: 6px 7px 7px;
+    }
+
+    .weather-toolbar-group.weather-model-group {
+        gap: 4px;
+        padding-bottom: 0;
+    }
+
+    .weather-toolbar-group.weather-time-group {
+        row-gap: 3px;
+    }
+
+    .weather-toolbar-group--select .weather-btn,
+    .weather-toolbar-group--fetch .weather-btn-primary {
+        min-height: 36px;
+    }
+
+    .weather-toolbar-group--select .weather-btn svg,
+    .weather-toolbar-group--fetch .weather-btn-primary svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    .weather-toolbar-group--fetch .weather-btn-primary {
+        font-size: 11px;
+    }
+
+    .weather-btn {
+        min-height: 32px;
+        padding: 4px 7px;
+        font-size: 11px;
+    }
+
+    .weather-model-select {
+        min-width: 72px;
+        font-size: 10px;
+        padding: 3px 6px;
+        border-radius: 5px;
+    }
+
+    .weather-model-info-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 5px;
+    }
+
+    .weather-model-info-btn svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    .weather-time-label {
+        font-size: 10px;
+        gap: 4px;
+    }
+
+    .weather-datetime {
+        font-size: 10px;
+        padding: 3px 6px;
+        border-radius: 5px;
     }
 }
 
@@ -236,6 +518,38 @@ body.weather-mode .leaflet-top.leaflet-left {
     min-width: 120px;
 }
 
+.weather-model-group {
+    align-items: center;
+}
+
+.weather-model-info-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    color: var(--sidebar-text-muted, #9999aa);
+    background: transparent;
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 6px;
+    cursor: help;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.weather-model-info-btn:hover {
+    color: var(--sidebar-text, #e0e0e8);
+    border-color: #4a4a60;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.weather-model-info-btn:focus-visible {
+    outline: 2px solid var(--primary, #5b8def);
+    outline-offset: 2px;
+}
+
 /* Info control - side toolbar (zoom, locate, info) */
 .leaflet-control-weather-info {
     margin-top: 5px;
@@ -272,7 +586,7 @@ body.weather-mode .leaflet-top.leaflet-left {
 /* Side panel - collapsible help (below welcome bar, not under it) */
 .weather-side-toolbar {
     position: fixed;
-    top: calc(64px + env(safe-area-inset-top, 0px));
+    top: calc(52px + env(safe-area-inset-top, 0px));
     left: 0;
     z-index: 1000;
 }
@@ -983,6 +1297,15 @@ body.weather-mode .leaflet-top.leaflet-left {
     overflow-wrap: break-word;
 }
 
+/* Time column: nowrap — fixed layout + break-word was splitting "12:00" as 12:0 / 0 */
+.weather-hourly-table th:first-child,
+.weather-hourly-table td:first-child {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+    min-width: 6em; /* HH:MM or short locale time (e.g. with AM/PM) */
+}
+
 .weather-hourly-table tbody tr:hover {
     background: rgba(255, 255, 255, 0.03);
 }
@@ -1596,6 +1919,44 @@ body.weather-mode .leaflet-top.leaflet-left {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
+/* Hand off to Flight Report (report header) — same contrast model as export buttons + primary accent stripe */
+.weather-btn-flight-report {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    min-height: 32px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-family, 'Inter', sans-serif);
+    color: var(--sidebar-text, #e8e8f0);
+    background: var(--sidebar-surface, #2a2a3d);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-left: 3px solid var(--primary, #5b8def);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.weather-btn-flight-report:hover:not(:disabled) {
+    background: #33334a;
+    border-color: #4a4a60;
+    border-left-color: var(--primary-hover, #6b9af5);
+    color: #ffffff;
+}
+
+.weather-btn-flight-report.hidden {
+    display: none;
+}
+
+.weather-flight-report-arrow {
+    font-size: 14px;
+    line-height: 1;
+    color: inherit;
+    opacity: 1;
+}
+
 /* Export PPTX button in report header */
 .weather-btn-export {
     display: inline-flex;
@@ -1633,6 +1994,20 @@ body.weather-mode .leaflet-top.leaflet-left {
 
 .weather-light-theme .weather-btn-export:hover:not(:disabled) {
     background: #d8d9dc;
+}
+
+.weather-light-theme .weather-btn-flight-report {
+    color: #141414;
+    background: #e8e9ec;
+    border: 1px solid #c8cad0;
+    border-left: 3px solid #1a56d6;
+}
+
+.weather-light-theme .weather-btn-flight-report:hover:not(:disabled) {
+    background: #d8d9dc;
+    border-color: #b0b3bb;
+    border-left-color: #1547b8;
+    color: #0a0a0a;
 }
 
 /* ---- Export theme box (preview follows selection) ---- */

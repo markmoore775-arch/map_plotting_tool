@@ -23,6 +23,11 @@
     let quickEditUpdating = false;
 
     const SETTINGS_STORAGE_KEY = 'airplot_settings';
+    const SIDEBAR_TAB_STORAGE_KEY = 'airplot_sidebar_tab';
+    const MAP_DRAFT_STORAGE_KEY = 'airplotMapDraft_v1';
+
+    let mapDraftSaveTimer = null;
+    let mapDraftLoadInProgress = false;
 
     let settings = {
         w3wApiKey: '',
@@ -209,6 +214,8 @@
         }
 
         layerControl = L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+
+        L.control.scale({ imperial: true, metric: true, position: 'bottomleft' }).addTo(map);
 
         if (airspaceModule && airspaceModule.createLegendControl) {
             map.addControl(airspaceModule.createLegendControl());
@@ -587,12 +594,37 @@
             notes: data.notes || '',
             originalInput: data.originalInput || '',
             alwaysDisplayElevation: !!data.alwaysDisplayElevation,
-            elevation: (typeof data.elevation === 'number' && !isNaN(data.elevation)) ? data.elevation : undefined
+            elevation: (typeof data.elevation === 'number' && !isNaN(data.elevation)) ? data.elevation : undefined,
+            visibleOnMap: data.visibleOnMap !== false
         };
         points.push(point);
         addMarkerToMap(point);
         refreshPointsList();
         return point;
+    }
+
+    function reverseGeocodeForPointInput(lat, lng) {
+        const url = 'https://nominatim.openstreetmap.org/reverse?lat=' +
+            encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng) +
+            '&format=json&addressdetails=1';
+        return fetch(url, {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+                'User-Agent': 'AirPlot/4.0 (https://airplot.app; support@airplot.app)'
+            },
+            mode: 'cors'
+        })
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => {
+                if (!data) return null;
+                if (data.display_name) {
+                    const parts = data.display_name.split(',');
+                    return parts.slice(0, 3).join(',').trim();
+                }
+                return null;
+            })
+            .catch(() => null);
     }
 
     function createPointAtLatLng(lat, lng) {
@@ -610,6 +642,16 @@
         });
         map.setView([lat, lng], Math.max(map.getZoom(), 14));
         openQuickEditPopup(point.id, true);
+
+        if (pointInput) {
+            pointInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            reverseGeocodeForPointInput(lat, lng).then(label => {
+                if (label) pointInput.value = label;
+            });
+        }
+        if (pointName) {
+            requestAnimationFrame(() => pointName.focus());
+        }
     }
 
     function updatePoint(id, data) {
@@ -1019,6 +1061,7 @@
     }
 
     function addMarkerToMap(point) {
+        if (point.visibleOnMap === false) return;
         const icon = getPointIcon(point);
         const marker = L.marker([point.lat, point.lng], { icon, draggable: true }).addTo(map);
 
@@ -1129,7 +1172,9 @@
         if (!point) return;
         map.setView([point.lat, point.lng], Math.max(map.getZoom(), 14));
         const layers = markerLayers[id];
-        if (layers) layers.marker.openPopup();
+        if (layers && layers.marker) {
+            layers.marker.openPopup();
+        }
     }
 
     function fitAllPoints() {
@@ -1143,9 +1188,26 @@
     const pointsList = document.getElementById('pointsList');
     const pointCount = document.getElementById('pointCount');
     const pointSearch = document.getElementById('pointSearch');
+    const pointSortSelect = document.getElementById('pointSortSelect');
+
+    function togglePointMapVisibility(p) {
+        pushUndoSnapshot();
+        const visible = p.visibleOnMap !== false;
+        if (visible) {
+            p.visibleOnMap = false;
+            removeMarkerFromMap(p.id);
+        } else {
+            p.visibleOnMap = true;
+            if (!markerLayers[p.id]) {
+                addMarkerToMap(p);
+            }
+        }
+        refreshPointsList();
+    }
 
     function refreshPointsList() {
-        const searchTerm = pointSearch.value.toLowerCase();
+        if (!pointsList) return;
+        const searchTerm = (pointSearch && pointSearch.value.trim().toLowerCase()) || '';
         const filtered = points.filter(p => {
             if (!searchTerm) return true;
             return (p.name || '').toLowerCase().includes(searchTerm) ||
@@ -1153,10 +1215,28 @@
                    `${p.lat}, ${p.lng}`.includes(searchTerm);
         });
 
+        const sortMode = (pointSortSelect && pointSortSelect.value) || 'default';
+        let ordered = filtered.slice();
+        const orderIndex = new Map(points.map((p, i) => [p.id, i]));
+        if (sortMode === 'name') {
+            ordered.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+        } else if (sortMode === 'default') {
+            ordered.sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0));
+        } else if (sortMode === 'type') {
+            ordered.sort((a, b) => {
+                const ta = normalizeIconType(a.iconType);
+                const tb = normalizeIconType(b.iconType);
+                const cmp = ICON_DEFS[ta].label.localeCompare(ICON_DEFS[tb].label, undefined, { sensitivity: 'base' });
+                if (cmp !== 0) return cmp;
+                return (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0);
+            });
+        }
+
         pointCount.textContent = `(${points.length})`;
 
         pointsList.innerHTML = '';
-        for (const p of filtered) {
+
+        function buildPointRow(p) {
             const li = document.createElement('li');
             li.className = 'point-item';
             li.dataset.id = p.id;
@@ -1165,6 +1245,9 @@
             const badgeColor = getIconColor(iconType, p.iconColor);
             const badgeTextColor = getContrastingTextColor(badgeColor);
             const badgeSymbol = getPointSymbol(p);
+            const onMap = p.visibleOnMap !== false;
+            const visTitle = onMap ? 'Hide on map' : 'Show on map';
+            const visGlyph = onMap ? '&#9675;' : '&#9711;';
 
             li.innerHTML = `
                 <div class="point-marker-icon icon-badge" style="background:${badgeColor}; color:${badgeTextColor};">${escapeHtml(badgeSymbol)}</div>
@@ -1173,13 +1256,53 @@
                     <div class="point-item-detail">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} | ${escapeHtml(iconDef.label)}</div>
                 </div>
                 <div class="point-item-actions">
-                    <button class="btn-icon btn-edit" title="Edit">&#9998;</button>
-                    <button class="btn-icon btn-delete" title="Delete">&times;</button>
+                    <button type="button" class="btn-icon btn-point-visibility" title="${visTitle}" aria-label="${visTitle}">${visGlyph}</button>
+                    <button type="button" class="btn-icon btn-edit" title="Edit">&#9998;</button>
+                    <button type="button" class="btn-icon btn-delete" title="Delete">&times;</button>
                 </div>
             `;
 
+            const nameEl = li.querySelector('.point-item-name');
+
+            nameEl.addEventListener('dblclick', (ev) => {
+                ev.stopPropagation();
+                if (nameEl.querySelector('input')) return;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'point-item-rename-input';
+                input.value = p.name || '';
+                const finish = (save) => {
+                    const v = input.value.trim();
+                    input.remove();
+                    nameEl.textContent = save ? (v || 'Unnamed') : (p.name || 'Unnamed');
+                    if (save && v !== (p.name || '')) {
+                        updatePoint(p.id, { name: v });
+                    } else {
+                        refreshPointsList();
+                    }
+                };
+                input.addEventListener('blur', () => finish(true));
+                input.addEventListener('keydown', (ke) => {
+                    if (ke.key === 'Enter') {
+                        ke.preventDefault();
+                        input.blur();
+                    }
+                    if (ke.key === 'Escape') {
+                        ke.preventDefault();
+                        finish(false);
+                    }
+                });
+                nameEl.textContent = '';
+                nameEl.appendChild(input);
+                input.focus();
+                input.select();
+            });
+
             li.addEventListener('click', (e) => {
-                if (e.target.closest('.btn-edit')) {
+                if (e.target.closest('.btn-point-visibility')) {
+                    e.stopPropagation();
+                    togglePointMapVisibility(p);
+                } else if (e.target.closest('.btn-edit')) {
                     openEditModal(p.id);
                 } else if (e.target.closest('.btn-delete')) {
                     showConfirmModal({
@@ -1189,13 +1312,50 @@
                     }).then(ok => {
                         if (ok) deletePoint(p.id);
                     });
-                } else {
+                } else if (!e.target.closest('.point-item-rename-input')) {
                     panToPoint(p.id);
                     highlightPoint(p.id);
                 }
             });
 
-            pointsList.appendChild(li);
+            return li;
+        }
+
+        if (sortMode === 'type' && !searchTerm) {
+            const groups = new Map();
+            for (const p of ordered) {
+                const t = normalizeIconType(p.iconType);
+                if (!groups.has(t)) groups.set(t, []);
+                groups.get(t).push(p);
+            }
+            const typeKeys = [...groups.keys()].sort((a, b) =>
+                ICON_DEFS[a].label.localeCompare(ICON_DEFS[b].label, undefined, { sensitivity: 'base' })
+            );
+            for (const t of typeKeys) {
+                const det = document.createElement('details');
+                det.className = 'point-group-details';
+                det.open = true;
+                const summ = document.createElement('summary');
+                summ.textContent = `${ICON_DEFS[t].label} (${groups.get(t).length})`;
+                det.appendChild(summ);
+                const ul = document.createElement('ul');
+                ul.className = 'points-list';
+                for (const p of groups.get(t)) {
+                    ul.appendChild(buildPointRow(p));
+                }
+                det.appendChild(ul);
+                pointsList.appendChild(det);
+            }
+        } else {
+            const ul = document.createElement('ul');
+            ul.className = 'points-list';
+            for (const p of ordered) {
+                ul.appendChild(buildPointRow(p));
+            }
+            pointsList.appendChild(ul);
+        }
+        if (typeof window.airplotScheduleMapDraftSave === 'function') {
+            window.airplotScheduleMapDraftSave();
         }
     }
 
@@ -1209,6 +1369,9 @@
     }
 
     pointSearch.addEventListener('input', refreshPointsList);
+    if (pointSortSelect) {
+        pointSortSelect.addEventListener('change', refreshPointsList);
+    }
 
     // ---- Add Point Form ----
 
@@ -1224,6 +1387,8 @@
     const pointCustomSymbolGroup = document.getElementById('pointCustomSymbolGroup');
     const pointNotes = document.getElementById('pointNotes');
     const formatHint = document.getElementById('formatHint');
+    const addPointIconPreview = document.getElementById('addPointIconPreview');
+    const pointIconColorQuick = document.getElementById('pointIconColorQuick');
 
     function refreshPointIconControls() {
         const iconType = normalizeIconType(pointIconType.value);
@@ -1246,8 +1411,39 @@
                     pointIconColor.value = c;
                     pointIconColorPalette.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
                     btn.classList.add('selected');
+                    refreshPointIconControls();
                 });
                 pointIconColorPalette.appendChild(btn);
+            });
+        }
+        if (pointIconColorQuick && !usePalette && iconDef.colorEditable) {
+            pointIconColorQuick.innerHTML = '';
+            const currentColor = (pointIconColor.value || '').toLowerCase();
+            ICON_COLOR_PALETTE.forEach(c => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'color-swatch' + (c.toLowerCase() === currentColor ? ' selected' : '');
+                btn.dataset.color = c;
+                btn.style.backgroundColor = c;
+                btn.title = c;
+                btn.addEventListener('click', () => {
+                    pointIconColor.value = c;
+                    refreshPointIconControls();
+                });
+                pointIconColorQuick.appendChild(btn);
+            });
+        } else if (pointIconColorQuick) {
+            pointIconColorQuick.innerHTML = '';
+        }
+        if (addPointIconPreview) {
+            const badgeColor = getIconColor(iconType, pointIconColor.value);
+            const badgeTextColor = getContrastingTextColor(badgeColor);
+            addPointIconPreview.style.background = badgeColor;
+            addPointIconPreview.style.color = badgeTextColor;
+            addPointIconPreview.textContent = getPointSymbol({
+                iconType,
+                iconColor: pointIconColor.value,
+                customSymbol: pointCustomSymbol.value
             });
         }
     }
@@ -1264,6 +1460,9 @@
         }
         if (gridToolbarButton) {
             gridToolbarButton.classList.toggle('active', isGridDraw);
+        }
+        if (typeof window.airplotUpdateMapContextHint === 'function') {
+            window.airplotUpdateMapContextHint();
         }
     }
 
@@ -1318,11 +1517,26 @@
         if (iconDef.useColorPalette) pointIconColor.value = iconDef.color;
         refreshPointIconControls();
     });
+    pointIconColor.addEventListener('input', () => refreshPointIconControls());
+    pointCustomSymbol.addEventListener('input', () => refreshPointIconControls());
     pointIconType.value = 'address';
     pointIconColor.value = '#dc2626';
     pointCustomSymbol.value = '';
     refreshPointIconControls();
     refreshDropPointModeButton();
+
+    const mobileAddPointBtn = document.getElementById('mobileAddPointBtn');
+    if (mobileAddPointBtn) {
+        mobileAddPointBtn.addEventListener('click', () => {
+            setSidebarTab('plan');
+            document.body.classList.remove('sidebar-collapsed');
+            if (sidebarOpen) sidebarOpen.classList.add('hidden');
+            setTimeout(() => map && map.invalidateSize(), 300);
+            requestAnimationFrame(() => {
+                if (pointName) pointName.focus();
+            });
+        });
+    }
 
     // Format hint on input
     pointInput.addEventListener('input', () => {
@@ -1403,6 +1617,71 @@
         sidebarOpen.classList.add('hidden');
         setTimeout(() => map.invalidateSize(), 300);
     });
+
+    function populateSettingsFormFromState() {
+        const w3w = document.getElementById('w3wApiKey');
+        const os = document.getElementById('osMapsApiKey');
+        const bgaUser = document.getElementById('bgaAirspaceUsername');
+        const bgaPass = document.getElementById('bgaAirspacePassword');
+        if (w3w) w3w.value = settings.w3wApiKey;
+        if (os) os.value = settings.osMapsApiKey;
+        if (bgaUser) bgaUser.value = settings.bgaAirspaceUsername;
+        if (bgaPass) bgaPass.value = settings.bgaAirspacePassword;
+        const sl = document.getElementById('showLabels');
+        const sm = document.getElementById('showMeasurements');
+        const ssl = document.getElementById('showShapeLabels');
+        const sfd = document.getElementById('showFlightPathDistance');
+        if (sl) sl.checked = settings.showLabels;
+        if (sm) sm.checked = settings.showMeasurements;
+        if (ssl) ssl.checked = settings.showShapeLabels;
+        if (sfd) sfd.checked = settings.showFlightPathDistance === true;
+    }
+
+    function setSidebarTab(tabId, opts) {
+        opts = opts || {};
+        const tabs = document.querySelectorAll('.sidebar-tab');
+        const panels = document.querySelectorAll('.sidebar-tab-panel');
+        tabs.forEach(t => {
+            const on = t.dataset.tab === tabId;
+            t.classList.toggle('active', on);
+            t.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        panels.forEach(p => {
+            const on = p.dataset.tab === tabId;
+            p.classList.toggle('active', on);
+            p.hidden = !on;
+        });
+        if (!opts.skipStorage) {
+            try {
+                localStorage.setItem(SIDEBAR_TAB_STORAGE_KEY, tabId);
+            } catch (_) { /* ignore */ }
+        }
+        if (tabId === 'settings') {
+            populateSettingsFormFromState();
+        }
+    }
+
+    document.querySelectorAll('.sidebar-tab').forEach(btn => {
+        btn.addEventListener('click', () => setSidebarTab(btn.dataset.tab));
+    });
+
+    let initialSidebarTab = 'plan';
+    try {
+        const s = localStorage.getItem(SIDEBAR_TAB_STORAGE_KEY);
+        if (s && ['plan', 'draw', 'project', 'settings'].includes(s)) initialSidebarTab = s;
+    } catch (_) { /* ignore */ }
+    setSidebarTab(initialSidebarTab, { skipStorage: true });
+    populateSettingsFormFromState();
+
+    const sidebarSheetHandle = document.getElementById('sidebarSheetHandle');
+    if (sidebarSheetHandle) {
+        sidebarSheetHandle.addEventListener('click', () => {
+            if (window.innerWidth > 600) return;
+            document.body.classList.add('sidebar-collapsed');
+            sidebarOpen.classList.remove('hidden');
+            setTimeout(() => map && map.invalidateSize(), 300);
+        });
+    }
 
     /* Collapse when entering the mobile layout (matches css @media max-width: 600px). */
     const MOBILE_SIDEBAR_MAX = 600;
@@ -2982,12 +3261,14 @@ ${summaryRows}
                     notes: p.notes || '',
                     originalInput: p.originalInput || '',
                     alwaysDisplayElevation: !!p.alwaysDisplayElevation,
-                    elevation: (typeof p.elevation === 'number' && !isNaN(p.elevation)) ? p.elevation : undefined
+                    elevation: (typeof p.elevation === 'number' && !isNaN(p.elevation)) ? p.elevation : undefined,
+                    visibleOnMap: p.visibleOnMap !== false
                 };
                 points.push(point);
                 addMarkerToMap(point);
             }
             refreshPointsList();
+            populateSettingsFormFromState();
 
             // Restore shapes
             if (project.shapes) {
@@ -3007,21 +3288,6 @@ ${summaryRows}
 
     // ---- Settings ----
 
-    document.getElementById('settingsBtn').addEventListener('click', () => {
-        // Populate from current settings
-        document.getElementById('w3wApiKey').value = settings.w3wApiKey;
-        document.getElementById('osMapsApiKey').value = settings.osMapsApiKey;
-        const bgaUser = document.getElementById('bgaAirspaceUsername');
-        const bgaPass = document.getElementById('bgaAirspacePassword');
-        if (bgaUser) bgaUser.value = settings.bgaAirspaceUsername;
-        if (bgaPass) bgaPass.value = settings.bgaAirspacePassword;
-        document.getElementById('showLabels').checked = settings.showLabels;
-        document.getElementById('showMeasurements').checked = settings.showMeasurements;
-        document.getElementById('showShapeLabels').checked = settings.showShapeLabels;
-        document.getElementById('showFlightPathDistance').checked = settings.showFlightPathDistance === true;
-        openModal('settingsModal');
-    });
-
     document.getElementById('saveSettingsBtn').addEventListener('click', () => {
         settings.w3wApiKey = document.getElementById('w3wApiKey').value.trim();
         settings.osMapsApiKey = document.getElementById('osMapsApiKey').value.trim();
@@ -3036,7 +3302,6 @@ ${summaryRows}
         saveSettingsToStorage();
         updateOsMapsLayers();
         applySettings();
-        closeModal('settingsModal');
     });
 
     function applySettings() {
@@ -3121,6 +3386,88 @@ ${summaryRows}
 
     // ---- Drawings Integration ----
 
+    function updateMapContextHint() {
+        const el = document.getElementById('mapContextHint');
+        if (!el) return;
+        let text = '';
+        if (typeof Drawings !== 'undefined' && Drawings.getSelectedShapeId && Drawings.getSelectedShapeId()) {
+            text = 'Drag to move — Double-click for properties — Esc to deselect';
+        } else if (typeof Drawings !== 'undefined' && Drawings.isDrawingActive && Drawings.isDrawingActive()) {
+            text = 'Finish on the map — Adjust style in the Draw tab';
+        } else if (dropPointMode || dropPointPickerOpen) {
+            text = 'Click the map to place a point';
+        }
+        if (!text) {
+            el.textContent = '';
+            el.classList.add('hidden');
+            return;
+        }
+        el.textContent = text;
+        el.classList.remove('hidden');
+    }
+
+    window.airplotUpdateMapContextHint = updateMapContextHint;
+
+    function scheduleMapDraftSave() {
+        if (mapDraftLoadInProgress || !mainAppInitialized || !map) return;
+        if (mapDraftSaveTimer) clearTimeout(mapDraftSaveTimer);
+        mapDraftSaveTimer = setTimeout(() => {
+            mapDraftSaveTimer = null;
+            saveMapDraftNow();
+        }, 400);
+    }
+
+    function saveMapDraftNow() {
+        if (mapDraftLoadInProgress || !mainAppInitialized || !map) return;
+        try {
+            const c = map.getCenter();
+            const payload = {
+                v: 1,
+                points: points.map(p => ({ ...p })),
+                shapes: typeof Drawings !== 'undefined' && Drawings.serializeShapes ? Drawings.serializeShapes() : [],
+                mapView: { lat: c.lat, lng: c.lng, zoom: map.getZoom() }
+            };
+            localStorage.setItem(MAP_DRAFT_STORAGE_KEY, JSON.stringify(payload));
+        } catch (_) { /* quota / private mode */ }
+    }
+
+    function tryLoadMapDraft() {
+        if (!map || typeof Drawings === 'undefined' || !Drawings.loadShapes) return;
+        let raw;
+        try {
+            raw = localStorage.getItem(MAP_DRAFT_STORAGE_KEY);
+        } catch (_) {
+            return;
+        }
+        if (!raw) return;
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch (_) {
+            return;
+        }
+        if (!data || data.v !== 1 || !Array.isArray(data.points) || !Array.isArray(data.shapes)) return;
+        if (data.points.length === 0 && data.shapes.length === 0) return;
+
+        mapDraftLoadInProgress = true;
+        try {
+            restorePointsFromSnapshot(data.points);
+            Drawings.loadShapes(data.shapes, { preserveIds: true });
+            if (data.mapView && data.mapView.lat != null && data.mapView.lng != null) {
+                const z = data.mapView.zoom != null ? data.mapView.zoom : map.getZoom();
+                map.setView([data.mapView.lat, data.mapView.lng], z, { animate: false });
+            } else if (points.length > 0) {
+                fitAllPoints();
+            }
+        } catch (e) {
+            console.warn('Map draft restore failed', e);
+        } finally {
+            mapDraftLoadInProgress = false;
+        }
+    }
+
+    window.airplotScheduleMapDraftSave = scheduleMapDraftSave;
+
     // Init drawings after map is ready
     function initDrawings() {
         Drawings.init(map);
@@ -3159,20 +3506,13 @@ ${summaryRows}
                     Drawings.loadShapes(snapshot.shapes || [], { preserveIds: true });
                 }
             });
-            const undoBtn = document.getElementById('undoBtn');
-            if (undoBtn) {
-                undoBtn.addEventListener('click', () => {
-                    if (UndoHistory.undo()) refreshHandToolState();
-                });
-            }
-            const redoBtn = document.getElementById('redoBtn');
-            if (redoBtn) {
-                redoBtn.addEventListener('click', () => {
-                    if (UndoHistory.redo()) refreshHandToolState();
-                });
-            }
             UndoHistory.updateUndoButtonState();
         }
+
+        updateMapContextHint();
+
+        map.on('moveend', scheduleMapDraftSave);
+        tryLoadMapDraft();
 
         // Shape edit modal buttons
         document.getElementById('shapeEditSaveBtn').addEventListener('click', () => {
@@ -3676,10 +4016,14 @@ ${summaryRows}
 
         function dismissIntro() {
             if (introOverlay) introOverlay.classList.add('hidden');
+            document.documentElement.classList.remove('airplot-autostart-boot');
             if (mainAppInitialized) return;
             mainAppInitialized = true;
             initMap();
             initDrawings();
+            window.addEventListener('pagehide', () => {
+                saveMapDraftNow();
+            });
             map.on('drawingmodechange', refreshHandToolState);
             // Defer toolbar setup to ensure Geoman has fully rendered
             requestAnimationFrame(() => {

@@ -1,6 +1,6 @@
 /**
  * Flight Report: form serialization, GPS (HTTPS only), mailto + clipboard fallback, PDF via PdfTheme.
- * Page Theme + PDF theme (Dark/Light) radios; Clear report (header) / Clear form share one confirmation modal.
+ * Page Theme toggle + PDF theme (Dark/Light) radios; Clear Report (start of report) / Clear form share one confirmation modal.
  */
 (function () {
     'use strict';
@@ -139,6 +139,39 @@
                 btn.textContent = 'Add Battery ' + (fnVisibleBatteryCount + 1);
             }
         }
+        var rmBtn = document.getElementById('fnRemoveLastBatteryBtn');
+        if (rmBtn) {
+            if (fnVisibleBatteryCount <= 1) {
+                rmBtn.hidden = true;
+            } else {
+                rmBtn.hidden = false;
+                var bn = fnVisibleBatteryCount;
+                rmBtn.textContent = 'Remove Battery ' + bn;
+                rmBtn.title = 'Remove Battery ' + bn + ' and hide this slot';
+                rmBtn.setAttribute('aria-label', 'Remove Battery ' + bn);
+            }
+        }
+    }
+
+    function clearBatteryNFields(n) {
+        var b = 'fnBattery' + n;
+        var i;
+        for (i = 0; i < BATTERY_N_FIELD_SUFFIXES.length; i++) {
+            var suf = BATTERY_N_FIELD_SUFFIXES[i];
+            if (suf === 'FlightTime') continue;
+            var el = document.getElementById(b + suf);
+            if (el) el.value = '';
+        }
+        updateBatteryFlightTimeForIndex(n);
+    }
+
+    function removeLastBatteryConfirmed() {
+        var n = fnVisibleBatteryCount;
+        if (n < 2) return;
+        clearBatteryNFields(n);
+        setVisibleBatteryCount(n - 1);
+        updateAllBatteryFlightTimes();
+        saveFlightNotesDraft();
     }
 
     function saveFlightNotesDraft() {
@@ -209,6 +242,7 @@
     var MAILTO_BODY_MAX = 1800;
 
     var miniMap = null;
+    var fnLocationPreviewTimer = null;
 
     var fnAirspaceRadiusKm = 3;
     var fnLastNotams = null;
@@ -913,7 +947,7 @@
      */
     function buildNotesPlainText() {
         var lines = [];
-        lines.push('AirPlot v3: Flight Report');
+        lines.push('AirPlot v4: Flight Report');
         lines.push('');
 
         lines.push('Date: ' + dash(formatDateForExportDdMmYyyy(trimVal('fnDate'))));
@@ -932,8 +966,8 @@
         for (bn = 1; bn <= battMax; bn++) {
             var b = 'fnBattery' + bn;
             lines.push('Battery ' + bn + ': ' + dash(trimVal(b)));
-            lines.push('Battery ' + bn + ' RP 1: ' + dash(trimVal(b + 'Rp1')));
-            lines.push('Battery ' + bn + ' RP 2: ' + dash(trimVal(b + 'Rp2')));
+            lines.push('Battery ' + bn + ' Remote Pilot 1: ' + dash(trimVal(b + 'Rp1')));
+            lines.push('Battery ' + bn + ' Remote Pilot 2: ' + dash(trimVal(b + 'Rp2')));
             lines.push('Battery ' + bn + ' launch: ' + dash(trimVal(b + 'Launch')));
             lines.push('Battery ' + bn + ' landing: ' + dash(trimVal(b + 'Land')));
             lines.push('Battery ' + bn + ' flight time: ' + dash(trimVal(b + 'FlightTime')));
@@ -968,8 +1002,8 @@
         for (bn = 1; bn <= battMaxPdf; bn++) {
             var b = 'fnBattery' + bn;
             rows.push(['Battery ' + bn, dash(trimVal(b))]);
-            rows.push(['Battery ' + bn + ' RP 1', dash(trimVal(b + 'Rp1'))]);
-            rows.push(['Battery ' + bn + ' RP 2', dash(trimVal(b + 'Rp2'))]);
+            rows.push(['Battery ' + bn + ' Remote Pilot 1', dash(trimVal(b + 'Rp1'))]);
+            rows.push(['Battery ' + bn + ' Remote Pilot 2', dash(trimVal(b + 'Rp2'))]);
             rows.push(['Battery ' + bn + ' launch', dash(trimVal(b + 'Launch'))]);
             rows.push(['Battery ' + bn + ' landing', dash(trimVal(b + 'Land'))]);
             rows.push(['Battery ' + bn + ' flight time', dash(trimVal(b + 'FlightTime'))]);
@@ -1020,6 +1054,15 @@
         if (isNaN(lat) || isNaN(lng)) return null;
         if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
         return { lat: lat, lng: lng };
+    }
+
+    /** Postcode suffix from resolved location string (Search / GPS), if present. */
+    function extractPostcodeFromLocationField(s) {
+        if (!s || !String(s).trim()) return null;
+        var m = String(s).match(/Postcode:\s*([^·\n\r]+)/i);
+        if (!m) return null;
+        var t = m[1].trim();
+        return t || null;
     }
 
     function getTargetTimeMsFromForm() {
@@ -1439,6 +1482,168 @@
         var mm = String(now.getMinutes()).padStart(2, '0');
         if (dateEl) dateEl.value = y + '-' + m + '-' + d;
         if (timeEl) timeEl.value = hh + ':' + mm;
+        syncManualSelectsFromDateInput();
+        var hintNow = document.getElementById('fnDateManualHint');
+        if (hintNow) {
+            hintNow.textContent = '';
+            hintNow.classList.add('hidden');
+        }
+        saveFlightNotesDraft();
+    }
+
+    function setTodayDate() {
+        var now = new Date();
+        var dateEl = document.getElementById('fnDate');
+        if (!dateEl) return;
+        var y = now.getFullYear();
+        var m = String(now.getMonth() + 1).padStart(2, '0');
+        var d = String(now.getDate()).padStart(2, '0');
+        dateEl.value = y + '-' + m + '-' + d;
+        syncManualSelectsFromDateInput();
+        var hintT = document.getElementById('fnDateManualHint');
+        if (hintT) {
+            hintT.textContent = '';
+            hintT.classList.add('hidden');
+        }
+        saveFlightNotesDraft();
+    }
+
+    function openFnDatePicker() {
+        var dateEl = document.getElementById('fnDate');
+        if (!dateEl) return;
+        if (typeof dateEl.showPicker === 'function') {
+            try {
+                dateEl.showPicker();
+            } catch (e) {
+                dateEl.focus();
+            }
+        } else {
+            dateEl.focus();
+        }
+    }
+
+    var FN_MONTH_NAMES = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+    ];
+
+    function fnDaysInMonth(year, month1to12) {
+        return new Date(year, month1to12, 0).getDate();
+    }
+
+    function initFnManualDateSelects() {
+        var daySel = document.getElementById('fnDateManualDay');
+        var monthSel = document.getElementById('fnDateManualMonth');
+        var yearSel = document.getElementById('fnDateManualYear');
+        if (!daySel || !monthSel || !yearSel) return;
+        var i, opt;
+        daySel.innerHTML = '';
+        for (i = 1; i <= 31; i++) {
+            opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = String(i);
+            daySel.appendChild(opt);
+        }
+        monthSel.innerHTML = '';
+        for (i = 0; i < 12; i++) {
+            opt = document.createElement('option');
+            opt.value = String(i + 1);
+            opt.textContent = FN_MONTH_NAMES[i];
+            monthSel.appendChild(opt);
+        }
+        var y0 = new Date().getFullYear();
+        yearSel.innerHTML = '';
+        for (i = y0 - 10; i <= y0 + 10; i++) {
+            opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = String(i);
+            yearSel.appendChild(opt);
+        }
+    }
+
+    function ensureYearInManualSelect(yearSel, y) {
+        var ys = String(y);
+        if (yearSel.querySelector('option[value="' + ys + '"]')) {
+            yearSel.value = ys;
+            return;
+        }
+        var opt = document.createElement('option');
+        opt.value = ys;
+        opt.textContent = ys;
+        yearSel.appendChild(opt);
+        var opts = Array.prototype.slice.call(yearSel.options);
+        opts.sort(function (a, b) {
+            return parseInt(a.value, 10) - parseInt(b.value, 10);
+        });
+        yearSel.innerHTML = '';
+        for (var j = 0; j < opts.length; j++) {
+            yearSel.appendChild(opts[j]);
+        }
+        yearSel.value = ys;
+    }
+
+    function syncManualSelectsFromDateInput() {
+        var dateEl = document.getElementById('fnDate');
+        var daySel = document.getElementById('fnDateManualDay');
+        var monthSel = document.getElementById('fnDateManualMonth');
+        var yearSel = document.getElementById('fnDateManualYear');
+        if (!dateEl || !daySel || !monthSel || !yearSel) return;
+        var v = dateEl.value;
+        if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+        var parts = v.split('-');
+        var y = parseInt(parts[0], 10);
+        var mo = parseInt(parts[1], 10);
+        var da = parseInt(parts[2], 10);
+        if (isNaN(y) || isNaN(mo) || isNaN(da)) return;
+        ensureYearInManualSelect(yearSel, y);
+        var dim = fnDaysInMonth(y, mo);
+        if (da > dim) da = dim;
+        daySel.value = String(da);
+        monthSel.value = String(mo);
+        yearSel.value = String(y);
+    }
+
+    function applyManualSelectsToDateInput() {
+        var dateEl = document.getElementById('fnDate');
+        var daySel = document.getElementById('fnDateManualDay');
+        var monthSel = document.getElementById('fnDateManualMonth');
+        var yearSel = document.getElementById('fnDateManualYear');
+        var hintEl = document.getElementById('fnDateManualHint');
+        if (!dateEl || !daySel || !monthSel || !yearSel) return;
+        var d = parseInt(daySel.value, 10);
+        var m = parseInt(monthSel.value, 10);
+        var y = parseInt(yearSel.value, 10);
+        if (isNaN(d) || isNaN(m) || isNaN(y)) return;
+        var dim = fnDaysInMonth(y, m);
+        var clamped = false;
+        if (d > dim) {
+            d = dim;
+            clamped = true;
+            daySel.value = String(d);
+        }
+        var mm = String(m).padStart(2, '0');
+        var dd = String(d).padStart(2, '0');
+        var iso = y + '-' + mm + '-' + dd;
+        if (dateEl.value !== iso) dateEl.value = iso;
+        if (hintEl) {
+            if (clamped) {
+                hintEl.textContent = 'Day adjusted to last day of that month.';
+                hintEl.classList.remove('hidden');
+            } else {
+                hintEl.textContent = '';
+                hintEl.classList.add('hidden');
+            }
+        }
         saveFlightNotesDraft();
     }
 
@@ -1515,6 +1720,29 @@
         destroyMiniMap();
         var pc = document.getElementById('fnPostcodeDisplay');
         if (pc) pc.textContent = '—';
+    }
+
+    function scheduleSyncLocationPreviewFromField() {
+        if (fnLocationPreviewTimer) clearTimeout(fnLocationPreviewTimer);
+        fnLocationPreviewTimer = setTimeout(function () {
+            fnLocationPreviewTimer = null;
+            syncLocationPreviewFromField();
+        }, 300);
+    }
+
+    function syncLocationPreviewFromField() {
+        var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
+        var wrap = document.getElementById('fnLocationResult');
+        var pcDisp = document.getElementById('fnPostcodeDisplay');
+        if (!wrap) return;
+        if (ll) {
+            wrap.hidden = false;
+            var extracted = extractPostcodeFromLocationField(trimVal('fnLocation'));
+            if (pcDisp) pcDisp.textContent = extracted || '—';
+            initMiniMap(ll.lat, ll.lng);
+        } else {
+            hideLocationResult();
+        }
     }
 
     /**
@@ -1857,6 +2085,30 @@
         wfs.className = 'fn-weather-fetch-status';
     }
 
+    var PENDING_WEATHER_FROM_FLIGHT_WEATHER_KEY = 'airplotPendingWeatherForReport_v1';
+
+    function consumePendingWeatherFromFlightWeather() {
+        try {
+            var raw = sessionStorage.getItem(PENDING_WEATHER_FROM_FLIGHT_WEATHER_KEY);
+            if (!raw) return;
+            sessionStorage.removeItem(PENDING_WEATHER_FROM_FLIGHT_WEATHER_KEY);
+            var o = JSON.parse(raw);
+            if (!o || o.v !== 1 || !o.text) return;
+            var ta = document.getElementById('fnWeather');
+            if (!ta) return;
+            var existing = trimVal('fnWeather');
+            var sep = '\n\n--- Open-Meteo (from Flight Weather) ---\n';
+            ta.value = existing ? existing + sep + o.text : o.text;
+            setWeatherFetchStatus('Added from Flight Weather.', 'ok');
+            autoResizeConditionsTextarea();
+            saveFlightNotesDraft();
+        } catch (e) {
+            try {
+                sessionStorage.removeItem(PENDING_WEATHER_FROM_FLIGHT_WEATHER_KEY);
+            } catch (e2) {}
+        }
+    }
+
     function openClearModal() {
         var m = document.getElementById('fnClearModal');
         if (!m) return;
@@ -1872,7 +2124,78 @@
         document.body.style.overflow = '';
     }
 
+    function openWeatherClearModal() {
+        var m = document.getElementById('fnWeatherClearModal');
+        if (!m) return;
+        m.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        var confirmBtn = document.getElementById('fnWeatherClearModalConfirm');
+        if (confirmBtn) confirmBtn.focus();
+    }
+
+    function closeWeatherClearModal() {
+        var m = document.getElementById('fnWeatherClearModal');
+        if (m) m.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function openRemoveBatteryModal(n) {
+        var m = document.getElementById('fnRemoveBatteryModal');
+        var title = document.getElementById('fnRemoveBatteryModalTitle');
+        if (title) title.textContent = 'Remove Battery ' + n + '?';
+        var body = document.getElementById('fnRemoveBatteryModalBody');
+        if (body) {
+            body.textContent =
+                'Battery ' +
+                n +
+                ' has details entered. Remove it and hide this battery slot? This cannot be undone.';
+        }
+        if (!m) return;
+        m.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        var c = document.getElementById('fnRemoveBatteryModalConfirm');
+        if (c) c.focus();
+    }
+
+    function closeRemoveBatteryModal() {
+        var m = document.getElementById('fnRemoveBatteryModal');
+        if (m) m.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function confirmRemoveBatteryFromModal() {
+        closeRemoveBatteryModal();
+        removeLastBatteryConfirmed();
+    }
+
+    function onRemoveLastBatteryClick() {
+        var n = fnVisibleBatteryCount;
+        if (n < 2) return;
+        if (batteryNHasAnyValue(n)) {
+            openRemoveBatteryModal(n);
+        } else {
+            removeLastBatteryConfirmed();
+        }
+    }
+
+    function clearConditionsOnly() {
+        var ta = document.getElementById('fnWeather');
+        if (ta) {
+            ta.value = '';
+            ta.style.height = '';
+            ta.style.overflowY = '';
+        }
+        clearWeatherFetchStatus();
+        autoResizeConditionsTextarea();
+        closeWeatherClearModal();
+        saveFlightNotesDraft();
+    }
+
     function clearEntireForm() {
+        if (fnLocationPreviewTimer) {
+            clearTimeout(fnLocationPreviewTimer);
+            fnLocationPreviewTimer = null;
+        }
         destroyFnAirspaceMaps();
         fnLastNotams = null;
         fnLastAirspace = null;
@@ -1883,6 +2206,7 @@
         if (al) al.classList.add('hidden');
         var form = document.getElementById('flightReportForm');
         if (form) form.reset();
+        initFnManualDateSelects();
         setVisibleBatteryCount(1);
         updateAllBatteryFlightTimes();
         syncFnAirspaceIntroKm();
@@ -1892,44 +2216,69 @@
             ta.style.overflowY = '';
         }
         hideLocationResult();
+        syncManualSelectsFromDateInput();
+        var hintClear = document.getElementById('fnDateManualHint');
+        if (hintClear) {
+            hintClear.textContent = '';
+            hintClear.classList.add('hidden');
+        }
         setGpsStatus('', '');
         clearWeatherFetchStatus();
         clearFlightNotesDraftStorage();
         closeClearModal();
+        closeRemoveBatteryModal();
         autoResizeConditionsTextarea();
     }
 
     function init() {
-        function syncPageThemeFromRadios() {
-            var el = document.querySelector('input[name="fnPageTheme"]:checked');
-            var light = !!(el && el.value === 'light');
-            document.body.classList.toggle('fn-light-theme', light);
+        function pageThemeIsLight() {
+            return document.body.classList.contains('fn-light-theme');
+        }
+
+        function syncFnThemeToggleButton() {
+            var btn = document.getElementById('fnThemeToggle');
+            if (!btn) return;
+            var light = pageThemeIsLight();
+            btn.setAttribute('aria-pressed', light ? 'true' : 'false');
+            var label = light ? 'Switch to dark theme' : 'Switch to light theme';
+            btn.setAttribute('aria-label', label);
+            btn.title = label;
+            var moon = btn.querySelector('.fn-theme-toggle-icon--moon');
+            var sun = btn.querySelector('.fn-theme-toggle-icon--sun');
+            if (moon && sun) {
+                moon.classList.toggle('hidden', light);
+                sun.classList.toggle('hidden', !light);
+            }
+        }
+
+        function applyFnPageTheme(light) {
+            document.body.classList.toggle('fn-light-theme', !!light);
             try {
                 localStorage.setItem('fnLightTheme', light ? '1' : '0');
             } catch (e) {}
+            syncFnThemeToggleButton();
         }
 
-        var pageThemeInputs = document.querySelectorAll('input[name="fnPageTheme"]');
-        if (pageThemeInputs.length) {
+        var fnThemeBtn = document.getElementById('fnThemeToggle');
+        if (fnThemeBtn) {
             try {
-                if (localStorage.getItem('fnLightTheme') === '1') {
-                    var rLight = document.querySelector('input[name="fnPageTheme"][value="light"]');
-                    if (rLight) rLight.checked = true;
-                } else {
-                    var rDark = document.querySelector('input[name="fnPageTheme"][value="dark"]');
-                    if (rDark) rDark.checked = true;
-                }
-            } catch (e) {}
-            syncPageThemeFromRadios();
-            pageThemeInputs.forEach(function (inp) {
-                inp.addEventListener('change', syncPageThemeFromRadios);
+                applyFnPageTheme(localStorage.getItem('fnLightTheme') === '1');
+            } catch (e) {
+                applyFnPageTheme(false);
+            }
+            fnThemeBtn.addEventListener('click', function () {
+                applyFnPageTheme(!pageThemeIsLight());
             });
         }
 
+        initFnManualDateSelects();
         var initialBatterySlots = loadFlightNotesDraft();
+        consumePendingWeatherFromFlightWeather();
         setVisibleBatteryCount(initialBatterySlots);
         updateAllBatteryFlightTimes();
         syncFnAirspaceIntroKm();
+        syncManualSelectsFromDateInput();
+        syncLocationPreviewFromField();
 
         var fnAirspaceRefresh = document.getElementById('fnAirspaceRefreshBtn');
         var fnAirspaceRadius = document.getElementById('fnAirspaceRadiusKm');
@@ -1942,20 +2291,61 @@
         }
 
         var nowBtn = document.getElementById('fnNowBtn');
+        var todayBtn = document.getElementById('fnTodayBtn');
+        var fnDateEl = document.getElementById('fnDate');
+        var fnDatePickerBtn = document.getElementById('fnDatePickerBtn');
         var searchLocationBtn = document.getElementById('fnSearchLocationBtn');
         var gpsBtn = document.getElementById('fnGpsBtn');
         var emailBtn = document.getElementById('fnEmailBtn');
         var pdfBtn = document.getElementById('fnPdfBtn');
 
         var weatherFetchBtn = document.getElementById('fnWeatherFetchBtn');
+        var weatherClearBtn = document.getElementById('fnWeatherClearBtn');
         var clearFormBtn = document.getElementById('fnClearFormBtn');
         var clearModal = document.getElementById('fnClearModal');
         var clearBackdrop = document.getElementById('fnClearModalBackdrop');
         var clearCancel = document.getElementById('fnClearModalCancel');
         var clearClose = document.getElementById('fnClearModalClose');
         var clearConfirm = document.getElementById('fnClearModalConfirm');
+        var weatherClearModal = document.getElementById('fnWeatherClearModal');
+        var weatherClearBackdrop = document.getElementById('fnWeatherClearModalBackdrop');
+        var weatherClearCancel = document.getElementById('fnWeatherClearModalCancel');
+        var weatherClearClose = document.getElementById('fnWeatherClearModalClose');
+        var weatherClearConfirm = document.getElementById('fnWeatherClearModalConfirm');
+        var removeBatteryModal = document.getElementById('fnRemoveBatteryModal');
+        var removeBatteryBackdrop = document.getElementById('fnRemoveBatteryModalBackdrop');
+        var removeBatteryCancel = document.getElementById('fnRemoveBatteryModalCancel');
+        var removeBatteryClose = document.getElementById('fnRemoveBatteryModalClose');
+        var removeBatteryConfirm = document.getElementById('fnRemoveBatteryModalConfirm');
+        var removeLastBatteryBtn = document.getElementById('fnRemoveLastBatteryBtn');
 
+        if (todayBtn) todayBtn.addEventListener('click', setTodayDate);
         if (nowBtn) nowBtn.addEventListener('click', setNowDateTime);
+        if (fnDatePickerBtn && fnDateEl) {
+            if (typeof fnDateEl.showPicker !== 'function') {
+                fnDatePickerBtn.classList.add('hidden');
+            }
+            fnDatePickerBtn.addEventListener('click', openFnDatePicker);
+        }
+        if (fnDateEl) {
+            fnDateEl.addEventListener('change', syncManualSelectsFromDateInput);
+            fnDateEl.addEventListener('input', syncManualSelectsFromDateInput);
+        }
+        var fnDateManualDetails = document.querySelector('.fn-date-manual-fallback');
+        if (fnDateManualDetails) {
+            fnDateManualDetails.addEventListener('toggle', function () {
+                if (fnDateManualDetails.open) syncManualSelectsFromDateInput();
+            });
+        }
+        ['fnDateManualDay', 'fnDateManualMonth', 'fnDateManualYear'].forEach(function (sid) {
+            var sel = document.getElementById(sid);
+            if (sel) sel.addEventListener('change', applyManualSelectsToDateInput);
+        });
+        var fnLocInput = document.getElementById('fnLocation');
+        if (fnLocInput) {
+            fnLocInput.addEventListener('input', scheduleSyncLocationPreviewFromField);
+            fnLocInput.addEventListener('change', syncLocationPreviewFromField);
+        }
         var addBatteryBtn = document.getElementById('fnAddBatteryBtn');
         if (addBatteryBtn) {
             addBatteryBtn.addEventListener('click', function () {
@@ -1993,9 +2383,19 @@
                 });
             })(bi);
         }
+        if (removeLastBatteryBtn) removeLastBatteryBtn.addEventListener('click', onRemoveLastBatteryClick);
+        if (removeBatteryCancel) removeBatteryCancel.addEventListener('click', closeRemoveBatteryModal);
+        if (removeBatteryClose) removeBatteryClose.addEventListener('click', closeRemoveBatteryModal);
+        if (removeBatteryBackdrop) removeBatteryBackdrop.addEventListener('click', closeRemoveBatteryModal);
+        if (removeBatteryConfirm) removeBatteryConfirm.addEventListener('click', confirmRemoveBatteryFromModal);
         if (searchLocationBtn) searchLocationBtn.addEventListener('click', onSearchLocationClick);
         if (gpsBtn) gpsBtn.addEventListener('click', onGpsClick);
         if (weatherFetchBtn) weatherFetchBtn.addEventListener('click', onWeatherFetchClick);
+        if (weatherClearBtn) weatherClearBtn.addEventListener('click', openWeatherClearModal);
+        if (weatherClearCancel) weatherClearCancel.addEventListener('click', closeWeatherClearModal);
+        if (weatherClearClose) weatherClearClose.addEventListener('click', closeWeatherClearModal);
+        if (weatherClearBackdrop) weatherClearBackdrop.addEventListener('click', closeWeatherClearModal);
+        if (weatherClearConfirm) weatherClearConfirm.addEventListener('click', clearConditionsOnly);
         var fnWeatherTa = document.getElementById('fnWeather');
         if (fnWeatherTa) {
             fnWeatherTa.addEventListener('input', autoResizeConditionsTextarea);
@@ -2019,7 +2419,16 @@
         if (clearBackdrop) clearBackdrop.addEventListener('click', closeClearModal);
         if (clearConfirm) clearConfirm.addEventListener('click', clearEntireForm);
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && clearModal && !clearModal.classList.contains('hidden')) {
+            if (e.key !== 'Escape') return;
+            if (removeBatteryModal && !removeBatteryModal.classList.contains('hidden')) {
+                closeRemoveBatteryModal();
+                return;
+            }
+            if (weatherClearModal && !weatherClearModal.classList.contains('hidden')) {
+                closeWeatherClearModal();
+                return;
+            }
+            if (clearModal && !clearModal.classList.contains('hidden')) {
                 closeClearModal();
             }
         });

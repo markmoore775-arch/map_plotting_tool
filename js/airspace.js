@@ -9,6 +9,8 @@
 
     const ADSB_LOL_BASE = 'https://api.adsb.lol/v2';
     const OGN_STORAGE_KEY = 'airspaceOgnEnabled';
+    const AIRSPACE_MAP_DRAFT_KEY = 'airplotAirspaceMapView_v1';
+    let airspaceMapDraftTimer = null;
     const MIN_POLL_MS = 1100;
     const MOVE_DEBOUNCE_MS = 500;
     const RADIUS_MIN_NM = 5;
@@ -17,7 +19,7 @@
     const MAX_TRAIL_POINTS = 120;
 
     const HELP_HTML = [
-        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v3) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> uses the <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> live feed: <strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
+        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v4) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> uses the <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> live feed: <strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
         '<p>Optional <strong>approx. AGL</strong> (metres) uses the same <strong>Mapbox Terrain-RGB</strong> source as Planning mode when a token is set in <code>js/config.js</code>. It is <strong>barometric altitude vs terrain model</strong>; not for separation. DEM and altimeter errors apply.</p>',
         '<p><strong>Not for separation.</strong> Situational awareness only.</p>',
         '<p><strong>Steps</strong></p>',
@@ -1544,6 +1546,54 @@
         }
     }
 
+    function peekAirspaceMapDraft() {
+        try {
+            var raw = localStorage.getItem(AIRSPACE_MAP_DRAFT_KEY);
+            if (!raw) return null;
+            var d = JSON.parse(raw);
+            if (!d || d.v !== 1 || d.lat == null || d.lng == null) return null;
+            return { lat: d.lat, lng: d.lng, zoom: d.zoom != null ? d.zoom : 13 };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function scheduleAirspaceMapDraftSave() {
+        if (!map) return;
+        if (airspaceMapDraftTimer) clearTimeout(airspaceMapDraftTimer);
+        airspaceMapDraftTimer = setTimeout(function () {
+            airspaceMapDraftTimer = null;
+            try {
+                var c = map.getCenter();
+                localStorage.setItem(
+                    AIRSPACE_MAP_DRAFT_KEY,
+                    JSON.stringify({
+                        v: 1,
+                        lat: c.lat,
+                        lng: c.lng,
+                        zoom: map.getZoom()
+                    })
+                );
+            } catch (err) { /* ignore */ }
+        }, 600);
+    }
+
+    function saveAirspaceMapDraftNow() {
+        if (!map) return;
+        try {
+            var c = map.getCenter();
+            localStorage.setItem(
+                AIRSPACE_MAP_DRAFT_KEY,
+                JSON.stringify({
+                    v: 1,
+                    lat: c.lat,
+                    lng: c.lng,
+                    zoom: map.getZoom()
+                })
+            );
+        } catch (err) { /* ignore */ }
+    }
+
     function tryInitialViewFromGeolocation() {
         if (!map) return;
         function applyPos(pos) {
@@ -1563,9 +1613,12 @@
     }
 
     function initMap() {
+        var draftView = peekAirspaceMapDraft();
+        var initCenter = draftView ? [draftView.lat, draftView.lng] : DEFAULT_MAP_CENTER;
+        var initZoom = draftView && draftView.zoom != null ? draftView.zoom : 13;
         map = L.map('map', {
-            center: DEFAULT_MAP_CENTER,
-            zoom: 13,
+            center: initCenter,
+            zoom: initZoom,
             zoomControl: true
         });
 
@@ -1648,6 +1701,7 @@
         new InfoControl({ position: 'topleft' }).addTo(map);
 
         map.on('moveend', scheduleFetch);
+        map.on('moveend', scheduleAirspaceMapDraftSave);
 
         document.addEventListener('visibilitychange', function () {
             if (
@@ -1660,7 +1714,9 @@
             }
         });
 
-        tryInitialViewFromGeolocation();
+        if (!draftView) {
+            tryInitialViewFromGeolocation();
+        }
     }
 
     function wireUi() {
@@ -1810,6 +1866,7 @@
     function init() {
         initMap();
         wireUi();
+        window.addEventListener('pagehide', saveAirspaceMapDraftNow);
         startPolling();
     }
 

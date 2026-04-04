@@ -20,32 +20,62 @@ const DRONE_DASH_BGM_URL = `${import.meta.env.BASE_URL}music/drone-dash.mp3`;
 const THEMES = [
   {
     name: 'Cyber City',
-    bg: '#0f172a', // slate-900
-    floor: '#020617', // slate-950
-    accent: '#22d3ee', // cyan-400
-    obsColor: '#f43f5e', // rose-500
+    bg: '#0f172a',
+    floor: '#020617',
+    accent: '#22d3ee',
+    obsColor: '#f43f5e',
     bgType: 'city',
     obsType: 'laser'
   },
   {
     name: 'Suburban Dusk',
-    bg: '#2e1065', // purple-900
-    floor: '#172554', // blue-950
-    accent: '#f59e0b', // amber-500
-    obsColor: '#10b981', // emerald-500
+    bg: '#2e1065',
+    floor: '#172554',
+    accent: '#f59e0b',
+    obsColor: '#10b981',
     bgType: 'suburb',
     obsType: 'structure'
   },
   {
     name: 'Rural Night',
-    bg: '#064e3b', // emerald-900
-    floor: '#022c22', // emerald-950
-    accent: '#a3e635', // lime-400
-    obsColor: '#eab308', // yellow-500
+    bg: '#064e3b',
+    floor: '#022c22',
+    accent: '#a3e635',
+    obsColor: '#eab308',
     bgType: 'rural',
     obsType: 'nature'
+  },
+  {
+    name: 'Arctic Run',
+    bg: '#0c4a6e',
+    floor: '#082f49',
+    accent: '#7dd3fc',
+    obsColor: '#e0f2fe',
+    bgType: 'arctic',
+    obsType: 'ice'
+  },
+  {
+    name: 'Desert Dusk',
+    bg: '#431407',
+    floor: '#292524',
+    accent: '#fb923c',
+    obsColor: '#fcd34d',
+    bgType: 'desert',
+    obsType: 'mesa'
+  },
+  {
+    name: 'Harbor Night',
+    bg: '#0f172a',
+    floor: '#020617',
+    accent: '#38bdf8',
+    obsColor: '#f97316',
+    bgType: 'harbor',
+    obsType: 'container'
   }
 ];
+
+/** Score band per zone before cycling themes (longer runs see all zones). */
+const POINTS_PER_ZONE = 130;
 
 // --- Types ---
 type GameState = 'start' | 'countdown' | 'playing' | 'gameover';
@@ -69,6 +99,13 @@ interface Obstacle {
   maxY: number;
   themeType: string;
   color: string;
+  /** Horizontal oscillation amplitude (px); collision uses x + offsetX. */
+  wobbleAmp: number;
+  wobblePhase: number;
+  offsetX: number;
+  /** Extra world scroll speed (positive = moves left faster). */
+  driftX: number;
+  scoreValue: number;
 }
 
 interface Particle {
@@ -242,6 +279,21 @@ export default function App() {
       height = 80 + Math.random() * 150;
       speed = 0.5 + Math.random() * 1;
       color = Math.random() > 0.5 ? '#065f46' : '#047857';
+    } else if (theme.bgType === 'arctic') {
+      width = 70 + Math.random() * 100;
+      height = 120 + Math.random() * 220;
+      speed = 0.8 + Math.random() * 1.2;
+      color = Math.random() > 0.5 ? '#075985' : '#0e7490';
+    } else if (theme.bgType === 'desert') {
+      width = 90 + Math.random() * 140;
+      height = 50 + Math.random() * 90;
+      speed = 1 + Math.random() * 1.2;
+      color = Math.random() > 0.5 ? '#7c2d12' : '#9a3412';
+    } else if (theme.bgType === 'harbor') {
+      width = 50 + Math.random() * 70;
+      height = 90 + Math.random() * 200;
+      speed = 1.2 + Math.random() * 1.5;
+      color = Math.random() > 0.5 ? '#1e3a5f' : '#334155';
     }
 
     bgElementsRef.current.push({
@@ -348,12 +400,62 @@ export default function App() {
     };
   }, []);
 
+  const difficultyTier = () => Math.min(12, Math.floor(stateRef.current.score / 90));
+
+  const pushObstacle = (o: Omit<Obstacle, 'passed' | 'offsetX'>) => {
+    obstaclesRef.current.push({ ...o, passed: false, offsetX: 0 });
+  };
+
+  /** Flappy-style gap; returns true if spawned. */
+  const spawnGatePair = (): boolean => {
+    const theme = THEMES[stateRef.current.themeIndex];
+    const tier = difficultyTier();
+    const playable = FLOOR_Y - CEILING_Y;
+    const minBlock = 48;
+    const gap = Math.max(108, 210 - Math.min(stateRef.current.score, 140) * 0.45 - tier * 3);
+    const maxCenter = FLOOR_Y - gap / 2 - minBlock;
+    const minCenter = CEILING_Y + gap / 2 + minBlock;
+    if (maxCenter <= minCenter) return false;
+    const gapCenter = minCenter + Math.random() * (maxCenter - minCenter);
+    const topH = gapCenter - gap / 2 - CEILING_Y;
+    const botY = gapCenter + gap / 2;
+    const botH = FLOOR_Y - botY;
+    if (topH < minBlock || botH < minBlock) return false;
+
+    const w = 48 + Math.random() * 72;
+    const phase = Math.random() * Math.PI * 2;
+    const wobbleAmp = tier >= 5 && Math.random() > 0.55 ? 8 + Math.random() * 18 : tier >= 3 && Math.random() > 0.75 ? 5 + Math.random() * 10 : 0;
+    const driftX = tier >= 4 && Math.random() > 0.6 ? (Math.random() > 0.5 ? 1.4 : -2) : tier >= 2 && Math.random() > 0.82 ? (Math.random() > 0.5 ? 0.8 : -1.2) : 0;
+
+    const base = {
+      x: dimRef.current.width,
+      width: w,
+      vy: 0,
+      minY: CEILING_Y,
+      maxY: FLOOR_Y,
+      themeType: theme.obsType,
+      color: theme.obsColor,
+      wobbleAmp,
+      wobblePhase: phase,
+      driftX,
+      scoreValue: 8,
+    };
+
+    pushObstacle({ ...base, y: CEILING_Y, height: topH, type: 'top' });
+    pushObstacle({ ...base, y: botY, height: botH, type: 'bottom' });
+    return true;
+  };
+
   const spawnObstacle = () => {
     const theme = THEMES[stateRef.current.themeIndex];
-    const gap = 220 - Math.min(stateRef.current.score, 100); // Gap shrinks slightly as score goes up
+    const tier = difficultyTier();
+    const gap = 220 - Math.min(stateRef.current.score, 120) * 0.42 - Math.min(tier * 2, 28);
     const minHeight = 50;
-    const maxHeight = 720 - CEILING_Y - (720 - FLOOR_Y) - gap - minHeight;
-    
+    const maxHeight = Math.max(minHeight, 720 - CEILING_Y - (720 - FLOOR_Y) - gap - minHeight);
+
+    const gateChance = tier >= 2 ? 0.22 + Math.min(tier, 8) * 0.02 : 0;
+    if (Math.random() < gateChance && spawnGatePair()) return;
+
     const typeRoll = Math.random();
     let type: 'top' | 'bottom' | 'floating' = 'bottom';
     let y = 0;
@@ -362,39 +464,51 @@ export default function App() {
     let minY = CEILING_Y;
     let maxY = FLOOR_Y;
 
-    if (typeRoll < 0.35) {
+    const floatBias = tier >= 4 ? 0.12 : tier >= 2 ? 0.06 : 0;
+    const bottomW = 0.32 - floatBias * 0.5;
+    const topW = 0.32 - floatBias * 0.5;
+
+    if (typeRoll < bottomW) {
       type = 'bottom';
       height = Math.random() * maxHeight + minHeight;
       y = FLOOR_Y - height;
-    } else if (typeRoll < 0.7) {
+    } else if (typeRoll < bottomW + topW) {
       type = 'top';
       height = Math.random() * maxHeight + minHeight;
       y = CEILING_Y;
     } else {
       type = 'floating';
-      height = 100 + Math.random() * 60;
+      height = 70 + Math.random() * 100;
       y = Math.random() * (FLOOR_Y - CEILING_Y - height) + CEILING_Y;
-      
-      // 40% chance for floating obstacles to move
-      if (Math.random() > 0.6) {
-        vy = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * 2);
+
+      if (Math.random() > 0.55 - Math.min(tier, 6) * 0.04) {
+        vy = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * (2 + tier * 0.15));
         minY = CEILING_Y + 10;
         maxY = FLOOR_Y - 10;
       }
     }
 
-    obstaclesRef.current.push({
+    const width = type === 'floating' ? 56 + Math.random() * 52 : 52 + Math.random() * 58;
+    const wobbleAmp =
+      tier >= 3 && Math.random() > 0.72 ? 6 + Math.random() * 16 : tier >= 6 && Math.random() > 0.5 ? 10 + Math.random() * 20 : 0;
+    const driftX =
+      tier >= 3 && Math.random() > 0.78 ? (Math.random() > 0.5 ? 1.1 : -1.6) : tier >= 7 && Math.random() > 0.55 ? (Math.random() > 0.5 ? 1.6 : -2.2) : 0;
+
+    pushObstacle({
       x: dimRef.current.width,
       y,
-      width: 80,
+      width,
       height,
-      passed: false,
       type,
       vy,
       minY,
       maxY,
       themeType: theme.obsType,
-      color: theme.obsColor
+      color: theme.obsColor,
+      wobbleAmp,
+      wobblePhase: Math.random() * Math.PI * 2,
+      driftX,
+      scoreValue: 10,
     });
   };
 
@@ -477,14 +591,16 @@ export default function App() {
         }
       }
 
-      const spawnRate = Math.max(40, 70 - Math.floor(state.score / 50));
+      const spawnRate = Math.max(34, 72 - Math.floor(state.score / 45) - Math.min(difficultyTier(), 6));
       if (state.frames % spawnRate === 0) {
         spawnObstacle();
       }
 
       for (let i = obstacles.length - 1; i >= 0; i--) {
         const obs = obstacles[i];
-        obs.x -= OBSTACLE_SPEED;
+        obs.x -= OBSTACLE_SPEED + obs.driftX;
+        obs.offsetX = Math.sin((state.frames + obs.wobblePhase) * 0.052) * obs.wobbleAmp;
+        const ox = obs.x + obs.offsetX;
 
         if (obs.vy !== 0) {
           obs.y += obs.vy;
@@ -495,21 +611,21 @@ export default function App() {
 
         const margin = 8;
         if (
-          drone.x + DRONE_SIZE / 2 - margin > obs.x &&
-          drone.x - DRONE_SIZE / 2 + margin < obs.x + obs.width &&
+          drone.x + DRONE_SIZE / 2 - margin > ox &&
+          drone.x - DRONE_SIZE / 2 + margin < ox + obs.width &&
           drone.y + DRONE_SIZE / 2 - margin > obs.y &&
           drone.y - DRONE_SIZE / 2 + margin < obs.y + obs.height
         ) {
           gameOver();
         }
 
-        if (!obs.passed && drone.x > obs.x + obs.width) {
+        if (!obs.passed && drone.x > ox + obs.width) {
           obs.passed = true;
-          state.score += 10;
+          state.score += obs.scoreValue;
           setScore(state.score);
         }
 
-        if (obs.x + obs.width < 0) {
+        if (ox + obs.width + obs.wobbleAmp < 0) {
           obstacles.splice(i, 1);
         }
       }
@@ -520,8 +636,8 @@ export default function App() {
     const loop = (now: number) => {
       const state = stateRef.current;
 
-      // Theme Progression (Change every 150 points)
-      const newThemeIndex = Math.floor(state.score / 150) % THEMES.length;
+      // Theme progression: advance through all zones, then cycle
+      const newThemeIndex = Math.floor(state.score / POINTS_PER_ZONE) % THEMES.length;
       if (newThemeIndex !== state.themeIndex && state.gameState === 'playing') {
         state.themeIndex = newThemeIndex;
         setCurrentThemeName(THEMES[newThemeIndex].name);
@@ -593,6 +709,44 @@ export default function App() {
           ctx.lineTo(bg.x + bg.width / 2, FLOOR_Y - bg.height);
           ctx.lineTo(bg.x + bg.width, FLOOR_Y);
           ctx.fill();
+        } else if (bg.themeType === 'arctic') {
+          ctx.fillRect(bg.x, FLOOR_Y - bg.height, bg.width, bg.height);
+          ctx.fillStyle = 'rgba(255,255,255,0.12)';
+          ctx.fillRect(bg.x, FLOOR_Y - bg.height, bg.width, 8);
+          ctx.fillStyle = bg.color;
+          ctx.beginPath();
+          for (let k = 0; k < 5; k++) {
+            const px = bg.x + (k / 5) * bg.width + (bg.seed * 17) % 12;
+            ctx.moveTo(px, FLOOR_Y - bg.height);
+            ctx.lineTo(px + 8 + (k % 2) * 6, FLOOR_Y - bg.height - 14 - (k * 3) % 10);
+            ctx.lineTo(px + 16, FLOOR_Y - bg.height);
+          }
+          ctx.fill();
+        } else if (bg.themeType === 'desert') {
+          const y0 = FLOOR_Y - bg.height;
+          const g = ctx.createLinearGradient(bg.x, y0, bg.x + bg.width, FLOOR_Y);
+          g.addColorStop(0, bg.color);
+          g.addColorStop(1, '#292524');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(bg.x - 15, FLOOR_Y);
+          ctx.lineTo(bg.x + bg.width * 0.2, y0 + bg.height * 0.35);
+          ctx.lineTo(bg.x + bg.width * 0.45, y0);
+          ctx.lineTo(bg.x + bg.width * 0.75, y0 + bg.height * 0.25);
+          ctx.lineTo(bg.x + bg.width + 20, FLOOR_Y);
+          ctx.closePath();
+          ctx.fill();
+        } else if (bg.themeType === 'harbor') {
+          ctx.fillRect(bg.x, FLOOR_Y - bg.height, bg.width, bg.height);
+          ctx.fillStyle = 'rgba(56,189,248,0.15)';
+          ctx.fillRect(bg.x + 4, FLOOR_Y - bg.height + 6, bg.width - 8, 10);
+          ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(bg.x + bg.width * 0.85, FLOOR_Y - bg.height);
+          ctx.lineTo(bg.x + bg.width * 0.85, FLOOR_Y - bg.height - 40 - bg.seed * 30);
+          ctx.lineTo(bg.x + bg.width * 0.55, FLOOR_Y - bg.height - 25 - bg.seed * 20);
+          ctx.stroke();
         }
       });
 
@@ -618,55 +772,182 @@ export default function App() {
       ctx.shadowBlur = 0;
 
       // 4. Obstacles
+      const animT = state.frames;
       obstacles.forEach((obs) => {
+        const dx = obs.x + obs.offsetX;
+        const midX = dx + obs.width / 2;
+
         if (obs.themeType === 'laser') {
-          // Cyberpunk Laser Gate
-          ctx.fillStyle = '#111827';
-          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-          
+          const g = ctx.createLinearGradient(dx, obs.y, dx + obs.width, obs.y + obs.height);
+          g.addColorStop(0, '#0f172a');
+          g.addColorStop(0.5, '#1e293b');
+          g.addColorStop(1, '#020617');
+          ctx.fillStyle = g;
+          ctx.fillRect(dx, obs.y, obs.width, obs.height);
+
           ctx.strokeStyle = obs.color;
           ctx.lineWidth = 3;
-          ctx.shadowBlur = 15;
+          ctx.shadowBlur = 18;
           ctx.shadowColor = obs.color;
-          ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
-          
+          ctx.strokeRect(dx, obs.y, obs.width, obs.height);
           ctx.shadowBlur = 0;
+
+          const scan = (animT * 3) % 24;
+          ctx.setLineDash([6, 10]);
+          ctx.lineDashOffset = -scan;
           ctx.beginPath();
-          ctx.moveTo(obs.x + obs.width/2, obs.y);
-          ctx.lineTo(obs.x + obs.width/2, obs.y + obs.height);
+          ctx.moveTo(midX, obs.y);
+          ctx.lineTo(midX, obs.y + obs.height);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.lineDashOffset = 0;
+
+          ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(midX, obs.y + ((animT * 4) % obs.height), 4, 0, Math.PI * 2);
           ctx.stroke();
 
         } else if (obs.themeType === 'structure') {
-          // Suburban Brick/Steel Structure
-          ctx.fillStyle = '#451a03'; // dark brown
-          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-          
+          const g = ctx.createLinearGradient(dx, obs.y, dx, obs.y + obs.height);
+          g.addColorStop(0, '#57534e');
+          g.addColorStop(0.45, '#451a03');
+          g.addColorStop(1, '#292524');
+          ctx.fillStyle = g;
+          ctx.fillRect(dx, obs.y, obs.width, obs.height);
+
           ctx.strokeStyle = '#78350f';
           ctx.lineWidth = 2;
-          ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
-          
-          // Crosshatches
+          ctx.strokeRect(dx, obs.y, obs.width, obs.height);
+
+          const brickH = 14;
+          for (let row = 0; row < obs.height; row += brickH) {
+            const offset = row % (brickH * 2) === 0 ? 0 : obs.width * 0.18;
+            for (let col = -obs.width; col < obs.width * 2; col += obs.width * 0.36) {
+              ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+              ctx.strokeRect(dx + offset + col, obs.y + row, obs.width * 0.34, brickH - 1);
+            }
+          }
+
+          ctx.strokeStyle = obs.color;
+          ctx.globalAlpha = 0.4;
           ctx.beginPath();
-          for (let i = 0; i < obs.height; i += 40) {
-            ctx.moveTo(obs.x, obs.y + i);
-            ctx.lineTo(obs.x + obs.width, obs.y + i + 40);
-            ctx.moveTo(obs.x + obs.width, obs.y + i);
-            ctx.lineTo(obs.x, obs.y + i + 40);
+          for (let i = 0; i < obs.height; i += 36) {
+            ctx.moveTo(dx, obs.y + i);
+            ctx.lineTo(dx + obs.width, obs.y + i + 36);
           }
           ctx.stroke();
+          ctx.globalAlpha = 1;
 
         } else if (obs.themeType === 'nature') {
-          // Rural Trees/Vines
-          ctx.fillStyle = '#14532d'; // dark green
-          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-          
-          // Leaves/Thorns
-          ctx.fillStyle = obs.color; // yellow-ish accents
-          for (let i = 10; i < obs.height; i += 30) {
+          const g = ctx.createLinearGradient(dx, obs.y, dx + obs.width, obs.y);
+          g.addColorStop(0, '#166534');
+          g.addColorStop(1, '#14532d');
+          ctx.fillStyle = g;
+          ctx.fillRect(dx, obs.y, obs.width, obs.height);
+
+          ctx.fillStyle = '#052e16';
+          ctx.fillRect(dx + obs.width * 0.35, obs.y, obs.width * 0.3, obs.height);
+
+          for (let i = 12; i < obs.height; i += 26) {
+            const side = (i + animT) % 52 < 26 ? 0 : obs.width;
+            const leafG = ctx.createRadialGradient(dx + side, obs.y + i, 2, dx + side, obs.y + i, 16);
+            leafG.addColorStop(0, obs.color);
+            leafG.addColorStop(1, 'rgba(20,83,45,0.2)');
+            ctx.fillStyle = leafG;
             ctx.beginPath();
-            ctx.arc(obs.x + (i % 60 === 10 ? 0 : obs.width), obs.y + i, 10, 0, Math.PI * 2);
+            ctx.arc(dx + side, obs.y + i, 12 + (i % 7) * 0.3, 0, Math.PI * 2);
             ctx.fill();
           }
+
+        } else if (obs.themeType === 'ice') {
+          const g = ctx.createLinearGradient(dx, obs.y, dx + obs.width, obs.y + obs.height);
+          g.addColorStop(0, '#e0f2fe');
+          g.addColorStop(0.4, '#7dd3fc');
+          g.addColorStop(1, '#0369a1');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(dx, obs.y + obs.height);
+          for (let s = 0; s <= 8; s++) {
+            const px = dx + (s / 8) * obs.width;
+            const spike = Math.sin(s * 1.7 + obs.wobblePhase) * 6;
+            ctx.lineTo(px, obs.y + 10 + spike);
+          }
+          ctx.lineTo(dx + obs.width, obs.y + obs.height);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          for (let k = 0; k < 4; k++) {
+            const fx = dx + ((k * 37 + animT) % obs.width);
+            const fy = obs.y + ((k * 61 + animT * 2) % obs.height);
+            ctx.fillRect(fx, fy, 2, 2);
+          }
+
+        } else if (obs.themeType === 'mesa') {
+          const layers = 4;
+          for (let L = 0; L < layers; L++) {
+            const t = L / layers;
+            const inset = t * obs.width * 0.12;
+            const y1 = obs.y + t * obs.height * 0.85;
+            const y2 = obs.y + ((t + 0.22) * obs.height * 0.92);
+            const g2 = ctx.createLinearGradient(dx + inset, y1, dx + obs.width - inset, y2);
+            const warm = L % 2 === 0 ? '#9a3412' : '#c2410c';
+            g2.addColorStop(0, warm);
+            g2.addColorStop(1, '#431407');
+            ctx.fillStyle = g2;
+            ctx.fillRect(dx + inset, y1, obs.width - inset * 2, Math.max(8, y2 - y1));
+          }
+          ctx.strokeStyle = obs.color;
+          ctx.globalAlpha = 0.5;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(dx, obs.y + obs.height);
+          ctx.lineTo(dx + obs.width * 0.15, obs.y + obs.height * 0.35);
+          ctx.lineTo(dx + obs.width * 0.5, obs.y);
+          ctx.lineTo(dx + obs.width * 0.85, obs.y + obs.height * 0.38);
+          ctx.lineTo(dx + obs.width, obs.y + obs.height);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+
+        } else if (obs.themeType === 'container') {
+          const g = ctx.createLinearGradient(dx, obs.y, dx + obs.width, obs.y);
+          g.addColorStop(0, '#334155');
+          g.addColorStop(0.5, '#1e293b');
+          g.addColorStop(1, '#0f172a');
+          ctx.fillStyle = g;
+          ctx.fillRect(dx, obs.y, obs.width, obs.height);
+
+          ctx.strokeStyle = 'rgba(148,163,184,0.5)';
+          ctx.lineWidth = 1;
+          for (let vx = 6; vx < obs.width; vx += 11) {
+            ctx.beginPath();
+            ctx.moveTo(dx + vx, obs.y);
+            ctx.lineTo(dx + vx, obs.y + obs.height);
+            ctx.stroke();
+          }
+
+          ctx.save();
+          ctx.strokeStyle = obs.color;
+          ctx.lineWidth = 5;
+          ctx.globalAlpha = 0.85;
+          const stripeOff = (animT * 2) % 28;
+          ctx.setLineDash([14, 14]);
+          ctx.lineDashOffset = stripeOff;
+          ctx.beginPath();
+          ctx.moveTo(dx - 20, obs.y + obs.height + 20);
+          ctx.lineTo(dx + obs.width + 20, obs.y - 20);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+
+          ctx.fillStyle = obs.color;
+          ctx.globalAlpha = 0.9;
+          ctx.fillRect(dx + 4, obs.y + 6, obs.width * 0.35, 5);
+          ctx.globalAlpha = 1;
         }
       });
 

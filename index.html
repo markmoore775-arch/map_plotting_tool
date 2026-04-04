@@ -26,6 +26,17 @@
 
     <!-- App CSS -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- Hide intro overlay before first paint when opening planner from other tools (?autostart=1) -->
+    <script>
+        (function () {
+            try {
+                if (new URLSearchParams(window.location.search).get('autostart') !== '1') return;
+            } catch (e) {
+                return;
+            }
+            document.documentElement.classList.add('airplot-autostart-boot');
+        })();
+    </script>
 </head>
 <body class="sidebar-collapsed">
 
@@ -60,35 +71,35 @@
                 <img src="assets/airplot-logo.png" alt="AirPlot" class="intro-logo">
             </div>
             <p class="intro-tagline">Mapping, weather, flight documentation, and checklists in one place.</p>
-            <p class="intro-description">
-                AirPlot combines an interactive map for areas and points, location-based weather with METAR/TAF, live airspace traffic with hazard-themed red tracks (optional glider-class OGN overlay), always-on altitude labels, and session trails, structured flight reports you can share or export, and checklists with progress and exports. Choose a tool below to get started.
-            </p>
-            <div class="intro-cta-stack">
-                <button type="button" class="intro-cta intro-cta-secondary" id="introProceedBtn">
-                    Planning
+            <nav class="intro-launchpad" aria-label="Main tools">
+                <button type="button" class="intro-cta intro-cta--hero" id="introProceedBtn">
+                    <span class="intro-cta-icon" aria-hidden="true">🗺</span>
+                    Plan &amp; Map
                 </button>
-                <a href="weather.html" class="intro-cta intro-cta-secondary" id="introWeatherBtn">
-                    Weather
+                <a href="weather.html" class="intro-cta intro-cta-secondary intro-cta--op" id="introWeatherBtn">
+                    <span class="intro-cta-icon" aria-hidden="true">🌤</span>
+                    Check Weather
                 </a>
-                <button type="button" class="intro-cta intro-cta-secondary" id="introAirspaceBtn">
-                    Airspace
+                <button type="button" class="intro-cta intro-cta-secondary intro-cta--op" id="introAirspaceBtn">
+                    <span class="intro-cta-icon" aria-hidden="true">✈</span>
+                    View Airspace
                 </button>
-                <a href="checklist.html" class="intro-cta intro-cta-secondary" id="introChecklistBtn">
-                    Checklist
+                <a href="checklist.html" class="intro-cta intro-cta-secondary intro-cta--doc" id="introChecklistBtn">
+                    <span class="intro-cta-icon" aria-hidden="true">📋</span>
+                    Pre-flight Checklist
                 </a>
-                <a href="flight-notes.html" class="intro-cta intro-cta-secondary" id="introFlightReportBtn">
-                    Flight Report
+                <a href="flight-notes.html" class="intro-cta intro-cta-secondary intro-cta--doc" id="introFlightReportBtn">
+                    <span class="intro-cta-icon" aria-hidden="true">📄</span>
+                    Log a Flight
                 </a>
-                <a href="training.html" class="intro-cta intro-cta-secondary" id="introTrainingBtn">
-                    Training
-                </a>
-                <a href="knowledge.html" class="intro-cta intro-cta-secondary" id="introKnowledgeBtn">
-                    Knowledge
-                </a>
-                <button type="button" class="intro-cta intro-cta-secondary" id="introHelpBtn">
-                    View Instructions
-                </button>
-            </div>
+            </nav>
+            <nav class="intro-ref-links" aria-label="Reference and help">
+                <a href="training.html" id="introTrainingBtn">Training Resources</a>
+                <span class="intro-ref-sep" aria-hidden="true">·</span>
+                <a href="knowledge.html" id="introKnowledgeBtn">Knowledge Base</a>
+                <span class="intro-ref-sep" aria-hidden="true">·</span>
+                <button type="button" class="intro-ref-link-btn" id="introHelpBtn">How to Use AirPlot</button>
+            </nav>
             <!-- DJI Mission Planner: remove class intro-dji-welcome-hidden to show on welcome again -->
             <div class="intro-dji-section intro-dji-welcome-hidden">
                 <p class="intro-dji-description">
@@ -99,184 +110,268 @@
                 </a>
             </div>
             <div class="intro-disclaimer">
-                <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in Help.
+                <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in How to Use AirPlot.
             </div>
             <p class="intro-support">Questions, feedback, or bugs: <a href="mailto:support@airplot.app">support@airplot.app</a></p>
             <p class="intro-privacy"><a href="privacy.html">Privacy Policy</a></p>
-            <p class="intro-version">v3.0</p>
-            <p class="intro-copyright">&copy; M Moore</p>
+            <p class="intro-copyright">v4.0 · &copy; M Moore</p>
         </div>
     </div>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar">
+    <aside id="sidebar" class="sidebar" aria-label="Planning tools">
+        <div id="sidebarSheetHandle" class="sidebar-sheet-handle" role="presentation" aria-hidden="true"></div>
         <div class="sidebar-header">
             <img src="assets/airplot-icon.svg" alt="" class="sidebar-logo" aria-hidden="true">
             <h1 class="sidebar-title">AirPlot</h1>
             <button id="sidebarToggle" class="sidebar-toggle" title="Collapse sidebar">&laquo;</button>
         </div>
 
+        <div class="sidebar-tabs" role="tablist" aria-label="Sidebar sections">
+            <button type="button" class="sidebar-tab active" role="tab" id="sidebarTabPlan" data-tab="plan" aria-selected="true" aria-controls="sidebarPanelPlan" title="Plan">Plan</button>
+            <button type="button" class="sidebar-tab" role="tab" id="sidebarTabDraw" data-tab="draw" aria-selected="false" aria-controls="sidebarPanelDraw" title="Draw">Draw</button>
+            <button type="button" class="sidebar-tab" role="tab" id="sidebarTabProject" data-tab="project" aria-selected="false" aria-controls="sidebarPanelProject" title="Project">Project</button>
+            <button type="button" class="sidebar-tab" role="tab" id="sidebarTabSettings" data-tab="settings" aria-selected="false" aria-controls="sidebarPanelSettings" title="Settings">Settings</button>
+        </div>
+
         <div class="sidebar-content">
-        <!-- Add Point Section -->
-        <section class="sidebar-section">
-            <h2 class="section-title">Add Point</h2>
-            <form id="addPointForm" class="add-point-form">
-                <div class="form-group">
-                    <label for="pointInput">Location</label>
-                    <input type="text" id="pointInput" placeholder="Postcode, lat/long, OS Grid, DMS..." autocomplete="off">
-                    <span id="formatHint" class="format-hint"></span>
-                </div>
-                <div class="form-group">
-                    <label for="pointName">Name / Label</label>
-                    <input type="text" id="pointName" placeholder="e.g. Site Alpha">
-                </div>
-                <div class="form-group">
-                    <label for="pointIconType">Icon</label>
-                    <select id="pointIconType">
-                        <option value="address">Address / Reference</option>
-                        <option value="primary_tola">Primary TOLA</option>
-                        <option value="secondary_tola">Secondary TOLA</option>
-                        <option value="custom_tola">Custom TOLA</option>
-                        <option value="emergency_lz">Emergency Landing Zone</option>
-                        <option value="no_fly">No-Fly Marker</option>
-                        <option value="hazard">Hazard</option>
-                        <option value="waypoint">Waypoint</option>
-                        <option value="custom_point">Custom Point</option>
-                        <option value="house">House</option>
-                        <option value="tola_house">TOLA</option>
-                    </select>
-                </div>
-                <div class="form-group" id="pointIconColorGroup">
-                    <label for="pointIconColor">Icon Colour</label>
-                    <input type="color" id="pointIconColor" value="#dc2626">
-                </div>
-                <div class="form-group hidden" id="pointIconColorPaletteGroup">
-                    <label>Icon Colour</label>
-                    <div id="pointIconColorPalette" class="icon-color-palette"></div>
-                </div>
-                <div class="form-group hidden" id="pointCustomSymbolGroup">
-                    <label for="pointCustomSymbol">Custom Symbol (1-2 chars)</label>
-                    <input type="text" id="pointCustomSymbol" maxlength="2" placeholder="e.g. D">
-                </div>
-                <div class="form-hint" style="margin-top:-4px; margin-bottom:8px;">
-                    Add points with this form, or click the <strong>pin button</strong> on the map to drop points directly.
-                </div>
-
-                <div class="form-group">
-                    <label for="pointNotes">Notes</label>
-                    <textarea id="pointNotes" rows="2" placeholder="Optional notes..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="pointAlwaysDisplayElevation">
-                        Always display elevation on map
-                    </label>
-                </div>
-
-                <button type="submit" class="btn btn-primary" id="addPointBtn">Add Point</button>
-            </form>
-        </section>
-
-        <!-- Actions -->
-        <section class="sidebar-section">
-            <h2 class="section-title">Actions</h2>
-            <div class="action-buttons">
-
-                <button class="btn btn-secondary" id="undoBtn" title="Undo last action (Ctrl+Z or Cmd+Z)" disabled>Undo</button>
-                <button class="btn btn-secondary" id="redoBtn" title="Redo (Ctrl+Y, Ctrl+Shift+Z, or Cmd+Shift+Z)" disabled>Redo</button>
-                <button class="btn btn-secondary" id="bulkImportBtn">Bulk Import</button>
-                <button class="btn btn-secondary" id="exportBtn">Export</button>
-                <button class="btn btn-secondary" id="saveProjectBtn">Save Project</button>
-                <button class="btn btn-secondary" id="loadProjectBtn">Load Project</button>
-                <button class="btn btn-secondary" id="settingsBtn">Settings</button>
-            </div>
-        </section>
-
-        <!-- Drawing style (default + selected shape); merged from floating panel -->
-        <section class="sidebar-section sidebar-section-draw-style">
-            <div id="drawStylePanel" class="draw-style-panel">
-                <div class="draw-style-header">
-                    <span>Drawing Style</span>
-                    <button type="button" id="drawStyleToggle" class="btn-icon" title="Expand or collapse">&plus;</button>
-                </div>
-                <div class="draw-style-body">
-                    <div class="draw-style-row">
-                        <label>Colour</label>
-                        <input type="color" id="drawColor" value="#e05555">
-                    </div>
-                    <div class="draw-style-row">
-                        <label>Fill Opacity</label>
-                        <div class="slider-row">
-                            <input type="range" id="drawFillOpacity" min="0" max="0.8" step="0.05" value="0.15">
-                            <span id="drawFillOpacityVal">0.15</span>
+            <!-- Plan: add point + points list -->
+            <div class="sidebar-tab-panel active" id="sidebarPanelPlan" role="tabpanel" aria-labelledby="sidebarTabPlan" data-tab="plan">
+                <section class="sidebar-section sidebar-section-inset">
+                    <h2 class="section-title">Add Point</h2>
+                    <form id="addPointForm" class="add-point-form">
+                        <div class="form-group">
+                            <label for="pointInput">Location</label>
+                            <input type="text" id="pointInput" placeholder="Postcode, lat/long, OS Grid, DMS..." autocomplete="off">
+                            <span id="formatHint" class="format-hint"></span>
                         </div>
-                    </div>
-                    <div class="draw-style-row">
-                        <label>Stroke Width</label>
-                        <input type="number" id="drawWeight" min="1" max="8" value="2" style="width:60px;">
-                    </div>
-                    <div class="draw-style-row">
-                        <label>Stroke Style</label>
-                        <select id="drawDash">
-                            <option value="">Solid</option>
-                            <option value="10,6">Dashed</option>
-                            <option value="3,4">Dotted</option>
-                            <option value="15,6,3,6">Dash-Dot</option>
+                        <div class="form-group">
+                            <label for="pointName">Name / Label</label>
+                            <input type="text" id="pointName" placeholder="e.g. Site Alpha">
+                        </div>
+                        <div class="form-group form-row-icon-preview">
+                            <div class="add-point-icon-preview-wrap">
+                                <span class="form-label-muted">Preview</span>
+                                <div id="addPointIconPreview" class="add-point-icon-preview icon-badge" aria-hidden="true">A</div>
+                            </div>
+                            <div class="form-group-grow">
+                                <label for="pointIconType">Icon</label>
+                                <select id="pointIconType">
+                                    <option value="address">Address / Reference</option>
+                                    <option value="primary_tola">Primary TOLA</option>
+                                    <option value="secondary_tola">Secondary TOLA</option>
+                                    <option value="custom_tola">Custom TOLA</option>
+                                    <option value="emergency_lz">Emergency Landing Zone</option>
+                                    <option value="no_fly">No-Fly Marker</option>
+                                    <option value="hazard">Hazard</option>
+                                    <option value="waypoint">Waypoint</option>
+                                    <option value="custom_point">Custom Point</option>
+                                    <option value="house">House</option>
+                                    <option value="tola_house">TOLA</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="pointIconColorGroup">
+                            <label for="pointIconColor">Icon Colour</label>
+                            <div class="icon-color-row">
+                                <div id="pointIconColorQuick" class="icon-color-quick" aria-label="Common colours"></div>
+                                <input type="color" id="pointIconColor" class="icon-color-native" value="#dc2626" title="Custom colour">
+                            </div>
+                        </div>
+                        <div class="form-group hidden" id="pointIconColorPaletteGroup">
+                            <label>Icon Colour</label>
+                            <div id="pointIconColorPalette" class="icon-color-palette"></div>
+                        </div>
+                        <div class="form-group hidden" id="pointCustomSymbolGroup">
+                            <label for="pointCustomSymbol">Custom Symbol (1-2 chars)</label>
+                            <input type="text" id="pointCustomSymbol" maxlength="2" placeholder="e.g. D">
+                        </div>
+                        <div class="form-hint form-hint-tight">
+                            Add points with this form, or click the <strong>pin button</strong> on the map to drop points directly.
+                        </div>
+
+                        <details class="point-notes-details">
+                            <summary class="point-notes-summary">Notes <span class="text-muted">(optional)</span></summary>
+                            <div class="form-group">
+                                <label for="pointNotes" class="sr-only">Notes</label>
+                                <textarea id="pointNotes" rows="2" placeholder="Optional notes..."></textarea>
+                            </div>
+                        </details>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="pointAlwaysDisplayElevation">
+                                Always display elevation on map
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="addPointBtn">Add Point</button>
+                    </form>
+                </section>
+
+                <section class="sidebar-section points-section">
+                    <h2 class="section-title">
+                        Points <span id="pointCount" class="point-count">(0)</span>
+                    </h2>
+                    <div class="points-toolbar-row">
+                        <input type="text" id="pointSearch" class="point-search" placeholder="Search points...">
+                        <label class="points-sort-label" for="pointSortSelect">Sort</label>
+                        <select id="pointSortSelect" class="point-sort-select" title="Sort points list">
+                            <option value="default">Order added</option>
+                            <option value="name">Name</option>
+                            <option value="type">Icon type</option>
                         </select>
                     </div>
-                    <div class="draw-style-row hidden" id="drawFlightPathArrowSizeRow">
-                        <label for="drawFlightPathArrowSize">Arrow head size (m)</label>
-                        <input type="number" id="drawFlightPathArrowSize" min="1" max="100" value="30" style="width:60px;">
+                    <div class="points-actions-row">
+                        <button type="button" class="btn btn-small btn-danger" id="clearAllBtn">Clear All</button>
+                        <button type="button" class="btn btn-small btn-secondary" id="fitAllBtn">Fit All</button>
                     </div>
-                </div>
+                    <div id="pointsListHost" class="points-list-host">
+                        <div id="pointsList" class="points-list-root"></div>
+                    </div>
+                </section>
             </div>
-        </section>
 
-        <!-- Points & Shapes combined scrollable area -->
-        <section class="sidebar-section points-section">
-            <!-- Points -->
-            <h2 class="section-title">
-                Points <span id="pointCount" class="point-count">(0)</span>
-            </h2>
-            <input type="text" id="pointSearch" class="point-search" placeholder="Search points...">
-            <div class="points-actions-row">
-                <button class="btn btn-small btn-danger" id="clearAllBtn">Clear All</button>
-                <button class="btn btn-small btn-secondary" id="fitAllBtn">Fit All</button>
+            <!-- Draw: style + shapes -->
+            <div class="sidebar-tab-panel" id="sidebarPanelDraw" role="tabpanel" aria-labelledby="sidebarTabDraw" data-tab="draw" hidden>
+                <section class="sidebar-section">
+                    <p id="drawIdleHint" class="draw-idle-hint">Pick a draw tool on the map toolbar, or select a shape in the list below to edit its style.</p>
+                </section>
+                <section class="sidebar-section sidebar-section-draw-style hidden" id="drawStyleSection" aria-live="polite">
+                    <div id="drawStylePanel" class="draw-style-panel">
+                        <div class="draw-style-header">
+                            <span>Drawing Style</span>
+                            <button type="button" id="drawStyleToggle" class="btn-icon" title="Expand or collapse">&plus;</button>
+                        </div>
+                        <div class="draw-style-body">
+                            <div class="draw-style-row">
+                                <label>Colour</label>
+                                <input type="color" id="drawColor" value="#e05555">
+                            </div>
+                            <div class="draw-style-row">
+                                <label>Fill Opacity</label>
+                                <div class="slider-row">
+                                    <input type="range" id="drawFillOpacity" min="0" max="0.8" step="0.05" value="0.15">
+                                    <span id="drawFillOpacityVal">0.15</span>
+                                </div>
+                            </div>
+                            <div class="draw-style-row">
+                                <label>Stroke Width</label>
+                                <input type="number" id="drawWeight" min="1" max="8" value="2" style="width:60px;">
+                            </div>
+                            <div class="draw-style-row">
+                                <label>Stroke Style</label>
+                                <select id="drawDash">
+                                    <option value="">Solid</option>
+                                    <option value="10,6">Dashed</option>
+                                    <option value="3,4">Dotted</option>
+                                    <option value="15,6,3,6">Dash-Dot</option>
+                                </select>
+                            </div>
+                            <div class="draw-style-row hidden" id="drawFlightPathArrowSizeRow">
+                                <label for="drawFlightPathArrowSize">Arrow head size (m)</label>
+                                <input type="number" id="drawFlightPathArrowSize" min="1" max="100" value="30" style="width:60px;">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="sidebar-section points-section">
+                    <h2 class="section-title">
+                        Shapes <span id="shapeCount" class="point-count">(0)</span>
+                    </h2>
+                    <div class="points-actions-row">
+                        <button type="button" class="btn btn-small btn-danger" id="clearShapesBtn">Clear Shapes</button>
+                    </div>
+                    <ul id="shapesList" class="points-list"></ul>
+                </section>
             </div>
-            <ul id="pointsList" class="points-list"></ul>
 
-            <!-- Shapes -->
-            <h2 class="section-title" style="margin-top:14px;">
-                Shapes <span id="shapeCount" class="point-count">(0)</span>
-            </h2>
-            <div class="points-actions-row">
-                <button class="btn btn-small btn-danger" id="clearShapesBtn">Clear Shapes</button>
+            <!-- Project: I/O + shortcuts -->
+            <div class="sidebar-tab-panel" id="sidebarPanelProject" role="tabpanel" aria-labelledby="sidebarTabProject" data-tab="project" hidden>
+                <section class="sidebar-section sidebar-section-inset">
+                    <h2 class="section-title">Project</h2>
+                    <div class="action-buttons">
+                        <button type="button" class="btn btn-secondary" id="bulkImportBtn">Bulk Import</button>
+                        <button type="button" class="btn btn-secondary" id="exportBtn">Export</button>
+                        <button type="button" class="btn btn-secondary" id="saveProjectBtn">Save Project</button>
+                        <button type="button" class="btn btn-secondary" id="loadProjectBtn">Load Project</button>
+                    </div>
+                    <p class="project-shortcuts-hint"><strong>Undo / Redo</strong> are on the map toolbar (left). Shortcuts: <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> (Windows) or <kbd>Cmd+Z</kbd> / <kbd>Cmd+Shift+Z</kbd> (Mac).</p>
+                </section>
             </div>
-            <div class="shapes-hint">
-                Right-click anywhere for options &middot; Edit from sidebar (pencil = properties, vertices btn for paths) &middot; Ctrl+C / Ctrl+V &middot; Double-click for properties &middot; Esc to deselect
-                <br>
-                Tip: Click a shape to select &amp; drag it. For flight paths and lines, use the sidebar buttons to edit without clicking the narrow path.
+
+            <!-- Settings (single source; no modal) -->
+            <div class="sidebar-tab-panel" id="sidebarPanelSettings" role="tabpanel" aria-labelledby="sidebarTabSettings" data-tab="settings" hidden>
+                <section class="sidebar-section sidebar-section-inset">
+                    <h2 class="section-title">Settings</h2>
+                    <div id="settingsFormBody" class="settings-inline-form">
+                        <div class="form-group">
+                            <label for="w3wApiKey">What3Words API Key (optional)</label>
+                            <input type="text" id="w3wApiKey" placeholder="Enter your W3W API key..." autocomplete="off">
+                            <span class="form-hint">Required for What3Words lookups. Get a free key at <a href="https://what3words.com/developer" target="_blank" rel="noopener">what3words.com/developer</a></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="osMapsApiKey">OS Maps API Key (optional)</label>
+                            <input type="text" id="osMapsApiKey" placeholder="Enter your OS Maps API key..." autocomplete="off">
+                            <span class="form-hint">Required for Ordnance Survey Maps in the map layer menu. Get a key at <a href="https://osdatahub.os.uk/" target="_blank" rel="noopener">OS Data Hub</a></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="bgaAirspaceUsername">BGA Airspace Service Username (optional)</label>
+                            <input type="text" id="bgaAirspaceUsername" placeholder="Username for RA(T) data..." autocomplete="off">
+                            <span class="form-hint">Required for RA(T) layer. Register at <a href="https://airspace.bgaladder.net/" target="_blank" rel="noopener">airspace.bgaladder.net</a></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="bgaAirspacePassword">BGA Airspace Service Password</label>
+                            <input type="password" id="bgaAirspacePassword" placeholder="Password (stored locally)" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showLabels" checked>
+                                Show point labels on map
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showMeasurements" checked>
+                                Show shape measurements on map
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showShapeLabels" checked>
+                                Show shape labels on map
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showFlightPathDistance">
+                                Show flight path distance on map
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+                    </div>
+                </section>
             </div>
-            <ul id="shapesList" class="points-list"></ul>
-        </section>
         </div>
     </aside>
 
     <!-- Map -->
     <div id="map"></div>
 
-    <!-- Top row: open sidebar + Welcome + Help (same height, one row) -->
+    <!-- Top row: open sidebar + AirPlot home + tool strip + Help (same height, one row) -->
     <div class="map-top-chrome" id="mapTopChrome">
         <button type="button" id="sidebarOpen" class="sidebar-open" title="Open sidebar">&raquo;</button>
         <nav class="fp-welcome-bar" aria-label="AirPlot home">
-            <a href="index.html" class="fp-welcome-home-link" id="mainWelcomeLink" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
-                <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+            <a href="index.html" class="fp-welcome-home-link" id="mainWelcomeLink" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
+                <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
                 <span class="fp-welcome-title">AirPlot</span>
-                <span class="fp-welcome-cta">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-                    Welcome
-                </span>
             </a>
+        </nav>
+        <nav class="ap-tool-nav" aria-label="AirPlot tools">
+            <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Planner, current page"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></span>
+            <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></a>
+            <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
+            <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></a>
+            <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
         </nav>
         <div class="map-top-actions">
             <div id="helpPanel" class="help-panel">
@@ -293,6 +388,8 @@
         <img src="assets/airplot-icon.svg" alt="AirPlot">
     </div>
 
+    <div id="mapContextHint" class="map-context-hint" role="status" aria-live="polite"></div>
+
     <!-- Footer -->
     <footer class="app-footer">
         <img src="assets/airplot-icon.svg" alt="" class="app-footer-logo" aria-hidden="true">
@@ -305,9 +402,12 @@
         <button type="button" class="app-footer-disclaimer-link" id="footerDisclaimerBtn" title="View disclaimer">Disclaimer</button>
     </footer>
 
-    <!-- Mobile: Help FAB (Drawing Style is in sidebar; chrome row has Welcome + open sidebar) -->
+    <!-- Mobile: quick actions (sidebar has Plan / Draw / Project / Settings) -->
     <div id="mobileMapActions" class="mobile-map-actions">
-        <button id="mobileHelpBtn" class="mobile-map-action-btn" title="Help" aria-label="Help">?</button>
+        <button type="button" id="mobileAddPointBtn" class="mobile-map-action-btn" title="Add point" aria-label="Add point">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+        </button>
+        <button type="button" id="mobileHelpBtn" class="mobile-map-action-btn" title="Help" aria-label="Help">?</button>
     </div>
 
     <!-- Shape Edit Modal -->
@@ -561,66 +661,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal hidden">
-        <div class="modal-backdrop"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Settings</h2>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="w3wApiKey">What3Words API Key (optional)</label>
-                    <input type="text" id="w3wApiKey" placeholder="Enter your W3W API key...">
-                    <span class="form-hint">Required for What3Words lookups. Get a free key at <a href="https://what3words.com/developer" target="_blank">what3words.com/developer</a></span>
-                </div>
-                <div class="form-group">
-                    <label for="osMapsApiKey">OS Maps API Key (optional)</label>
-                    <input type="text" id="osMapsApiKey" placeholder="Enter your OS Maps API key...">
-                    <span class="form-hint">Required for Ordnance Survey Maps in the map layer menu. Get a key at <a href="https://osdatahub.os.uk/" target="_blank">OS Data Hub</a></span>
-                </div>
-                <div class="form-group">
-                    <label for="bgaAirspaceUsername">BGA Airspace Service Username (optional)</label>
-                    <input type="text" id="bgaAirspaceUsername" placeholder="Username for RA(T) data...">
-                    <span class="form-hint">Required for RA(T) layer. Register at <a href="https://airspace.bgaladder.net/" target="_blank">airspace.bgaladder.net</a></span>
-                </div>
-                <div class="form-group">
-                    <label for="bgaAirspacePassword">BGA Airspace Service Password</label>
-                    <input type="password" id="bgaAirspacePassword" placeholder="Password (stored locally)">
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="showLabels" checked>
-                        Show point labels on map
-                    </label>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="showMeasurements" checked>
-                        Show shape measurements on map
-                    </label>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="showShapeLabels" checked>
-                        Show shape labels on map
-                    </label>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="showFlightPathDistance">
-                        Show flight path distance on map
-                    </label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary modal-cancel">Cancel</button>
-                <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Search Modal -->
     <div id="searchModal" class="modal hidden">
         <div class="modal-backdrop"></div>
@@ -692,7 +732,7 @@
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p class="help-overview-lead"><strong>AirPlot</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail; other tools open from the welcome screen. Use <strong>Welcome</strong> (top-left) from any mode to return home. <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
+                    <p class="help-overview-lead"><strong>AirPlot</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail. The <strong>tool strip</strong> at the top (Planner, Weather, Airspace, Checklist, Flight Report) switches between those pages in one tap; tap <strong>AirPlot</strong> (logo and name, top-left) when you want the full home screen (training, knowledge, DJI planner, airspace chooser, etc.). <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
                     <p class="help-overview-support">Questions, feedback, or bug reports: <a href="mailto:support@airplot.app">support@airplot.app</a></p>
                     <p class="help-overview-legal"><a href="privacy.html">Privacy Policy</a> · <a href="robots.txt">robots.txt</a> · <a href="sitemap.xml">Sitemap</a></p>
                     <div class="help-tool-grid">
@@ -764,8 +804,8 @@
                             <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo and redo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
                             <p><strong>Weather:</strong> Tap the map to select a location, pick a forecast model (for example ECMWF IFS, GFS, UK Met Office, GEM Canada), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with small maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM and airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
                             <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> can open a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
-                            <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear report</strong> (top), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Use the <strong>Checklist</strong> link in the header to open the M4T / TD checklist without returning to the welcome screen.</p>
-                            <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. Use <strong>Flight Report</strong> in the header to open it without going home.</p>
+                            <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear Report</strong> (at the start of the Flight Report, above the title), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Use the header <strong>tool strip</strong> to open Weather, Airspace, Checklist, or Planner without returning to the welcome screen.</p>
+                            <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. The header <strong>tool strip</strong> switches to Flight Report, Planner, Weather, or Airspace without going home.</p>
                             <p><strong>Save files:</strong> Planning <strong>Save Project</strong> / <strong>Load Project</strong> JSON uses the same format as v2; older project files still load.</p>
                         </div>
                     </details>
@@ -849,7 +889,7 @@
                             </section>
                             <section class="help-section" id="help-shapes-style">
                                 <h3>Drawing Style</h3>
-                                <p>The <strong>Drawing Style</strong> section in the sidebar sets colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. Values apply to new shapes; when a shape is selected, they apply to that shape.</p>
+                                <p>Open the <strong>Draw</strong> tab in the sidebar. <strong>Drawing Style</strong> appears when a draw tool is active or a shape is selected; it sets colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. Values apply to new shapes; when a shape is selected, they apply to that shape. <strong>Undo</strong> and <strong>Redo</strong> are on the map toolbar (left).</p>
                             </section>
                         </div>
                     </details>
@@ -941,7 +981,7 @@
                             </section>
                             <section class="help-section" id="help-map-mobile">
                                 <h3>Small screens</h3>
-                                <p>On narrow viewports the left toolbar may collapse behind a <strong>Tools</strong> (☰) button; tap to expand. The <strong>Welcome</strong> control (top-left, same pattern as on the Weather, Airspace, Flight Report, and Checklist pages) returns to the welcome screen. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
+                                <p>On narrow viewports the left toolbar may collapse behind a <strong>Tools</strong> (☰) button; tap to expand. <strong>AirPlot</strong> (logo and name, top-left—same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>tool strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
                             </section>
                         </div>
                     </details>
@@ -962,20 +1002,20 @@
                 <div class="tab-panel" id="help-tab-report-checklist">
                     <section class="help-section" id="help-rc-report">
                         <h3>Flight Report</h3>
-                        <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use current GPS</strong> on HTTPS), mission fields (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch weather report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send by email</strong>.</p>
-                        <p><strong>Local draft:</strong> What you type is saved in this browser until you use <strong>Clear report</strong> (top of the page), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Nothing is sent to AirPlot servers.</p>
-                        <p><strong>Switch to Checklist:</strong> On Flight Report, the <strong>Checklist</strong> link in the top bar (next to <strong>Welcome</strong>) opens the M4T / TD checklist in the same tab so you can move between the report and the checklist without returning to the welcome screen.</p>
+                        <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use current GPS</strong> on HTTPS), mission fields (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send by email</strong>.</p>
+                        <p><strong>Local draft:</strong> What you type is saved in this browser until you use <strong>Clear Report</strong> (at the start of the Flight Report, above the title), <strong>Clear form</strong> (bottom, both with confirmation), or clear site data. Nothing is sent to AirPlot servers.</p>
+                        <p><strong>Switch tools:</strong> On Flight Report, the header <strong>tool strip</strong> opens Planner, Weather, Airspace, Checklist, or stays on Flight Report in the same tab without returning to the welcome screen.</p>
                     </section>
                     <section class="help-section" id="help-rc-checklist">
                         <h3>Checklist (M4T / TD)</h3>
                         <p>Open <strong>Checklist</strong> from the welcome screen or via <a href="checklist.html">checklist.html</a>. The page lists pre-flight, take-off, landing, and post-flight sections with checkboxes, overall and per-section progress, <strong>Mark all complete</strong> per section, and optional short notes beside selected items (e.g. max altitude and max flight distance). Use <strong>Reset All</strong> to clear everything; confirmation uses the same modal style as elsewhere in AirPlot.</p>
                         <p><strong>Exports:</strong> <strong>Send by email</strong> builds a plain-text summary (mailto opens your mail app; long text may copy to the clipboard first). <strong>Export to PDF</strong> uses the browser print dialog (save as PDF). Both include an <strong>exported</strong> date and time. A duplicate progress and action bar appears at the bottom of the page so you do not need to scroll back to the top to reset or export.</p>
                         <p><strong>Local state:</strong> Checklist progress and notes are stored in this browser (not on our servers) until you reset or clear site data.</p>
-                        <p><strong>Switch to Flight Report:</strong> On the checklist page, the <strong>Flight Report</strong> link in the top bar opens that page without going home.</p>
+                        <p><strong>Switch tools:</strong> On the checklist page, the header <strong>tool strip</strong> opens Flight Report, Planner, Weather, or Airspace without going home.</p>
                     </section>
                     <section class="help-section" id="help-rc-welcome">
-                        <h3>Welcome</h3>
-                        <p>From any tool, <strong>Welcome</strong> (top-left) returns to the AirPlot welcome screen to choose another mode.</p>
+                        <h3>Welcome screen</h3>
+                        <p>From any tool, <strong>AirPlot</strong> (logo and name, top-left) returns to the AirPlot welcome screen for the full launcher (including training, knowledge, DJI planner, and the airspace chooser). Use the <strong>tool strip</strong> when you only need to hop between the five main tools.</p>
                     </section>
                 </div>
                 <div class="tab-panel" id="help-tab-references">

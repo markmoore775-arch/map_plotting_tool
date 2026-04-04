@@ -206,6 +206,77 @@ body.knowledge-page.fn-light-theme .knowledge-audience-intro {
     color: rgba(0, 0, 0, 0.55);
 }
 
+/* Legal pages (privacy, knowledge): wider .legal-main on desktop; mobile/tablet unchanged */
+@media (min-width: 768px) {
+    body.legal-page .legal-main {
+        max-width: 48rem;
+        padding-left: max(24px, env(safe-area-inset-left));
+        padding-right: max(24px, env(safe-area-inset-right));
+    }
+}
+
+@media (min-width: 1024px) {
+    body.legal-page .legal-main {
+        max-width: min(92vw, 62rem);
+        padding-left: max(32px, env(safe-area-inset-left));
+        padding-right: max(32px, env(safe-area-inset-right));
+    }
+
+    body.legal-page .legal-main h1 {
+        font-size: clamp(1.5rem, 2.2vw, 1.85rem);
+    }
+
+    body.legal-page .legal-main p,
+    body.legal-page .legal-main li {
+        font-size: 0.9375rem;
+    }
+
+    body.legal-page .legal-main h2 {
+        font-size: 1.05rem;
+    }
+
+    body.legal-page .legal-main h3 {
+        font-size: 1rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    body.legal-page .legal-main {
+        max-width: min(90vw, 72rem);
+        padding-left: max(40px, env(safe-area-inset-left));
+        padding-right: max(40px, env(safe-area-inset-right));
+    }
+
+    body.knowledge-page .knowledge-toc {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px 36px;
+        align-items: start;
+        padding: 20px 24px;
+    }
+
+    body.knowledge-page .knowledge-toc > h2,
+    body.knowledge-page .knowledge-toc .knowledge-audience-intro {
+        grid-column: 1 / -1;
+    }
+
+    body.knowledge-page .knowledge-toc .knowledge-audience-list {
+        grid-column: 1;
+        margin-bottom: 0;
+    }
+
+    body.knowledge-page .knowledge-toc .knowledge-toc-outline {
+        grid-column: 2;
+        margin-bottom: 0;
+    }
+}
+
+@media (min-width: 1536px) {
+    body.legal-page .legal-main {
+        max-width: min(88vw, 80rem);
+    }
+}
+
 /* ---- Knowledge page: scroll root + Flight Report–style theme toggle ---- */
 html.knowledge-root,
 html.knowledge-root body.knowledge-page {
@@ -350,11 +421,6 @@ body.knowledge-page.fn-light-theme .fp-welcome-home-link:hover {
     background: #f0f0f5;
     border-color: var(--primary);
     color: #0f172a;
-}
-
-body.knowledge-page.fn-light-theme .fp-welcome-cta {
-    border-left-color: #d0d0d0;
-    color: var(--primary);
 }
 
 body.knowledge-page.fn-light-theme .fn-export-theme-segment-opt + .fn-export-theme-segment-opt .fn-export-theme-segment-text {

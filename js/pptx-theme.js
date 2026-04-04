@@ -130,7 +130,7 @@ const PptxTheme = (() => {
             { rect: { x: 0, y: 0, w: '100%', h: 0.08, fill: { color: C.accent } } },
             { rect: { x: 0, y: 7.28, w: '100%', h: 0.04, fill: { color: C.accent } } },
             { rect: { x: 0, y: 7.32, w: '100%', h: 0.18, fill: { color: C.footerBg } } },
-            { text: { text: 'AirPlot v3', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
+            { text: { text: 'AirPlot v4', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
         ];
         if (logo) {
             titleObjects.push({ image: { x: 0.35, y: 0.2, w: 0.55, h: 0.55, data: logo } });
@@ -139,7 +139,7 @@ const PptxTheme = (() => {
         var contentObjects = [
             { rect: { x: 0, y: 0, w: '100%', h: 0.05, fill: { color: C.accent } } },
             { rect: { x: 0, y: 7.32, w: '100%', h: 0.18, fill: { color: C.footerBg } } },
-            { text: { text: 'AirPlot v3', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
+            { text: { text: 'AirPlot v4', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
         ];
         if (logo) {
             contentObjects.push({ image: { x: 12.35, y: 0.12, w: 0.4, h: 0.4, data: logo } });
@@ -148,7 +148,7 @@ const PptxTheme = (() => {
         var mapObjects = [
             { rect: { x: 0, y: 0, w: '100%', h: 0.05, fill: { color: C.accent } } },
             { rect: { x: 0, y: 7.32, w: '100%', h: 0.18, fill: { color: C.footerBg } } },
-            { text: { text: 'AirPlot v3', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
+            { text: { text: 'AirPlot v4', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
         ];
 
         pptx.defineSlideMaster({ title: 'TITLE_SLIDE', background: { color: C.darkBg }, objects: titleObjects });

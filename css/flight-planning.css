@@ -20,7 +20,7 @@ body.flight-planning-mode #map {
 
 /* Zoom + locate sit below welcome bar */
 body.flight-planning-mode .leaflet-top.leaflet-left {
-    top: calc(64px + env(safe-area-inset-top, 0px));
+    top: calc(52px + env(safe-area-inset-top, 0px));
 }
 
 /* Floating toolbar - bottom centre */

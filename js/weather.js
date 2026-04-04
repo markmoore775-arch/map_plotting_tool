@@ -8,7 +8,7 @@
 
     const WEATHER_STATUS_HTML_DEFAULT = [
         '<div class="weather-help-doc">',
-        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlot v3.0) shows forecast and aviation data for one point on the map. The map <strong>info (ⓘ)</strong> control opens or closes this panel.</p>',
+        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlot v4.0) shows forecast and aviation data for one point on the map. The map <strong>info (ⓘ)</strong> control opens or closes this panel.</p>',
         '<section class="weather-help-section" aria-labelledby="weather-help-steps-title">',
         '<h3 class="weather-help-section-title" id="weather-help-steps-title">Quick steps</h3>',
         '<ol class="weather-help-list">',
@@ -30,13 +30,13 @@
         '</details>',
         '<section class="weather-help-section" aria-labelledby="weather-help-related-title">',
         '<h3 class="weather-help-section-title" id="weather-help-related-title">Elsewhere in AirPlot</h3>',
-        '<p class="weather-help-section-text weather-help-section-text--muted">Attribution and data sources appear in the report. <strong>Welcome</strong> (top-left) returns to the home screen.</p>',
+        '<p class="weather-help-section-text weather-help-section-text--muted">Attribution and data sources appear in the report. <strong>AirPlot</strong> (logo and name, top-left) returns to the full home screen; the <strong>tool strip</strong> beside it switches to Planner, Weather, Airspace, Checklist, or Flight Report in one tap.</p>',
         '<div class="weather-help-links">',
         '<a href="index.html" class="weather-help-link-chip">Home</a>',
         '<a href="flight-notes.html" class="weather-help-link-chip">Flight Report</a>',
         '<a href="checklist.html" class="weather-help-link-chip">Checklist</a>',
         '</div>',
-        '<p class="weather-help-footnote">Flight Report and Checklist pages link to each other in the header so you can switch without going home.</p>',
+        '<p class="weather-help-footnote">The header tool strip matches other AirPlot pages so you can move between those tools without going home.</p>',
         '</section>',
         '</div>'
     ].join('');
@@ -62,6 +62,19 @@
         ukmo_seamless: 'UK Met Office',
         gem_global: 'GEM (Canada)'
     };
+
+    /** Tooltip copy for #weatherModel and #weatherModelInfoBtn (short hints per option). */
+    const WEATHER_MODEL_SELECT_TITLE = {
+        auto:
+            'Auto-selects the best available model for your location (Open-Meteo). Pick a named model to force ECMWF, GFS, etc.',
+        ecmwf_ifs:
+            'European global model (~9 km). Often strongest worldwide; compare with GFS for a second opinion.',
+        gfs_seamless: 'US NOAA global model. Primary reference for North America; good alternative to ECMWF elsewhere.',
+        ukmo_seamless: 'Met Office model — highest resolution in the UK (UKV). Especially useful when flying in Britain.',
+        gem_global: 'Canadian global model. Independent check against ECMWF and GFS.'
+    };
+
+    const PENDING_WEATHER_FOR_REPORT_KEY = 'airplotPendingWeatherForReport_v1';
 
     const MODEL_EXPLAINERS = {
         ecmwf_ifs: {
@@ -142,6 +155,10 @@
     /** True when NOTAM/airspace HTML exists but mini maps were not built (Airspace tab was hidden → 0×0 breaks Leaflet tiles). */
     let weatherAirspaceMapsNeedInit = false;
 
+    const WEATHER_DRAFT_STORAGE_KEY = 'airplotWeatherDraft_v1';
+    let weatherDraftSaveTimer = null;
+    let weatherDraftLoadInProgress = false;
+
     function clampAirspaceRadiusKm(n) {
         var v = typeof n === 'number' ? n : parseInt(String(n), 10);
         if (!isFinite(v)) return AIRSPACE_RADIUS_DEFAULT_KM;
@@ -176,10 +193,141 @@
         return 'weather-notam-' + String(cat || 'other').replace(/_/g, '-');
     }
 
+    function scheduleWeatherDraftSave() {
+        if (weatherDraftLoadInProgress || !map) return;
+        if (weatherDraftSaveTimer) clearTimeout(weatherDraftSaveTimer);
+        weatherDraftSaveTimer = setTimeout(function () {
+            weatherDraftSaveTimer = null;
+            saveWeatherDraftNow();
+        }, 400);
+    }
+
     function persistAirspaceRadiusKm() {
+        scheduleWeatherDraftSave();
+    }
+
+    function saveWeatherDraftNow() {
+        if (!map) return;
         try {
-            sessionStorage.setItem(AIRSPACE_RADIUS_STORAGE_KEY, String(airspaceSearchRadiusKm));
+            var c = map.getCenter();
+            var modelEl = document.getElementById('weatherModel');
+            var timeFuture = document.getElementById('weatherTimeFuture');
+            var dtEl = document.getElementById('weatherDateTime');
+            var exportTheme = document.querySelector('input[name="weatherExportTheme"]:checked');
+            var dOnly = document.getElementById('weatherNotamDroneOnly');
+            var hideAd = document.getElementById('weatherNotamHideAd');
+            var priUas = document.getElementById('weatherNotamPrioritise');
+            var payload = {
+                v: 1,
+                mapLat: c.lat,
+                mapLng: c.lng,
+                mapZoom: map.getZoom(),
+                selectedLat: selectedPoint ? selectedPoint.lat : null,
+                selectedLng: selectedPoint ? selectedPoint.lng : null,
+                model: modelEl ? modelEl.value : 'auto',
+                timeMode: timeFuture && timeFuture.checked ? 'future' : 'now',
+                dateTimeVal: dtEl ? dtEl.value || '' : '',
+                airspaceRadiusKm: airspaceSearchRadiusKm,
+                notamDroneOnly: !!(dOnly && dOnly.checked),
+                notamHideAd: !!(hideAd && hideAd.checked),
+                notamPrioritise: !!(priUas && priUas.checked),
+                exportTheme: exportTheme ? exportTheme.value : 'light'
+            };
+            localStorage.setItem(WEATHER_DRAFT_STORAGE_KEY, JSON.stringify(payload));
         } catch (e) { /* ignore */ }
+    }
+
+    function peekWeatherDraftMapView() {
+        try {
+            var raw = localStorage.getItem(WEATHER_DRAFT_STORAGE_KEY);
+            if (!raw) return null;
+            var d = JSON.parse(raw);
+            if (!d || d.v !== 1 || d.mapLat == null || d.mapLng == null) return null;
+            return { lat: d.mapLat, lng: d.mapLng, zoom: d.mapZoom != null ? d.mapZoom : 11 };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function restoreWeatherDraftFromStorage() {
+        var raw = null;
+        try {
+            raw = localStorage.getItem(WEATHER_DRAFT_STORAGE_KEY);
+        } catch (e) {
+            return;
+        }
+        var migRadius = null;
+        try {
+            var st = sessionStorage.getItem(AIRSPACE_RADIUS_STORAGE_KEY);
+            if (st) migRadius = clampAirspaceRadiusKm(parseInt(st, 10));
+        } catch (eM) { /* ignore */ }
+
+        if (!raw) {
+            if (migRadius != null) {
+                airspaceSearchRadiusKm = migRadius;
+                syncAirspaceRadiusInput();
+                try {
+                    sessionStorage.removeItem(AIRSPACE_RADIUS_STORAGE_KEY);
+                } catch (eR) { /* ignore */ }
+            }
+            return;
+        }
+        var d;
+        try {
+            d = JSON.parse(raw);
+        } catch (e2) {
+            return;
+        }
+        if (!d || d.v !== 1) return;
+
+        weatherDraftLoadInProgress = true;
+        try {
+            if (d.airspaceRadiusKm != null) {
+                airspaceSearchRadiusKm = clampAirspaceRadiusKm(d.airspaceRadiusKm);
+            } else if (migRadius != null) {
+                airspaceSearchRadiusKm = migRadius;
+            }
+            syncAirspaceRadiusInput();
+
+            var modelEl = document.getElementById('weatherModel');
+            if (modelEl && d.model) modelEl.value = d.model;
+
+            var tn = document.getElementById('weatherTimeNow');
+            var tf = document.getElementById('weatherTimeFuture');
+            if (d.timeMode === 'future' && tf && tn) {
+                tf.checked = true;
+                tn.checked = false;
+            } else if (tn && tf) {
+                tn.checked = true;
+                tf.checked = false;
+            }
+            var dtEl = document.getElementById('weatherDateTime');
+            if (dtEl && d.dateTimeVal) dtEl.value = d.dateTimeVal;
+            onTimeModeChange();
+
+            var dOnly = document.getElementById('weatherNotamDroneOnly');
+            if (dOnly && d.notamDroneOnly != null) dOnly.checked = !!d.notamDroneOnly;
+            var hideAd = document.getElementById('weatherNotamHideAd');
+            if (hideAd && d.notamHideAd != null) hideAd.checked = !!d.notamHideAd;
+            var priUas = document.getElementById('weatherNotamPrioritise');
+            if (priUas && d.notamPrioritise != null) priUas.checked = !!d.notamPrioritise;
+
+            if (d.exportTheme === 'dark' || d.exportTheme === 'light') {
+                var er = document.querySelector('input[name="weatherExportTheme"][value="' + d.exportTheme + '"]');
+                if (er) er.checked = true;
+            }
+            syncWeatherReportThemeFromExportChoice();
+
+            if (d.selectedLat != null && d.selectedLng != null && isFinite(d.selectedLat) && isFinite(d.selectedLng)) {
+                setSelectedPoint(d.selectedLat, d.selectedLng);
+            }
+
+            try {
+                sessionStorage.removeItem(AIRSPACE_RADIUS_STORAGE_KEY);
+            } catch (eS) { /* ignore */ }
+        } finally {
+            weatherDraftLoadInProgress = false;
+        }
     }
 
     /** NOTAM first in UI/exports; airspace: FRZ → Restricted → Prohibited → Danger */
@@ -413,9 +561,12 @@
 
     // ---- Map init ----
     function initMap() {
+        var draftView = peekWeatherDraftMapView();
+        var initCenter = draftView ? [draftView.lat, draftView.lng] : DEFAULT_MAP_CENTER;
+        var initZoom = draftView && draftView.zoom != null ? draftView.zoom : 11;
         map = L.map('map', {
-            center: DEFAULT_MAP_CENTER,
-            zoom: 11,
+            center: initCenter,
+            zoom: initZoom,
             zoomControl: true
         });
 
@@ -477,7 +628,9 @@
         });
         new InfoControl({ position: 'topleft' }).addTo(map);
 
-        tryInitialViewFromGeolocation();
+        if (!draftView) {
+            tryInitialViewFromGeolocation();
+        }
     }
 
     // ---- Point selection ----
@@ -496,6 +649,8 @@
             .bindTooltip(`Selected: ${lat.toFixed(5)}, ${lng.toFixed(5)}`, { permanent: false, direction: 'top' });
         document.getElementById('weatherFetchBtn').disabled = false;
         document.getElementById('weatherStatus').innerHTML = WEATHER_STATUS_HTML_SELECTED;
+        scheduleWeatherDraftSave();
+        updateMapLocationHint();
     }
 
     function clearSelectedPoint() {
@@ -506,6 +661,8 @@
         }
         document.getElementById('weatherFetchBtn').disabled = true;
         document.getElementById('weatherStatus').innerHTML = WEATHER_STATUS_HTML_DEFAULT;
+        scheduleWeatherDraftSave();
+        updateMapLocationHint();
     }
 
     function exitSelectMode() {
@@ -732,6 +889,7 @@
             reportOverlay.classList.remove('hidden');
             reportOverlay.setAttribute('aria-hidden', 'false');
         }
+        setFlightReportHandoffButtonVisible(false);
         loading.classList.remove('hidden');
         error.classList.add('hidden');
         content.classList.add('hidden');
@@ -823,6 +981,7 @@
         } catch (err) {
             loading.classList.add('hidden');
             error.classList.remove('hidden');
+            setFlightReportHandoffButtonVisible(false);
             document.getElementById('weatherReportErrorText').textContent = err.message || 'Failed to fetch weather.';
         }
     }
@@ -874,6 +1033,127 @@
         } else parts.push('No precipitation expected');
 
         return parts.join('. ') + '.';
+    }
+
+    /**
+     * Plain-text block for Flight Report Conditions.
+     * Keep in sync with flight-notes.js buildWeatherReportText.
+     */
+    function buildFlightReportConditionsText(data, displayTime, hourlySlice, model, lat, lng, usedTargetTime) {
+        const suitability = deriveSuitability(data);
+        const summaryText = deriveSummaryText(hourlySlice, suitability);
+        const modelLabel = MODEL_LABELS[model] || model;
+
+        const gusts = data.wind_gusts_10m;
+        const gustsStr = gusts != null ? Math.round(gusts) + ' km/h' : '—';
+        const wind120Str = formatWindRow(data.wind_speed_120m, data.wind_direction_120m);
+        const gusts120 =
+            data.wind_speed_120m != null ? Math.round(data.wind_speed_120m * GUST_120M_MULTIPLIER) + ' km/h' : '—';
+
+        const cloudTotal = data.cloud_cover;
+        const cloudLow = data.cloud_cover_low;
+        let cloudStr = '—';
+        if (cloudTotal != null) {
+            cloudStr =
+                cloudLow != null
+                    ? Math.round(cloudTotal) + '% total, ' + Math.round(cloudLow) + '% low'
+                    : Math.round(cloudTotal) + '%';
+        }
+
+        const precip = data.precipitation;
+        const precipProb = data.precipitation_probability;
+        let precipStr = '—';
+        if (precip != null) {
+            precipStr =
+                precipProb != null
+                    ? Math.round(precip * 10) / 10 + ' mm (' + Math.round(precipProb) + '% chance)'
+                    : Math.round(precip * 10) / 10 + ' mm';
+        }
+
+        const temp = data.temperature_2m;
+        const tempStr = temp != null ? Math.round(temp) + ' °C' : '—';
+
+        const lines = [];
+        lines.push('Open-Meteo forecast (Flight Weather source)');
+        lines.push('Coordinates: ' + lat.toFixed(6) + ', ' + lng.toFixed(6));
+        lines.push(
+            'Forecast hour: ' +
+                (displayTime || '—') +
+                (usedTargetTime ? ' (from Date/Time fields)' : ' (current time)')
+        );
+        lines.push('Model: ' + modelLabel);
+        lines.push('');
+        lines.push('Summary: ' + suitability.text);
+        if (summaryText) lines.push(summaryText);
+        lines.push('');
+        lines.push('10 m wind: ' + formatWindRow(data.wind_speed_10m, data.wind_direction_10m));
+        lines.push('10 m gusts: ' + gustsStr);
+        lines.push('120 m wind: ' + wind120Str);
+        lines.push('120 m gusts (est.): ' + gusts120);
+        lines.push('Visibility: ' + formatVisibility(data.visibility));
+        lines.push('Cloud cover: ' + cloudStr);
+        lines.push('Precipitation: ' + precipStr);
+        lines.push('Temperature (2 m): ' + tempStr);
+        lines.push('');
+        lines.push('Data: Open-Meteo https://open-meteo.com/ (CC BY 4.0)');
+        return lines.join('\n');
+    }
+
+    function syncWeatherModelSelectTitle() {
+        const sel = document.getElementById('weatherModel');
+        const btn = document.getElementById('weatherModelInfoBtn');
+        if (!sel) return;
+        const val = sel.value || 'auto';
+        const t = WEATHER_MODEL_SELECT_TITLE[val] || WEATHER_MODEL_SELECT_TITLE.auto;
+        sel.title = t;
+        if (btn) {
+            btn.title = t;
+            btn.setAttribute('aria-label', 'Weather model: ' + t);
+        }
+    }
+
+    function updateMapLocationHint() {
+        const el = document.getElementById('weatherMapHint');
+        if (!el) return;
+        if (!selectedPoint) {
+            el.textContent =
+                'Click the map to set your location. Or tap Select Location, then tap the map.';
+        } else {
+            el.textContent = 'Location set — tap Get Weather.';
+        }
+    }
+
+    function getUsedTargetTimeForReport() {
+        const future = document.getElementById('weatherTimeFuture');
+        const ts = getTargetTimestamp();
+        return !!(future && future.checked && ts != null && !isNaN(ts));
+    }
+
+    function setFlightReportHandoffButtonVisible(visible) {
+        const frBtn = document.getElementById('weatherUseInFlightReportBtn');
+        if (!frBtn) return;
+        frBtn.classList.toggle('hidden', !visible);
+    }
+
+    function onWeatherUseInFlightReportClick() {
+        if (!lastReportData || !selectedPoint) return;
+        const usedTargetTime = getUsedTargetTimeForReport();
+        const text = buildFlightReportConditionsText(
+            lastReportData,
+            lastDisplayTime,
+            lastHourlySlice,
+            lastModel || document.getElementById('weatherModel').value || 'auto',
+            selectedPoint.lat,
+            selectedPoint.lng,
+            usedTargetTime
+        );
+        try {
+            sessionStorage.setItem(PENDING_WEATHER_FOR_REPORT_KEY, JSON.stringify({ v: 1, text: text }));
+        } catch (e) {
+            alert('Could not hand off weather data. Your browser storage may be full or blocked.');
+            return;
+        }
+        window.location.href = 'flight-notes.html';
     }
 
     // ---- Report rendering ----
@@ -1000,6 +1280,8 @@
         if (selectedPoint) {
             loadAirspaceTab(selectedPoint.lat, selectedPoint.lng, airspaceSearchRadiusKm);
         }
+
+        setFlightReportHandoffButtonVisible(true);
     }
 
     function updateModelExplainer(model) {
@@ -2014,7 +2296,7 @@
 
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';
-            pptx.author = 'AirPlot v3';
+            pptx.author = 'AirPlot v4';
             pptx.subject = 'Flight Weather Report';
 
             const logo = await PptxTheme.loadLogo();
@@ -3274,6 +3556,7 @@
                 input.value = now.toISOString().slice(0, 16);
             }
         }
+        scheduleWeatherDraftSave();
     }
 
     // ---- Init ----
@@ -3284,11 +3567,16 @@
         document.getElementById('weatherSelectBtn').addEventListener('click', toggleSelectMode);
         document.getElementById('weatherFetchBtn').addEventListener('click', fetchWeather);
         document.getElementById('weatherReportClose').addEventListener('click', hideReport);
+        var useInFrBtn = document.getElementById('weatherUseInFlightReportBtn');
+        if (useInFrBtn) useInFrBtn.addEventListener('click', onWeatherUseInFlightReportClick);
         document.getElementById('weatherExportPptxBtn').addEventListener('click', exportWeatherPptx);
         document.getElementById('weatherExportPdfBtn').addEventListener('click', exportWeatherPdf);
 
         document.querySelectorAll('input[name="weatherExportTheme"]').forEach(function (radio) {
-            radio.addEventListener('change', syncWeatherReportThemeFromExportChoice);
+            radio.addEventListener('change', function () {
+                syncWeatherReportThemeFromExportChoice();
+                scheduleWeatherDraftSave();
+            });
         });
         syncWeatherReportThemeFromExportChoice();
 
@@ -3297,11 +3585,27 @@
             weatherStatusEl.innerHTML = WEATHER_STATUS_HTML_DEFAULT;
         }
 
-        try {
-            var st = sessionStorage.getItem(AIRSPACE_RADIUS_STORAGE_KEY);
-            if (st) airspaceSearchRadiusKm = clampAirspaceRadiusKm(parseInt(st, 10));
-        } catch (errSt) { /* ignore */ }
+        restoreWeatherDraftFromStorage();
         syncAirspaceRadiusInput();
+        syncWeatherModelSelectTitle();
+        updateMapLocationHint();
+
+        var weatherModelEl = document.getElementById('weatherModel');
+        if (weatherModelEl) {
+            weatherModelEl.addEventListener('change', function () {
+                syncWeatherModelSelectTitle();
+                scheduleWeatherDraftSave();
+            });
+        }
+        var weatherDateTimeEl = document.getElementById('weatherDateTime');
+        if (weatherDateTimeEl) {
+            weatherDateTimeEl.addEventListener('change', scheduleWeatherDraftSave);
+            weatherDateTimeEl.addEventListener('input', scheduleWeatherDraftSave);
+        }
+        ['weatherNotamDroneOnly', 'weatherNotamHideAd', 'weatherNotamPrioritise'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('change', scheduleWeatherDraftSave);
+        });
 
         var airspaceRefreshBtn = document.getElementById('weatherAirspaceRefreshBtn');
         if (airspaceRefreshBtn) {
@@ -3412,6 +3716,8 @@
             onMapClick(e);
             hideWeatherContextMenu();
         });
+        map.on('moveend', scheduleWeatherDraftSave);
+        window.addEventListener('pagehide', saveWeatherDraftNow);
         setupTouchFallback();
         setupLongPressWeatherContextMenu();
 

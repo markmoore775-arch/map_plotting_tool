@@ -465,6 +465,7 @@ const Drawings = (() => {
         shapes.push(shape);
         addShapeToMap(shape);
         refreshShapesList();
+        setTimeout(() => selectShape(shape.id), 0);
         return shape.id;
     }
 
@@ -603,7 +604,31 @@ const Drawings = (() => {
         map.on('pm:globaleditmodetoggled', refreshInteractionCursor);
         map.on('pm:globaldragmodetoggled', refreshInteractionCursor);
         map.on('pm:globalremovalmodetoggled', refreshInteractionCursor);
+        map.on('pm:create', () => {
+            syncDrawStyleChrome();
+        });
         refreshInteractionCursor();
+    }
+
+    function syncDrawStyleChrome() {
+        const section = document.getElementById('drawStyleSection');
+        const hint = document.getElementById('drawIdleHint');
+        if (!section || !hint) return;
+
+        const showStyle = !!selectedShapeId || isDrawingActive();
+        section.classList.toggle('hidden', !showStyle);
+        hint.classList.toggle('hidden', showStyle);
+
+        const panel = document.getElementById('drawStylePanel');
+        const toggleBtn = document.getElementById('drawStyleToggle');
+        if (showStyle && panel) {
+            panel.classList.remove('collapsed');
+            if (toggleBtn) toggleBtn.innerHTML = '&minus;';
+        }
+
+        if (typeof window.airplotUpdateMapContextHint === 'function') {
+            window.airplotUpdateMapContextHint();
+        }
     }
 
     function refreshInteractionCursor() {
@@ -623,6 +648,7 @@ const Drawings = (() => {
         mapEl.classList.toggle('draw-tool-cursor', isArrowDraw || isLineDraw || isFlightPathDraw || isGeoDraw);
         mapEl.classList.toggle('move-tool-cursor', !isArrowDraw && !isGeoDraw && isMoveMode);
         map.fire('drawingmodechange');
+        syncDrawStyleChrome();
     }
 
     function setupGeoman() {
@@ -808,6 +834,7 @@ const Drawings = (() => {
         shapes.push(shape);
         addShapeToMap(shape);
         refreshShapesList();
+        setTimeout(() => selectShape(shape.id), 0);
     }
 
     // ============================================================
@@ -1089,6 +1116,7 @@ const Drawings = (() => {
         shapes.push(shape);
         addShapeToMap(shape);
         refreshShapesList();
+        setTimeout(() => selectShape(shape.id), 0);
     }
 
     // ---- Arrow handles (tip + tail drag markers) ----
@@ -1327,6 +1355,8 @@ const Drawings = (() => {
             panel.classList.toggle('collapsed');
             toggleBtn.innerHTML = panel.classList.contains('collapsed') ? '&plus;' : '&minus;';
         });
+
+        syncDrawStyleChrome();
     }
 
     function applyStyleToSelected(prop, value) {
@@ -1413,6 +1443,7 @@ const Drawings = (() => {
 
         selectedShapeId = id;
         populatePanelFromShape(shape);
+        syncDrawStyleChrome();
 
         if (shape.type === 'arrow') {
             addArrowHandles(shape);
@@ -1453,6 +1484,7 @@ const Drawings = (() => {
 
         selectedShapeId = null;
         restorePanelDefaults();
+        syncDrawStyleChrome();
         refreshShapesList();
     }
 
@@ -1669,11 +1701,13 @@ const Drawings = (() => {
                     label: '',
                     style: { ...flightPathStyle },
                     latlngs,
-                    arrowSize: FLIGHT_PATH_ARROW_SIZE_DEFAULT
+                    arrowSize: FLIGHT_PATH_ARROW_SIZE_DEFAULT,
+                    hiddenOnMap: false
                 };
                 shapes.push(shape);
                 addShapeToMap(shape);
                 refreshShapesList();
+                setTimeout(() => selectShape(shape.id), 0);
                 setTimeout(() => {
                     map.fire('flightoverviewrequest', { shapeId: shape.id });
                 }, 300);
@@ -1698,6 +1732,7 @@ const Drawings = (() => {
             bindShapeInteractions(shape);
             addShapeLabelMarker(shape);
             refreshShapesList();
+            setTimeout(() => selectShape(shape.id), 0);
         });
 
         map.on('pm:edit', (e) => {
@@ -1783,6 +1818,7 @@ const Drawings = (() => {
             type: normalizeType(shapeType),
             label: '',
             style: { ...currentStyle },
+            hiddenOnMap: false
         };
 
         if (shape.type === 'circle') {
@@ -2838,6 +2874,42 @@ const Drawings = (() => {
 
     // ---- Shapes List UI ----
 
+    function applyShapeVisibility(shape) {
+        const entry = shapeLayerMap[shape.id];
+        if (!entry) return;
+        const hidden = !!shape.hiddenOnMap;
+        const display = hidden ? 'none' : '';
+
+        function setOnLayer(layer) {
+            if (!layer) return;
+            if (typeof layer.eachLayer === 'function') {
+                layer.eachLayer(setOnLayer);
+                return;
+            }
+            if (layer.getElement) {
+                const el = layer.getElement();
+                if (el) el.style.display = display;
+            }
+        }
+
+        setOnLayer(entry.layer);
+        setOnLayer(entry.arrowGroup);
+        if (entry.lineMeasureGroup && entry.lineMeasureGroup.label) {
+            setOnLayer(entry.lineMeasureGroup.label);
+        }
+        if (entry.radialGroup) {
+            const rg = entry.radialGroup;
+            setOnLayer(rg.line);
+            setOnLayer(rg.centerDot);
+            setOnLayer(rg.label);
+            setOnLayer(rg.handle);
+        }
+        if (entry.labelMarker && entry.labelMarker.getElement) {
+            const el = entry.labelMarker.getElement();
+            if (el) el.style.display = display;
+        }
+    }
+
     function refreshShapesList() {
         const list = document.getElementById('shapesList');
         const count = document.getElementById('shapeCount');
@@ -2863,11 +2935,13 @@ const Drawings = (() => {
 
             const isLineShape = s.type === 'polyline' || s.type === 'flightpath';
             const verticesBtn = isLineShape
-                ? `<button class="btn-icon btn-edit-vertices" title="Edit vertices">&#9997;</button>`
+                ? `<button type="button" class="btn-icon btn-edit-vertices" title="Edit vertices">&#9997;</button>`
                 : '';
             const flightOverviewBtn = isLineShape
-                ? `<button class="btn-icon btn-flight-overview" title="Flight Overview">&#9650;</button>`
+                ? `<button type="button" class="btn-icon btn-flight-overview" title="Flight Overview">&#9650;</button>`
                 : '';
+            const shapeOnMap = !s.hiddenOnMap;
+            const visBtn = `<button type="button" class="btn-icon btn-shape-visibility" title="${shapeOnMap ? 'Hide on map' : 'Show on map'}" aria-label="${shapeOnMap ? 'Hide on map' : 'Show on map'}">${shapeOnMap ? '&#9675;' : '&#9711;'}</button>`;
 
             li.innerHTML = `
                 ${colorDot}
@@ -2876,15 +2950,22 @@ const Drawings = (() => {
                     <div class="point-item-detail">${typeLabel}${measurement ? ' | ' + measurement : ''}</div>
                 </div>
                 <div class="point-item-actions">
-                    <button class="btn-icon btn-edit" title="Edit properties">&#9998;</button>
+                    ${visBtn}
+                    <button type="button" class="btn-icon btn-edit" title="Edit properties">&#9998;</button>
                     ${verticesBtn}
                     ${flightOverviewBtn}
-                    <button class="btn-icon btn-delete" title="Delete">&times;</button>
+                    <button type="button" class="btn-icon btn-delete" title="Delete">&times;</button>
                 </div>
             `;
 
             li.addEventListener('click', (e) => {
-                if (e.target.closest('.btn-edit')) {
+                if (e.target.closest('.btn-shape-visibility')) {
+                    e.stopPropagation();
+                    pushUndoSnapshot();
+                    s.hiddenOnMap = !s.hiddenOnMap;
+                    applyShapeVisibility(s);
+                    refreshShapesList();
+                } else if (e.target.closest('.btn-edit')) {
                     openShapeEditModal(s.id);
                 } else if (e.target.closest('.btn-edit-vertices')) {
                     editVertices(s.id);
@@ -2906,6 +2987,9 @@ const Drawings = (() => {
             });
 
             list.appendChild(li);
+        }
+        if (typeof window.airplotScheduleMapDraftSave === 'function') {
+            window.airplotScheduleMapDraftSave();
         }
     }
 
@@ -2954,7 +3038,8 @@ const Drawings = (() => {
                 text: shapeData.text,
                 textStyle: shapeData.textStyle ? { ...shapeData.textStyle } : undefined,
                 showDistance: shapeData.showDistance,
-                arrowSize: shapeData.arrowSize != null ? shapeData.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT
+                arrowSize: shapeData.arrowSize != null ? shapeData.arrowSize : FLIGHT_PATH_ARROW_SIZE_DEFAULT,
+                hiddenOnMap: !!shapeData.hiddenOnMap
             };
 
             // Migrate old arrow_stamp data to new arrow format
@@ -2976,6 +3061,7 @@ const Drawings = (() => {
 
             shapes.push(shape);
             addShapeToMap(shape);
+            applyShapeVisibility(shape);
         }
         if (preserveIds && data.length > 0) {
             nextShapeId = Math.max(...data.map(s => s.id != null ? s.id : 0), 0) + 1;
@@ -3102,6 +3188,7 @@ const Drawings = (() => {
         toggleShapeLabels,
         toggleFlightPathDistance,
         isDrawingActive,
+        getSelectedShapeId: () => selectedShapeId,
         exitAllDrawingModes,
         getShapes,
         getShowMeasurements,

@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>M4T / TD | AirPlot</title>
     <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="css/flight-notes.css?v=11">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/flight-notes.css?v=12">
     <style>
         :root {
             --cl-bg: #1e1e2e;
@@ -28,11 +29,15 @@
             overflow-x: hidden;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            scroll-padding-top: var(--cl-scroll-pad, 108px);
         }
 
         body.checklist-mode {
             margin: 0;
             min-height: 100%;
+            height: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
             font-family: var(--cl-font);
             font-size: 14px;
             color: var(--cl-text);
@@ -50,180 +55,6 @@
         }
 
         *, *::before, *::after { box-sizing: border-box; }
-
-        .cl-top-bar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 10px 12px;
-            padding-left: max(12px, env(safe-area-inset-left));
-            padding-right: max(12px, env(safe-area-inset-right));
-            padding-top: max(10px, env(safe-area-inset-top));
-            background: linear-gradient(180deg, rgba(30, 30, 46, 0.98) 0%, rgba(30, 30, 46, 0.92) 100%);
-            border-bottom: 1px solid var(--cl-border);
-        }
-
-        body.cl-light-theme .cl-top-bar {
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 245, 248, 0.95) 100%);
-        }
-
-        .fp-welcome-bar { position: relative; flex-shrink: 0; }
-
-        .fp-welcome-home-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--cl-text);
-            text-decoration: none;
-            background: var(--cl-bg);
-            border: 1px solid var(--cl-primary);
-            border-radius: 10px;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
-            transition: background 0.15s, border-color 0.15s, color 0.15s;
-        }
-
-        body.cl-light-theme .fp-welcome-home-link {
-            background: var(--cl-surface);
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .fp-welcome-home-link:hover {
-            background: #252538;
-            border-color: var(--cl-primary-hover);
-            color: #fff;
-        }
-
-        body.cl-light-theme .fp-welcome-home-link:hover {
-            background: #eef1f8;
-            color: var(--cl-text);
-        }
-
-        .fp-welcome-home-link:focus-visible {
-            outline: 2px solid var(--cl-primary);
-            outline-offset: 2px;
-        }
-
-        .fp-welcome-logo { flex-shrink: 0; display: block; }
-
-        .fp-welcome-cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-left: 4px;
-            padding-left: 12px;
-            border-left: 1px solid var(--cl-border);
-            font-weight: 500;
-            color: var(--cl-primary);
-        }
-
-        @media (max-width: 520px) {
-            .fp-welcome-title { display: none; }
-            .fp-welcome-cta {
-                margin-left: 0;
-                padding-left: 0;
-                border-left: none;
-            }
-        }
-
-        .cl-top-bar-start {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-        }
-
-        /* Match .fp-welcome-home-link height/padding (Flight Report / Welcome row) */
-        .cl-nav-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box;
-            min-height: 44px;
-            padding: 10px 14px;
-            font-size: 14px;
-            font-weight: 600;
-            line-height: 1.2;
-            color: var(--cl-text);
-            text-decoration: none;
-            border: 1px solid var(--cl-primary);
-            border-radius: 10px;
-            background: rgba(91, 141, 239, 0.08);
-            transition: background 0.15s, border-color 0.15s, color 0.15s;
-            white-space: nowrap;
-        }
-
-        .cl-nav-link:hover {
-            background: rgba(91, 141, 239, 0.16);
-            border-color: var(--cl-primary-hover);
-            color: #fff;
-        }
-
-        body.cl-light-theme .cl-nav-link:hover {
-            color: var(--cl-text);
-        }
-
-        .cl-top-bar-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        @media (max-width: 900px) {
-            .cl-top-bar {
-                flex-wrap: nowrap;
-                align-items: center;
-                gap: 8px;
-                padding: 8px 10px;
-                padding-left: max(10px, env(safe-area-inset-left));
-                padding-right: max(10px, env(safe-area-inset-right));
-                padding-top: max(8px, env(safe-area-inset-top));
-                overflow-x: auto;
-                overflow-y: hidden;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: thin;
-                justify-content: flex-start;
-            }
-
-            .cl-top-bar::-webkit-scrollbar {
-                height: 4px;
-            }
-
-            .cl-top-bar::-webkit-scrollbar-thumb {
-                background: rgba(255, 255, 255, 0.2);
-                border-radius: 2px;
-            }
-
-            .cl-top-bar-start {
-                flex-wrap: nowrap;
-                flex-shrink: 0;
-                gap: 8px;
-            }
-
-            .cl-top-bar-actions {
-                flex-shrink: 0;
-                gap: 8px;
-            }
-
-            .fp-welcome-home-link {
-                padding: 8px 10px;
-                font-size: 13px;
-            }
-
-            .cl-nav-link {
-                min-height: 40px;
-                padding: 8px 12px;
-                font-size: 13px;
-            }
-        }
 
         .cl-main {
             max-width: 720px;
@@ -359,23 +190,198 @@
             gap: 8px;
         }
 
+        .cl-toolbar-hint {
+            margin: 0 0 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--cl-muted);
+            line-height: 1.35;
+        }
+
+        .cl-toolbar-actions-wrap {
+            flex: 1 1 200px;
+            min-width: 0;
+        }
+
+        .cl-toolbar--primary .cl-progress-block {
+            flex: 1 0 100%;
+            min-width: 0;
+        }
+
+        .cl-toolbar--primary .cl-progress-bar--toolbar {
+            height: 10px;
+        }
+
+        .cl-checklist-sticky-chrome {
+            position: sticky;
+            top: var(--cl-sticky-top, calc(env(safe-area-inset-top) + 52px));
+            z-index: 98;
+            margin: -20px -16px 16px;
+            width: calc(100% + 32px);
+            padding-bottom: 10px;
+            background: linear-gradient(180deg, var(--cl-bg) 70%, transparent);
+            border-bottom: 1px solid var(--cl-border);
+        }
+
+        .cl-global-progress-track {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--cl-input-bg);
+            overflow: hidden;
+            border: 1px solid var(--cl-border);
+            margin-bottom: 10px;
+        }
+
+        .cl-global-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--cl-primary);
+            border-radius: 1px;
+            transition: width 0.2s ease;
+        }
+
+        .cl-section-jump {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 6px 4px;
+            padding: 0 10px;
+        }
+
+        .cl-section-jump__link {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--cl-primary);
+            text-decoration: none;
+            padding: 6px 10px;
+            border-radius: var(--cl-radius);
+            border: 1px solid transparent;
+        }
+
+        .cl-section-jump__link:hover,
+        .cl-section-jump__link:focus-visible {
+            background: rgba(91, 141, 239, 0.15);
+            border-color: var(--cl-primary);
+            outline: none;
+        }
+
+        .cl-section-jump__sep {
+            color: var(--cl-muted);
+            font-weight: 700;
+            user-select: none;
+        }
+
+        body.cl-light-theme .cl-checklist-sticky-chrome {
+            background: linear-gradient(180deg, var(--cl-bg) 70%, transparent);
+        }
+
+        .cl-theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: var(--ap-chrome-height, 36px);
+            padding: 0;
+            border: 1px solid var(--primary, #5b8def);
+            border-radius: 10px;
+            background: var(--sidebar-bg, #1e1e2e);
+            box-shadow: var(--ap-chrome-shadow);
+            cursor: pointer;
+            color: var(--sidebar-text, #e0e0e8);
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .cl-theme-toggle:hover {
+            border-color: var(--cl-primary-hover, #4a7de0);
+            color: #fff;
+        }
+
+        .cl-theme-toggle:focus-visible {
+            outline: 2px solid var(--cl-primary);
+            outline-offset: 2px;
+        }
+
+        .cl-theme-toggle-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        body.cl-light-theme .cl-theme-toggle {
+            border-color: #c5c5d0;
+            background: #ffffff;
+            box-shadow: var(--ap-chrome-shadow-light);
+            color: #1a1d26;
+        }
+
+        body.cl-light-theme .cl-theme-toggle:hover {
+            background: #f0f1f3;
+        }
+
         .cl-section {
             margin-bottom: 28px;
             padding: 16px;
             background: var(--cl-surface);
             border: 1px solid var(--cl-border);
             border-radius: var(--cl-radius);
+            scroll-margin-top: var(--cl-scroll-pad, 108px);
         }
 
         .cl-section-head {
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 10px;
             margin-bottom: 14px;
             padding-bottom: 10px;
             border-bottom: 1px solid var(--cl-border);
+        }
+
+        .cl-section-head-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            flex: 1 1 220px;
+            min-width: 0;
+        }
+
+        .cl-section-toggle {
+            flex-shrink: 0;
+            margin-top: 2px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 1px solid var(--cl-border);
+            border-radius: var(--cl-radius);
+            background: transparent;
+            color: var(--cl-text);
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+
+        .cl-section-toggle:hover {
+            border-color: var(--cl-primary);
+            color: var(--cl-primary);
+        }
+
+        .cl-section-toggle:focus-visible {
+            outline: 2px solid var(--cl-primary);
+            outline-offset: 2px;
+        }
+
+        .cl-section-toggle-chevron {
+            display: inline-block;
+            transition: transform 0.2s ease;
+        }
+
+        .cl-section--collapsed .cl-section-toggle-chevron {
+            transform: rotate(-90deg);
         }
 
         .cl-section-title {
@@ -386,6 +392,42 @@
             color: var(--cl-primary);
             margin: 0;
             flex: 1 1 auto;
+        }
+
+        .cl-section-collapsed-summary {
+            display: none;
+            flex: 1 1 100%;
+            margin: 0;
+            padding: 4px 0 0 40px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--cl-text);
+            line-height: 1.35;
+        }
+
+        .cl-section--collapsed .cl-section-collapsed-summary {
+            display: block;
+        }
+
+        .cl-section--collapsed .cl-section-title,
+        .cl-section--collapsed .cl-section-meta {
+            display: none;
+        }
+
+        .cl-section--collapsed .cl-section-head {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .cl-section--collapsed .cl-section-toggle {
+            margin-top: 0;
+        }
+
+        .cl-section-body.cl-section-body--collapsed {
+            display: none;
         }
 
         .cl-section-meta {
@@ -670,6 +712,37 @@
                 display: none !important;
             }
 
+            .cl-section-toggle {
+                display: none !important;
+            }
+
+            .cl-section-body.cl-section-body--collapsed {
+                display: block !important;
+            }
+
+            .cl-section-collapsed-summary {
+                display: none !important;
+            }
+
+            .cl-section--collapsed .cl-section-title,
+            .cl-section--collapsed .cl-section-meta {
+                display: block !important;
+            }
+
+            .cl-section--collapsed .cl-section-meta {
+                display: flex !important;
+            }
+
+            .cl-section--collapsed .cl-section-head {
+                margin-bottom: 14px !important;
+                padding-bottom: 10px !important;
+                border-bottom: 1pt solid #ddd !important;
+            }
+
+            .cl-global-progress-fill {
+                background: #5b8def !important;
+            }
+
             body.checklist-mode {
                 background: #fff !important;
                 color: #111 !important;
@@ -757,77 +830,96 @@
     </style>
 </head>
 <body class="checklist-mode">
-    <header class="cl-top-bar no-print">
-        <div class="cl-top-bar-start">
+    <header class="fn-top-bar no-print">
+        <div class="fn-top-bar-start">
             <nav class="fp-welcome-bar" aria-label="AirPlot home">
-                <a href="index.html" class="fp-welcome-home-link" title="Return to welcome screen to choose another mode" aria-label="Return to AirPlot welcome screen">
-                    <img src="assets/airplot-icon.svg" alt="" width="22" height="22" class="fp-welcome-logo" />
+                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
+                    <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
                     <span class="fp-welcome-title">AirPlot</span>
-                    <span class="fp-welcome-cta">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-                        Welcome
-                    </span>
                 </a>
             </nav>
-            <a href="flight-notes.html" class="cl-nav-link" title="Open Flight Report">Flight Report</a>
+            <nav class="ap-tool-nav" aria-label="AirPlot tools">
+                <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></a>
+                <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></a>
+                <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
+                <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Checklist, current page"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></span>
+                <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
+            </nav>
         </div>
-        <div class="cl-top-bar-actions">
-            <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="clPageThemeLabel" title="Page colours (better for reading / print preview)">
-                <span id="clPageThemeLabel" class="fn-export-theme-label">Theme</span>
-                <div class="fn-export-theme-segments">
-                    <label class="fn-export-theme-segment-opt">
-                        <input type="radio" name="clPageTheme" value="dark" checked>
-                        <span class="fn-export-theme-segment-text">Dark</span>
-                    </label>
-                    <label class="fn-export-theme-segment-opt">
-                        <input type="radio" name="clPageTheme" value="light">
-                        <span class="fn-export-theme-segment-text">Light</span>
-                    </label>
-                </div>
-            </div>
+        <div class="fn-top-bar-actions">
+            <button type="button" class="cl-theme-toggle" id="clThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
+                <span class="cl-theme-toggle-icon cl-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
+                <span class="cl-theme-toggle-icon cl-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
+            </button>
         </div>
     </header>
 
     <main class="cl-main">
+        <div class="cl-checklist-sticky-chrome no-print" id="clChecklistStickyChrome">
+            <div class="cl-global-progress-track" aria-hidden="true">
+                <div class="cl-global-progress-fill" id="clHeaderProgressFill"></div>
+            </div>
+            <nav class="cl-section-jump" aria-label="Jump to checklist section">
+                <a href="#cl-s1" class="cl-section-jump__link">S1</a>
+                <span class="cl-section-jump__sep" aria-hidden="true">·</span>
+                <a href="#cl-s2" class="cl-section-jump__link">S2</a>
+                <span class="cl-section-jump__sep" aria-hidden="true">·</span>
+                <a href="#cl-s3" class="cl-section-jump__link">S3</a>
+                <span class="cl-section-jump__sep" aria-hidden="true">·</span>
+                <a href="#cl-s4" class="cl-section-jump__link">S4</a>
+                <span class="cl-section-jump__sep" aria-hidden="true">·</span>
+                <a href="#cl-s5" class="cl-section-jump__link">S5</a>
+            </nav>
+        </div>
         <h1 class="cl-print-title">M4T / TD - Checklist</h1>
         <p id="clPrintTimestamp" class="print-only cl-export-timestamp" aria-hidden="true"></p>
 
         <aside class="cl-privacy no-print" role="note">
-            <p>Nothing you enter here is sent to a server. This browser may keep your checklist on this device until you use <strong>Reset All</strong> or clear site data. Use <strong>Flight Report</strong> in the header to record mission details and switch back without returning to the welcome screen.</p>
+            <p>Nothing you enter here is sent to a server. This browser may keep your checklist on this device until you use <strong>Reset All</strong> or clear site data. Use the header <strong>tool strip</strong> to open Flight Report or other tools without returning to the welcome screen.</p>
         </aside>
 
         <header class="cl-header-block no-print">
             <h1 class="cl-page-title">M4T / TD</h1>
-            <p class="cl-lead">Pre-flight, in-flight, and post-flight checks with per-section progress and <strong>Mark all complete</strong>. Send by email or use Export to PDF (print) to save a copy; a second action bar at the bottom matches the top. Your ticked items and notes stay in this browser until you reset or clear site data. <strong>Flight Report</strong> in the header opens the structured report in this tab.</p>
+            <p class="cl-lead">Pre-flight, in-flight, and post-flight checks with per-section progress and <strong>Mark all complete</strong>. Send by email or use Export to PDF (print) to save a copy; a second action bar at the bottom matches the top. Your ticked items and notes stay in this browser until you reset or clear site data. The header <strong>tool strip</strong> opens Flight Report, Planner, Weather, or Airspace in this tab.</p>
         </header>
 
-        <div class="cl-toolbar">
+        <div class="cl-toolbar cl-toolbar--primary">
             <div class="cl-progress-block">
                 <div class="cl-progress-meta">
                     <span id="clGlobalLabel">Progress</span>
                     <span class="cl-progress-count" id="clGlobalCount">0 / 0 items complete</span>
                 </div>
-                <div class="cl-progress-bar" aria-hidden="true">
+                <div class="cl-progress-bar cl-progress-bar--toolbar" aria-hidden="true">
                     <div class="cl-progress-fill" id="clProgressFill"></div>
                 </div>
             </div>
-            <div class="cl-toolbar-actions no-print">
-                <button type="button" class="cl-btn cl-btn-secondary cl-action-reset" id="clResetAll">Reset All</button>
-                <button type="button" class="cl-btn cl-btn-secondary cl-action-email" id="clEmailBtn">Send by email</button>
-                <button type="button" class="cl-btn cl-btn-primary cl-action-print" id="clExportPdf">Export to PDF</button>
+            <div class="cl-toolbar-actions-wrap no-print">
+                <p class="cl-toolbar-hint">Save a completed copy</p>
+                <div class="cl-toolbar-actions">
+                    <button type="button" class="cl-btn cl-btn-secondary cl-action-reset" id="clResetAll">Reset All</button>
+                    <button type="button" class="cl-btn cl-btn-secondary cl-action-email" id="clEmailBtn">Send by email</button>
+                    <button type="button" class="cl-btn cl-btn-primary cl-action-print" id="clExportPdf">Export to PDF</button>
+                </div>
             </div>
         </div>
 
         <!-- SECTION 1 -->
-        <section class="cl-section" data-section="1" aria-labelledby="cl-s1">
+        <section class="cl-section" data-section="1" data-section-short="Section 1: Pre-flight" aria-labelledby="cl-s1">
             <div class="cl-section-head">
-                <h2 id="cl-s1" class="cl-section-title">Section 1: Pre-flight - UAV inspection</h2>
+                <div class="cl-section-head-main">
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-1-body" data-section-toggle="1" aria-label="Collapse section 1" title="Collapse section">
+                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    </button>
+                    <h2 id="cl-s1" class="cl-section-title">Section 1: Pre-flight - UAV inspection</h2>
+                </div>
+                <p class="cl-section-collapsed-summary" data-collapsed-summary="1" aria-hidden="true"></p>
                 <div class="cl-section-meta">
                     <span class="cl-section-count" data-section-count="1">0 / 9 complete</span>
                     <button type="button" class="cl-mark-all" data-mark-section="1">Mark all complete</button>
                 </div>
             </div>
 
+            <div class="cl-section-body" id="cl-section-1-body">
             <div class="cl-row"><input type="checkbox" id="c1-1" data-section="1" /><div class="cl-label-wrap"><label for="c1-1">1. Inspect UAV airframe, body and camera - check for damage</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c1-2" data-section="1" /><div class="cl-label-wrap"><label for="c1-2">2. Check motors spin freely and inspect for damage</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c1-3" data-section="1" /><div class="cl-label-wrap"><label for="c1-3">3. Check and inspect propellers - attach and secure, ensure correct position</label></div></div>
@@ -837,18 +929,26 @@
             <div class="cl-row"><input type="checkbox" id="c1-7" data-section="1" /><div class="cl-label-wrap"><label for="c1-7">7. Inspect all camera lenses - wide RGB, medium tele, telephoto, thermal - clean and unobstructed</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c1-8" data-section="1" /><div class="cl-label-wrap"><label for="c1-8">8. Confirm laser rangefinder lens clean</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c1-9" data-section="1" /><div class="cl-label-wrap"><label for="c1-9">9. Confirm NIR auxiliary light unobstructed</label></div></div>
+            </div>
         </section>
 
         <!-- SECTION 2 -->
-        <section class="cl-section" data-section="2" aria-labelledby="cl-s2">
+        <section class="cl-section" data-section="2" data-section-short="Section 2: Controller setup" aria-labelledby="cl-s2">
             <div class="cl-section-head">
-                <h2 id="cl-s2" class="cl-section-title">Section 2: Pre-flight - Controller and UAV set up</h2>
+                <div class="cl-section-head-main">
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-2-body" data-section-toggle="2" aria-label="Collapse section 2" title="Collapse section">
+                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    </button>
+                    <h2 id="cl-s2" class="cl-section-title">Section 2: Pre-flight - Controller and UAV set up</h2>
+                </div>
+                <p class="cl-section-collapsed-summary" data-collapsed-summary="2" aria-hidden="true"></p>
                 <div class="cl-section-meta">
                     <span class="cl-section-count" data-section-count="2">0 / 17 complete</span>
                     <button type="button" class="cl-mark-all" data-mark-section="2">Mark all complete</button>
                 </div>
             </div>
 
+            <div class="cl-section-body" id="cl-section-2-body">
             <div class="cl-row"><input type="checkbox" id="c2-1" data-section="2" /><div class="cl-label-wrap"><label for="c2-1">1. Power on controller (Press once to check battery level, then press again and hold to power on/off) - wait for DJI Pilot 2 to open</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c2-2" data-section="2" /><div class="cl-label-wrap"><label for="c2-2">2. Power on aircraft (Press once to check battery level, then press again and hold to power on/off)</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c2-3" data-section="2" /><div class="cl-label-wrap"><label for="c2-3">3. Check Health Management System - all green - acknowledge any errors</label></div></div>
@@ -883,18 +983,26 @@
             </div>
             <div class="cl-row"><input type="checkbox" id="c2-16" data-section="2" /><div class="cl-label-wrap"><label for="c2-16">16. Confirm stick mode - Mode 2</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c2-17" data-section="2" /><div class="cl-label-wrap"><label for="c2-17">17. Close menu to display full image</label></div></div>
+            </div>
         </section>
 
         <!-- SECTION 3 -->
-        <section class="cl-section" data-section="3" aria-labelledby="cl-s3">
+        <section class="cl-section" data-section="3" data-section-short="Section 3: Take off" aria-labelledby="cl-s3">
             <div class="cl-section-head">
-                <h2 id="cl-s3" class="cl-section-title">Section 3: Take off</h2>
+                <div class="cl-section-head-main">
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-3-body" data-section-toggle="3" aria-label="Collapse section 3" title="Collapse section">
+                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    </button>
+                    <h2 id="cl-s3" class="cl-section-title">Section 3: Take off</h2>
+                </div>
+                <p class="cl-section-collapsed-summary" data-collapsed-summary="3" aria-hidden="true"></p>
                 <div class="cl-section-meta">
                     <span class="cl-section-count" data-section-count="3">0 / 13 complete</span>
                     <button type="button" class="cl-mark-all" data-mark-section="3">Mark all complete</button>
                 </div>
             </div>
 
+            <div class="cl-section-body" id="cl-section-3-body">
             <div class="cl-row"><input type="checkbox" id="c3-1" data-section="3" /><div class="cl-label-wrap"><label for="c3-1">1. Confirm all cameras working correctly for task</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c3-2" data-section="3" /><div class="cl-label-wrap"><label for="c3-2">2. Note battery Voltage</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c3-3" data-section="3" /><div class="cl-label-wrap"><label for="c3-3">3. Confirm C2 signal strength and number of satellites</label></div></div>
@@ -908,18 +1016,26 @@
             <div class="cl-row"><input type="checkbox" id="c3-11" data-section="3" /><div class="cl-label-wrap"><label for="c3-11">11. Ascend to minimum safe height (tallest feature + 30ft/10m) and conduct 360 survey</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c3-12" data-section="3" /><div class="cl-label-wrap"><label for="c3-12">12. Fly mission - ensure objectives complete</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c3-13" data-section="3" /><div class="cl-label-wrap"><label for="c3-13">13. Consider recording as appropriate</label></div></div>
+            </div>
         </section>
 
         <!-- SECTION 4 -->
-        <section class="cl-section" data-section="4" aria-labelledby="cl-s4">
+        <section class="cl-section" data-section="4" data-section-short="Section 4: Landing" aria-labelledby="cl-s4">
             <div class="cl-section-head">
-                <h2 id="cl-s4" class="cl-section-title">Section 4: Landing</h2>
+                <div class="cl-section-head-main">
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-4-body" data-section-toggle="4" aria-label="Collapse section 4" title="Collapse section">
+                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    </button>
+                    <h2 id="cl-s4" class="cl-section-title">Section 4: Landing</h2>
+                </div>
+                <p class="cl-section-collapsed-summary" data-collapsed-summary="4" aria-hidden="true"></p>
                 <div class="cl-section-meta">
                     <span class="cl-section-count" data-section-count="4">0 / 10 complete</span>
                     <button type="button" class="cl-mark-all" data-mark-section="4">Mark all complete</button>
                 </div>
             </div>
 
+            <div class="cl-section-body" id="cl-section-4-body">
             <div class="cl-row"><input type="checkbox" id="c4-1" data-section="4" /><div class="cl-label-wrap"><label for="c4-1">1. Stop recording if appropriate</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c4-2" data-section="4" /><div class="cl-label-wrap"><label for="c4-2">2. Press RTH or initiate manual return - PIC to announce &quot;RTH&quot;</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c4-3" data-section="4" /><div class="cl-label-wrap"><label for="c4-3">3. Confirm landing area free of traffic (air and ground)</label></div></div>
@@ -930,24 +1046,33 @@
             <div class="cl-row"><input type="checkbox" id="c4-8" data-section="4" /><div class="cl-label-wrap"><label for="c4-8">8. Land UAV - PIC to announce &quot;LANDING&quot;</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c4-9" data-section="4" /><div class="cl-label-wrap"><label for="c4-9">9. Power off aircraft</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c4-10" data-section="4" /><div class="cl-label-wrap"><label for="c4-10">10. Power off controller</label></div></div>
+            </div>
         </section>
 
         <!-- SECTION 5 -->
-        <section class="cl-section" data-section="5" aria-labelledby="cl-s5">
+        <section class="cl-section" data-section="5" data-section-short="Section 5: Post-flight" aria-labelledby="cl-s5">
             <div class="cl-section-head">
-                <h2 id="cl-s5" class="cl-section-title">Section 5: Post-flight</h2>
+                <div class="cl-section-head-main">
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-5-body" data-section-toggle="5" aria-label="Collapse section 5" title="Collapse section">
+                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    </button>
+                    <h2 id="cl-s5" class="cl-section-title">Section 5: Post-flight</h2>
+                </div>
+                <p class="cl-section-collapsed-summary" data-collapsed-summary="5" aria-hidden="true"></p>
                 <div class="cl-section-meta">
                     <span class="cl-section-count" data-section-count="5">0 / 6 complete</span>
                     <button type="button" class="cl-mark-all" data-mark-section="5">Mark all complete</button>
                 </div>
             </div>
 
+            <div class="cl-section-body" id="cl-section-5-body">
             <div class="cl-row"><input type="checkbox" id="c5-1" data-section="5" /><div class="cl-label-wrap"><label for="c5-1">1. Battery removed and checked for swelling or heat</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c5-2" data-section="5" /><div class="cl-label-wrap"><label for="c5-2">2. Propellers inspected for damage</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c5-3" data-section="5" /><div class="cl-label-wrap"><label for="c5-3">3. Gimbal protector refitted</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c5-4" data-section="5" /><div class="cl-label-wrap"><label for="c5-4">4. SD card removed and media backed up</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c5-5" data-section="5" /><div class="cl-label-wrap"><label for="c5-5">5. Flight details logged (duration, battery cycles, incidents)</label></div></div>
             <div class="cl-row"><input type="checkbox" id="c5-6" data-section="5" /><div class="cl-label-wrap"><label for="c5-6">6. Any defects or damage recorded before next use</label></div></div>
+            </div>
         </section>
 
         <div class="cl-toolbar cl-toolbar-footer no-print" aria-label="Checklist progress and export">
@@ -960,10 +1085,13 @@
                     <div class="cl-progress-fill" id="clProgressFillBottom"></div>
                 </div>
             </div>
-            <div class="cl-toolbar-actions">
-                <button type="button" class="cl-btn cl-btn-secondary cl-action-reset">Reset All</button>
-                <button type="button" class="cl-btn cl-btn-secondary cl-action-email">Send by email</button>
-                <button type="button" class="cl-btn cl-btn-primary cl-action-print">Export to PDF</button>
+            <div class="cl-toolbar-actions-wrap">
+                <p class="cl-toolbar-hint">Save a completed copy</p>
+                <div class="cl-toolbar-actions">
+                    <button type="button" class="cl-btn cl-btn-secondary cl-action-reset">Reset All</button>
+                    <button type="button" class="cl-btn cl-btn-secondary cl-action-email">Send by email</button>
+                    <button type="button" class="cl-btn cl-btn-primary cl-action-print">Export to PDF</button>
+                </div>
             </div>
         </div>
     </main>
@@ -995,18 +1123,28 @@
             };
 
             function pageThemeIsLight() {
-                var r = document.querySelector('input[name="clPageTheme"][value="light"]');
-                return !!(r && r.checked);
+                return document.body.classList.contains('cl-light-theme');
+            }
+
+            function syncThemeToggle() {
+                var btn = document.getElementById('clThemeToggle');
+                if (!btn) return;
+                var light = pageThemeIsLight();
+                btn.setAttribute('aria-pressed', light ? 'true' : 'false');
+                var label = light ? 'Switch to dark theme' : 'Switch to light theme';
+                btn.setAttribute('aria-label', label);
+                btn.title = label;
+                var moon = btn.querySelector('.cl-theme-toggle-icon--moon');
+                var sun = btn.querySelector('.cl-theme-toggle-icon--sun');
+                if (moon && sun) {
+                    moon.classList.toggle('hidden', light);
+                    sun.classList.toggle('hidden', !light);
+                }
             }
 
             function applyPageTheme(light) {
-                var rd = document.querySelector('input[name="clPageTheme"][value="dark"]');
-                var rl = document.querySelector('input[name="clPageTheme"][value="light"]');
-                if (rl && rd) {
-                    rl.checked = !!light;
-                    rd.checked = !light;
-                }
                 document.body.classList.toggle('cl-light-theme', !!light);
+                syncThemeToggle();
             }
 
             /** Map saved v1 Section 3 ids after removing old item 7 (c3-7) and renumbering. */
@@ -1027,6 +1165,17 @@
                 return out;
             }
 
+            function collectCollapsedState() {
+                var collapsed = {};
+                for (var s = 1; s <= 5; s++) {
+                    var sec = document.querySelector('.cl-section[data-section="' + s + '"]');
+                    if (sec && sec.classList.contains('cl-section--collapsed')) {
+                        collapsed[String(s)] = true;
+                    }
+                }
+                return collapsed;
+            }
+
             function persistState() {
                 try {
                     var checks = {};
@@ -1040,13 +1189,36 @@
                     localStorage.setItem(
                         STORAGE_KEY,
                         JSON.stringify({
-                            v: 2,
+                            v: 3,
                             checks: checks,
                             notes: notes,
-                            lightTheme: pageThemeIsLight()
+                            lightTheme: pageThemeIsLight(),
+                            collapsed: collectCollapsedState()
                         })
                     );
                 } catch (e) {}
+            }
+
+            function setSectionCollapsed(sid, collapsed) {
+                var section = document.querySelector('.cl-section[data-section="' + sid + '"]');
+                var body = document.getElementById('cl-section-' + sid + '-body');
+                var btn = document.querySelector('[data-section-toggle="' + sid + '"]');
+                if (!section || !body || !btn) return;
+                if (collapsed) {
+                    section.classList.add('cl-section--collapsed');
+                    body.classList.add('cl-section-body--collapsed');
+                    btn.setAttribute('aria-expanded', 'false');
+                    btn.setAttribute('aria-label', 'Expand section ' + sid);
+                    btn.title = 'Expand section';
+                } else {
+                    section.classList.remove('cl-section--collapsed');
+                    body.classList.remove('cl-section-body--collapsed');
+                    btn.setAttribute('aria-expanded', 'true');
+                    btn.setAttribute('aria-label', 'Collapse section ' + sid);
+                    btn.title = 'Collapse section';
+                }
+                var sum = section.querySelector('[data-collapsed-summary="' + sid + '"]');
+                if (sum) sum.setAttribute('aria-hidden', collapsed ? 'false' : 'true');
             }
 
             function loadPersistedState() {
@@ -1060,7 +1232,7 @@
                         data.checks = migrateV1ChecksToV2(data.checks);
                         data.v = 2;
                     }
-                    if (data.v !== 2) return;
+                    if (data.v !== 2 && data.v !== 3) return;
                     var id;
                     for (id in data.checks) {
                         if (!Object.prototype.hasOwnProperty.call(data.checks, id)) continue;
@@ -1076,8 +1248,16 @@
                     }
                     if (typeof data.lightTheme === 'boolean') {
                         applyPageTheme(data.lightTheme);
+                    } else {
+                        syncThemeToggle();
                     }
-                    if (needMigrate) persistState();
+                    var collapsedMap = data.collapsed && typeof data.collapsed === 'object' ? data.collapsed : {};
+                    for (var s = 1; s <= 5; s++) {
+                        if (collapsedMap[String(s)]) {
+                            setSectionCollapsed(String(s), true);
+                        }
+                    }
+                    if (needMigrate || data.v === 2) persistState();
                 } catch (e) {}
             }
 
@@ -1096,6 +1276,15 @@
                 }, 120);
             }
 
+            function updateStickyOffsets() {
+                var header = document.querySelector('.fn-top-bar');
+                var chrome = document.getElementById('clChecklistStickyChrome');
+                var h = header ? Math.round(header.getBoundingClientRect().height) : 52;
+                var ch = chrome ? Math.round(chrome.offsetHeight) : 48;
+                document.documentElement.style.setProperty('--cl-sticky-top', h + 'px');
+                document.documentElement.style.setProperty('--cl-scroll-pad', h + ch + 12 + 'px');
+            }
+
             function update() {
                 var all = boxes();
                 var total = all.length;
@@ -1111,6 +1300,8 @@
                 var countBottom = document.getElementById('clGlobalCountBottom');
                 if (fillBottom) fillBottom.style.width = pct + '%';
                 if (countBottom) countBottom.textContent = countText;
+                var headerFill = document.getElementById('clHeaderProgressFill');
+                if (headerFill) headerFill.style.width = pct + '%';
 
                 for (var s = 1; s <= 5; s++) {
                     var secBoxes = document.querySelectorAll('input[type="checkbox"][data-section="' + s + '"]');
@@ -1121,6 +1312,13 @@
                     }
                     var el = document.querySelector('[data-section-count="' + s + '"]');
                     if (el) el.textContent = sd + ' / ' + st + ' complete';
+                    var sec = document.querySelector('.cl-section[data-section="' + s + '"]');
+                    var sumEl = sec && sec.querySelector('[data-collapsed-summary="' + s + '"]');
+                    if (sumEl && sec) {
+                        var short = sec.getAttribute('data-section-short') || 'Section ' + s;
+                        var check = st > 0 && sd === st ? '\u2713 ' : '';
+                        sumEl.textContent = check + short.toUpperCase() + ' \u2014 ' + sd + '/' + st;
+                    }
                 }
             }
 
@@ -1146,6 +1344,16 @@
                 });
             });
 
+            document.querySelectorAll('[data-section-toggle]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var sid = btn.getAttribute('data-section-toggle');
+                    var section = document.querySelector('.cl-section[data-section="' + sid + '"]');
+                    var collapsed = section && section.classList.contains('cl-section--collapsed');
+                    setSectionCollapsed(sid, !collapsed);
+                    persistState();
+                });
+            });
+
             function formatExportTimestamp() {
                 try {
                     return new Date().toLocaleString(undefined, {
@@ -1162,7 +1370,7 @@
 
             function buildChecklistPlainText() {
                 var lines = [];
-                lines.push('AirPlot v3: M4T / TD checklist');
+                lines.push('AirPlot v4: M4T / TD checklist');
                 lines.push('Exported: ' + formatExportTimestamp());
                 lines.push('');
                 var sections = document.querySelectorAll('.cl-main .cl-section');
@@ -1171,7 +1379,7 @@
                     var h2 = sec.querySelector('.cl-section-title');
                     if (h2) lines.push(h2.textContent.replace(/\s+/g, ' ').trim());
                     lines.push('');
-                    var rows = sec.querySelectorAll('.cl-row');
+                    var rows = sec.querySelectorAll('.cl-section-body .cl-row');
                     for (var ri = 0; ri < rows.length; ri++) {
                         var row = rows[ri];
                         var cb = row.querySelector('input[type="checkbox"]');
@@ -1247,6 +1455,9 @@
                 document.querySelectorAll('.cl-note').forEach(function (inp) {
                     inp.value = '';
                 });
+                for (var sx = 1; sx <= 5; sx++) {
+                    setSectionCollapsed(String(sx), false);
+                }
                 clearPersistedState();
                 update();
                 closeResetModal();
@@ -1288,15 +1499,28 @@
                 });
             });
 
-            document.querySelectorAll('input[name="clPageTheme"]').forEach(function (radio) {
-                radio.addEventListener('change', function () {
-                    document.body.classList.toggle('cl-light-theme', pageThemeIsLight());
+            var themeBtn = document.getElementById('clThemeToggle');
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function () {
+                    applyPageTheme(!pageThemeIsLight());
                     persistState();
                 });
-            });
+            }
 
             loadPersistedState();
+            syncThemeToggle();
             update();
+            updateStickyOffsets();
+            var topBar = document.querySelector('.fn-top-bar');
+            var stickyChrome = document.getElementById('clChecklistStickyChrome');
+            if (typeof ResizeObserver !== 'undefined') {
+                var ro = new ResizeObserver(function () {
+                    updateStickyOffsets();
+                });
+                if (topBar) ro.observe(topBar);
+                if (stickyChrome) ro.observe(stickyChrome);
+            }
+            window.addEventListener('resize', updateStickyOffsets);
         })();
     </script>
 </body>

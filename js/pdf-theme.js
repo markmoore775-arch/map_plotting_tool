@@ -184,7 +184,7 @@ const PdfTheme = (() => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(6);
         doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-        doc.text('AirPlot v3', pw - 10, ph - 1.2, { align: 'right' });
+        doc.text('AirPlot v4', pw - 10, ph - 1.2, { align: 'right' });
         var pages = doc.internal.getNumberOfPages();
         var current = doc.internal.getCurrentPageInfo().pageNumber;
         doc.text('Page ' + current + ' of ' + pages, 10, ph - 1.2);

@@ -25,6 +25,10 @@
     let recceExclusionLayer = null;
     let recceAddTargetMode = false;
 
+    const FP_DRAFT_STORAGE_KEY = 'airplotFlightPlanningDraft_v1';
+    let fpDraftSaveTimer = null;
+    let fpDraftLoadInProgress = false;
+
     // Default mission params (M4T - use M350 RTK enum as fallback; verify for M4T)
     const MISSION_DEFAULTS = {
         droneEnumValue: 89,      // M350 RTK - M4T may need different value
@@ -106,8 +110,8 @@
         return latlngs;
     }
 
-    function setRecceTarget(lat, lng) {
-        pushUndo();
+    function setRecceTarget(lat, lng, skipUndo) {
+        if (!skipUndo) pushUndo();
         recceTarget = { lat, lng };
         if (reccePoiMarker) map.removeLayer(reccePoiMarker);
         if (recceExclusionLayer) map.removeLayer(recceExclusionLayer);
@@ -148,6 +152,7 @@
         }
         const input = document.getElementById('fpRecceRadiusInput');
         if (input) input.value = recceRadius;
+        scheduleFlightPlanningDraftSave();
     }
 
     function updateRecceUI() {
@@ -422,6 +427,174 @@
             recceRadius
         });
         document.getElementById('fpUndoBtn').disabled = undoStack.length === 0;
+        scheduleFlightPlanningDraftSave();
+    }
+
+    function cloneExclusionsForStorage() {
+        return exclusions.map(e => ({
+            type: e.type,
+            latlngs: e.latlngs ? e.latlngs.map(ll => [...ll]) : undefined,
+            center: e.center ? [...e.center] : undefined,
+            radius: e.radius,
+            measureAngle: e.measureAngle,
+            measureLabelRatio: e.measureLabelRatio
+        }));
+    }
+
+    function scheduleFlightPlanningDraftSave() {
+        if (fpDraftLoadInProgress || !map) return;
+        if (fpDraftSaveTimer) clearTimeout(fpDraftSaveTimer);
+        fpDraftSaveTimer = setTimeout(() => {
+            fpDraftSaveTimer = null;
+            saveFlightPlanningDraftNow();
+        }, 400);
+    }
+
+    function saveFlightPlanningDraftNow() {
+        if (fpDraftLoadInProgress || !map) return;
+        try {
+            const c = map.getCenter();
+            localStorage.setItem(FP_DRAFT_STORAGE_KEY, JSON.stringify({
+                v: 1,
+                recceMode,
+                recceTarget: recceTarget ? { ...recceTarget } : null,
+                recceRadius,
+                waypoints: waypoints.map(w => ({ lat: w.lat, lng: w.lng, index: w.index })),
+                exclusions: cloneExclusionsForStorage(),
+                mission: { ...MISSION_DEFAULTS },
+                mapLat: c.lat,
+                mapLng: c.lng,
+                mapZoom: map.getZoom()
+            }));
+        } catch (_) { /* ignore */ }
+    }
+
+    function loadFlightPlanningDraft() {
+        let raw;
+        try {
+            raw = localStorage.getItem(FP_DRAFT_STORAGE_KEY);
+        } catch (_) {
+            setRecceMode(recceMode);
+            return;
+        }
+        if (!raw) {
+            setRecceMode(recceMode);
+            return;
+        }
+        let d;
+        try {
+            d = JSON.parse(raw);
+        } catch (_) {
+            setRecceMode(recceMode);
+            return;
+        }
+        if (!d || d.v !== 1) {
+            setRecceMode(recceMode);
+            return;
+        }
+
+        fpDraftLoadInProgress = true;
+        try {
+            if (d.mission && typeof d.mission === 'object') {
+                Object.assign(MISSION_DEFAULTS, d.mission);
+            }
+            recceMode = !!d.recceMode;
+
+            clearRecceTarget();
+            waypointMarkers.forEach(m => map.removeLayer(m));
+            waypointMarkers = [];
+            exclusions.forEach((_, i) => removeCircleRadialMeasurement(i));
+            exclusionLayers.forEach(l => map.removeLayer(l));
+            exclusions = [];
+            exclusionLayers = [];
+            exclusionRadialGroups = [];
+            waypoints = [];
+            undoStack = [];
+
+            if (recceMode && d.recceTarget && d.recceTarget.lat != null && d.recceTarget.lng != null) {
+                recceRadius = d.recceRadius != null
+                    ? Math.max(10, Math.min(5000, d.recceRadius))
+                    : RECCE_DEFAULT_RADIUS;
+                setRecceTarget(d.recceTarget.lat, d.recceTarget.lng, true);
+            } else {
+                recceRadius = d.recceRadius != null
+                    ? Math.max(10, Math.min(5000, d.recceRadius))
+                    : RECCE_DEFAULT_RADIUS;
+            }
+
+            waypoints = (d.waypoints || []).map((w, i) => ({
+                lat: w.lat,
+                lng: w.lng,
+                index: i
+            }));
+
+            exclusions = (d.exclusions || []).map(exc => ({
+                type: exc.type,
+                latlngs: exc.latlngs ? exc.latlngs.map(ll => [...ll]) : undefined,
+                center: exc.center ? [...exc.center] : undefined,
+                radius: exc.radius,
+                measureAngle: exc.measureAngle,
+                measureLabelRatio: exc.measureLabelRatio
+            }));
+
+            waypoints.forEach((w, i) => {
+                const m = L.circleMarker([w.lat, w.lng], {
+                    radius: 8,
+                    fillColor: '#0ea5e9',
+                    color: '#0284c7',
+                    weight: 2,
+                    fillOpacity: 0.9
+                }).addTo(map);
+                m.bindTooltip(`WP${i}`, { permanent: true, direction: 'top', offset: [0, -10] });
+                waypointMarkers.push(m);
+            });
+
+            exclusionRadialGroups = [];
+            exclusions.forEach((exc, i) => {
+                let layer;
+                if (exc.type === 'circle' && exc.center) {
+                    layer = L.circle(exc.center, { radius: exc.radius });
+                    layer._exclusionIdx = i;
+                    layer.setStyle({ color: '#e05555', fillColor: '#e05555', fillOpacity: 0.25, weight: 2 });
+                    layer.addTo(map);
+                    layer.on('pm:remove', () => removeExclusion(layer));
+                    if (layer.pm) layer.pm.enableLayerDrag();
+                    layer.on('pm:drag', () => onCircleDrag(layer));
+                    layer.on('pm:dragend', () => onCircleDragEnd(layer));
+                    exclusionRadialGroups.push(null);
+                    exclusionLayers.push(layer);
+                    createCircleRadialMeasurement(i);
+                } else if (exc.latlngs && exc.latlngs.length >= 3) {
+                    layer = L.polygon(exc.latlngs);
+                    layer._exclusionIdx = i;
+                    layer.setStyle({ color: '#e05555', fillColor: '#e05555', fillOpacity: 0.25, weight: 2 });
+                    layer.addTo(map);
+                    if (layer.pm) layer.pm.enableLayerDrag();
+                    layer.on('pm:drag', () => {
+                        const verts = layer.getLatLngs()[0];
+                        if (exclusions[i]) exclusions[i].latlngs = verts.map(ll => [ll.lat, ll.lng]);
+                    });
+                    layer.on('pm:remove', () => removeExclusion(layer));
+                    exclusionRadialGroups.push(null);
+                    exclusionLayers.push(layer);
+                }
+            });
+
+            if (d.mapLat != null && d.mapLng != null) {
+                map.setView([d.mapLat, d.mapLng], d.mapZoom != null ? d.mapZoom : 11, { animate: false });
+            }
+
+            const ri = document.getElementById('fpRecceRadiusInput');
+            if (ri) ri.value = String(recceRadius);
+        } catch (e) {
+            console.warn('Flight planning draft restore failed', e);
+        } finally {
+            fpDraftLoadInProgress = false;
+        }
+        setRecceMode(recceMode);
+        document.getElementById('fpUndoBtn').disabled = undoStack.length === 0;
+        updateCounts();
+        updateRecceUI();
     }
 
     function addWaypoint(lat, lng) {
@@ -853,6 +1026,7 @@
         document.getElementById('fpUndoBtn').disabled = undoStack.length === 0;
         updateCounts();
         updateRecceUI();
+        scheduleFlightPlanningDraftSave();
     }
 
     function setRecceMode(enable) {
@@ -867,6 +1041,7 @@
         document.getElementById('fpExportBtn').classList.toggle('hidden', recceMode);
         document.getElementById('fpWaypointBtn').classList.remove('active');
         updateRecceUI();
+        scheduleFlightPlanningDraftSave();
     }
 
     // ---- WPML / KMZ Export ----
@@ -971,7 +1146,7 @@
         return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
   <Document>
-    <wpml:author>AirPlot v3</wpml:author>
+    <wpml:author>AirPlot v4</wpml:author>
     <wpml:createTime>${now}</wpml:createTime>
     <wpml:updateTime>${now}</wpml:updateTime>
     <wpml:missionConfig>
@@ -1115,7 +1290,7 @@
 
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';
-            pptx.author = 'AirPlot v3';
+            pptx.author = 'AirPlot v4';
             pptx.subject = 'Flight Plan Report';
 
             const logo = await PptxTheme.loadLogo();
@@ -1440,7 +1615,7 @@
 
     function init() {
         initMap();
-        setRecceMode(recceMode);
+        loadFlightPlanningDraft();
 
         document.getElementById('fpRecceModeBtn').addEventListener('click', () => setRecceMode(true));
         document.getElementById('fpWaypointModeBtn').addEventListener('click', () => setRecceMode(false));
@@ -1504,6 +1679,8 @@
         });
 
         map.on('click', onMapClick);
+        map.on('moveend', scheduleFlightPlanningDraftSave);
+        window.addEventListener('pagehide', saveFlightPlanningDraftNow);
 
         map.on('pm:drawstart', () => {
             stopWaypointMode();
