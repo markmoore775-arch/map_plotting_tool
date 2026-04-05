@@ -29,7 +29,7 @@ body.checklist-mode .fn-top-bar {
     top: 0;
     z-index: 100;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
@@ -56,20 +56,20 @@ body.checklist-mode .fp-welcome-bar {
     align-items: center;
 }
 
-.fn-top-bar-start {
+body.flight-notes-mode .fn-top-bar-start,
+body.checklist-mode .fn-top-bar-start {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
     min-width: 0;
+    flex: 1 1 0;
 }
 
-/* Tool strip: same pill as Planner / Weather / Airspace (global .ap-tool-nav from style.css).
-   Shrink-wrap width so the pill does not stretch with empty space on medium viewports; at ≤640px
-   we flex-grow to match icon-only segments (see media query below). */
+/* Tool strip: grows with header (icon-only below 768px in style.css); matches Planner / Weather / Airspace */
 body.flight-notes-mode .fn-top-bar .ap-tool-nav,
 body.checklist-mode .fn-top-bar .ap-tool-nav {
-    flex: 0 1 auto;
+    flex: 1 1 0;
     min-width: 0;
 }
 
@@ -1711,11 +1711,10 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
     background: #e8eaed;
 }
 
-/* Narrow screens: compact header — segmented tool strip (icon-only ≤640px in style.css) */
+/* Narrow screens: compact header padding (tool nav uses 768px tiers in style.css) */
 @media (max-width: 900px) {
     body.flight-notes-mode .fn-top-bar,
     body.checklist-mode .fn-top-bar {
-        flex-wrap: nowrap;
         align-items: center;
         gap: 8px;
         padding: 8px 10px;
@@ -1726,32 +1725,10 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
         justify-content: space-between;
     }
 
-    .fn-top-bar-start {
-        flex-wrap: nowrap;
-        flex: 1 1 0;
-        min-width: 0;
-        gap: 8px;
-    }
-
     .fn-top-bar-actions {
         flex-wrap: nowrap;
         flex-shrink: 0;
         gap: 8px;
-    }
-
-    body.flight-notes-mode .fp-welcome-home-link,
-    body.checklist-mode .fp-welcome-home-link {
-        padding: 5px 8px;
-        gap: 6px;
-        font-size: 12px;
-        min-height: var(--ap-chrome-height);
-        max-height: var(--ap-chrome-height);
-    }
-
-    body.flight-notes-mode .ap-tool-nav__link,
-    body.checklist-mode .ap-tool-nav__link {
-        padding: 3px 6px;
-        font-size: 10px;
     }
 
     .fn-top-clear-btn {
@@ -1775,12 +1752,15 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
     }
 }
 
-/* Icon-only strip (style.css ≤640px): grow nav so five segments share the row evenly */
-@media (max-width: 640px) {
-    body.flight-notes-mode .fn-top-bar .ap-tool-nav,
-    body.checklist-mode .fn-top-bar .ap-tool-nav {
-        flex: 1 1 0;
-        min-width: 0;
+/* Phone-width header: compact home chip (icon-only tool strip from style.css max-width 767px) */
+@media (max-width: 767px) {
+    body.flight-notes-mode .fp-welcome-home-link,
+    body.checklist-mode .fp-welcome-home-link {
+        padding: 5px 8px;
+        gap: 6px;
+        font-size: 12px;
+        min-height: var(--ap-chrome-height);
+        max-height: var(--ap-chrome-height);
     }
 }
 
