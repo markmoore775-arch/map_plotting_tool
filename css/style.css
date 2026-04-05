@@ -1194,6 +1194,73 @@ body.ap-shell.fn-light-theme .fn-top-bar .map-top-actions .draw-style-header .bt
     color: #5c6378;
 }
 
+/*
+ * Planning map (index): sidebar + UK airspace key use --sidebar-* from :root (dark).
+ * Re-map tokens and a few hardcoded dark surfaces so they track the header theme toggle.
+ */
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) {
+    --sidebar-bg: #f0f1f4;
+    --sidebar-surface: #ffffff;
+    --sidebar-border: #d0d4dc;
+    --sidebar-text: #1a1d26;
+    --sidebar-text-muted: #5c6378;
+    --input-bg: #ffffff;
+    --input-border: #c5c5d0;
+    color: var(--sidebar-text);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar {
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.08);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-title {
+    color: #0a0a0a;
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-logo {
+    filter: brightness(0);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-toggle:hover {
+    color: #0f172a;
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-tabs {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-tab.active {
+    color: #0f172a;
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .point-notes-details {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .point-group-details {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .cell-fields {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .btn-icon:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .airspace-legend {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .airspace-legend-refresh:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .airspace-notam-options {
+    background: rgba(0, 0, 0, 0.05);
+}
+
 /* ---- App Footer ---- */
 
 .app-footer {
