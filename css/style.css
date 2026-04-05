@@ -80,18 +80,22 @@ body.sidebar-collapsed #map {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    height: 100svh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    max-height: 100svh;
+    min-height: 0;
     padding:
-        max(18px, env(safe-area-inset-top, 0px))
-        max(18px, env(safe-area-inset-right, 0px))
-        max(18px, env(safe-area-inset-bottom, 0px))
-        max(18px, env(safe-area-inset-left, 0px));
+        max(16px, env(safe-area-inset-top, 0px))
+        max(16px, env(safe-area-inset-right, 0px))
+        max(16px, env(safe-area-inset-bottom, 0px))
+        max(16px, env(safe-area-inset-left, 0px));
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
     overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
     opacity: 1;
     transition: opacity 0.6s cubic-bezier(.4,0,.2,1), visibility 0.6s cubic-bezier(.4,0,.2,1);
 }
@@ -142,10 +146,12 @@ html.airplot-autostart-boot .intro-overlay {
     align-items: center;
     justify-content: center;
     padding: clamp(18px, 6vw, 36px);
+    /* Uniform −10% on splash logo + padding (matches .intro-content) */
+    zoom: 0.9;
 }
 
 .intro-splash-logo {
-    width: clamp(132px, 42vw, 240px);
+    width: clamp(96px, min(42vw, 30dvh), 240px);
     height: auto;
     filter: drop-shadow(0 6px 36px rgba(91, 141, 239, 0.35));
 }
@@ -265,24 +271,25 @@ html.airplot-autostart-boot .intro-overlay {
     box-sizing: border-box;
     width: 100%;
     max-width: min(690px, 100%);
-    /* Match .intro-overlay vertical padding so the card can use the full padded viewport (avoids a few px overflow scrollbar on laptop) */
-    max-height: calc(100vh - max(18px, env(safe-area-inset-top, 0px)) - max(18px, env(safe-area-inset-bottom, 0px)));
-    max-height: calc(100dvh - max(18px, env(safe-area-inset-top, 0px)) - max(18px, env(safe-area-inset-bottom, 0px)));
+    flex: 0 1 auto;
+    align-self: center;
     min-height: 0;
+    max-height: 100%;
     overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: hidden;
     text-align: center;
     padding:
-        clamp(30px, 6vw, 60px)
-        clamp(24px, 6vw, 48px)
-        clamp(15px, 3vw, 27px);
+        clamp(10px, 4.5dvh, 60px)
+        clamp(16px, 5vw, 48px)
+        clamp(8px, 2.5dvh, 27px);
     background: rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: clamp(24px, 4.5vw, 36px);
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+    /* Uniform −10% on fonts, logos, emoji, buttons, spacing inside the card */
+    zoom: 0.9;
 }
 
 .intro-overlay.splash-done .intro-content {
@@ -292,11 +299,9 @@ html.airplot-autostart-boot .intro-overlay {
 @keyframes introFadeIn {
     from {
         opacity: 0;
-        transform: translateY(36px) scale(0.97);
     }
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
     }
 }
 
@@ -304,12 +309,12 @@ html.airplot-autostart-boot .intro-overlay {
 .intro-logo-wrap {
     position: relative;
     display: inline-block;
-    margin-bottom: clamp(18px, 4.5vw, 36px);
+    margin-bottom: clamp(6px, 2.8dvh, 36px);
 }
 
 .intro-logo {
     position: relative;
-    width: clamp(108px, 33vw, 210px);
+    width: clamp(64px, min(33vw, 24dvh), 210px);
     height: auto;
     filter: drop-shadow(0 6px 30px rgba(91,141,239,0.3));
     animation: introLogoFloat 4s ease-in-out infinite alternate;
@@ -322,21 +327,22 @@ html.airplot-autostart-boot .intro-overlay {
 
 /* Tagline */
 .intro-tagline {
-    font-size: clamp(1.02rem, 3.15vw, 1.2rem);
+    font-size: clamp(0.72rem, min(3.15vw, 3.6dvh), 1.2rem);
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: clamp(1.5px, 0.525vw, 3.75px);
+    letter-spacing: clamp(1px, min(0.525vw, 0.45dvh), 3.75px);
     color: rgba(91, 141, 239, 0.9);
-    margin-bottom: clamp(15px, 3.75vw, 24px);
+    margin-bottom: clamp(6px, 2dvh, 24px);
+    line-height: 1.35;
 }
 
 /* Description */
 .intro-description {
-    font-size: clamp(1.23rem, 3.6vw, 1.425rem);
-    line-height: 1.65;
+    font-size: clamp(0.88rem, min(3.6vw, 3.8dvh), 1.425rem);
+    line-height: 1.55;
     color: rgba(255, 255, 255, 0.7);
     font-weight: 300;
-    margin-bottom: clamp(27px, 6vw, 48px);
+    margin-bottom: clamp(12px, 3.5dvh, 48px);
 }
 
 /* Vertical CTA stack (e.g. training.html sub-pages) */
@@ -344,8 +350,8 @@ html.airplot-autostart-boot .intro-overlay {
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
-    gap: clamp(12px, 3vw, 18px);
-    margin-bottom: clamp(27px, 6vw, 48px);
+    gap: clamp(6px, 1.6dvh, 18px);
+    margin-bottom: clamp(12px, 3.5dvh, 48px);
     align-items: stretch;
     width: 100%;
     max-width: min(480px, 100%);
@@ -364,10 +370,10 @@ html.airplot-autostart-boot .intro-overlay {
 .intro-launchpad {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: clamp(12px, 3vw, 18px);
+    gap: clamp(6px, 1.5dvh, 18px);
     width: 100%;
     max-width: 100%;
-    margin: clamp(18px, 4.5vw, 36px) auto clamp(27px, 6vw, 48px);
+    margin: clamp(8px, 2.2dvh, 36px) auto clamp(10px, 2.8dvh, 48px);
     align-items: stretch;
 }
 
@@ -386,10 +392,10 @@ html.airplot-autostart-boot .intro-overlay {
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 3px 9px;
-    margin: 0 auto clamp(21px, 4.5vw, 33px);
+    gap: 2px min(9px, 2dvw);
+    margin: 0 auto clamp(8px, 2dvh, 33px);
     max-width: 100%;
-    font-size: clamp(1.05rem, 3vw, 1.23rem);
+    font-size: clamp(0.72rem, min(3vw, 3.2dvh), 1.23rem);
 }
 
 .intro-ref-links a,
@@ -397,10 +403,10 @@ html.airplot-autostart-boot .intro-overlay {
     color: rgba(255, 255, 255, 0.52);
     text-decoration: underline;
     text-decoration-color: rgba(255, 255, 255, 0.22);
-    text-underline-offset: 5px;
+    text-underline-offset: min(5px, 1dvh);
     background: none;
     border: none;
-    padding: 6px 9px;
+    padding: clamp(4px, 1.1dvh, 6px) clamp(6px, 2vw, 9px);
     margin: 0;
     font-family: var(--font-family);
     font-size: inherit;
@@ -440,8 +446,8 @@ html.airplot-autostart-boot .intro-overlay {
 
 /* DJI section (explanation + button) */
 .intro-dji-section {
-    margin-bottom: clamp(27px, 6vw, 48px);
-    padding-top: clamp(21px, 4.5vw, 36px);
+    margin-bottom: clamp(12px, 3.5dvh, 48px);
+    padding-top: clamp(10px, 2.5dvh, 36px);
     border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
 
@@ -451,26 +457,26 @@ html.airplot-autostart-boot .intro-overlay {
 }
 
 .intro-dji-description {
-    font-size: clamp(1.2rem, 3.3vw, 1.35rem);
-    line-height: 1.6;
+    font-size: clamp(0.85rem, min(3.3vw, 3.5dvh), 1.35rem);
+    line-height: 1.5;
     color: rgba(255, 255, 255, 0.65);
-    margin-bottom: clamp(15px, 3.75vw, 24px);
+    margin-bottom: clamp(8px, 2dvh, 24px);
 }
 
 /* CTA button */
 .intro-cta {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: clamp(6px, 1.3dvh, 12px);
     margin-bottom: 36px;
     font-family: var(--font-family);
-    font-size: clamp(1.23rem, 3.45vw, 1.425rem);
+    font-size: clamp(0.8rem, min(3.45vw, 3.6dvh), 1.425rem);
     font-weight: 600;
     color: #fff;
     text-decoration: none;
     background: rgba(91, 141, 239, 0.4);
     border: 1px solid rgba(91, 141, 239, 0.5);
-    padding: clamp(15px, 3.75vw, 21px) clamp(30px, 9vw, 54px);
+    padding: clamp(7px, 2.2dvh, 21px) clamp(14px, 7vw, 54px);
     border-radius: 75px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -506,10 +512,10 @@ html.airplot-autostart-boot .intro-overlay {
 /* Launchpad tiers (after base .intro-cta so these win) */
 .intro-cta.intro-cta--hero {
     grid-column: 1 / -1;
-    padding: clamp(21px, 4.8vw, 30px) clamp(33px, 9vw, 60px);
-    font-size: clamp(1.38rem, 3.9vw, 1.62rem);
+    padding: clamp(9px, 3dvh, 30px) clamp(16px, 8vw, 60px);
+    font-size: clamp(0.92rem, min(3.9vw, 4.2dvh), 1.62rem);
     font-weight: 700;
-    border-radius: clamp(21px, 4.5vw, 30px);
+    border-radius: clamp(14px, min(4.5vw, 3dvh), 30px);
     background: rgba(91, 141, 239, 0.52);
     border-color: rgba(91, 141, 239, 0.65);
     box-shadow: 0 9px 36px rgba(91, 141, 239, 0.22);
@@ -522,13 +528,13 @@ html.airplot-autostart-boot .intro-overlay {
 }
 
 .intro-cta.intro-cta--op {
-    border-radius: clamp(18px, 3.75vw, 27px);
+    border-radius: clamp(12px, min(3.75vw, 2.8dvh), 27px);
 }
 
 .intro-cta.intro-cta--doc {
-    font-size: clamp(1.11rem, 3vw, 1.29rem);
+    font-size: clamp(0.78rem, min(3vw, 3.2dvh), 1.29rem);
     font-weight: 600;
-    border-radius: clamp(18px, 3.75vw, 27px);
+    border-radius: clamp(12px, min(3.75vw, 2.8dvh), 27px);
     border-color: rgba(255, 255, 255, 0.16) !important;
     background: rgba(255, 255, 255, 0.06) !important;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
@@ -547,12 +553,12 @@ html.airplot-autostart-boot .intro-overlay {
 
 /* Intro disclaimer */
 .intro-disclaimer {
-    font-size: clamp(1.02rem, 3vw, 1.125rem);
-    line-height: 1.5;
+    font-size: clamp(0.68rem, min(3vw, 2.9dvh), 1.125rem);
+    line-height: 1.4;
     color: rgba(255, 255, 255, 0.7);
-    margin-top: clamp(21px, 4.5vw, 36px);
+    margin-top: clamp(8px, 2.4dvh, 36px);
     margin-bottom: 0;
-    padding: clamp(12px, 3vw, 15px) clamp(15px, 3.75vw, 21px);
+    padding: clamp(6px, 1.8dvh, 15px) clamp(10px, 3vw, 21px);
     background: rgba(255, 152, 0, 0.1);
     border-radius: 9px;
     border-left: 5px solid rgba(255, 152, 0, 0.5);
@@ -563,10 +569,10 @@ html.airplot-autostart-boot .intro-overlay {
 }
 
 .intro-support {
-    margin-top: clamp(18px, 4.5vw, 27px);
+    margin-top: clamp(8px, 2dvh, 27px);
     margin-bottom: 0;
-    font-size: clamp(1.02rem, 3vw, 1.14rem);
-    line-height: 1.5;
+    font-size: clamp(0.68rem, min(3vw, 2.8dvh), 1.14rem);
+    line-height: 1.4;
     color: rgba(255, 255, 255, 0.55);
 }
 
@@ -580,8 +586,8 @@ html.airplot-autostart-boot .intro-overlay {
 }
 
 .intro-privacy {
-    margin: 12px 0 0;
-    font-size: clamp(0.93rem, 2.7vw, 1.05rem);
+    margin: clamp(4px, 1.2dvh, 12px) 0 0;
+    font-size: clamp(0.62rem, min(2.7vw, 2.6dvh), 1.05rem);
 }
 
 .intro-privacy a {
@@ -594,63 +600,107 @@ html.airplot-autostart-boot .intro-overlay {
 }
 
 .intro-copyright {
-    margin-top: 3px;
+    margin-top: 2px;
     margin-bottom: 0;
-    font-size: clamp(0.93rem, 2.7vw, 1.05rem);
+    font-size: clamp(0.6rem, min(2.7vw, 2.5dvh), 1.05rem);
     color: rgba(255,255,255,0.2);
 }
 
-/* Intro: short viewports (landscape phones, small heights) */
-@media (max-height: 520px) and (orientation: landscape) {
+/* Intro: very short viewports (extra squeeze beyond dvh clamps) */
+@media (max-height: 520px) {
+    .intro-content {
+        padding:
+            clamp(6px, 2.5dvh, 24px)
+            clamp(12px, 4vw, 32px)
+            clamp(4px, 1.5dvh, 16px);
+    }
+
     .intro-logo-wrap {
-        margin-bottom: 12px;
+        margin-bottom: 4px;
     }
 
     .intro-logo {
-        width: clamp(84px, 16vh, 150px);
+        width: clamp(52px, min(26vw, 14dvh), 120px);
+        animation: none;
     }
 
     .intro-tagline {
-        margin-bottom: 9px;
+        margin-bottom: 4px;
     }
 
     .intro-description {
-        margin-bottom: 18px;
-        line-height: 1.5;
+        margin-bottom: 8px;
+        line-height: 1.45;
     }
 
     .intro-launchpad,
     .intro-cta-stack {
-        margin-bottom: 18px;
-        gap: 9px;
+        margin-bottom: 8px;
+        gap: 4px;
     }
 
     .intro-cta {
-        padding: 12px 21px;
+        padding: 6px 12px;
         margin-bottom: 0;
-        font-size: 1.23rem;
+        font-size: clamp(0.72rem, min(2.8vw, 3.8dvh), 1.05rem);
     }
 
     .intro-cta.intro-cta--hero {
-        padding: 15px 27px;
-        font-size: 1.32rem;
+        padding: 8px 14px;
+        font-size: clamp(0.8rem, min(3.2vw, 4.2dvh), 1.15rem);
+    }
+
+    .intro-cta.intro-cta--doc {
+        font-size: clamp(0.68rem, min(2.6vw, 3.4dvh), 0.95rem);
     }
 
     .intro-ref-links {
-        margin-bottom: 15px;
-        font-size: 1.08rem;
+        margin-bottom: 6px;
+        font-size: clamp(0.65rem, min(2.6vw, 3dvh), 1rem);
     }
 
     .intro-disclaimer {
-        margin-top: 15px;
-        padding: 9px 15px;
+        margin-top: 6px;
+        padding: 5px 8px;
+        font-size: clamp(0.6rem, min(2.5vw, 2.6dvh), 0.95rem);
+    }
+
+    .intro-support {
+        margin-top: 5px;
+        font-size: clamp(0.6rem, min(2.5vw, 2.5dvh), 0.9rem);
+    }
+
+    .intro-privacy,
+    .intro-copyright {
+        font-size: clamp(0.55rem, min(2.2vw, 2.3dvh), 0.85rem);
+    }
+}
+
+/* Last resort: uniform shrink when content would still overflow (layout-sized in WebKit/Blink) */
+@supports (zoom: 1) {
+    @media (max-height: 480px) {
+        .intro-overlay .intro-content {
+            zoom: 0.828; /* 0.92 × 0.9 (base welcome −10%) */
+        }
+    }
+
+    @media (max-height: 420px) {
+        .intro-overlay .intro-content {
+            zoom: 0.765; /* 0.85 × 0.9 */
+        }
+    }
+}
+
+@media (max-height: 620px) {
+    .intro-logo {
+        animation: none;
     }
 }
 
 /* Tablet width: slightly tighter card margins handled by overlay padding */
 @media (max-width: 768px) and (min-width: 601px) {
     .intro-content {
-        max-width: min(660px, calc(100vw - 48px));
+        max-width: min(660px, calc(100vw - 43px));
     }
 }
 
@@ -743,7 +793,8 @@ body.sidebar-collapsed .map-logo {
     letter-spacing: 0.02em;
 }
 
-@media (max-width: 520px) {
+/* Icon-only home chip from tablet widths up — frees top bar for tool labels (e.g. Flight Report on iPad portrait) */
+@media (max-width: 900px) {
     .fp-welcome-title {
         display: none;
     }
@@ -3080,18 +3131,18 @@ a.airspace-choice-btn {
         visibility: hidden;
     }
 
-    /* Intro screen - compact layout (inherits fluid clamp from base rules) */
+    /* Intro screen - width only; height comes from flex + max-height: 100% on .intro-content */
     .intro-content {
-        max-width: calc(100vw - 48px);
-        max-height: calc(100dvh - max(18px, env(safe-area-inset-top, 0px)) - max(18px, env(safe-area-inset-bottom, 0px)));
+        max-width: calc(100vw - 43px);
+        max-height: 100%;
     }
 
     .intro-splash-logo {
-        width: clamp(120px, 39vw, 180px);
+        width: clamp(88px, min(39vw, 28dvh), 180px);
     }
 
     .intro-logo {
-        width: clamp(102px, 30vw, 150px);
+        width: clamp(72px, min(30vw, 22dvh), 150px);
     }
 
     /* Footer: full-width row; bottom offset for attribution is in max-width: 768px block */
