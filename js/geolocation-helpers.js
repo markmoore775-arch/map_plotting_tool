@@ -67,7 +67,11 @@
     }
 
     /**
-     * Try GPS/high accuracy first; on timeout or position unavailable, retry with network / cached fix.
+     * Try GPS/high accuracy first on desktop-style browsers; on timeout or position unavailable,
+     * retry with network / cached fix.
+     * On WebKit / iOS / iPad (prefersGentleGeoOptions), skip the high-accuracy pass entirely:
+     * the first getCurrentPosition with enableHighAccuracy true often never invokes success or
+     * error, so callers like Flight Report’s “Use current GPS” appear to hang forever.
      * @param {PositionCallback} onSuccess
      * @param {PositionErrorCallback} [onError]
      * @param {{ highTimeout?: number, lowTimeout?: number, lowMaximumAge?: number }} [opts]
@@ -89,15 +93,43 @@
         }
 
         var gentle = prefersGentleGeoOptions();
-        var highAcc = {
-            enableHighAccuracy: true,
-            timeout: opts.highTimeout != null ? opts.highTimeout : gentle ? 7000 : 12000,
-            maximumAge: 0
-        };
         var lowAcc = {
             enableHighAccuracy: false,
-            timeout: opts.lowTimeout != null ? opts.lowTimeout : 25000,
+            timeout: opts.lowTimeout != null ? opts.lowTimeout : gentle ? 20000 : 25000,
             maximumAge: opts.lowMaximumAge != null ? opts.lowMaximumAge : 120000
+        };
+
+        if (gentle) {
+            navigator.geolocation.getCurrentPosition(
+                onSuccess,
+                function (err) {
+                    if (err && (err.code === 2 || err.code === 3)) {
+                        navigator.geolocation.getCurrentPosition(
+                            onSuccess,
+                            function (err2) {
+                                if (onError) {
+                                    onError(err2);
+                                }
+                            },
+                            {
+                                enableHighAccuracy: false,
+                                timeout: 30000,
+                                maximumAge: 300000
+                            }
+                        );
+                    } else if (onError) {
+                        onError(err);
+                    }
+                },
+                lowAcc
+            );
+            return;
+        }
+
+        var highAcc = {
+            enableHighAccuracy: true,
+            timeout: opts.highTimeout != null ? opts.highTimeout : 12000,
+            maximumAge: 0
         };
 
         navigator.geolocation.getCurrentPosition(
