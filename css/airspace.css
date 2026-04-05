@@ -630,3 +630,54 @@ a.airspace-btn.airspace-view-switch {
         padding: 2px 5px;
     }
 }
+
+/* Light header theme: floating toolbar + panels (hardcoded shadows/hover; --sidebar-muted token). */
+body.ap-shell.fn-light-theme.airspace-mode .airspace-toolbar {
+    background: #f0f1f4;
+    border-color: #d0d4dc;
+    box-shadow: var(--ap-chrome-shadow-light, 0 2px 12px rgba(0, 0, 0, 0.08));
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-btn:not(.active) {
+    color: #1a1d26;
+    background: #ffffff;
+    border-color: #d0d4dc;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-btn:hover:not(:disabled):not(.active) {
+    background: #e8eaef;
+    border-color: #c5c9d4;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-toolbar-label {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-toolbar-status {
+    color: #5c6378;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-toolbar-status.airspace-status-error {
+    color: var(--danger, #e05555);
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-toolbar-hint {
+    color: #5c6378;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-side-panel {
+    box-shadow: var(--ap-chrome-shadow-light, 0 2px 12px rgba(0, 0, 0, 0.08));
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-side-panel-close:hover {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-attribution {
+    color: rgba(26, 29, 38, 0.88);
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-attribution a {
+    color: var(--primary, #5b8def);
+}

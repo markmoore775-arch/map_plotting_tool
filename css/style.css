@@ -990,9 +990,10 @@ body.ap-shell .fn-top-bar .fp-welcome-home-link {
 }
 
 /* Open sidebar: on the map (not in fn-top-bar) so the header matches Weather / Airspace / Checklist */
+/* Top = map inset (12px, see .leaflet-top.leaflet-left) + Leaflet’s .leaflet-top .leaflet-control margin-top (10px) so » aligns with zoom + */
 body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map {
     position: fixed;
-    top: calc(var(--ap-top-header-height) + 12px);
+    top: calc(var(--ap-top-header-height) + 12px + 10px);
     left: calc(max(12px, env(safe-area-inset-left, 0px)) + var(--ap-planner-sidebar-open-left-offset));
     z-index: 1002;
     display: inline-flex;
@@ -1037,19 +1038,36 @@ body.ap-shell .fn-top-bar .help-panel {
     background: var(--sidebar-bg);
 }
 
-body.ap-shell .fn-top-bar .help-panel .draw-style-header {
+body.ap-shell .fn-top-bar .help-panel .help-panel-btn {
     flex: 1;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: center;
+    gap: 0;
     min-height: 0;
     min-width: 0;
-    padding: 0 10px;
-    border-bottom: none;
+    margin: 0;
+    padding: 0 12px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
     color: var(--sidebar-text);
+    font-family: inherit;
     font-size: 13px;
     font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+body.ap-shell .fn-top-bar .help-panel .help-panel-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.ap-shell.fn-light-theme .fn-top-bar .help-panel .help-panel-btn:hover {
+    background: #f0f1f3;
 }
 
 body.ap-shell .fn-theme-toggle {
@@ -1138,8 +1156,8 @@ body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode).
         font-size: 16px;
     }
 
-    body.ap-shell .fn-top-bar .help-panel .draw-style-header {
-        padding: 0 8px;
+    body.ap-shell .fn-top-bar .help-panel .help-panel-btn {
+        padding: 0 10px;
         font-size: 12px;
     }
 }
@@ -1222,12 +1240,8 @@ body.ap-shell.fn-light-theme .fn-top-bar .help-panel {
     box-shadow: var(--ap-chrome-shadow-light);
 }
 
-body.ap-shell.fn-light-theme .fn-top-bar .help-panel .draw-style-header {
+body.ap-shell.fn-light-theme .fn-top-bar .help-panel .help-panel-btn {
     color: #1a1d26;
-}
-
-body.ap-shell.fn-light-theme .fn-top-bar .map-top-actions .draw-style-header .btn-icon {
-    color: #5c6378;
 }
 
 /*
@@ -1242,6 +1256,22 @@ body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-
     --sidebar-text-muted: #5c6378;
     --input-bg: #ffffff;
     --input-border: #c5c5d0;
+    color: var(--sidebar-text);
+}
+
+/* Map tool pages use the same chrome tokens as the planner; they were excluded from the block above only for planner-only sidebar DOM rules. */
+body.ap-shell.fn-light-theme.weather-mode,
+body.ap-shell.fn-light-theme.airspace-mode {
+    --sidebar-bg: #f0f1f4;
+    --sidebar-surface: #ffffff;
+    --sidebar-border: #d0d4dc;
+    --sidebar-text: #1a1d26;
+    --sidebar-text-muted: #5c6378;
+    /* Airspace toolbar uses --sidebar-muted (alias of text-muted). */
+    --sidebar-muted: #5c6378;
+    --input-bg: #ffffff;
+    --input-border: #c5c5d0;
+    --ap-chrome-shadow: var(--ap-chrome-shadow-light);
     color: var(--sidebar-text);
 }
 
@@ -3447,6 +3477,18 @@ a.airspace-choice-btn {
         flex-shrink: 0;
     }
 
+    /* Planner map: text Help chip instead of circular ? */
+    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .ap-mobile-help-btn.mobile-map-action-btn {
+        width: auto;
+        height: 36px;
+        min-width: auto;
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
     /* Hide Help chip on mobile — use FAB */
     .map-top-actions {
         display: none !important;
@@ -4690,27 +4732,16 @@ a.airspace-choice-btn {
     letter-spacing: 0.5px;
 }
 
-.help-panel .draw-style-header {
+.help-panel .help-panel-btn {
     padding: 8px 12px;
     border-bottom: none;
+    text-transform: none;
+    letter-spacing: normal;
 }
 
-/* Welcome / Help header buttons — match Drawing Style toggle (same .btn-icon metrics) */
-.map-top-actions .draw-style-header .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px 6px;
-    font-size: 14px;
-    line-height: 1;
-    box-sizing: border-box;
-}
-
-.map-top-actions .draw-style-header .btn-icon svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    display: block;
+body.ap-shell .fn-top-bar .help-panel .help-panel-btn:focus-visible {
+    outline: 2px solid var(--primary, #5b8def);
+    outline-offset: 2px;
 }
 
 .draw-style-header {

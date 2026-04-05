@@ -150,6 +150,15 @@ body.flight-planning-mode .leaflet-top.leaflet-left {
     display: none;
 }
 
+/* Compact text Help (replaces icon-only control) */
+.fp-btn-help {
+    padding: 6px 10px;
+    min-height: 34px;
+    min-width: auto;
+    font-size: 12px;
+    font-weight: 500;
+}
+
 /* SD card modal steps */
 .fp-sd-steps {
     margin: 12px 0;
@@ -347,5 +356,17 @@ body.flight-planning-mode .leaflet-bottom.leaflet-left .fp-notam-control {
 @media (max-width: 600px) {
     body.flight-planning-mode #fpHelpBtn {
         display: none;
+    }
+
+    /* Smaller “Help” chip instead of circular ? FAB */
+    body.flight-planning-mode .fp-mobile-help-btn.mobile-map-action-btn {
+        width: auto;
+        height: 36px;
+        min-width: auto;
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
     }
 }

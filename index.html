@@ -377,18 +377,15 @@
             </nav>
         </div>
         <div class="fn-top-bar-actions">
+            <div class="map-top-actions">
+                <div id="helpPanel" class="help-panel">
+                    <button type="button" id="helpBtn" class="help-panel-btn" title="Open help" aria-label="Open help">Help</button>
+                </div>
+            </div>
             <button type="button" class="fn-theme-toggle" id="fnThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
                 <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
                 <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
             </button>
-            <div class="map-top-actions">
-                <div id="helpPanel" class="help-panel">
-                    <div class="draw-style-header">
-                        <span>Help</span>
-                        <button id="helpBtn" class="btn-icon" title="Open help">?</button>
-                    </div>
-                </div>
-            </div>
         </div>
     </header>
 
@@ -418,7 +415,7 @@
         <button type="button" id="mobileAddPointBtn" class="mobile-map-action-btn" title="Add point" aria-label="Add point">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
         </button>
-        <button type="button" id="mobileHelpBtn" class="mobile-map-action-btn" title="Help" aria-label="Help">?</button>
+        <button type="button" id="mobileHelpBtn" class="mobile-map-action-btn ap-mobile-help-btn" title="Help" aria-label="Help">Help</button>
     </div>
 
     <!-- Shape Edit Modal -->

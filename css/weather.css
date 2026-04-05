@@ -95,6 +95,12 @@ body.weather-mode.ap-shell .leaflet-top.leaflet-left {
     box-shadow: none;
 }
 
+body.ap-shell.fn-light-theme.weather-mode .weather-map-dock__status.weather-map-hint {
+    color: var(--sidebar-text-muted, #5c6378);
+    background: rgba(0, 0, 0, 0.04);
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
 .weather-map-dock__body {
     display: flex;
     flex-direction: row;
@@ -122,6 +128,12 @@ body.weather-mode.ap-shell .leaflet-top.leaflet-left {
     border: none;
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     max-width: none;
+}
+
+body.ap-shell.fn-light-theme.weather-mode .weather-toolbar-expectation.weather-map-dock__note {
+    color: var(--sidebar-text-muted, #5c6378);
+    background: rgba(0, 0, 0, 0.03);
+    border-top-color: rgba(0, 0, 0, 0.08);
 }
 
 .weather-toolbar-group {
@@ -166,6 +178,11 @@ body.weather-mode.ap-shell .leaflet-top.leaflet-left {
     border-color: #4a4a60;
 }
 
+body.ap-shell.fn-light-theme.weather-mode .weather-btn:hover:not(:disabled):not(.weather-btn-primary) {
+    background: #e8eaef;
+    border-color: #c5c9d4;
+}
+
 .weather-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -195,6 +212,10 @@ body.weather-mode.ap-shell .leaflet-top.leaflet-left {
 .weather-btn-primary:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
+}
+
+body.ap-shell.fn-light-theme.weather-mode .weather-btn-primary:focus-visible {
+    outline-color: var(--sidebar-text, #1a1d26);
 }
 
 .weather-btn-primary .weather-fetch-label--short {
@@ -348,6 +369,20 @@ body.weather-mode.ap-shell .leaflet-top.leaflet-left {
         background: rgba(91, 141, 239, 0.28);
         border-color: var(--primary, #5b8def);
         color: #fff;
+    }
+
+    body.ap-shell.fn-light-theme.weather-mode .weather-toolbar-group.weather-model-group,
+    body.ap-shell.fn-light-theme.weather-mode .weather-toolbar-group.weather-time-group {
+        background: rgba(0, 0, 0, 0.04);
+        border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    body.ap-shell.fn-light-theme.weather-mode .weather-toolbar-group.weather-model-group::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.22);
+    }
+
+    body.ap-shell.fn-light-theme.weather-mode .weather-map-dock .weather-time-label:has(input:checked) {
+        color: var(--sidebar-text, #1a1d26);
     }
 
     .weather-toolbar-group {
@@ -582,6 +617,11 @@ body.weather-mode.ap-shell .leaflet-top.leaflet-left {
     color: var(--sidebar-text, #e0e0e8);
     border-color: #4a4a60;
     background: rgba(255, 255, 255, 0.04);
+}
+
+body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
+    border-color: #b8bdc8;
+    background: rgba(0, 0, 0, 0.06);
 }
 
 .weather-model-info-btn:focus-visible {
