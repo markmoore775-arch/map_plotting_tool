@@ -725,19 +725,10 @@
             <div class="modal-header help-modal-header">
                 <h2 id="helpModalTitle">AirPlot Help</h2>
                 <div class="help-modal-header-end">
-                    <div class="fn-export-theme-box help-modal-theme-box" role="radiogroup" aria-labelledby="helpPageThemeLabel" title="Help window colours (same as Flight Report; stored in this browser)">
-                        <span id="helpPageThemeLabel" class="fn-export-theme-label">Theme</span>
-                        <div class="fn-export-theme-segments">
-                            <label class="fn-export-theme-segment-opt">
-                                <input type="radio" name="helpPageTheme" value="dark" checked>
-                                <span class="fn-export-theme-segment-text">Dark</span>
-                            </label>
-                            <label class="fn-export-theme-segment-opt">
-                                <input type="radio" name="helpPageTheme" value="light">
-                                <span class="fn-export-theme-segment-text">Light</span>
-                            </label>
-                        </div>
-                    </div>
+                    <button type="button" class="fn-theme-toggle" id="helpModalThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Help window colours (same as Flight Report; stored in this browser)">
+                        <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
+                        <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
+                    </button>
                     <button type="button" class="modal-close" aria-label="Close help">&times;</button>
                 </div>
             </div>
@@ -1422,7 +1413,7 @@
     <script src="https://unpkg.com/@elfalem/leaflet-curve@0.9.2/leaflet.curve.js"></script>
 
     <!-- App Scripts -->
-    <script src="js/ap-shell-theme.js?v=1"></script>
+    <script src="js/ap-shell-theme.js?v=2"></script>
     <script src="js/config.js"></script>
     <script src="js/confirm-modal.js"></script>
     <script src="js/grid.js"></script>

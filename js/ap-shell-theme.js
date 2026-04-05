@@ -9,18 +9,27 @@
     }
 
     function syncFnThemeToggleButton() {
-        var btn = document.getElementById('fnThemeToggle');
-        if (!btn) return;
         var light = pageThemeIsLight();
-        btn.setAttribute('aria-pressed', light ? 'true' : 'false');
         var label = light ? 'Switch to dark theme' : 'Switch to light theme';
-        btn.setAttribute('aria-label', label);
-        btn.title = label;
-        var moon = btn.querySelector('.fn-theme-toggle-icon--moon');
-        var sun = btn.querySelector('.fn-theme-toggle-icon--sun');
-        if (moon && sun) {
-            moon.classList.toggle('hidden', light);
-            sun.classList.toggle('hidden', !light);
+        var ids = ['fnThemeToggle', 'helpModalThemeToggle'];
+        for (var i = 0; i < ids.length; i++) {
+            var btn = document.getElementById(ids[i]);
+            if (!btn) continue;
+            btn.setAttribute('aria-pressed', light ? 'true' : 'false');
+            btn.setAttribute('aria-label', label);
+            if (ids[i] === 'fnThemeToggle') {
+                btn.title = label;
+            }
+            var moon = btn.querySelector('.fn-theme-toggle-icon--moon');
+            var sun = btn.querySelector('.fn-theme-toggle-icon--sun');
+            if (moon && sun) {
+                moon.classList.toggle('hidden', light);
+                sun.classList.toggle('hidden', !light);
+            }
+        }
+        var helpModalEl = document.getElementById('helpModal');
+        if (helpModalEl) {
+            helpModalEl.classList.toggle('help-modal--light', light);
         }
     }
 
@@ -43,6 +52,12 @@
         fnThemeBtn.addEventListener('click', function () {
             applyFnPageTheme(!pageThemeIsLight());
         });
+        var helpThemeBtn = document.getElementById('helpModalThemeToggle');
+        if (helpThemeBtn) {
+            helpThemeBtn.addEventListener('click', function () {
+                applyFnPageTheme(!pageThemeIsLight());
+            });
+        }
     }
 
     if (document.readyState === 'loading') {

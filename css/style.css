@@ -2291,85 +2291,16 @@ a.airspace-choice-btn {
     flex-shrink: 0;
 }
 
-/* Flight Report–style Theme segmented control (Help modal) */
-#helpModal .fn-export-theme-box {
-    position: relative;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    padding: 6px 10px;
-    border: 1px solid var(--sidebar-border, #3a3a50);
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.2);
+/* Help modal: theme control matches header sun/moon (see body.ap-shell .fn-theme-toggle) */
+#helpModal.help-modal--light .fn-theme-toggle {
+    border-color: #c5c5d0;
+    background: #ffffff;
+    box-shadow: var(--ap-chrome-shadow-light);
+    color: #1a1d26;
 }
 
-#helpModal .fn-export-theme-label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--sidebar-text-muted, #9999aa);
-}
-
-#helpModal .fn-export-theme-segments {
-    display: inline-flex;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(0, 0, 0, 0.35);
-}
-
-#helpModal .fn-export-theme-segment-opt {
-    position: relative;
-    display: block;
-    margin: 0;
-    cursor: pointer;
-    user-select: none;
-}
-
-#helpModal .fn-export-theme-segment-opt input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-    opacity: 0;
-}
-
-#helpModal .fn-export-theme-segment-opt + .fn-export-theme-segment-opt .fn-export-theme-segment-text {
-    border-left: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-#helpModal .fn-export-theme-segment-text {
-    display: block;
-    padding: 8px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.2;
-    color: var(--sidebar-text-muted, #a0a0b8);
-    background: transparent;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-#helpModal .fn-export-theme-segment-opt:hover .fn-export-theme-segment-text {
-    color: var(--sidebar-text, #e8e8f0);
-}
-
-#helpModal .fn-export-theme-segment-opt input:checked + .fn-export-theme-segment-text {
-    background: var(--primary, #5b8def);
-    color: #fff;
-}
-
-#helpModal .fn-export-theme-segment-opt input:focus-visible + .fn-export-theme-segment-text {
-    outline: 2px solid var(--primary, #5b8def);
-    outline-offset: 2px;
-    position: relative;
-    z-index: 1;
+#helpModal.help-modal--light .fn-theme-toggle:hover {
+    background: #f0f1f3;
 }
 
 /* Help modal light theme (synced with Flight Report via fnLightTheme) */
@@ -2395,37 +2326,6 @@ a.airspace-choice-btn {
 #helpModal.help-modal--light .modal-close:hover {
     background: rgba(0, 0, 0, 0.06);
     color: #1a1d26;
-}
-
-#helpModal.help-modal--light .fn-export-theme-segment-opt + .fn-export-theme-segment-opt .fn-export-theme-segment-text {
-    border-left-color: #c8c8c8;
-}
-
-#helpModal.help-modal--light .fn-export-theme-box {
-    border-color: #d0d0d0;
-    background: #e8e9ec;
-}
-
-#helpModal.help-modal--light .fn-export-theme-label {
-    color: #666;
-}
-
-#helpModal.help-modal--light .fn-export-theme-segments {
-    border-color: #c8c8c8;
-    background: #f0f1f3;
-}
-
-#helpModal.help-modal--light .fn-export-theme-segment-text {
-    color: #555;
-}
-
-#helpModal.help-modal--light .fn-export-theme-segment-opt:hover .fn-export-theme-segment-text {
-    color: #1a1a1a;
-}
-
-#helpModal.help-modal--light .fn-export-theme-segment-opt input:checked + .fn-export-theme-segment-text {
-    background: var(--primary, #5b8def);
-    color: #fff;
 }
 
 #helpModal.help-modal--light .help-overview {

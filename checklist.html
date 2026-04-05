@@ -384,7 +384,7 @@
         .cl-section-head {
             display: flex;
             flex-wrap: wrap;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 10px;
             margin-bottom: 14px;
@@ -394,7 +394,7 @@
 
         .cl-section-head-main {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 8px;
             flex: 1 1 220px;
             min-width: 0;
@@ -402,7 +402,6 @@
 
         .cl-section-toggle {
             flex-shrink: 0;
-            margin-top: 2px;
             width: 40px;
             height: 40px;
             padding: 0;
@@ -466,6 +465,10 @@
 
         .cl-section--collapsed .cl-section-collapsed-summary {
             display: block;
+            flex: 1 1 auto;
+            min-width: 0;
+            padding: 0;
+            align-self: center;
         }
 
         .cl-section--collapsed .cl-section-title,
@@ -474,13 +477,21 @@
         }
 
         .cl-section--collapsed .cl-section-head {
+            flex-wrap: nowrap;
+            align-items: center;
             margin-bottom: 0;
             padding-bottom: 0;
             border-bottom: none;
         }
 
-        .cl-section--collapsed .cl-section-toggle {
-            margin-top: 0;
+        .cl-section--collapsed .cl-section-head-main {
+            flex: 0 0 auto;
+            align-items: center;
+        }
+
+        .cl-section--collapsed {
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
 
         .cl-section-body.cl-section-body--collapsed {
