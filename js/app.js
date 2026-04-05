@@ -1789,7 +1789,9 @@
 
     const helpModalEl = document.getElementById('helpModal');
 
-    function activateHelpTab(tabName) {
+    function activateHelpTab(tabName, opts) {
+        opts = opts || {};
+        const align = opts.align || 'panel-nearest';
         if (!helpModalEl || !tabName) return;
         helpModalEl.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         helpModalEl.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1798,7 +1800,19 @@
         if (tabBtn) tabBtn.classList.add('active');
         if (panel) panel.classList.add('active');
         const helpBody = helpModalEl.querySelector('.modal-body');
-        if (helpBody) helpBody.scrollTop = 0;
+        if (!helpBody || !panel) return;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (align === 'tabs') {
+                    const tabsRow = helpModalEl.querySelector('.help-tabs');
+                    if (tabsRow) tabsRow.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                } else if (align === 'panel-start') {
+                    panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                } else {
+                    panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            });
+        });
     }
 
     document.getElementById('helpBtn').addEventListener('click', () => {
@@ -1835,7 +1849,7 @@
     if (footerDisclaimerBtn) {
         footerDisclaimerBtn.addEventListener('click', () => {
             openModal('helpModal');
-            activateHelpTab('disclaimer');
+            activateHelpTab('disclaimer', { align: 'panel-start' });
         });
     }
 
@@ -1858,11 +1872,14 @@
                 }
             }
             const card = e.target.closest('[data-help-tab]');
-            if (card && helpModalEl.contains(card) && card.tagName === 'BUTTON') {
+            if (card && helpModalEl.contains(card)) {
                 const tabName = card.getAttribute('data-help-tab');
-                if (tabName) {
+                const isButton = card.tagName === 'BUTTON';
+                const href = card.getAttribute('href') || '';
+                const isHashJump = card.tagName === 'A' && href.charAt(0) === '#';
+                if (tabName && (isButton || isHashJump)) {
                     e.preventDefault();
-                    activateHelpTab(tabName);
+                    activateHelpTab(tabName, { align: 'tabs' });
                 }
             }
         });
