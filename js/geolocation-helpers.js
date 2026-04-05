@@ -25,13 +25,21 @@
         return false;
     }
 
-    /** Options passed to Leaflet.Locate / L.Map.locate (single browser request). */
+    /**
+     * Options passed to Leaflet.Locate / L.Map.locate.
+     * leaflet-locatecontrol defaults to watch: true (watchPosition). On WebKit / iOS,
+     * watchPosition often never invokes success or error, so the locate button spins
+     * forever; the plugin also ignores timeouts while watch is true. Force watch: false
+     * so Leaflet uses getCurrentPosition, which behaves reliably after the user grants
+     * permission (live “follow” updates are traded off on those platforms).
+     */
     function leafletLocateOptions() {
         if (prefersGentleGeoOptions()) {
             return {
                 enableHighAccuracy: false,
-                timeout: 25000,
-                maximumAge: 60000
+                timeout: 20000,
+                maximumAge: 60000,
+                watch: false
             };
         }
         return {

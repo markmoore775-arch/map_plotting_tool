@@ -423,6 +423,14 @@ body.knowledge-page.fn-light-theme .fp-welcome-home-link:hover {
     color: #0f172a;
 }
 
+body.knowledge-page.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
+    filter: brightness(0);
+}
+
+body.knowledge-page.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
+    color: #0a0a0a;
+}
+
 body.knowledge-page.fn-light-theme .fn-export-theme-segment-opt + .fn-export-theme-segment-opt .fn-export-theme-segment-text {
     border-left-color: #c8c8c8;
 }

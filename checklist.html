@@ -6,7 +6,7 @@
     <title>M4T / TD | AirPlot</title>
     <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css?v=12">
+    <link rel="stylesheet" href="css/flight-notes.css?v=16">
     <style>
         :root {
             --cl-bg: #1e1e2e;
@@ -509,7 +509,8 @@
             min-width: 0;
         }
 
-        .cl-note {
+        /* Scope beats global style.css input[type="text"] (uses --input-bg, not --cl-input-bg). */
+        body.checklist-mode .cl-note {
             flex: 1 1 160px;
             max-width: 100%;
             min-width: 140px;
@@ -523,10 +524,15 @@
             border-radius: var(--cl-radius);
         }
 
-        .cl-note:focus {
+        body.checklist-mode .cl-note:focus {
             outline: none;
             border-color: var(--cl-primary);
             box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.25);
+        }
+
+        body.checklist-mode.cl-light-theme .cl-note::placeholder {
+            color: var(--cl-muted);
+            opacity: 0.85;
         }
 
         .cl-row-inner {
@@ -821,7 +827,7 @@
                 opacity: 0.65;
             }
 
-            .cl-note {
+            body.checklist-mode .cl-note {
                 border: 1pt solid #ccc !important;
                 background: #fafafa !important;
                 color: #111 !important;

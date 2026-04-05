@@ -1,6 +1,6 @@
 /**
  * Flight Report: form serialization, GPS (HTTPS only), mailto + clipboard fallback, PDF via PdfTheme.
- * Page Theme toggle + PDF theme (Dark/Light) radios; Clear Report (start of report) / Clear form share one confirmation modal.
+ * Page Theme toggle + PDF theme (Dark/Light) radios; two Clear Report buttons (title row + actions) share one confirmation modal.
  */
 (function () {
     'use strict';

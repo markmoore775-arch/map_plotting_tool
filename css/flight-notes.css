@@ -216,8 +216,27 @@ body.checklist-mode.cl-light-theme .fn-top-clear-btn:hover {
     margin-bottom: 24px;
 }
 
-.fn-header-clear-row {
-    margin-bottom: 14px;
+.fn-header-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    margin-bottom: 8px;
+}
+
+.fn-header-title-row .fn-title {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.15;
+}
+
+.fn-header-title-row .fn-top-clear-btn {
+    flex-shrink: 0;
+    align-self: center;
+    min-height: 2.75rem;
+    padding: 8px 14px;
+    font-size: 14px;
 }
 
 .fn-title {
@@ -370,15 +389,25 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     min-width: 7.5rem;
 }
 
-.fn-date-primary-row .fn-field-grow {
-    min-width: 0;
+.fn-date-primary-row {
+    /* Shared control height so Date + Calendar lines up with Time on iPad/Safari */
+    --fn-when-control-min-h: 44px;
+    align-items: start;
 }
 
-.fn-date-input-row {
+.fn-date-primary-row .fn-field-grow {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.fn-date-input-row,
+.fn-time-input-row {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
     gap: 8px;
+    min-height: var(--fn-when-control-min-h);
 }
 
 .fn-date-input-row .fn-date-input {
@@ -386,9 +415,36 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     min-width: 0;
 }
 
+.fn-date-primary-row .fn-date-input-row .fn-date-input {
+    min-height: var(--fn-when-control-min-h);
+    box-sizing: border-box;
+}
+
 .fn-date-input-row .fn-date-picker-btn {
     flex: 0 0 auto;
     white-space: nowrap;
+    min-height: var(--fn-when-control-min-h);
+    box-sizing: border-box;
+    align-self: stretch;
+}
+
+.fn-time-input-row .fn-time-input-primary {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: var(--fn-when-control-min-h);
+    box-sizing: border-box;
+    margin: 0;
+    /* Safari/iPad: native time UI ignores most border/background unless appearance is reset */
+    -webkit-appearance: none;
+    appearance: none;
+    line-height: 1.25;
+}
+
+.fn-time-input-row .fn-time-input-primary::-webkit-calendar-picker-indicator {
+    margin: 0 0 0 4px;
+    padding: 0;
+    opacity: 0.85;
+    cursor: pointer;
 }
 
 .fn-date-manual-fallback {
@@ -660,12 +716,83 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) inset;
 }
 
+/* Bottom actions: grid on small screens so controls align; PDF theme stays labelled */
 .fn-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding-top: 4px;
-    align-items: center;
+    padding-top: 8px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+}
+
+.fn-actions-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.fn-actions-inner .fn-btn {
+    min-height: 44px;
+    border-radius: var(--radius, 8px);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.fn-actions-inner .fn-btn-secondary {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.fn-actions-clear {
+    grid-column: 1 / -1;
+}
+
+@media (min-width: 720px) {
+    .fn-actions-inner {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .fn-actions-inner .fn-btn {
+        width: auto;
+        min-width: 0;
+        min-height: 38px;
+        padding: 8px 16px;
+    }
+
+    .fn-export-theme-box {
+        flex: 1 1 260px;
+        min-width: min(100%, 220px);
+        max-width: 100%;
+        min-height: 38px;
+        padding: 4px 6px 4px 10px;
+        gap: 6px;
+    }
+
+    .fn-export-theme-segments {
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    .fn-export-theme-segment-text {
+        padding: 4px 10px;
+    }
+
+    .fn-actions-clear {
+        margin-left: auto;
+    }
+}
+
+@media (min-width: 960px) {
+    .fn-actions-inner {
+        flex-wrap: nowrap;
+    }
+
+    .fn-export-theme-box {
+        flex: 0 1 auto;
+        max-width: 340px;
+    }
 }
 
 /* Segmented control — clearer than native radios on Safari/iOS (avoids “one checkbox” look) */
@@ -673,31 +800,37 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     position: relative;
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 6px 10px;
-    padding: 4px 8px;
-    min-height: var(--ap-chrome-height);
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 6px 8px 6px 10px;
+    min-height: 44px;
     box-sizing: border-box;
     border: 1px solid var(--primary, #5b8def);
-    border-radius: 10px;
+    border-radius: var(--radius, 8px);
     background: var(--sidebar-bg, #1e1e2e);
     box-shadow: var(--ap-chrome-shadow);
+    grid-column: 1 / -1;
 }
 
 .fn-export-theme-label {
+    flex: 0 1 auto;
+    min-width: 0;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--sidebar-text-muted, #9999aa);
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+    color: var(--sidebar-text, #e8e8f0);
+    white-space: nowrap;
 }
 
 .fn-export-theme-segments {
     display: inline-flex;
-    border-radius: 8px;
+    border-radius: var(--radius-sm, 6px);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(0, 0, 0, 0.35);
+    min-width: 0;
 }
 
 .fn-export-theme-segment-opt {
@@ -763,7 +896,7 @@ body.flight-notes-mode.fn-light-theme .fn-export-theme-box {
 }
 
 body.flight-notes-mode.fn-light-theme .fn-export-theme-label {
-    color: #666;
+    color: #1a1d26;
 }
 
 body.flight-notes-mode.fn-light-theme .fn-export-theme-segments {
@@ -782,6 +915,22 @@ body.flight-notes-mode.fn-light-theme .fn-export-theme-segment-opt:hover .fn-exp
 body.flight-notes-mode.fn-light-theme .fn-export-theme-segment-opt input:checked + .fn-export-theme-segment-text {
     background: var(--primary, #5b8def);
     color: #fff;
+}
+
+@media (max-width: 719px) {
+    .fn-export-theme-segments {
+        flex: 1 1 auto;
+    }
+
+    .fn-export-theme-segment-opt {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .fn-export-theme-segment-text {
+        text-align: center;
+        padding: 5px 8px;
+    }
 }
 
 /* Page theme in header — icon toggle (same pattern as Checklist) */
@@ -943,6 +1092,23 @@ body.flight-notes-mode.fn-light-theme .fp-welcome-home-link:hover {
     background: #f0f0f5;
     border-color: var(--primary);
     color: #0f172a;
+}
+
+/* airplot-icon.svg is white-on-transparent; on the light pill it must read as black. */
+body.flight-notes-mode.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
+    filter: brightness(0);
+}
+
+body.flight-notes-mode.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
+    color: #0a0a0a;
+}
+
+body.checklist-mode.cl-light-theme .fp-welcome-home-link .fp-welcome-logo {
+    filter: brightness(0);
+}
+
+body.checklist-mode.cl-light-theme .fp-welcome-home-link .fp-welcome-title {
+    color: #0a0a0a;
 }
 
 body.flight-notes-mode.fn-light-theme .fn-title {
@@ -1470,6 +1636,12 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
         font-size: 12px;
     }
 
+    .fn-header-title-row .fn-top-clear-btn {
+        min-height: var(--ap-chrome-height);
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
     .fn-clear-btn-label--long {
         display: none;
     }
@@ -1477,33 +1649,11 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
     .fn-clear-btn-label--short {
         display: inline;
     }
-
-    .fn-export-theme-box {
-        flex-wrap: nowrap;
-        gap: 6px;
-        padding: 4px 8px;
-    }
-
-    body.flight-notes-mode .fn-export-theme-label {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
-    }
-
-    .fn-export-theme-segment-text {
-        padding: 6px 10px;
-        font-size: 11px;
-    }
 }
 
 @media (max-width: 600px) {
-    .fn-row-2,
+    /* Keep Date + Time side by side on phones/tablets until very narrow viewports */
+    .fn-row-2:not(.fn-date-primary-row),
     .fn-grid-2,
     .fn-battery-grid {
         grid-template-columns: 1fr;
@@ -1511,5 +1661,11 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
 
     .fn-field-span-2 {
         grid-column: auto;
+    }
+}
+
+@media (max-width: 380px) {
+    .fn-date-primary-row {
+        grid-template-columns: 1fr;
     }
 }

@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css?v=13">
+    <link rel="stylesheet" href="css/flight-notes.css?v=17">
     <!-- Leaflet (mini map for GPS location) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -46,25 +46,25 @@
 
     <main class="fn-main">
         <header class="fn-header">
-            <div class="fn-header-clear-row">
+            <div class="fn-header-title-row">
+                <h1 class="fn-title">Flight Report</h1>
                 <button type="button" class="fn-top-clear-btn" id="fnClearNotesTopBtn" title="Clear all entered flight report fields" aria-label="Clear all entered flight report fields">
                     <span class="fn-clear-btn-label fn-clear-btn-label--long" aria-hidden="true">Clear Report</span>
                     <span class="fn-clear-btn-label fn-clear-btn-label--short" aria-hidden="true">Clear</span>
                 </button>
             </div>
-            <h1 class="fn-title">Flight Report</h1>
             <details class="fn-privacy-details" id="fnPrivacyDetails">
                 <summary class="fn-privacy-summary"><span class="fn-privacy-summary-icon" aria-hidden="true">ℹ️</span> Privacy info</summary>
                 <div class="fn-disclaimer-body" role="note">
                     <p>
                         <strong>Privacy:</strong> AirPlot does not save your flight report on our servers. What you enter stays in this browser on this device and is not uploaded to us.
-                        Your draft is saved locally so you can leave this page and return later; use <strong>Clear Report</strong> at the start of the report (above the title) or <strong>Clear form</strong> at the bottom to wipe it from this browser.
+                        Your draft is saved locally so you can leave this page and return later; use <strong>Clear Report</strong> next to the page title or at the bottom to wipe it from this browser.
                         For a portable copy, use <strong>export to PDF</strong> or <strong>send by email</strong>.
                         Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch Weather Report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed report text is not sent to those services.
                     </p>
                 </div>
             </details>
-            <p class="fn-lead">Record key details from your flight. The <strong>sun/moon button</strong> (top right) toggles page colours; <strong>PDF theme</strong> next to Export PDF sets PDF colours (default Light). <strong>Clear Report</strong> (start of report) or <strong>Clear form</strong> (bottom) wipes the draft after confirmation. Use <strong>Fetch Weather Report</strong> and <strong>Clear Weather Report</strong> (Conditions) and the <strong>Airspace</strong> section (NOTAMs and UK zones with small maps) when you have a location. Export to PDF or send by email. The header <strong>tool strip</strong> switches to Checklist, Planner, Weather, or the live Airspace map in this tab without returning to the welcome screen.</p>
+            <p class="fn-lead">Record key details from your flight. The <strong>sun/moon button</strong> (top right) toggles this page only. At the bottom, <strong>PDF appearance</strong> next to Export PDF chooses light or dark for the <em>exported</em> PDF only (default Light). Either <strong>Clear Report</strong> control (beside the title or at the bottom) wipes the draft after confirmation. Use <strong>Fetch Weather Report</strong> and <strong>Clear Weather Report</strong> (Conditions) and the <strong>Airspace</strong> section (NOTAMs and UK zones with small maps) when you have a location. Export to PDF or send by email. The header <strong>tool strip</strong> switches to Checklist, Planner, Weather, or the live Airspace map in this tab without returning to the welcome screen.</p>
         </header>
 
         <form id="flightReportForm" class="fn-form" autocomplete="on">
@@ -100,7 +100,9 @@
                     </div>
                     <div class="fn-field-grow">
                         <label class="fn-label" for="fnTime">Time</label>
-                        <input type="time" id="fnTime" name="fnTime" class="fn-input">
+                        <div class="fn-time-input-row">
+                            <input type="time" id="fnTime" name="fnTime" class="fn-input fn-time-input-primary">
+                        </div>
                     </div>
                 </div>
                 <div class="fn-now-row">
@@ -467,28 +469,30 @@
             </section>
 
             <div class="fn-actions">
-                <button type="button" class="fn-btn fn-btn-secondary" id="fnEmailBtn">
-                    Send by email
-                </button>
-                <button type="button" class="fn-btn fn-btn-primary" id="fnPdfBtn">
-                    Export PDF
-                </button>
-                <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="fnExportThemeLabel">
-                    <span id="fnExportThemeLabel" class="fn-export-theme-label">PDF theme</span>
-                    <div class="fn-export-theme-segments">
-                        <label class="fn-export-theme-segment-opt">
-                            <input type="radio" name="fnExportTheme" value="dark">
-                            <span class="fn-export-theme-segment-text">Dark</span>
-                        </label>
-                        <label class="fn-export-theme-segment-opt">
-                            <input type="radio" name="fnExportTheme" value="light" checked>
-                            <span class="fn-export-theme-segment-text">Light</span>
-                        </label>
+                <div class="fn-actions-inner">
+                    <button type="button" class="fn-btn fn-btn-secondary fn-actions-email" id="fnEmailBtn">
+                        Send by email
+                    </button>
+                    <button type="button" class="fn-btn fn-btn-primary fn-actions-export" id="fnPdfBtn">
+                        Export PDF
+                    </button>
+                    <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="fnExportThemeLabel" title="Light or dark styling for the exported PDF only (not this page)">
+                        <span id="fnExportThemeLabel" class="fn-export-theme-label">PDF export</span>
+                        <div class="fn-export-theme-segments">
+                            <label class="fn-export-theme-segment-opt">
+                                <input type="radio" name="fnExportTheme" value="dark">
+                                <span class="fn-export-theme-segment-text">Dark</span>
+                            </label>
+                            <label class="fn-export-theme-segment-opt">
+                                <input type="radio" name="fnExportTheme" value="light" checked>
+                                <span class="fn-export-theme-segment-text">Light</span>
+                            </label>
+                        </div>
                     </div>
+                    <button type="button" class="fn-btn fn-btn-danger fn-actions-clear" id="fnClearFormBtn" title="Clear all entered flight report fields" aria-label="Clear all entered flight report fields">
+                        Clear Report
+                    </button>
                 </div>
-                <button type="button" class="fn-btn fn-btn-danger" id="fnClearFormBtn">
-                    Clear form
-                </button>
             </div>
         </form>
     </main>
