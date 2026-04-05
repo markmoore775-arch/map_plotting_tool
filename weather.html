@@ -21,71 +21,83 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/weather.css?v=39">
+    <link rel="stylesheet" href="css/weather.css?v=40">
 </head>
-<body class="weather-mode">
+<body class="weather-mode ap-shell">
+    <script>
+        try { if (localStorage.getItem('fnLightTheme') === '1') document.body.classList.add('fn-light-theme'); } catch (e) {}
+    </script>
     <div id="map"></div>
 
-    <!-- Welcome + tool strip: top-left -->
-    <div class="ap-top-chrome ap-top-chrome--map">
-        <nav class="fp-welcome-bar" aria-label="AirPlot home">
-            <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
-                <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
-                <span class="fp-welcome-title">AirPlot</span>
-            </a>
-        </nav>
-        <nav class="ap-tool-nav" aria-label="AirPlot tools">
-            <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></a>
-            <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Weather, current page"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></span>
-            <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
-            <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></a>
-            <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
-        </nav>
-    </div>
-
-    <!-- Bottom chrome: map hint + toolbar + expectation line -->
-    <div class="weather-bottom-chrome" id="weatherBottomChrome">
-        <p class="weather-map-hint" id="weatherMapHint" role="status" aria-live="polite">Click the map to set your location. Or tap Select Location, then tap the map.</p>
-        <div class="weather-toolbar">
-            <div class="weather-toolbar-group weather-toolbar-group--select">
-                <button type="button" class="weather-btn" id="weatherSelectBtn" title="Click map to select location">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    <span>Select Location</span>
-                </button>
-            </div>
-            <div class="weather-toolbar-group weather-model-group">
-                <label for="weatherModel" class="weather-model-label">Model</label>
-                <button type="button" class="weather-model-info-btn" id="weatherModelInfoBtn" aria-label="Weather model help" title="">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg>
-                </button>
-                <select id="weatherModel" class="weather-model-select" title="Weather model / source">
-                    <option value="auto">Best match</option>
-                    <option value="ecmwf_ifs">ECMWF IFS</option>
-                    <option value="gfs_seamless">GFS (NOAA)</option>
-                    <option value="ukmo_seamless">UK Met Office</option>
-                    <option value="gem_global">GEM (Canada)</option>
-                </select>
-            </div>
-            <div class="weather-toolbar-group weather-time-group">
-                <label class="weather-time-label">
-                    <input type="radio" name="weatherTime" value="now" id="weatherTimeNow" checked>
-                    <span>Now</span>
-                </label>
-                <label class="weather-time-label">
-                    <input type="radio" name="weatherTime" value="future" id="weatherTimeFuture">
-                    <span>Date &amp; Time</span>
-                </label>
-                <input type="datetime-local" id="weatherDateTime" class="weather-datetime hidden" min="" max="">
-            </div>
-            <div class="weather-toolbar-group weather-toolbar-group--fetch">
-                <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Get weather for selected location" aria-label="Get weather">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
-                    <span class="weather-fetch-label--full" aria-hidden="true">Get Weather</span>
-                    <span class="weather-fetch-label--short" aria-hidden="true">Get weather</span>
-                </button>
-            </div>
+    <header class="fn-top-bar" id="mapTopChrome">
+        <div class="fn-top-bar-start">
+            <nav class="fp-welcome-bar" aria-label="AirPlot home">
+                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
+                    <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
+                    <span class="fp-welcome-title">AirPlot</span>
+                </a>
+            </nav>
+            <nav class="ap-tool-nav" aria-label="AirPlot tools">
+                <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></a>
+                <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Weather, current page"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></span>
+                <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
+                <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></a>
+                <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
+            </nav>
         </div>
-        <p class="weather-toolbar-expectation">Shows wind, gusts, visibility, precipitation, and a Green / Amber / Red flight-suitability summary for your chosen point.</p>
+        <div class="fn-top-bar-actions">
+            <button type="button" class="fn-theme-toggle" id="fnThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
+                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
+                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Bottom dock: matches top ap-tool-nav pill (one card, status + controls + note) -->
+    <div class="weather-bottom-chrome" id="weatherBottomChrome">
+        <div class="weather-map-dock" role="region" aria-label="Weather map controls">
+            <p class="weather-map-hint weather-map-dock__status" id="weatherMapHint" role="status" aria-live="polite">Click the map to set your location. Or tap Select Location, then tap the map.</p>
+            <div class="weather-map-dock__body">
+                <div class="weather-toolbar-group weather-toolbar-group--select">
+                    <button type="button" class="weather-btn" id="weatherSelectBtn" title="Click map to select location">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span>Select Location</span>
+                    </button>
+                </div>
+                <div class="weather-toolbar-group weather-model-group">
+                    <label for="weatherModel" class="weather-model-label">Model</label>
+                    <button type="button" class="weather-model-info-btn" id="weatherModelInfoBtn" aria-label="Weather model help" title="">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg>
+                    </button>
+                    <select id="weatherModel" class="weather-model-select" title="Weather model / source">
+                        <option value="auto">Best match</option>
+                        <option value="ecmwf_ifs">ECMWF IFS</option>
+                        <option value="gfs_seamless">GFS (NOAA)</option>
+                        <option value="ukmo_seamless">UK Met Office</option>
+                        <option value="gem_global">GEM (Canada)</option>
+                    </select>
+                </div>
+                <div class="weather-toolbar-group weather-time-group">
+                    <label class="weather-time-label">
+                        <input type="radio" name="weatherTime" value="now" id="weatherTimeNow" checked>
+                        <span>Now</span>
+                    </label>
+                    <label class="weather-time-label">
+                        <input type="radio" name="weatherTime" value="future" id="weatherTimeFuture">
+                        <span>Date &amp; Time</span>
+                    </label>
+                    <input type="datetime-local" id="weatherDateTime" class="weather-datetime hidden" min="" max="">
+                </div>
+                <div class="weather-toolbar-group weather-toolbar-group--fetch">
+                    <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Get weather for selected location" aria-label="Get weather">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                        <span class="weather-fetch-label--full" aria-hidden="true">Get Weather</span>
+                        <span class="weather-fetch-label--short" aria-hidden="true">Get weather</span>
+                    </button>
+                </div>
+            </div>
+            <p class="weather-toolbar-expectation weather-map-dock__note">Shows wind, gusts, visibility, precipitation, and a Green / Amber / Red flight-suitability summary for your chosen point.</p>
+        </div>
     </div>
 
     <!-- Side panel - collapsible help -->
@@ -304,7 +316,7 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
-    <script src="js/geolocation-helpers.js?v=2"></script>
+    <script src="js/geolocation-helpers.js?v=4"></script>
 
     <!-- html2canvas for map screenshots -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -315,6 +327,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
+    <script src="js/ap-shell-theme.js?v=1"></script>
     <script src="js/pptx-theme.js?v=10"></script>
     <script src="js/pdf-theme.js?v=6"></script>
     <script src="js/notam-pib.js?v=1"></script>

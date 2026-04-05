@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css?v=17">
+    <link rel="stylesheet" href="css/flight-notes.css?v=19">
     <!-- Leaflet (mini map for GPS location) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -88,8 +88,8 @@
 
             <section class="fn-section" aria-labelledby="fn-when-heading">
                 <h2 id="fn-when-heading" class="fn-section-title">When</h2>
-                <div class="fn-row fn-row-2 fn-date-primary-row">
-                    <div class="fn-field-grow">
+                <div class="fn-when-controls">
+                    <div class="fn-when-date-block">
                         <label class="fn-label" for="fnDate">Date</label>
                         <div class="fn-date-input-row">
                             <input type="date" id="fnDate" name="fnDate" class="fn-input fn-date-input">
@@ -98,14 +98,12 @@
                             </button>
                         </div>
                     </div>
-                    <div class="fn-field-grow">
+                    <div class="fn-when-time-block">
                         <label class="fn-label" for="fnTime">Time</label>
                         <div class="fn-time-input-row">
                             <input type="time" id="fnTime" name="fnTime" class="fn-input fn-time-input-primary">
                         </div>
                     </div>
-                </div>
-                <div class="fn-now-row">
                     <button type="button" class="fn-btn fn-btn-now" id="fnTodayBtn" title="Set date to today (local); leave time unchanged">
                         Today
                     </button>
@@ -147,7 +145,7 @@
                             title="Look up coordinates from what you typed (postcode, address, or place) using OpenStreetMap search. Use when GPS is unavailable.">
                             Search location
                         </button>
-                        <button type="button" class="fn-btn fn-btn-now" id="fnGpsBtn" title="Fill location from device GPS (requires HTTPS)">
+                        <button type="button" class="fn-btn fn-btn-now" id="fnGpsBtn" title="Fill location from device GPS (HTTPS). On iPad, use Safari or allow location in Settings → Safari; home-screen shortcuts sometimes cannot use GPS — use Search location instead.">
                             Use current GPS
                         </button>
                         <span id="fnGpsStatus" class="fn-gps-status" role="status" aria-live="polite"></span>
@@ -558,7 +556,7 @@
     <script src="js/pdf-theme.js?v=6"></script>
     <script src="js/notam-pib.js?v=1"></script>
     <script src="js/airspace-nearby.js?v=3"></script>
-    <script src="js/geolocation-helpers.js?v=2"></script>
+    <script src="js/geolocation-helpers.js?v=4"></script>
     <script src="js/flight-notes.js?v=32"></script>
 </body>
 </html>

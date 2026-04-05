@@ -683,12 +683,13 @@ body.sidebar-collapsed .map-logo {
 }
 
 /* Hide top chrome (sidebar + welcome + help) when intro overlay is visible */
-.intro-overlay:not(.hidden) ~ .map-top-chrome {
+.intro-overlay:not(.hidden) ~ header#mapTopChrome {
     visibility: hidden;
 }
 
-/* Hide mobile Help FAB — it sits outside .map-top-chrome and would show through splash fade-in */
-.intro-overlay:not(.hidden) ~ .mobile-map-actions {
+/* Hide mobile Help FAB — sits outside header; would show through splash fade-in */
+.intro-overlay:not(.hidden) ~ .mobile-map-actions,
+.intro-overlay:not(.hidden) ~ .sidebar-open--planner-map {
     visibility: hidden;
     pointer-events: none;
 }
@@ -823,8 +824,8 @@ span.ap-tool-nav__link--current {
     }
 }
 
-/* Compact viewports (phones, most tablets): icon-only segmented nav; Planner top bar full width */
-@media (max-width: 900px) {
+/* Narrow phones: icon-only segmented nav (iPad portrait and up keep labels — see max-width below) */
+@media (max-width: 640px) {
     .ap-tool-nav {
         flex: 1 1 0;
         min-width: 0;
@@ -850,63 +851,92 @@ span.ap-tool-nav__link--current {
     }
 }
 
-/* Main map: top row — open sidebar + Welcome + Help (one line, matched heights) */
-/* Wide screens (>900px): shrink-wrap; compact: full width in second @media (max-width: 900px) below */
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome {
-    position: fixed;
-    top: max(12px, env(safe-area-inset-top, 12px));
-    left: max(12px, env(safe-area-inset-left, 12px));
-    width: max-content;
-    max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-    z-index: 1002;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 8px;
-    pointer-events: none;
-    overflow-x: visible;
-    min-width: 0;
-    box-sizing: border-box;
+/* ---- Planner / Weather / Airspace: Flight Report–style full-width top bar ---- */
+body.ap-shell {
+    --ap-top-header-height: calc(max(8px, env(safe-area-inset-top, 0px)) + 8px + var(--ap-chrome-height) + 1px);
+    /* Planner: clear Leaflet top-left zoom / first control + default margin + gap */
+    --ap-planner-sidebar-open-left-offset: 56px;
 }
 
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome > * {
+body.ap-shell .fn-top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1003;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    box-sizing: border-box;
+    background: linear-gradient(180deg, rgba(30, 30, 46, 0.98) 0%, rgba(30, 30, 46, 0.92) 100%);
+    border-bottom: 1px solid var(--sidebar-border, #3a3a50);
+    pointer-events: none;
+}
+
+body.ap-shell .fn-top-bar > * {
     pointer-events: auto;
 }
 
-body:not(.sidebar-collapsed):not(.weather-mode):not(.flight-planning-mode) .map-top-chrome {
-    left: calc(var(--sidebar-width) + max(12px, env(safe-area-inset-left, 12px)));
+body.ap-shell .fn-top-bar-start {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
 }
 
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .fp-welcome-bar {
+body.ap-shell .fn-top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+body.ap-shell .fp-welcome-bar {
     position: relative;
-    left: auto;
     top: auto;
-    max-width: min(320px, calc(100vw - 200px));
-    flex: 0 1 auto;
-    min-width: 0;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
+    max-width: none;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
 }
 
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .ap-tool-nav {
+body.ap-shell .fn-top-bar .ap-tool-nav {
     flex: 0 1 auto;
     min-width: 0;
 }
 
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .fp-welcome-home-link {
+/* Icon-only strip: same as Flight Report / Checklist (flight-notes.css @media 640px) */
+@media (max-width: 640px) {
+    body.ap-shell .fn-top-bar .ap-tool-nav {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+}
+
+body.ap-shell .fn-top-bar .fp-welcome-home-link {
     align-items: center;
     min-height: var(--ap-chrome-height);
     max-height: var(--ap-chrome-height);
     box-sizing: border-box;
 }
 
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .sidebar-open {
-    position: relative;
-    top: auto;
-    left: auto;
-    flex-shrink: 0;
-    align-self: center;
+/* Open sidebar: on the map (not in fn-top-bar) so the header matches Weather / Airspace / Checklist */
+body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map {
+    position: fixed;
+    top: calc(var(--ap-top-header-height) + 12px);
+    left: calc(max(12px, env(safe-area-inset-left, 0px)) + var(--ap-planner-sidebar-open-left-offset));
+    z-index: 1002;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -920,19 +950,24 @@ body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .sidebar-open
     box-sizing: border-box;
     border: 1px solid var(--primary);
     box-shadow: var(--ap-chrome-shadow);
+    background: var(--sidebar-bg);
+    color: #fff;
+    cursor: pointer;
+    transition: background var(--transition);
 }
 
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .map-top-actions {
-    position: relative;
-    left: auto;
-    top: auto;
+body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map:hover {
+    background: var(--sidebar-surface);
+}
+
+body.ap-shell .fn-top-bar .map-top-actions {
     display: flex;
     align-items: center;
     flex-shrink: 0;
     max-width: none;
 }
 
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .help-panel {
+body.ap-shell .fn-top-bar .help-panel {
     display: flex;
     align-items: center;
     min-height: var(--ap-chrome-height);
@@ -941,9 +976,10 @@ body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .help-panel {
     border: 1px solid var(--primary);
     border-radius: 10px;
     box-shadow: var(--ap-chrome-shadow);
+    background: var(--sidebar-bg);
 }
 
-body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .help-panel .draw-style-header {
+body.ap-shell .fn-top-bar .help-panel .draw-style-header {
     flex: 1;
     display: flex;
     align-items: center;
@@ -953,37 +989,209 @@ body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .help-panel .
     min-width: 0;
     padding: 0 10px;
     border-bottom: none;
+    color: var(--sidebar-text);
+    font-size: 13px;
+    font-weight: 600;
 }
 
-/*
- * Planner compact top bar — must come after base .map-top-chrome rules or width: max-content
- * and .ap-tool-nav flex: 0 1 auto override the earlier @media and leave dead space on small screens.
- */
+body.ap-shell .fn-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: var(--ap-chrome-height);
+    padding: 0;
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    background: var(--sidebar-bg);
+    box-shadow: var(--ap-chrome-shadow);
+    cursor: pointer;
+    color: var(--sidebar-text);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+body.ap-shell .fn-theme-toggle:hover {
+    border-color: var(--primary-hover);
+    color: #fff;
+}
+
+body.ap-shell .fn-theme-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+body.ap-shell .fn-theme-toggle-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* Map + sidebar sit below fixed header */
+body.ap-shell:not(.flight-planning-mode) .sidebar {
+    top: var(--ap-top-header-height);
+}
+
+body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) #map {
+    top: var(--ap-top-header-height);
+}
+
+/* Leaflet controls: small gap below top of map container */
+body.ap-shell:not(.flight-planning-mode) .leaflet-top.leaflet-left {
+    top: 12px;
+}
+
 @media (max-width: 900px) {
-    body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome {
-        right: max(12px, env(safe-area-inset-right, 12px));
-        width: auto;
-        max-width: none;
+    body.ap-shell:not(.flight-planning-mode) .leaflet-top.leaflet-right {
+        top: 12px;
+    }
+}
+
+body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .map-logo {
+    top: calc(var(--ap-top-header-height) + 8px);
+}
+
+body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode).sidebar-collapsed .map-logo {
+    left: 52px;
+}
+
+/* Narrow screens: same breakpoints as Flight Report / Checklist (flight-notes.css) */
+@media (max-width: 900px) {
+    body.ap-shell .fn-top-bar {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        padding-left: max(10px, env(safe-area-inset-left, 0px));
+        padding-right: max(10px, env(safe-area-inset-right, 0px));
+        padding-top: max(8px, env(safe-area-inset-top, 0px));
+        overflow-x: visible;
+        justify-content: space-between;
     }
 
-    body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .ap-tool-nav {
+    body.ap-shell .fn-top-bar-start {
+        flex-wrap: nowrap;
         flex: 1 1 0;
         min-width: 0;
+        gap: 8px;
     }
 
-    body:not(.weather-mode):not(.flight-planning-mode) .map-top-chrome .fp-welcome-bar {
-        flex: 0 0 auto;
-        max-width: none;
+    body.ap-shell .fn-top-bar-actions {
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+        gap: 8px;
     }
 
-    body:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-right {
-        top: calc(52px + env(safe-area-inset-top, 0px));
+    body.ap-shell .fn-top-bar .fp-welcome-home-link {
+        padding: 5px 8px;
+        gap: 6px;
+        font-size: 12px;
+        min-height: var(--ap-chrome-height);
+        max-height: var(--ap-chrome-height);
+    }
+
+    body.ap-shell .fn-top-bar .ap-tool-nav__link,
+    body.ap-shell .fn-top-bar span.ap-tool-nav__link--current {
+        padding: 3px 6px;
+        font-size: 10px;
+    }
+
+    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map {
+        padding: 0 8px;
+        min-width: var(--ap-chrome-height);
+        min-height: var(--ap-chrome-height);
+        max-height: var(--ap-chrome-height);
+        font-size: 16px;
+    }
+
+    body.ap-shell .fn-top-bar .help-panel .draw-style-header {
+        padding: 0 8px;
+        font-size: 12px;
     }
 }
 
-/* Leaflet sits below top chrome row */
-body:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-left {
-    top: calc(52px + env(safe-area-inset-top, 0px));
+/* ---- ap-shell light theme (matches Flight Report / Checklist) ---- */
+body.ap-shell.fn-light-theme .fn-top-bar {
+    background: linear-gradient(180deg, #f8f9fb 0%, #eceef2 100%);
+    border-bottom-color: #d0d0d0;
+}
+
+body.ap-shell.fn-light-theme .ap-tool-nav {
+    background: #ffffff;
+    border-color: #c5c5d0;
+    box-shadow: var(--ap-chrome-shadow-light);
+}
+
+body.ap-shell.fn-light-theme .ap-tool-nav__link {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme a.ap-tool-nav__link:hover {
+    color: #0f172a;
+    background: rgba(91, 141, 239, 0.1);
+}
+
+body.ap-shell.fn-light-theme .ap-tool-nav__link--current,
+body.ap-shell.fn-light-theme span.ap-tool-nav__link--current {
+    color: #0f172a;
+    background: rgba(91, 141, 239, 0.14);
+}
+
+body.ap-shell.fn-light-theme .fp-welcome-home-link {
+    background: #ffffff;
+    border-color: #c5c5d0;
+    color: #1a1a1a;
+    box-shadow: var(--ap-chrome-shadow-light);
+}
+
+body.ap-shell.fn-light-theme .fp-welcome-home-link:hover {
+    background: #f0f0f5;
+    border-color: var(--primary);
+    color: #0f172a;
+}
+
+body.ap-shell.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
+    filter: brightness(0);
+}
+
+body.ap-shell.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
+    color: #0a0a0a;
+}
+
+body.ap-shell.fn-light-theme .fn-theme-toggle {
+    border-color: #c5c5d0;
+    background: #ffffff;
+    box-shadow: var(--ap-chrome-shadow-light);
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme .fn-theme-toggle:hover {
+    background: #f0f1f3;
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map {
+    background: #ffffff;
+    border-color: #c5c5d0;
+    color: #1a1d26;
+    box-shadow: var(--ap-chrome-shadow-light);
+}
+
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map:hover {
+    background: #f0f0f5;
+    border-color: var(--primary);
+    color: #0f172a;
+}
+
+body.ap-shell.fn-light-theme .fn-top-bar .help-panel {
+    background: #ffffff;
+    border-color: #c5c5d0;
+    box-shadow: var(--ap-chrome-shadow-light);
+}
+
+body.ap-shell.fn-light-theme .fn-top-bar .help-panel .draw-style-header {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme .fn-top-bar .map-top-actions .draw-style-header .btn-icon {
+    color: #5c6378;
 }
 
 /* ---- App Footer ---- */
@@ -1489,6 +1697,11 @@ body.sidebar-collapsed .map-context-hint {
         border-radius: 16px 16px 0 0;
     }
 
+    body.ap-shell:not(.weather-mode):not(.flight-planning-mode) .sidebar {
+        height: min(82vh, calc(100dvh - var(--ap-top-header-height) - 8px));
+        max-height: calc(100dvh - var(--ap-top-header-height) - 8px);
+    }
+
     .sidebar-header {
         padding-top: 8px;
     }
@@ -1499,10 +1712,6 @@ body.sidebar-collapsed .map-context-hint {
 
     body:not(.weather-mode):not(.flight-planning-mode) #map {
         left: 0 !important;
-    }
-
-    body:not(.sidebar-collapsed):not(.weather-mode):not(.flight-planning-mode) .map-top-chrome {
-        left: max(12px, env(safe-area-inset-left, 12px)) !important;
     }
 
     body:not(.weather-mode):not(.flight-planning-mode) .app-footer {
@@ -2943,6 +3152,19 @@ a.airspace-choice-btn {
     body:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-left {
         top: calc(52px + env(safe-area-inset-top, 0px));
         pointer-events: auto;
+    }
+
+    body.ap-shell:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-left {
+        top: 12px;
+    }
+
+    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .map-logo {
+        top: calc(var(--ap-top-header-height) + 8px);
+    }
+
+    /* Collapsible tool strip: first control is 44px — keep » clear of it */
+    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) {
+        --ap-planner-sidebar-open-left-offset: 64px;
     }
 
     .leaflet-control-layers {
@@ -4405,7 +4627,7 @@ a.airspace-choice-btn {
 
 /* Drawing style — lives in sidebar (see .sidebar .draw-style-panel) */
 
-/* map-top-actions only used inside .map-top-chrome on index (main map) */
+/* map-top-actions: Help chip inside ap-shell .fn-top-bar on index */
 
 .sidebar .draw-style-panel {
     position: relative;

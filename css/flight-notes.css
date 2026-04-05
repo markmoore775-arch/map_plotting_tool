@@ -64,10 +64,12 @@ body.checklist-mode .fp-welcome-bar {
     min-width: 0;
 }
 
-/* Tool strip: same pill as Planner / Weather / Airspace (global .ap-tool-nav from style.css) */
+/* Tool strip: same pill as Planner / Weather / Airspace (global .ap-tool-nav from style.css).
+   Shrink-wrap width so the pill does not stretch with empty space on medium viewports; at ≤640px
+   we flex-grow to match icon-only segments (see media query below). */
 body.flight-notes-mode .fn-top-bar .ap-tool-nav,
 body.checklist-mode .fn-top-bar .ap-tool-nav {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
 }
 
@@ -169,6 +171,9 @@ body.checklist-mode.cl-light-theme .fn-top-clear-btn:hover {
     margin: 0 auto;
     padding: 20px 16px 48px;
     padding-bottom: max(48px, env(safe-area-inset-bottom));
+    /* Flight Report “When” row uses @container rules below */
+    container-type: inline-size;
+    container-name: fn-main;
 }
 
 /* Collapsible privacy note (below page title) */
@@ -377,45 +382,58 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     grid-template-columns: 1fr 1fr;
 }
 
-.fn-now-row {
-    margin-top: 12px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.fn-now-row .fn-btn.fn-btn-now {
-    min-width: 7.5rem;
-}
-
-.fn-date-primary-row {
-    /* Shared control height so Date + Calendar lines up with Time on iPad/Safari */
+/*
+ * When: one horizontal line when .fn-main is wide enough; below ~35rem switch to a fixed grid
+ * (date + calendar full width, time full width, Today | Now) so flex-wrap cannot stagger labels/fields.
+ */
+.fn-when-controls {
     --fn-when-control-min-h: 44px;
-    align-items: start;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 10px 12px;
+    min-width: 0;
 }
 
-.fn-date-primary-row .fn-field-grow {
-    min-width: 0;
+.fn-when-controls .fn-label {
+    margin-bottom: 0;
+}
+
+.fn-when-date-block,
+.fn-when-time-block {
     display: flex;
     flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.fn-when-date-block {
+    flex: 1 1 11rem;
+}
+
+.fn-when-time-block {
+    flex: 0 0 auto;
 }
 
 .fn-date-input-row,
 .fn-time-input-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: stretch;
     gap: 8px;
     min-height: var(--fn-when-control-min-h);
 }
 
+.fn-when-controls .fn-date-input-row {
+    width: 100%;
+}
+
 .fn-date-input-row .fn-date-input {
-    flex: 1 1 10rem;
+    flex: 1 1 auto;
     min-width: 0;
 }
 
-.fn-date-primary-row .fn-date-input-row .fn-date-input {
+.fn-when-controls .fn-date-input-row .fn-date-input {
     min-height: var(--fn-when-control-min-h);
     box-sizing: border-box;
 }
@@ -428,9 +446,16 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     align-self: stretch;
 }
 
+.fn-when-controls .fn-time-input-row {
+    width: fit-content;
+    max-width: 100%;
+}
+
 .fn-time-input-row .fn-time-input-primary {
-    flex: 1 1 auto;
-    min-width: 0;
+    flex: 0 0 auto;
+    width: 6.75rem;
+    max-width: 100%;
+    min-width: 5.5rem;
     min-height: var(--fn-when-control-min-h);
     box-sizing: border-box;
     margin: 0;
@@ -445,6 +470,111 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     padding: 0;
     opacity: 0.85;
     cursor: pointer;
+}
+
+.fn-when-controls .fn-btn.fn-btn-now {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 10px 16px;
+    min-height: var(--fn-when-control-min-h);
+    box-sizing: border-box;
+    align-self: flex-end;
+}
+
+/* Narrow main column (~≤560px): deliberate rows — no broken flex-wrap */
+@container fn-main (max-width: 34.99rem) {
+    .fn-when-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+        gap: 12px;
+        row-gap: 12px;
+    }
+
+    .fn-when-date-block {
+        grid-column: 1 / -1;
+        flex: unset;
+        width: 100%;
+    }
+
+    .fn-when-time-block {
+        grid-column: 1 / -1;
+        flex: unset;
+        width: 100%;
+    }
+
+    .fn-when-controls .fn-time-input-row {
+        width: 100%;
+        max-width: 12rem;
+    }
+
+    .fn-when-controls .fn-time-input-row .fn-time-input-primary {
+        width: 100%;
+        max-width: 12rem;
+        min-width: 0;
+    }
+
+    .fn-when-controls .fn-btn.fn-btn-now {
+        width: 100%;
+        align-self: stretch;
+    }
+}
+
+/* Very narrow: single column, Today above Now */
+@container fn-main (max-width: 21.99rem) {
+    .fn-when-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+/*
+ * Browsers without container queries: same stacked layout on small viewports
+ * (approximates fn-main width on phones).
+ */
+@supports not (container-type: inline-size) {
+    @media (max-width: 560px) {
+        .fn-when-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: stretch;
+            gap: 12px;
+            row-gap: 12px;
+        }
+
+        .fn-when-date-block {
+            grid-column: 1 / -1;
+            flex: unset;
+            width: 100%;
+        }
+
+        .fn-when-time-block {
+            grid-column: 1 / -1;
+            flex: unset;
+            width: 100%;
+        }
+
+        .fn-when-controls .fn-time-input-row {
+            width: 100%;
+            max-width: 12rem;
+        }
+
+        .fn-when-controls .fn-time-input-row .fn-time-input-primary {
+            width: 100%;
+            max-width: 12rem;
+            min-width: 0;
+        }
+
+        .fn-when-controls .fn-btn.fn-btn-now {
+            width: 100%;
+            align-self: stretch;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .fn-when-controls {
+            grid-template-columns: 1fr;
+        }
+    }
 }
 
 .fn-date-manual-fallback {
@@ -1014,7 +1144,7 @@ body.flight-notes-mode.fn-light-theme .fn-theme-toggle:hover {
     filter: brightness(1.08);
 }
 
-/* Primary-style accent (Now, GPS, Fetch weather) — min-width only on .fn-now-row */
+/* Primary-style accent (Now, GPS, Fetch weather) — compact min-width in .fn-when-controls */
 .fn-btn.fn-btn-now {
     padding: 12px 22px;
     font-weight: 700;
@@ -1581,7 +1711,7 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
     background: #e8eaed;
 }
 
-/* Narrow screens: compact header — segmented tool strip (icon-only ≤900px in style.css) */
+/* Narrow screens: compact header — segmented tool strip (icon-only ≤640px in style.css) */
 @media (max-width: 900px) {
     body.flight-notes-mode .fn-top-bar,
     body.checklist-mode .fn-top-bar {
@@ -1601,12 +1731,6 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
         flex: 1 1 0;
         min-width: 0;
         gap: 8px;
-    }
-
-    body.flight-notes-mode .fn-top-bar .ap-tool-nav,
-    body.checklist-mode .fn-top-bar .ap-tool-nav {
-        flex: 1 1 0;
-        min-width: 0;
     }
 
     .fn-top-bar-actions {
@@ -1651,9 +1775,17 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
     }
 }
 
+/* Icon-only strip (style.css ≤640px): grow nav so five segments share the row evenly */
+@media (max-width: 640px) {
+    body.flight-notes-mode .fn-top-bar .ap-tool-nav,
+    body.checklist-mode .fn-top-bar .ap-tool-nav {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+}
+
 @media (max-width: 600px) {
-    /* Keep Date + Time side by side on phones/tablets until very narrow viewports */
-    .fn-row-2:not(.fn-date-primary-row),
+    .fn-row-2,
     .fn-grid-2,
     .fn-battery-grid {
         grid-template-columns: 1fr;
@@ -1664,8 +1796,3 @@ body.flight-notes-mode.fn-light-theme .fn-airspace-minimap .leaflet-container {
     }
 }
 
-@media (max-width: 380px) {
-    .fn-date-primary-row {
-        grid-template-columns: 1fr;
-    }
-}

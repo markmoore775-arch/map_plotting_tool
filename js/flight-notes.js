@@ -1511,15 +1511,32 @@
     function openFnDatePicker() {
         var dateEl = document.getElementById('fnDate');
         if (!dateEl) return;
+        /* iPadOS often reports MacIntel + touch; showPicker may exist but no-op or throw. */
+        var isIOSLike =
+            /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        function focusDate() {
+            try {
+                dateEl.focus({ preventScroll: true });
+            } catch (e2) {
+                dateEl.focus();
+            }
+        }
+        if (isIOSLike) {
+            focusDate();
+            dateEl.click();
+            return;
+        }
         if (typeof dateEl.showPicker === 'function') {
             try {
                 dateEl.showPicker();
+                return;
             } catch (e) {
-                dateEl.focus();
+                /* InvalidStateError / NotSupportedError — fall through */
             }
-        } else {
-            dateEl.focus();
         }
+        focusDate();
+        dateEl.click();
     }
 
     var FN_MONTH_NAMES = [
@@ -2322,9 +2339,6 @@
         if (todayBtn) todayBtn.addEventListener('click', setTodayDate);
         if (nowBtn) nowBtn.addEventListener('click', setNowDateTime);
         if (fnDatePickerBtn && fnDateEl) {
-            if (typeof fnDateEl.showPicker !== 'function') {
-                fnDatePickerBtn.classList.add('hidden');
-            }
             fnDatePickerBtn.addEventListener('click', openFnDatePicker);
         }
         if (fnDateEl) {

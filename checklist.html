@@ -182,6 +182,31 @@
         .cl-toolbar-footer {
             margin-top: 28px;
             margin-bottom: 0;
+            /* Wrap when progress + actions cannot both meet min-widths (avoids squeezed text overlapping the hint). */
+            flex-wrap: wrap;
+            align-items: center;
+            row-gap: 12px;
+            column-gap: 14px;
+        }
+
+        .cl-toolbar-footer .cl-progress-block {
+            flex: 1 1 220px;
+            min-width: min(100%, 200px);
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .cl-toolbar-footer .cl-progress-meta {
+            min-width: 0;
+        }
+
+        .cl-toolbar-footer .cl-progress-meta .cl-progress-count {
+            flex: 1 1 0;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: right;
         }
 
         .cl-toolbar-actions {
@@ -190,17 +215,46 @@
             gap: 8px;
         }
 
-        .cl-toolbar-hint {
-            margin: 0 0 6px;
+        .cl-toolbar-footer .cl-toolbar-actions-wrap {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 10px 12px;
+            flex: 1 1 300px;
+            min-width: min(100%, 260px);
+            max-width: 100%;
+        }
+
+        .cl-toolbar-footer .cl-toolbar-actions {
+            flex-wrap: nowrap;
+            flex: 1 1 auto;
+            min-width: 0;
+            justify-content: flex-end;
+        }
+
+        .cl-toolbar-footer .cl-btn {
+            padding: 7px 10px;
             font-size: 12px;
-            font-weight: 500;
-            color: var(--cl-muted);
-            line-height: 1.35;
+            white-space: nowrap;
         }
 
         .cl-toolbar-actions-wrap {
             flex: 1 1 200px;
             min-width: 0;
+        }
+
+        @media (max-width: 520px) {
+            .cl-toolbar-footer .cl-toolbar-actions-wrap {
+                flex-wrap: wrap;
+                flex: 1 1 100%;
+                min-width: 100%;
+            }
+
+            .cl-toolbar-footer .cl-toolbar-actions {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
         }
 
         .cl-toolbar--primary .cl-progress-block {
@@ -349,8 +403,8 @@
         .cl-section-toggle {
             flex-shrink: 0;
             margin-top: 2px;
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             padding: 0;
             border: 1px solid var(--cl-border);
             border-radius: var(--cl-radius);
@@ -376,7 +430,10 @@
         }
 
         .cl-section-toggle-chevron {
-            display: inline-block;
+            display: block;
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
             transition: transform 0.2s ease;
         }
 
@@ -398,7 +455,7 @@
             display: none;
             flex: 1 1 100%;
             margin: 0;
-            padding: 4px 0 0 40px;
+            padding: 4px 0 0 48px;
             font-size: 0.85rem;
             font-weight: 700;
             text-transform: uppercase;
@@ -900,7 +957,6 @@
                 </div>
             </div>
             <div class="cl-toolbar-actions-wrap no-print">
-                <p class="cl-toolbar-hint">Save a completed copy</p>
                 <div class="cl-toolbar-actions">
                     <button type="button" class="cl-btn cl-btn-secondary cl-action-reset" id="clResetAll">Reset All</button>
                     <button type="button" class="cl-btn cl-btn-secondary cl-action-email" id="clEmailBtn">Send by email</button>
@@ -913,8 +969,8 @@
         <section class="cl-section" data-section="1" data-section-short="Section 1: Pre-flight" aria-labelledby="cl-s1">
             <div class="cl-section-head">
                 <div class="cl-section-head-main">
-                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-1-body" data-section-toggle="1" aria-label="Collapse section 1" title="Collapse section">
-                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-1-body" data-section-toggle="1" aria-label="Collapse section 1" title="Collapse this checklist section">
+                        <svg class="cl-section-toggle-chevron" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <h2 id="cl-s1" class="cl-section-title">Section 1: Pre-flight - UAV inspection</h2>
                 </div>
@@ -942,8 +998,8 @@
         <section class="cl-section" data-section="2" data-section-short="Section 2: Controller setup" aria-labelledby="cl-s2">
             <div class="cl-section-head">
                 <div class="cl-section-head-main">
-                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-2-body" data-section-toggle="2" aria-label="Collapse section 2" title="Collapse section">
-                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-2-body" data-section-toggle="2" aria-label="Collapse section 2" title="Collapse this checklist section">
+                        <svg class="cl-section-toggle-chevron" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <h2 id="cl-s2" class="cl-section-title">Section 2: Pre-flight - Controller and UAV set up</h2>
                 </div>
@@ -996,8 +1052,8 @@
         <section class="cl-section" data-section="3" data-section-short="Section 3: Take off" aria-labelledby="cl-s3">
             <div class="cl-section-head">
                 <div class="cl-section-head-main">
-                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-3-body" data-section-toggle="3" aria-label="Collapse section 3" title="Collapse section">
-                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-3-body" data-section-toggle="3" aria-label="Collapse section 3" title="Collapse this checklist section">
+                        <svg class="cl-section-toggle-chevron" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <h2 id="cl-s3" class="cl-section-title">Section 3: Take off</h2>
                 </div>
@@ -1029,8 +1085,8 @@
         <section class="cl-section" data-section="4" data-section-short="Section 4: Landing" aria-labelledby="cl-s4">
             <div class="cl-section-head">
                 <div class="cl-section-head-main">
-                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-4-body" data-section-toggle="4" aria-label="Collapse section 4" title="Collapse section">
-                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-4-body" data-section-toggle="4" aria-label="Collapse section 4" title="Collapse this checklist section">
+                        <svg class="cl-section-toggle-chevron" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <h2 id="cl-s4" class="cl-section-title">Section 4: Landing</h2>
                 </div>
@@ -1059,8 +1115,8 @@
         <section class="cl-section" data-section="5" data-section-short="Section 5: Post-flight" aria-labelledby="cl-s5">
             <div class="cl-section-head">
                 <div class="cl-section-head-main">
-                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-5-body" data-section-toggle="5" aria-label="Collapse section 5" title="Collapse section">
-                        <span class="cl-section-toggle-chevron" aria-hidden="true">▾</span>
+                    <button type="button" class="cl-section-toggle no-print" aria-expanded="true" aria-controls="cl-section-5-body" data-section-toggle="5" aria-label="Collapse section 5" title="Collapse this checklist section">
+                        <svg class="cl-section-toggle-chevron" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <h2 id="cl-s5" class="cl-section-title">Section 5: Post-flight</h2>
                 </div>
@@ -1092,7 +1148,6 @@
                 </div>
             </div>
             <div class="cl-toolbar-actions-wrap">
-                <p class="cl-toolbar-hint">Save a completed copy</p>
                 <div class="cl-toolbar-actions">
                     <button type="button" class="cl-btn cl-btn-secondary cl-action-reset">Reset All</button>
                     <button type="button" class="cl-btn cl-btn-secondary cl-action-email">Send by email</button>
@@ -1215,13 +1270,13 @@
                     body.classList.add('cl-section-body--collapsed');
                     btn.setAttribute('aria-expanded', 'false');
                     btn.setAttribute('aria-label', 'Expand section ' + sid);
-                    btn.title = 'Expand section';
+                    btn.title = 'Expand this checklist section';
                 } else {
                     section.classList.remove('cl-section--collapsed');
                     body.classList.remove('cl-section-body--collapsed');
                     btn.setAttribute('aria-expanded', 'true');
                     btn.setAttribute('aria-label', 'Collapse section ' + sid);
-                    btn.title = 'Collapse section';
+                    btn.title = 'Collapse this checklist section';
                 }
                 var sum = section.querySelector('[data-collapsed-summary="' + sid + '"]');
                 if (sum) sum.setAttribute('aria-hidden', collapsed ? 'false' : 'true');
@@ -1301,11 +1356,18 @@
                 var pct = total ? Math.round((done / total) * 100) : 0;
                 var countText = done + ' / ' + total + ' items complete';
                 document.getElementById('clProgressFill').style.width = pct + '%';
-                document.getElementById('clGlobalCount').textContent = countText;
+                var countTop = document.getElementById('clGlobalCount');
+                if (countTop) {
+                    countTop.textContent = countText;
+                    countTop.setAttribute('title', countText);
+                }
                 var fillBottom = document.getElementById('clProgressFillBottom');
                 var countBottom = document.getElementById('clGlobalCountBottom');
                 if (fillBottom) fillBottom.style.width = pct + '%';
-                if (countBottom) countBottom.textContent = countText;
+                if (countBottom) {
+                    countBottom.textContent = countText;
+                    countBottom.setAttribute('title', countText);
+                }
                 var headerFill = document.getElementById('clHeaderProgressFill');
                 if (headerFill) headerFill.style.width = pct + '%';
 

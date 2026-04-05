@@ -38,7 +38,10 @@
         })();
     </script>
 </head>
-<body class="sidebar-collapsed">
+<body class="sidebar-collapsed ap-shell">
+    <script>
+        try { if (localStorage.getItem('fnLightTheme') === '1') document.body.classList.add('fn-light-theme'); } catch (e) {}
+    </script>
 
     <!-- Intro Screen -->
     <div id="introOverlay" class="intro-overlay">
@@ -357,31 +360,39 @@
     <!-- Map -->
     <div id="map"></div>
 
-    <!-- Top row: open sidebar + AirPlot home + tool strip + Help (same height, one row) -->
-    <div class="map-top-chrome" id="mapTopChrome">
-        <button type="button" id="sidebarOpen" class="sidebar-open" title="Open sidebar">&raquo;</button>
-        <nav class="fp-welcome-bar" aria-label="AirPlot home">
-            <a href="index.html" class="fp-welcome-home-link" id="mainWelcomeLink" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
-                <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
-                <span class="fp-welcome-title">AirPlot</span>
-            </a>
-        </nav>
-        <nav class="ap-tool-nav" aria-label="AirPlot tools">
-            <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Planner, current page"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></span>
-            <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></a>
-            <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
-            <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></a>
-            <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
-        </nav>
-        <div class="map-top-actions">
-            <div id="helpPanel" class="help-panel">
-                <div class="draw-style-header">
-                    <span>Help</span>
-                    <button id="helpBtn" class="btn-icon" title="Open help">?</button>
+    <header class="fn-top-bar" id="mapTopChrome">
+        <div class="fn-top-bar-start">
+            <nav class="fp-welcome-bar" aria-label="AirPlot home">
+                <a href="index.html" class="fp-welcome-home-link" id="mainWelcomeLink" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
+                    <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
+                    <span class="fp-welcome-title">AirPlot</span>
+                </a>
+            </nav>
+            <nav class="ap-tool-nav" aria-label="AirPlot tools">
+                <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Planner, current page"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></span>
+                <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></a>
+                <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
+                <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></a>
+                <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
+            </nav>
+        </div>
+        <div class="fn-top-bar-actions">
+            <button type="button" class="fn-theme-toggle" id="fnThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
+                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
+                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
+            </button>
+            <div class="map-top-actions">
+                <div id="helpPanel" class="help-panel">
+                    <div class="draw-style-header">
+                        <span>Help</span>
+                        <button id="helpBtn" class="btn-icon" title="Open help">?</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
+
+    <button type="button" id="sidebarOpen" class="sidebar-open sidebar-open--planner-map" title="Open sidebar" aria-label="Open planning sidebar">&raquo;</button>
 
     <!-- Map logo (always visible when using the app) -->
     <div class="map-logo" aria-hidden="true">
@@ -977,11 +988,11 @@
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-sidebar">
                                 <h3>Sidebar &amp; footer</h3>
-                                <p>Collapse the sidebar (‹ button) for more map space. Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes <strong>Support</strong> (<a href="mailto:support@airplot.app">support@airplot.app</a>), <strong>Privacy</strong> (<a href="privacy.html">policy</a>), and <strong>Disclaimer</strong> (same content as the Disclaimer tab).</p>
+                                <p>Collapse the sidebar (‹ button) for more map space. When collapsed, reopen it with the <strong>»</strong> control on the map (below the top bar, left edge). Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes <strong>Support</strong> (<a href="mailto:support@airplot.app">support@airplot.app</a>), <strong>Privacy</strong> (<a href="privacy.html">policy</a>), and <strong>Disclaimer</strong> (same content as the Disclaimer tab).</p>
                             </section>
                             <section class="help-section" id="help-map-mobile">
                                 <h3>Small screens</h3>
-                                <p>On narrow viewports the left toolbar may collapse behind a <strong>Tools</strong> (☰) button; tap to expand. <strong>AirPlot</strong> (logo and name, top-left—same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>tool strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
+                                <p>On narrow viewports the sidebar opens as a sheet; use <strong>»</strong> below the top bar (left of the map) to open it again after you collapse it. <strong>AirPlot</strong> (logo and name in the top bar—same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>tool strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
                             </section>
                         </div>
                     </details>
@@ -1404,13 +1415,14 @@
 
     <!-- Leaflet.Locate -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
-    <script src="js/geolocation-helpers.js?v=2"></script>
+    <script src="js/geolocation-helpers.js?v=4"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@0.468.0"></script>
     <!-- Simple bezier curves -->
     <script src="https://unpkg.com/@elfalem/leaflet-curve@0.9.2/leaflet.curve.js"></script>
 
     <!-- App Scripts -->
+    <script src="js/ap-shell-theme.js?v=1"></script>
     <script src="js/config.js"></script>
     <script src="js/confirm-modal.js"></script>
     <script src="js/grid.js"></script>

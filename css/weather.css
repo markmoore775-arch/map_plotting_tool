@@ -18,74 +18,48 @@ body.weather-mode #map {
     pointer-events: auto;
 }
 
-/* Welcome + tool strip: top-left row (overrides global fixed .fp-welcome-bar) */
-body.weather-mode .ap-top-chrome--map {
-    position: fixed;
-    top: max(12px, env(safe-area-inset-top, 12px));
-    left: max(12px, env(safe-area-inset-left, 12px));
-    z-index: 1002;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 8px;
-    max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-    pointer-events: none;
-    overflow-x: visible;
-    min-width: 0;
+body.weather-mode.ap-shell #map {
+    top: var(--ap-top-header-height);
 }
 
-body.weather-mode .ap-top-chrome--map > * {
-    pointer-events: auto;
-}
-
-@media (max-width: 900px) {
-    body.weather-mode .ap-top-chrome--map {
-        width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-    }
-}
-
-body.weather-mode .ap-top-chrome--map .fp-welcome-bar {
-    position: relative;
-    top: auto;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    flex-shrink: 0;
-    max-width: none;
-}
-
-/* Zoom + locate + info — below welcome + tool strip */
+/* Zoom + locate + info — below fixed fn-top-bar (see style.css body.ap-shell #map top) */
 body.weather-mode .leaflet-top.leaflet-left {
     top: calc(52px + env(safe-area-inset-top, 0px));
 }
 
+body.weather-mode.ap-shell .leaflet-top.leaflet-left {
+    top: 12px;
+}
+
 /*
- * Narrow viewports: top chrome is full-width (segmented tool nav) at z-index 1002 and
- * covers the default top-right layers control. Drop the right stack to clear the bar.
+ * Narrow viewports: top chrome can cover the default top-right layers control.
  */
 @media (max-width: 900px) {
     body.weather-mode .leaflet-top.leaflet-right {
         top: calc(52px + env(safe-area-inset-top, 0px));
     }
+
+    body.weather-mode.ap-shell .leaflet-top.leaflet-right {
+        top: 12px;
+    }
 }
 
-/* Bottom chrome: map hint + toolbar + expectation (fixed as one unit) */
-/* Desktop: shrink-wrap to toolbar width, centered (not full viewport). */
+/* Bottom chrome: single “dock” card aligned with top .ap-tool-nav (primary border, ap-chrome shadow) */
 .weather-bottom-chrome {
     position: fixed;
-    bottom: 24px;
+    bottom: max(16px, env(safe-area-inset-bottom, 16px));
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 0;
     width: max-content;
-    max-width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
     box-sizing: border-box;
-    padding-bottom: max(0px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(0px, env(safe-area-inset-left, 0px));
+    padding-right: max(0px, env(safe-area-inset-right, 0px));
     pointer-events: none;
 }
 
@@ -93,51 +67,61 @@ body.weather-mode .leaflet-top.leaflet-left {
     pointer-events: auto;
 }
 
-.weather-map-hint {
-    margin: 0;
-    padding: 8px 14px;
-    max-width: min(100%, calc(100vw - 24px));
+/* One card: status strip + control body + footnote (no stacked floating pills) */
+.weather-map-dock {
+    width: max-content;
+    max-width: min(52rem, calc(100vw - 24px));
     box-sizing: border-box;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.35;
-    text-align: center;
-    color: var(--sidebar-text, #e0e0e8);
     background: var(--sidebar-bg, #1e1e2e);
-    border: 1px solid var(--sidebar-border, #3a3a50);
-    border-radius: 8px;
-    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--primary, #5b8def);
+    border-radius: 10px;
+    box-shadow: var(--ap-chrome-shadow, 0 4px 18px rgba(0, 0, 0, 0.45));
+    overflow: hidden;
 }
 
-.weather-toolbar-expectation {
+.weather-map-dock__status.weather-map-hint {
     margin: 0;
-    padding: 0 12px 2px;
+    padding: 7px 14px 6px;
     box-sizing: border-box;
-    font-size: 11px;
-    line-height: 1.4;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
     text-align: center;
-    color: var(--sidebar-text-muted, #9999aa);
-    /* Stay ≤ toolbar width so shrink-wrapped chrome isn’t widened by this line */
-    max-width: min(52rem, calc(100vw - 32px));
+    color: var(--sidebar-text-muted, #a8a8bc);
+    background: rgba(0, 0, 0, 0.2);
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    box-shadow: none;
 }
 
-/* Floating toolbar row (positioned inside .weather-bottom-chrome) */
-.weather-toolbar {
-    position: relative;
+.weather-map-dock__body {
     display: flex;
-    gap: 12px;
-    flex-wrap: nowrap;
+    flex-direction: row;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    width: max-content;
-    max-width: calc(100vw - 24px);
+    gap: 12px;
+    padding: 12px 16px;
     box-sizing: border-box;
-    padding: 12px 20px;
-    background: var(--sidebar-bg, #1e1e2e);
-    border: 1px solid var(--sidebar-border, #3a3a50);
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    overflow: visible;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.weather-toolbar-expectation.weather-map-dock__note {
+    margin: 0;
+    padding: 6px 14px 10px;
+    box-sizing: border-box;
+    font-size: 10px;
+    line-height: 1.35;
+    text-align: center;
+    color: var(--sidebar-text-muted, #8e8ea0);
+    background: rgba(0, 0, 0, 0.12);
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    max-width: none;
 }
 
 .weather-toolbar-group {
@@ -217,78 +201,108 @@ body.weather-mode .leaflet-top.leaflet-left {
     display: none;
 }
 
-/* Narrow viewports: single-row toolbar, horizontal scroll (phones, small tablets, landscape) */
+/* Narrow viewports: full-width dock; primary row uses same height as top ap-tool-nav */
 @media (max-width: 900px) {
     .weather-bottom-chrome {
-        left: 8px;
-        right: 8px;
+        left: max(10px, env(safe-area-inset-left, 10px));
+        right: max(10px, env(safe-area-inset-right, 10px));
         transform: none;
-        bottom: max(8px, env(safe-area-inset-bottom, 8px));
+        bottom: max(10px, env(safe-area-inset-bottom, 10px));
         max-width: none;
         width: auto;
         align-items: stretch;
-        gap: 4px;
+        gap: 0;
     }
 
-    .weather-toolbar-expectation {
-        max-width: 100%;
-    }
-
-    .weather-map-hint {
-        font-size: 11px;
-        padding: 4px 8px;
-        line-height: 1.25;
-        border-radius: 6px;
+    .weather-map-dock {
         width: 100%;
         max-width: none;
-        min-width: 0;
-        align-self: stretch;
     }
 
-    .weather-toolbar-expectation {
+    .weather-map-dock__status.weather-map-hint {
+        font-size: 11px;
+        padding: 6px 10px 5px;
+        line-height: 1.25;
+        color: var(--sidebar-text, #e0e0e8);
+    }
+
+    .weather-toolbar-expectation.weather-map-dock__note {
         font-size: 10px;
-        padding: 0 4px;
+        padding: 5px 8px 8px;
         line-height: 1.3;
     }
 
-    /* Two-row layout: row1 = locate + fetch; row2 = model (flex) + time (compact, end-aligned) */
-    .weather-toolbar {
+    .weather-map-dock__body {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-rows: auto auto;
-        gap: 5px 6px;
-        padding: 6px 8px 7px;
-        border-radius: 8px;
-        min-width: 0;
-        max-width: none;
-        width: auto;
-        overflow-x: visible;
-        overflow-y: visible;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: var(--ap-chrome-height) auto;
+        gap: 6px 8px;
+        padding: 8px 10px 10px;
+        align-items: stretch;
+    }
+
+    .weather-map-dock__body:has(.weather-datetime:not(.hidden)) {
+        grid-template-rows: var(--ap-chrome-height) auto auto;
+    }
+
+    .weather-map-dock__body:has(.weather-datetime:not(.hidden)) .weather-toolbar-group.weather-model-group {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .weather-map-dock__body:has(.weather-datetime:not(.hidden)) .weather-toolbar-group.weather-time-group {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        justify-content: flex-start;
     }
 
     .weather-toolbar-group--select {
         grid-column: 1;
         grid-row: 1;
         min-width: 0;
+        display: flex;
+        align-self: stretch;
     }
 
     .weather-toolbar-group--fetch {
         grid-column: 2;
         grid-row: 1;
         min-width: 0;
+        display: flex;
+        align-self: stretch;
+    }
+
+    .weather-toolbar-group--select .weather-btn,
+    .weather-toolbar-group--fetch .weather-btn-primary {
+        flex: 1;
+        width: 100%;
+        min-height: var(--ap-chrome-height);
+        max-height: var(--ap-chrome-height);
+        height: var(--ap-chrome-height);
+        padding: 0 8px;
+        box-sizing: border-box;
+        justify-content: center;
+        border-radius: 8px;
     }
 
     .weather-toolbar-group.weather-model-group {
         grid-column: 1;
         grid-row: 2;
         min-width: 0;
+        min-height: var(--ap-chrome-height);
+        align-self: stretch;
+        align-items: center;
         flex-shrink: 1;
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
-        padding-bottom: 0;
+        padding: 2px 6px;
         gap: 5px;
+        box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 8px;
     }
 
     .weather-toolbar-group.weather-model-group::-webkit-scrollbar {
@@ -304,30 +318,46 @@ body.weather-mode .leaflet-top.leaflet-left {
         grid-column: 2;
         grid-row: 2;
         flex-wrap: wrap;
-        flex-shrink: 0;
         justify-content: flex-end;
         align-items: center;
         align-content: center;
-        column-gap: 6px;
-        row-gap: 2px;
+        align-self: stretch;
+        column-gap: 2px;
+        row-gap: 4px;
         min-width: 0;
+        min-height: var(--ap-chrome-height);
+        padding: 2px 4px;
+        box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 8px;
+    }
+
+    .weather-map-dock .weather-time-label {
+        margin: 0;
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        font-size: 10px;
+        font-weight: 600;
+        gap: 5px;
+        line-height: 1.2;
+    }
+
+    .weather-map-dock .weather-time-label:has(input:checked) {
+        background: rgba(91, 141, 239, 0.28);
+        border-color: var(--primary, #5b8def);
+        color: #fff;
     }
 
     .weather-toolbar-group {
         gap: 4px;
     }
 
-    .weather-toolbar-group--select .weather-btn,
-    .weather-toolbar-group--fetch .weather-btn-primary {
-        width: 100%;
-        min-height: 36px;
-        justify-content: center;
-    }
-
     .weather-toolbar-group--select .weather-btn svg,
     .weather-toolbar-group--fetch .weather-btn-primary svg {
-        width: 17px;
-        height: 17px;
+        width: 18px;
+        height: 18px;
     }
 
     .weather-toolbar-group--fetch .weather-btn-primary {
@@ -343,34 +373,35 @@ body.weather-mode .leaflet-top.leaflet-left {
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     }
 
-    .weather-btn {
-        min-height: 32px;
-        padding: 4px 8px;
-        font-size: 11px;
+    .weather-map-dock .weather-btn:not(.weather-btn-primary) {
+        min-height: 0;
+        font-size: 12px;
     }
 
-    /* Only hide label text on the map bottom toolbar — not report header (Flight Report / PPTX / PDF). */
-    .weather-bottom-chrome .weather-btn span:not(.weather-btn-text),
+    /* Only hide label text on the map dock — not report header (Flight Report / PPTX / PDF). */
+    .weather-map-dock .weather-btn span:not(.weather-btn-text),
     .weather-model-label {
         display: none;
     }
 
     .weather-model-info-btn {
         display: inline-flex;
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
     }
 
     .weather-model-info-btn svg {
-        width: 13px;
-        height: 13px;
+        width: 14px;
+        height: 14px;
     }
 
     .weather-model-select {
         min-width: 0;
         flex: 1 1 auto;
         font-size: 11px;
-        padding: 3px 6px;
+        padding: 4px 6px;
+        min-height: 28px;
+        border-radius: 6px;
     }
 
     .weather-btn-primary {
@@ -385,22 +416,17 @@ body.weather-mode .leaflet-top.leaflet-left {
         display: inline;
     }
 
-    .weather-time-label {
-        font-size: 10px;
-        gap: 4px;
-    }
-
     .weather-datetime {
         flex: 1 1 100%;
         min-width: 0;
         max-width: 100%;
         font-size: 11px;
-        padding: 3px 6px;
+        padding: 4px 6px;
     }
 
     .weather-toolbar-group.weather-time-group .weather-datetime:not(.hidden) {
         flex-basis: 100%;
-        margin-top: 1px;
+        margin-top: 2px;
     }
 
     .weather-side-toolbar {
@@ -412,22 +438,20 @@ body.weather-mode .leaflet-top.leaflet-left {
     }
 }
 
-/* Phones: compress bottom chrome further */
 @media (max-width: 600px) {
     .weather-bottom-chrome {
-        gap: 3px;
-        bottom: max(6px, env(safe-area-inset-bottom, 6px));
+        bottom: max(8px, env(safe-area-inset-bottom, 8px));
     }
 
-    .weather-map-hint {
+    .weather-map-dock__status.weather-map-hint {
         font-size: 10px;
-        padding: 3px 7px;
+        padding: 5px 8px 4px;
         line-height: 1.2;
     }
 
-    .weather-toolbar-expectation {
+    .weather-toolbar-expectation.weather-map-dock__note {
         font-size: 9px;
-        padding: 0 2px;
+        padding: 4px 6px 7px;
         line-height: 1.25;
         display: -webkit-box;
         -webkit-box-orient: vertical;
@@ -435,68 +459,57 @@ body.weather-mode .leaflet-top.leaflet-left {
         overflow: hidden;
     }
 
-    .weather-toolbar {
-        gap: 4px 5px;
-        padding: 5px 6px 6px;
+    .weather-map-dock__body {
+        gap: 5px 6px;
+        padding: 6px 8px 8px;
     }
 
     .weather-toolbar-group.weather-model-group {
         gap: 4px;
-        padding-bottom: 0;
+        padding: 2px 5px;
     }
 
     .weather-toolbar-group.weather-time-group {
         row-gap: 2px;
-        column-gap: 5px;
-    }
-
-    .weather-toolbar-group--select .weather-btn,
-    .weather-toolbar-group--fetch .weather-btn-primary {
-        min-height: 34px;
+        column-gap: 2px;
+        padding: 2px 3px;
     }
 
     .weather-toolbar-group--select .weather-btn svg,
     .weather-toolbar-group--fetch .weather-btn-primary svg {
-        width: 16px;
-        height: 16px;
+        width: 17px;
+        height: 17px;
     }
 
     .weather-toolbar-group--fetch .weather-btn-primary {
-        font-size: 10px;
-    }
-
-    .weather-btn {
-        min-height: 30px;
-        padding: 3px 6px;
         font-size: 10px;
     }
 
     .weather-model-select {
         font-size: 10px;
-        padding: 2px 5px;
-        border-radius: 5px;
+        padding: 3px 5px;
+        min-height: 26px;
     }
 
     .weather-model-info-btn {
-        width: 22px;
-        height: 22px;
-        border-radius: 5px;
+        width: 24px;
+        height: 24px;
     }
 
     .weather-model-info-btn svg {
-        width: 12px;
-        height: 12px;
+        width: 13px;
+        height: 13px;
     }
 
-    .weather-time-label {
+    .weather-map-dock .weather-time-label {
         font-size: 9px;
-        gap: 3px;
+        padding: 3px 6px;
+        gap: 4px;
     }
 
     .weather-datetime {
         font-size: 10px;
-        padding: 2px 5px;
-        border-radius: 5px;
+        padding: 3px 5px;
     }
 }
 
