@@ -1414,12 +1414,9 @@ body.sidebar-collapsed .sidebar {
 }
 
 @media (max-width: 600px) {
+    /* Fully remove from layout when collapsed — no off-screen bottom strip */
     body.sidebar-collapsed .sidebar {
-        transform: translateY(calc(100% + 8px));
-    }
-
-    body:not(.sidebar-collapsed) .sidebar {
-        transform: translateY(0);
+        display: none;
     }
 }
 
