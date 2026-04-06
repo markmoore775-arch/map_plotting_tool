@@ -122,6 +122,11 @@
             locateBtn.disabled = false;
         }
         function onFail(err) {
+            if (err && err.handledByIosStandalonePrompt) {
+                setStatus('', false);
+                locateBtn.disabled = false;
+                return;
+            }
             var msg =
                 typeof GeoLocate !== 'undefined' && GeoLocate.geolocationErrorMessage
                     ? GeoLocate.geolocationErrorMessage(err)

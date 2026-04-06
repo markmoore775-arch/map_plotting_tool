@@ -1,6 +1,8 @@
 /**
  * Shared geolocation helpers: secure-context checks, Safari/iOS-friendly options,
  * and high-accuracy → network/cached fallback for getCurrentPosition.
+ * iOS home-screen (standalone) WebKit often breaks geolocation; we detect that
+ * case and prompt to open the same URL in Safari or Chrome via target=_blank.
  */
 (function (global) {
     'use strict';
@@ -14,6 +16,120 @@
 
     function isGeolocationEnvironmentOk() {
         return !secureContextBlockedMessage() && !!navigator.geolocation;
+    }
+
+    /**
+     * True for iPhone / iPad / iPod class devices (excludes Android and desktop).
+     */
+    function isIosLikeAppleDevice() {
+        var ua = navigator.userAgent || '';
+        if (/Android/i.test(ua)) return false;
+        if (/iPhone|iPod|iPad/i.test(ua)) return true;
+        if (navigator.platform === 'iPad') return true;
+        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) return true;
+        return false;
+    }
+
+    /**
+     * Add to Home Screen on iOS (navigator.standalone or display-mode: standalone).
+     * Deliberately false on Android installed PWAs so we do not show this prompt there.
+     */
+    function isIosStandaloneWebApp() {
+        if (!isIosLikeAppleDevice()) return false;
+        var standaloneLegacy = typeof navigator.standalone === 'boolean' && navigator.standalone === true;
+        var standaloneDisplay = false;
+        try {
+            standaloneDisplay =
+                typeof global.matchMedia === 'function' &&
+                global.matchMedia('(display-mode: standalone)').matches;
+        } catch (e) {
+            standaloneDisplay = false;
+        }
+        return standaloneLegacy || standaloneDisplay;
+    }
+
+    /**
+     * Modal: WebKit standalone limitation (Apple), not the site; link opens current URL in the system browser.
+     */
+    function showIosStandaloneOpenInBrowserPrompt() {
+        if (typeof document === 'undefined') return;
+
+        var root = document.getElementById('geolocateIosStandaloneModal');
+        if (!root) {
+            root = document.createElement('div');
+            root.id = 'geolocateIosStandaloneModal';
+            root.className = 'modal hidden';
+            root.setAttribute('role', 'dialog');
+            root.setAttribute('aria-modal', 'true');
+            root.setAttribute('aria-labelledby', 'geolocateIosStandaloneTitle');
+            root.innerHTML =
+                '<div class="modal-backdrop"></div>' +
+                '<div class="modal-content">' +
+                '<div class="modal-header">' +
+                '<h2 id="geolocateIosStandaloneTitle">Open in Safari or Chrome for location</h2>' +
+                '<button type="button" class="modal-close" aria-label="Close">&times;</button>' +
+                '</div>' +
+                '<div class="modal-body">' +
+                '<p><strong>This is a limitation in Apple&rsquo;s iOS WebKit</strong> when a site runs from the home screen icon (standalone mode): GPS and &ldquo;show my location&rdquo; often fail or never complete. <strong>It is not an AirPlot bug.</strong></p>' +
+                '<p>Open the same page in Safari or Chrome using the link below, then use location features there.</p>' +
+                '<p class="geolocate-ios-standalone-actions">' +
+                '<a class="geolocate-ios-standalone-link btn btn-primary" href="#" target="_blank" rel="noopener noreferrer">Open in Safari or Chrome</a>' +
+                '</p>' +
+                '</div>' +
+                '<div class="modal-footer">' +
+                '<button type="button" class="btn btn-secondary" id="geolocateIosStandaloneDismiss">OK</button>' +
+                '</div>' +
+                '</div>';
+            document.body.appendChild(root);
+        }
+
+        if (!root.classList.contains('hidden')) return;
+
+        var link = root.querySelector('.geolocate-ios-standalone-link');
+        if (link) {
+            try {
+                link.href = global.location.href || '';
+            } catch (e) {
+                link.href = '#';
+            }
+        }
+
+        root.classList.remove('hidden');
+
+        var backdrop = root.querySelector('.modal-backdrop');
+        var closeBtn = root.querySelector('.modal-close');
+        var dismissBtn = document.getElementById('geolocateIosStandaloneDismiss');
+
+        function finish() {
+            root.classList.add('hidden');
+            document.removeEventListener('keydown', onKey);
+            if (backdrop) backdrop.removeEventListener('click', onBackdrop);
+        }
+
+        function onBackdrop() {
+            finish();
+        }
+
+        function onKey(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                finish();
+            }
+        }
+
+        if (backdrop) backdrop.addEventListener('click', onBackdrop);
+        if (closeBtn) {
+            closeBtn.onclick = function () {
+                finish();
+            };
+        }
+        if (dismissBtn) {
+            dismissBtn.onclick = function () {
+                finish();
+            };
+        }
+        document.addEventListener('keydown', onKey);
+        if (dismissBtn) dismissBtn.focus();
     }
 
     /**
@@ -112,6 +228,14 @@
             return;
         }
 
+        if (isIosStandaloneWebApp()) {
+            showIosStandaloneOpenInBrowserPrompt();
+            if (onError) {
+                onError({ code: 0, message: '', handledByIosStandalonePrompt: true });
+            }
+            return;
+        }
+
         var gentle = prefersGentleGeoOptions();
         var settled = false;
         var watchdogId = null;
@@ -159,7 +283,7 @@
             if (fromHomeScreen) {
                 return (
                     base +
-                    'If you opened this from the home-screen icon, try the same page in Safari (not the standalone app); iOS often breaks GPS there. ' +
+                    'Apple’s iOS WebKit often breaks geolocation for home-screen web apps (standalone mode)—not an AirPlot bug. Open this page in Safari or Chrome instead. ' +
                     settings +
                     alt
                 );
@@ -266,9 +390,30 @@
     global.GeoLocate = {
         secureContextBlockedMessage: secureContextBlockedMessage,
         isGeolocationEnvironmentOk: isGeolocationEnvironmentOk,
+        isIosStandaloneWebApp: isIosStandaloneWebApp,
+        showIosStandaloneOpenInBrowserPrompt: showIosStandaloneOpenInBrowserPrompt,
         prefersGentleGeoOptions: prefersGentleGeoOptions,
         leafletLocateOptions: leafletLocateOptions,
         getCurrentPositionRobust: getCurrentPositionRobust,
         geolocationErrorMessage: geolocationErrorMessage
     };
+
+    /** Leaflet.Locate calls map.locate() directly; intercept on iOS standalone only. */
+    (function patchLeafletLocateForIosStandalone() {
+        if (typeof L === 'undefined' || !L.Control || !L.Control.Locate) return;
+        var proto = L.Control.Locate.prototype;
+        if (proto._airplotActivateOriginal) return;
+        proto._airplotActivateOriginal = proto._activate;
+        proto._activate = function () {
+            if (
+                typeof GeoLocate !== 'undefined' &&
+                GeoLocate.isIosStandaloneWebApp &&
+                GeoLocate.isIosStandaloneWebApp()
+            ) {
+                GeoLocate.showIosStandaloneOpenInBrowserPrompt();
+                return;
+            }
+            return proto._airplotActivateOriginal.call(this);
+        };
+    })();
 })(typeof window !== 'undefined' ? window : this);

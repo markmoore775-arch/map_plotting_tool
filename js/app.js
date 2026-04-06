@@ -85,6 +85,8 @@
 
     let layerControl = null;
     let osMapsLayers = {}; // name -> layer, for add/remove when key changes
+    /** Leaflet.Locate instance on planner; used by mobile FAB */
+    let plannerLocateControl = null;
 
     function createOsMapsLayer(style, key) {
         return L.tileLayer(
@@ -225,6 +227,7 @@
         updateOsMapsLayers();
 
         // Geolocation: show user's current location (Leaflet.Locate plugin)
+        plannerLocateControl = null;
         if (typeof L.control.locate === 'function') {
             var geoOk = typeof GeoLocate === 'undefined' || GeoLocate.isGeolocationEnvironmentOk();
             if (geoOk) {
@@ -232,7 +235,7 @@
                     typeof GeoLocate !== 'undefined' && GeoLocate.leafletLocateOptions
                         ? GeoLocate.leafletLocateOptions()
                         : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
-                L.control.locate({
+                plannerLocateControl = L.control.locate({
                     position: 'topleft',
                     strings: {
                         title: 'Show my location',
@@ -242,6 +245,10 @@
                     locateOptions: locateOpts
                 }).addTo(map);
             }
+        }
+        const mobileLocateFabEl = document.getElementById('mobileLocateBtn');
+        if (mobileLocateFabEl) {
+            mobileLocateFabEl.classList.toggle('hidden', !plannerLocateControl);
         }
 
         // Undo / Redo (between Locate and Save/Load)
@@ -1842,6 +1849,15 @@
     if (mobileHelpBtn) {
         mobileHelpBtn.addEventListener('click', () => {
             openModal('helpModal');
+        });
+    }
+
+    const mobileLocateBtn = document.getElementById('mobileLocateBtn');
+    if (mobileLocateBtn) {
+        mobileLocateBtn.addEventListener('click', () => {
+            if (plannerLocateControl && typeof plannerLocateControl.start === 'function') {
+                plannerLocateControl.start();
+            }
         });
     }
 

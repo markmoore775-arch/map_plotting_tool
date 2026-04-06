@@ -2219,6 +2219,19 @@ select {
     z-index: 10001;
 }
 
+#geolocateIosStandaloneModal {
+    z-index: 10002;
+}
+
+#geolocateIosStandaloneModal .geolocate-ios-standalone-actions {
+    margin-top: 16px;
+}
+
+#geolocateIosStandaloneModal .geolocate-ios-standalone-link {
+    display: inline-block;
+    text-align: center;
+}
+
 .modal {
     position: fixed;
     top: 0;
@@ -3437,6 +3450,15 @@ a.airspace-choice-btn {
     /* Planner: layers sit below top chrome (52px) — keep FABs below that stack */
     body:not(.weather-mode):not(.flight-planning-mode) .mobile-map-actions {
         top: calc(env(safe-area-inset-top, 0px) + 52px + 10px + 44px + 20px);
+    }
+
+    /*
+     * Leaflet layers UI lives inside #map (z-index 1); FABs are fixed siblings (z-index 1000) and
+     * would cover the expanded list. Hide them while the basemap menu is open.
+     */
+    #map.leaflet-container:has(.leaflet-control-layers-expanded) ~ #mobileMapActions {
+        visibility: hidden;
+        pointer-events: none;
     }
 
     .mobile-map-action-btn {

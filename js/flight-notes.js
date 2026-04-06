@@ -958,8 +958,9 @@
             lines.push('Map (OpenStreetMap): ' + openStreetMapLink(llPlain.lat, llPlain.lng));
         }
         lines.push('Reference: ' + dash(trimVal('fnReference')));
-        lines.push('Deconflictions: ' + dash(trimVal('fnDeconflictions')));
         lines.push('UAS: ' + dash(trimVal('fnUas')));
+        lines.push('Deconflictions:');
+        lines.push(trimVal('fnDeconflictions') || '—');
 
         var bn;
         var battMax = getVisibleBatteryCount();
@@ -994,8 +995,8 @@
             ['Location', dash(trimVal('fnLocation'))],
             mapLinkRow,
             ['Reference', dash(trimVal('fnReference'))],
-            ['Deconflictions', dash(trimVal('fnDeconflictions'))],
-            ['UAS', dash(trimVal('fnUas'))]
+            ['UAS', dash(trimVal('fnUas'))],
+            ['Deconflictions', trimVal('fnDeconflictions') || '—']
         ];
         var bn;
         var battMaxPdf = getVisibleBatteryCount();
@@ -1935,6 +1936,11 @@
         }
         function onFail(err) {
             hideLocationResult();
+            if (err && err.handledByIosStandalonePrompt) {
+                if (btn) btn.disabled = false;
+                setGpsStatus('', '');
+                return;
+            }
             var msg;
             if (typeof GeoLocate !== 'undefined' && GeoLocate.geolocationErrorMessage) {
                 msg = GeoLocate.geolocationErrorMessage(err);
