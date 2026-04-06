@@ -635,44 +635,6 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     grid-column: 1 / -1;
 }
 
-.fn-deconflictions-fieldset {
-    margin: 0;
-    padding: 0;
-    border: none;
-    min-width: 0;
-}
-
-.fn-deconflictions-legend {
-    padding: 0;
-    margin-bottom: 0;
-}
-
-.fn-deconflictions-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 20px;
-    margin-top: 8px;
-    align-items: center;
-}
-
-.fn-check-row {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 0.95rem;
-    color: var(--sidebar-text);
-    user-select: none;
-}
-
-.fn-check-row input[type='checkbox'] {
-    width: 1.1em;
-    height: 1.1em;
-    margin: 0;
-    flex-shrink: 0;
-    accent-color: var(--accent, #5b8def);
-}
-
 .fn-location-row {
     display: flex;
     flex-direction: column;

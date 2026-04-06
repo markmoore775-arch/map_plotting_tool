@@ -10,24 +10,12 @@
 
     /** Draft form fields: local only, same origin; cleared when user clears the form. */
     var FN_DRAFT_STORAGE_KEY = 'airplotFlightNotesDraft_v1';
-
-    /** Deconfliction checkboxes → label used in email/PDF (order preserved). */
-    var FN_DECONFLICTION_BOXES = [
-        { id: 'fnDcNpas', label: 'NPAS' },
-        { id: 'fnDcHems', label: 'HEMS' },
-        { id: 'fnDcAtc', label: 'ATC' },
-        { id: 'fnDcMil', label: 'Military' }
-    ];
-
     var FN_DRAFT_FIELD_IDS = [
         'fnDate',
         'fnTime',
         'fnLocation',
         'fnReference',
-        'fnDcNpas',
-        'fnDcHems',
-        'fnDcAtc',
-        'fnDcMil',
+        'fnDeconflictions',
         'fnUas',
         'fnBattery1',
         'fnBattery1Rp1',
@@ -192,10 +180,7 @@
             for (var i = 0; i < FN_DRAFT_FIELD_IDS.length; i++) {
                 var id = FN_DRAFT_FIELD_IDS[i];
                 var el = document.getElementById(id);
-                if (!el) continue;
-                if (el.tagName === 'INPUT' && el.type === 'checkbox') {
-                    fields[id] = el.checked ? '1' : '';
-                } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
                     fields[id] = el.value || '';
                 }
             }
@@ -233,11 +218,7 @@
             for (id in data.fields) {
                 if (!Object.prototype.hasOwnProperty.call(data.fields, id)) continue;
                 var el = document.getElementById(id);
-                if (!el) continue;
-                if (el.tagName === 'INPUT' && el.type === 'checkbox') {
-                    var v = data.fields[id];
-                    el.checked = v === '1' || v === 1 || v === true;
-                } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
                     el.value = data.fields[id];
                 }
             }
@@ -921,18 +902,6 @@
         return String(el.value || '').trim();
     }
 
-    /** Comma-separated deconfliction summary for exports (checked categories only). */
-    function formatDeconflictionsForExport() {
-        var parts = [];
-        var i;
-        for (i = 0; i < FN_DECONFLICTION_BOXES.length; i++) {
-            var box = FN_DECONFLICTION_BOXES[i];
-            var cb = document.getElementById(box.id);
-            if (cb && cb.checked) parts.push(box.label);
-        }
-        return parts.length ? parts.join(', ') : '';
-    }
-
     function dash(s) {
         return s ? s : '—';
     }
@@ -991,7 +960,7 @@
         lines.push('Reference: ' + dash(trimVal('fnReference')));
         lines.push('UAS: ' + dash(trimVal('fnUas')));
         lines.push('Deconflictions:');
-        lines.push(formatDeconflictionsForExport() || '—');
+        lines.push(trimVal('fnDeconflictions') || '—');
 
         var bn;
         var battMax = getVisibleBatteryCount();
@@ -1027,7 +996,7 @@
             mapLinkRow,
             ['Reference', dash(trimVal('fnReference'))],
             ['UAS', dash(trimVal('fnUas'))],
-            ['Deconflictions', formatDeconflictionsForExport() || '—']
+            ['Deconflictions', trimVal('fnDeconflictions') || '—']
         ];
         var bn;
         var battMaxPdf = getVisibleBatteryCount();
