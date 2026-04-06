@@ -2,10 +2,55 @@
  * Shared geolocation helpers: secure-context checks, Safari/iOS-friendly options,
  * and high-accuracy → network/cached fallback for getCurrentPosition.
  * iOS home-screen (standalone) WebKit often breaks geolocation; we detect that
- * case and prompt to open the same URL in Safari or Chrome via target=_blank.
+ * case and prompt with copy-link instructions (links from standalone often stay in-app).
  */
 (function (global) {
     'use strict';
+
+    function syncGeolocateIosStandaloneModalTheme(root) {
+        if (!root || typeof document === 'undefined' || !document.body) return;
+        var light = document.body.classList.contains('fn-light-theme');
+        root.classList.toggle('geolocate-ios-standalone-modal--light', light);
+    }
+
+    function copyTextToClipboard(text, onDone, onFail) {
+        function ok() {
+            if (onDone) onDone();
+        }
+        function fail() {
+            if (onFail) onFail();
+        }
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard
+                .writeText(text)
+                .then(ok)
+                .catch(function () {
+                    legacyCopy();
+                });
+            return;
+        }
+        legacyCopy();
+
+        function legacyCopy() {
+            try {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, text.length);
+                var copied = document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (copied) ok();
+                else fail();
+            } catch (e) {
+                fail();
+            }
+        }
+    }
 
     function secureContextBlockedMessage() {
         if (typeof global.isSecureContext === 'boolean' && !global.isSecureContext) {
@@ -49,10 +94,12 @@
     }
 
     /**
-     * Modal: WebKit standalone limitation (Apple), not the site; link opens current URL in the system browser.
+     * Modal: WebKit standalone limitation (Apple), not the site; copy URL and open in a real browser.
      */
     function showIosStandaloneOpenInBrowserPrompt() {
         if (typeof document === 'undefined') return;
+
+        var copyFeedbackTimer = null;
 
         var root = document.getElementById('geolocateIosStandaloneModal');
         if (!root) {
@@ -66,32 +113,84 @@
                 '<div class="modal-backdrop"></div>' +
                 '<div class="modal-content">' +
                 '<div class="modal-header">' +
-                '<h2 id="geolocateIosStandaloneTitle">Open in Safari or Chrome for location</h2>' +
+                '<h2 id="geolocateIosStandaloneTitle">Use a browser for location</h2>' +
                 '<button type="button" class="modal-close" aria-label="Close">&times;</button>' +
                 '</div>' +
                 '<div class="modal-body">' +
                 '<p><strong>This is a limitation in Apple&rsquo;s iOS WebKit</strong> when a site runs from the home screen icon (standalone mode): GPS and &ldquo;show my location&rdquo; often fail or never complete. <strong>It is not an AirPlot bug.</strong></p>' +
-                '<p>Open the same page in Safari or Chrome using the link below, then use location features there.</p>' +
-                '<p class="geolocate-ios-standalone-actions">' +
-                '<a class="geolocate-ios-standalone-link btn btn-primary" href="#" target="_blank" rel="noopener noreferrer">Open in Safari or Chrome</a>' +
-                '</p>' +
+                '<p><strong>What to do:</strong> copy the address below, open <strong>Safari</strong>, <strong>Chrome</strong>, or another browser you prefer, paste it into the address bar, then load the page and use location there.</p>' +
+                '<p class="geolocate-ios-standalone-url-label">Page address</p>' +
+                '<div class="geolocate-ios-standalone-url-box">' +
+                '<a class="geolocate-ios-standalone-url" href="#" target="_blank" rel="noopener noreferrer"></a>' +
                 '</div>' +
-                '<div class="modal-footer">' +
+                '<p class="geolocate-ios-standalone-tap-hint">Tapping the link may stay inside this home-screen app; if it does, use <strong>Copy link</strong> instead.</p>' +
+                '</div>' +
+                '<div class="modal-footer geolocate-ios-standalone-footer">' +
+                '<span class="geolocate-ios-standalone-copied hidden" id="geolocateIosStandaloneCopyFeedback" role="status" aria-live="polite">Copied</span>' +
+                '<button type="button" class="btn btn-primary" id="geolocateIosStandaloneCopy">Copy link</button>' +
                 '<button type="button" class="btn btn-secondary" id="geolocateIosStandaloneDismiss">OK</button>' +
                 '</div>' +
                 '</div>';
             document.body.appendChild(root);
+
+            var copyBtnInit = document.getElementById('geolocateIosStandaloneCopy');
+            if (copyBtnInit) {
+                copyBtnInit.addEventListener('click', function () {
+                    var url = '';
+                    try {
+                        url = global.location.href || '';
+                    } catch (e) {
+                        url = '';
+                    }
+                    var feedback = document.getElementById('geolocateIosStandaloneCopyFeedback');
+                    function showCopied() {
+                        if (feedback) {
+                            feedback.classList.remove('hidden');
+                            feedback.textContent = 'Copied';
+                        }
+                        if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer);
+                        copyFeedbackTimer = setTimeout(function () {
+                            if (feedback) feedback.classList.add('hidden');
+                            copyFeedbackTimer = null;
+                        }, 2500);
+                    }
+                    function showFailed() {
+                        if (feedback) {
+                            feedback.classList.remove('hidden');
+                            feedback.textContent = 'Could not copy — select the link above and copy manually';
+                        }
+                        if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer);
+                        copyFeedbackTimer = setTimeout(function () {
+                            if (feedback) feedback.classList.add('hidden');
+                            copyFeedbackTimer = null;
+                        }, 5000);
+                    }
+                    copyTextToClipboard(url, showCopied, showFailed);
+                });
+            }
         }
 
         if (!root.classList.contains('hidden')) return;
 
-        var link = root.querySelector('.geolocate-ios-standalone-link');
-        if (link) {
-            try {
-                link.href = global.location.href || '';
-            } catch (e) {
-                link.href = '#';
-            }
+        var pageUrl = '';
+        try {
+            pageUrl = global.location.href || '';
+        } catch (e) {
+            pageUrl = '';
+        }
+
+        var urlLink = root.querySelector('.geolocate-ios-standalone-url');
+        if (urlLink) {
+            urlLink.href = pageUrl || '#';
+            urlLink.textContent = pageUrl || '(address unavailable)';
+        }
+
+        syncGeolocateIosStandaloneModalTheme(root);
+
+        var feedbackEl = document.getElementById('geolocateIosStandaloneCopyFeedback');
+        if (feedbackEl) {
+            feedbackEl.classList.add('hidden');
+            feedbackEl.textContent = 'Copied';
         }
 
         root.classList.remove('hidden');
@@ -99,6 +198,7 @@
         var backdrop = root.querySelector('.modal-backdrop');
         var closeBtn = root.querySelector('.modal-close');
         var dismissBtn = document.getElementById('geolocateIosStandaloneDismiss');
+        var copyBtn = document.getElementById('geolocateIosStandaloneCopy');
 
         function finish() {
             root.classList.add('hidden');
@@ -129,7 +229,8 @@
             };
         }
         document.addEventListener('keydown', onKey);
-        if (dismissBtn) dismissBtn.focus();
+        if (copyBtn) copyBtn.focus();
+        else if (dismissBtn) dismissBtn.focus();
     }
 
     /**

@@ -2223,13 +2223,116 @@ select {
     z-index: 10002;
 }
 
-#geolocateIosStandaloneModal .geolocate-ios-standalone-actions {
-    margin-top: 16px;
+#geolocateIosStandaloneModal .geolocate-ios-standalone-url-label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sidebar-text-muted);
 }
 
-#geolocateIosStandaloneModal .geolocate-ios-standalone-link {
-    display: inline-block;
-    text-align: center;
+#geolocateIosStandaloneModal .geolocate-ios-standalone-url-box {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--sidebar-border);
+    background: rgba(255, 255, 255, 0.06);
+    max-height: 140px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+#geolocateIosStandaloneModal .geolocate-ios-standalone-url {
+    display: block;
+    word-break: break-all;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--sidebar-text, #e5e7eb);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+#geolocateIosStandaloneModal .geolocate-ios-standalone-url:hover {
+    color: #fff;
+}
+
+#geolocateIosStandaloneModal .geolocate-ios-standalone-tap-hint {
+    margin: 14px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--sidebar-text-muted);
+}
+
+#geolocateIosStandaloneModal .geolocate-ios-standalone-footer {
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+#geolocateIosStandaloneModal .geolocate-ios-standalone-copied {
+    font-size: 13px;
+    font-weight: 500;
+    color: #86efac;
+    margin-right: auto;
+}
+
+/* Geolocation iOS standalone modal — light theme (matches body.fn-light-theme, same tokens as #helpModal.help-modal--light) */
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-content {
+    background: #f8f9fb;
+    border-color: #d0d0d0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-header,
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-footer {
+    border-color: #d8dbe6;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-header h2 {
+    color: #1a1d26;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-close {
+    color: #5c6378;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #1a1d26;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-body {
+    color: #374151;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-body strong {
+    color: #111827;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .geolocate-ios-standalone-url-label {
+    color: #5c6378;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .geolocate-ios-standalone-url-box {
+    background: #eef0f4;
+    border-color: #d0d4e0;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .geolocate-ios-standalone-url {
+    color: #1d4ed8;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .geolocate-ios-standalone-url:hover {
+    color: #1e40af;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .geolocate-ios-standalone-tap-hint {
+    color: #5c6378;
+}
+
+#geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .geolocate-ios-standalone-copied {
+    color: #15803d;
 }
 
 .modal {
