@@ -76,23 +76,23 @@
             <p class="intro-tagline">Mapping, weather, flight documentation, and checklists in one place.</p>
             <nav class="intro-launchpad" aria-label="Main tools">
                 <button type="button" class="intro-cta intro-cta--hero" id="introProceedBtn">
-                    <span class="intro-cta-icon" aria-hidden="true">🗺</span>
+                    <span class="intro-cta-icon intro-cta-icon--planner" aria-hidden="true"></span>
                     Plan &amp; Map
                 </button>
                 <a href="weather.html" class="intro-cta intro-cta-secondary intro-cta--op" id="introWeatherBtn">
-                    <span class="intro-cta-icon" aria-hidden="true">🌤</span>
+                    <span class="intro-cta-icon intro-cta-icon--weather" aria-hidden="true"></span>
                     Check Weather
                 </a>
                 <button type="button" class="intro-cta intro-cta-secondary intro-cta--op" id="introAirspaceBtn">
-                    <span class="intro-cta-icon" aria-hidden="true">✈</span>
+                    <span class="intro-cta-icon intro-cta-icon--airspace" aria-hidden="true"></span>
                     View Airspace
                 </button>
                 <a href="checklist.html" class="intro-cta intro-cta-secondary intro-cta--doc" id="introChecklistBtn">
-                    <span class="intro-cta-icon" aria-hidden="true">📋</span>
+                    <span class="intro-cta-icon intro-cta-icon--checklist" aria-hidden="true"></span>
                     Pre-flight Checklist
                 </a>
                 <a href="flight-notes.html" class="intro-cta intro-cta-secondary intro-cta--doc" id="introFlightReportBtn">
-                    <span class="intro-cta-icon" aria-hidden="true">📄</span>
+                    <span class="intro-cta-icon intro-cta-icon--flight-report" aria-hidden="true"></span>
                     Log a Flight
                 </a>
             </nav>
@@ -369,11 +369,11 @@
                 </a>
             </nav>
             <nav class="ap-tool-nav" aria-label="AirPlot tools">
-                <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Planner, current page"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></span>
-                <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></a>
-                <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
-                <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></a>
-                <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
+                <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Planner, current page"><span class="ap-tool-nav__icon ap-tool-nav__icon--planner" aria-hidden="true"></span><span class="ap-tool-nav__label">Planner</span></span>
+                <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon ap-tool-nav__icon--weather" aria-hidden="true"></span><span class="ap-tool-nav__label">Weather</span></a>
+                <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon ap-tool-nav__icon--airspace" aria-hidden="true"></span><span class="ap-tool-nav__label">Airspace</span></a>
+                <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon ap-tool-nav__icon--checklist" aria-hidden="true"></span><span class="ap-tool-nav__label">Checklist</span></a>
+                <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon ap-tool-nav__icon--flight-report" aria-hidden="true"></span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
             </nav>
         </div>
         <div class="fn-top-bar-actions">
@@ -383,8 +383,8 @@
                 </div>
             </div>
             <button type="button" class="fn-theme-toggle" id="fnThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
-                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
-                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
+                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon fn-theme-toggle-icon--svg" aria-hidden="true"></span>
+                <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun fn-theme-toggle-icon--svg hidden" aria-hidden="true"></span>
             </button>
         </div>
     </header>
@@ -726,8 +726,8 @@
                 <h2 id="helpModalTitle">AirPlot Help</h2>
                 <div class="help-modal-header-end">
                     <button type="button" class="fn-theme-toggle" id="helpModalThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Help window colours (same as Flight Report; stored in this browser)">
-                        <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
-                        <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
+                        <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon fn-theme-toggle-icon--svg" aria-hidden="true"></span>
+                        <span class="fn-theme-toggle-icon fn-theme-toggle-icon--sun fn-theme-toggle-icon--svg hidden" aria-hidden="true"></span>
                     </button>
                     <button type="button" class="modal-close" aria-label="Close help">&times;</button>
                 </div>
@@ -806,7 +806,7 @@
                             <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo and redo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
                             <p><strong>Weather:</strong> Tap the map to select a location, pick a forecast model (for example ECMWF IFS, GFS, UK Met Office, GEM Canada), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with small maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM and airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
                             <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> can open a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
-                            <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear Report</strong> (beside the page title or at the bottom; both ask for confirmation), or clear site data. Use the header <strong>tool strip</strong> to open Weather, Airspace, Checklist, or Planner without returning to the welcome screen.</p>
+                            <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconfliction categories NPAS / HEMS / ATC / Military, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear Report</strong> (beside the page title or at the bottom; both ask for confirmation), or clear site data. Use the header <strong>tool strip</strong> to open Weather, Airspace, Checklist, or Planner without returning to the welcome screen.</p>
                             <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. The header <strong>tool strip</strong> switches to Flight Report, Planner, Weather, or Airspace without going home.</p>
                             <p><strong>Save files:</strong> Planning <strong>Save Project</strong> / <strong>Load Project</strong> JSON uses the same format as v2; older project files still load.</p>
                         </div>
@@ -1004,7 +1004,7 @@
                 <div class="tab-panel" id="help-tab-report-checklist">
                     <section class="help-section" id="help-rc-report">
                         <h3>Flight Report</h3>
-                        <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use current GPS</strong> on HTTPS), mission fields (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send by email</strong>.</p>
+                        <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use current GPS</strong> on HTTPS), mission fields (reference, deconfliction checkboxes, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send by email</strong>.</p>
                         <p><strong>Local draft:</strong> What you type is saved in this browser until you use <strong>Clear Report</strong> (beside the page title or at the bottom; both ask for confirmation), or clear site data. Nothing is sent to AirPlot servers.</p>
                         <p><strong>Switch tools:</strong> On Flight Report, the header <strong>tool strip</strong> opens Planner, Weather, Airspace, Checklist, or stays on Flight Report in the same tab without returning to the welcome screen.</p>
                     </section>

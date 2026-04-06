@@ -365,11 +365,12 @@
             border-color: #c5c5d0;
             background: #ffffff;
             box-shadow: var(--ap-chrome-shadow-light);
-            color: #1a1d26;
+            color: var(--ap-light-chrome-icon, #1e1e2e);
         }
 
         body.cl-light-theme .cl-theme-toggle:hover {
             background: #f0f1f3;
+            color: var(--ap-light-chrome-icon-emphasis, #0f172a);
         }
 
         .cl-section {
@@ -913,17 +914,17 @@
                 </a>
             </nav>
             <nav class="ap-tool-nav" aria-label="AirPlot tools">
-                <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon" aria-hidden="true">🗺</span><span class="ap-tool-nav__label">Planner</span></a>
-                <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon" aria-hidden="true">🌤</span><span class="ap-tool-nav__label">Weather</span></a>
-                <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon" aria-hidden="true">✈</span><span class="ap-tool-nav__label">Airspace</span></a>
-                <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Checklist, current page"><span class="ap-tool-nav__icon" aria-hidden="true">📋</span><span class="ap-tool-nav__label">Checklist</span></span>
-                <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon" aria-hidden="true">📄</span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
+                <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon ap-tool-nav__icon--planner" aria-hidden="true"></span><span class="ap-tool-nav__label">Planner</span></a>
+                <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon ap-tool-nav__icon--weather" aria-hidden="true"></span><span class="ap-tool-nav__label">Weather</span></a>
+                <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon ap-tool-nav__icon--airspace" aria-hidden="true"></span><span class="ap-tool-nav__label">Airspace</span></a>
+                <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Checklist, current page"><span class="ap-tool-nav__icon ap-tool-nav__icon--checklist" aria-hidden="true"></span><span class="ap-tool-nav__label">Checklist</span></span>
+                <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon ap-tool-nav__icon--flight-report" aria-hidden="true"></span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
             </nav>
         </div>
         <div class="fn-top-bar-actions">
             <button type="button" class="cl-theme-toggle" id="clThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
-                <span class="cl-theme-toggle-icon cl-theme-toggle-icon--moon" aria-hidden="true">🌙</span>
-                <span class="cl-theme-toggle-icon cl-theme-toggle-icon--sun hidden" aria-hidden="true">☀️</span>
+                <span class="cl-theme-toggle-icon cl-theme-toggle-icon--moon cl-theme-toggle-icon--svg" aria-hidden="true"></span>
+                <span class="cl-theme-toggle-icon cl-theme-toggle-icon--sun cl-theme-toggle-icon--svg hidden" aria-hidden="true"></span>
             </button>
         </div>
     </header>

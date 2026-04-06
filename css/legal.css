@@ -375,7 +375,7 @@ body.knowledge-page.fn-light-theme .fp-welcome-home-link:hover {
 }
 
 body.knowledge-page.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
-    filter: brightness(0);
+    filter: var(--ap-light-airplot-icon-filter, brightness(0) saturate(100%) invert(8%) sepia(10%) saturate(2585%) hue-rotate(201deg) brightness(102%) contrast(90%));
 }
 
 body.knowledge-page.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
@@ -386,11 +386,12 @@ body.knowledge-page.fn-light-theme .fn-theme-toggle {
     border-color: #c5c5d0;
     background: #ffffff;
     box-shadow: var(--ap-chrome-shadow-light, 0 2px 12px rgba(0, 0, 0, 0.08));
-    color: #1a1d26;
+    color: var(--ap-light-chrome-icon, #1e1e2e);
 }
 
 body.knowledge-page.fn-light-theme .fn-theme-toggle:hover {
     background: #f0f1f3;
+    color: var(--ap-light-chrome-icon-emphasis, #0f172a);
 }
 
 body.knowledge-page.fn-light-theme .legal-main h1,

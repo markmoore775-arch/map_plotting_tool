@@ -27,6 +27,11 @@
     --ap-chrome-height: 40px;
     --ap-chrome-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
     --ap-chrome-shadow-light: 0 2px 12px rgba(0, 0, 0, 0.08);
+    /* Light chrome icons: dark theme grey-blue (same family as --sidebar-bg), not accent blue */
+    --ap-light-chrome-icon: #1e1e2e;
+    --ap-light-chrome-icon-emphasis: #0f172a;
+    /* airplot-icon.svg is white; tint to --ap-light-chrome-icon */
+    --ap-light-airplot-icon-filter: brightness(0) saturate(100%) invert(8%) sepia(10%) saturate(2585%) hue-rotate(201deg) brightness(102%) contrast(90%);
 }
 
 /* Reset */
@@ -551,6 +556,51 @@ html.airplot-autostart-boot .intro-overlay {
     flex-shrink: 0;
 }
 
+.intro-cta-icon.intro-cta-icon--planner {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-planner.svg") center / contain no-repeat;
+    mask: url("../assets/icon-planner.svg") center / contain no-repeat;
+}
+
+.intro-cta-icon.intro-cta-icon--weather {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-weather.svg") center / contain no-repeat;
+    mask: url("../assets/icon-weather.svg") center / contain no-repeat;
+}
+
+.intro-cta-icon.intro-cta-icon--airspace {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-airspace.svg") center / contain no-repeat;
+    mask: url("../assets/icon-airspace.svg") center / contain no-repeat;
+}
+
+.intro-cta-icon.intro-cta-icon--checklist {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-checklist.svg") center / contain no-repeat;
+    mask: url("../assets/icon-checklist.svg") center / contain no-repeat;
+}
+
+.intro-cta-icon.intro-cta-icon--flight-report {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-flight-report.svg") center / contain no-repeat;
+    mask: url("../assets/icon-flight-report.svg") center / contain no-repeat;
+}
+
 /* Intro disclaimer */
 .intro-disclaimer {
     font-size: clamp(0.68rem, min(3vw, 2.9dvh), 1.125rem);
@@ -869,6 +919,51 @@ span.ap-tool-nav__link--current {
     flex-shrink: 0;
 }
 
+.ap-tool-nav__icon.ap-tool-nav__icon--planner {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-planner.svg") center / contain no-repeat;
+    mask: url("../assets/icon-planner.svg") center / contain no-repeat;
+}
+
+.ap-tool-nav__icon.ap-tool-nav__icon--weather {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-weather.svg") center / contain no-repeat;
+    mask: url("../assets/icon-weather.svg") center / contain no-repeat;
+}
+
+.ap-tool-nav__icon.ap-tool-nav__icon--airspace {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-airspace.svg") center / contain no-repeat;
+    mask: url("../assets/icon-airspace.svg") center / contain no-repeat;
+}
+
+.ap-tool-nav__icon.ap-tool-nav__icon--checklist {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-checklist.svg") center / contain no-repeat;
+    mask: url("../assets/icon-checklist.svg") center / contain no-repeat;
+}
+
+.ap-tool-nav__icon.ap-tool-nav__icon--flight-report {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url("../assets/icon-flight-report.svg") center / contain no-repeat;
+    mask: url("../assets/icon-flight-report.svg") center / contain no-repeat;
+}
+
 /* Below iPad portrait width (768px): icon-only segmented nav */
 @media (max-width: 767px) {
     .ap-tool-nav {
@@ -1101,6 +1196,28 @@ body.ap-shell .fn-theme-toggle-icon {
     line-height: 1;
 }
 
+.fn-theme-toggle-icon.fn-theme-toggle-icon--svg,
+.cl-theme-toggle-icon.cl-theme-toggle-icon--svg {
+    display: inline-block;
+    width: 1.95em;
+    height: 1em;
+    vertical-align: middle;
+    flex-shrink: 0;
+    background-color: currentColor;
+}
+
+.fn-theme-toggle-icon.fn-theme-toggle-icon--moon.fn-theme-toggle-icon--svg,
+.cl-theme-toggle-icon.cl-theme-toggle-icon--moon.cl-theme-toggle-icon--svg {
+    -webkit-mask: url("../assets/icon-theme-toggle.svg") center / contain no-repeat;
+    mask: url("../assets/icon-theme-toggle.svg") center / contain no-repeat;
+}
+
+.fn-theme-toggle-icon.fn-theme-toggle-icon--sun.fn-theme-toggle-icon--svg,
+.cl-theme-toggle-icon.cl-theme-toggle-icon--sun.cl-theme-toggle-icon--svg {
+    -webkit-mask: url("../assets/icon-theme-toggle-light.svg") center / contain no-repeat;
+    mask: url("../assets/icon-theme-toggle-light.svg") center / contain no-repeat;
+}
+
 /* Map + sidebar sit below fixed header */
 body.ap-shell:not(.flight-planning-mode) .sidebar {
     top: var(--ap-top-header-height);
@@ -1189,6 +1306,28 @@ body.ap-shell.fn-light-theme span.ap-tool-nav__link--current {
     background: rgba(91, 141, 239, 0.14);
 }
 
+/* Masked SVG tool icons: dark-theme grey-blue; labels stay dark via .ap-tool-nav__link */
+body.ap-shell.fn-light-theme .ap-tool-nav__icon,
+body.flight-notes-mode.fn-light-theme .ap-tool-nav__icon,
+body.checklist-mode.cl-light-theme .ap-tool-nav__icon {
+    background-color: var(--ap-light-chrome-icon, #1e1e2e);
+}
+
+body.ap-shell.fn-light-theme a.ap-tool-nav__link:hover .ap-tool-nav__icon,
+body.flight-notes-mode.fn-light-theme a.ap-tool-nav__link:hover .ap-tool-nav__icon,
+body.checklist-mode.cl-light-theme a.ap-tool-nav__link:hover .ap-tool-nav__icon {
+    background-color: var(--ap-light-chrome-icon-emphasis, #0f172a);
+}
+
+body.ap-shell.fn-light-theme .ap-tool-nav__link--current .ap-tool-nav__icon,
+body.ap-shell.fn-light-theme span.ap-tool-nav__link--current .ap-tool-nav__icon,
+body.flight-notes-mode.fn-light-theme .ap-tool-nav__link--current .ap-tool-nav__icon,
+body.flight-notes-mode.fn-light-theme span.ap-tool-nav__link--current .ap-tool-nav__icon,
+body.checklist-mode.cl-light-theme .ap-tool-nav__link--current .ap-tool-nav__icon,
+body.checklist-mode.cl-light-theme span.ap-tool-nav__link--current .ap-tool-nav__icon {
+    background-color: var(--ap-light-chrome-icon-emphasis, #0f172a);
+}
+
 body.ap-shell.fn-light-theme .fp-welcome-home-link {
     background: #ffffff;
     border-color: #c5c5d0;
@@ -1203,7 +1342,7 @@ body.ap-shell.fn-light-theme .fp-welcome-home-link:hover {
 }
 
 body.ap-shell.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
-    filter: brightness(0);
+    filter: var(--ap-light-airplot-icon-filter);
 }
 
 body.ap-shell.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
@@ -1214,11 +1353,12 @@ body.ap-shell.fn-light-theme .fn-theme-toggle {
     border-color: #c5c5d0;
     background: #ffffff;
     box-shadow: var(--ap-chrome-shadow-light);
-    color: #1a1d26;
+    color: var(--ap-light-chrome-icon, #1e1e2e);
 }
 
 body.ap-shell.fn-light-theme .fn-theme-toggle:hover {
     background: #f0f1f3;
+    color: var(--ap-light-chrome-icon-emphasis, #0f172a);
 }
 
 body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map {
@@ -1284,7 +1424,7 @@ body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-
 }
 
 body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-logo {
-    filter: brightness(0);
+    filter: var(--ap-light-airplot-icon-filter);
 }
 
 body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-toggle:hover {
@@ -2398,7 +2538,7 @@ select {
 .modal-header h2 {
     font-size: 16px;
     font-weight: 600;
-    color: #fff;
+    color: var(--sidebar-text);
 }
 
 .modal-close {
@@ -2475,11 +2615,12 @@ a.airspace-choice-btn {
     border-color: #c5c5d0;
     background: #ffffff;
     box-shadow: var(--ap-chrome-shadow-light);
-    color: #1a1d26;
+    color: var(--ap-light-chrome-icon, #1e1e2e);
 }
 
 #helpModal.help-modal--light .fn-theme-toggle:hover {
     background: #f0f1f3;
+    color: var(--ap-light-chrome-icon-emphasis, #0f172a);
 }
 
 /* Help modal light theme (synced with Flight Report via fnLightTheme) */

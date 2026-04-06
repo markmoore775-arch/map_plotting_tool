@@ -635,6 +635,44 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     grid-column: 1 / -1;
 }
 
+.fn-deconflictions-fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+    min-width: 0;
+}
+
+.fn-deconflictions-legend {
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.fn-deconflictions-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    margin-top: 8px;
+    align-items: center;
+}
+
+.fn-check-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--sidebar-text);
+    user-select: none;
+}
+
+.fn-check-row input[type='checkbox'] {
+    width: 1.1em;
+    height: 1.1em;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--accent, #5b8def);
+}
+
 .fn-location-row {
     display: flex;
     flex-direction: column;
@@ -1099,11 +1137,12 @@ body.flight-notes-mode.fn-light-theme .fn-theme-toggle {
     border-color: #c5c5d0;
     background: #ffffff;
     box-shadow: var(--ap-chrome-shadow-light);
-    color: #1a1d26;
+    color: var(--ap-light-chrome-icon, #1e1e2e);
 }
 
 body.flight-notes-mode.fn-light-theme .fn-theme-toggle:hover {
     background: #f0f1f3;
+    color: var(--ap-light-chrome-icon-emphasis, #0f172a);
 }
 
 .fn-btn {
@@ -1224,9 +1263,9 @@ body.flight-notes-mode.fn-light-theme .fp-welcome-home-link:hover {
     color: #0f172a;
 }
 
-/* airplot-icon.svg is white-on-transparent; on the light pill it must read as black. */
+/* airplot-icon.svg is white-on-transparent; on the light pill tint to dark-theme grey-blue */
 body.flight-notes-mode.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
-    filter: brightness(0);
+    filter: var(--ap-light-airplot-icon-filter);
 }
 
 body.flight-notes-mode.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
@@ -1234,7 +1273,7 @@ body.flight-notes-mode.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
 }
 
 body.checklist-mode.cl-light-theme .fp-welcome-home-link .fp-welcome-logo {
-    filter: brightness(0);
+    filter: var(--ap-light-airplot-icon-filter);
 }
 
 body.checklist-mode.cl-light-theme .fp-welcome-home-link .fp-welcome-title {

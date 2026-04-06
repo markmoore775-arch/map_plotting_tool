@@ -25,5 +25,20 @@
     "@xmldom/xmldom": "^0.8.11",
     "adm-zip": "^0.5.16",
     "sharp": "^0.34.5"
-  }
+  },
+  "main": "test_app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markmoore775-arch/map_plotting_tool.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/markmoore775-arch/map_plotting_tool/issues"
+  },
+  "homepage": "https://github.com/markmoore775-arch/map_plotting_tool#readme"
 }
