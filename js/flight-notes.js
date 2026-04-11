@@ -1146,15 +1146,53 @@
         gem_global: 'GEM (Canada)'
     };
 
+    /**
+     * Extract WGS84 lat/lng from a free-text location field.
+     * Prefer leading "lat, lng" (format written by Search / GPS), then the segment
+     * before " · " when it is exactly one pair (coordinates + Postcode metadata).
+     * Otherwise avoid the common false positive "12, 34" inside addresses by
+     * taking the last pair that does not look like two small whole street numbers.
+     */
     function parseLatLngFromLocationString(s) {
         if (!s || !String(s).trim()) return null;
-        var m = String(s).match(/(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)/);
-        if (!m) return null;
-        var lat = parseFloat(m[1]);
-        var lng = parseFloat(m[2]);
-        if (isNaN(lat) || isNaN(lng)) return null;
-        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-        return { lat: lat, lng: lng };
+        var str = String(s).trim().replace(/\u2212/g, '-');
+        var pairCore = '(-?\\d{1,3}(?:\\.\\d+)?)\\s*,\\s*(-?\\d{1,3}(?:\\.\\d+)?)';
+        function fromMatch(m) {
+            if (!m) return null;
+            var lat = parseFloat(m[1]);
+            var lng = parseFloat(m[2]);
+            if (isNaN(lat) || isNaN(lng)) return null;
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+            return { lat: lat, lng: lng };
+        }
+        var mLead = str.match(new RegExp('^\\s*' + pairCore));
+        var rLead = fromMatch(mLead);
+        if (rLead) return rLead;
+        var dotParts = str.split(/\s*·\s*/);
+        if (dotParts.length > 1 && dotParts[0]) {
+            var head = dotParts[0].trim();
+            var mHead = head.match(new RegExp('^' + pairCore + '$'));
+            var rHead = fromMatch(mHead);
+            if (rHead) return rHead;
+        }
+        function looksLikeTinyStreetNumberPair(lat, lng) {
+            return (
+                Math.abs(lat) < 20 &&
+                Math.abs(lng) < 20 &&
+                lat === Math.round(lat) &&
+                lng === Math.round(lng)
+            );
+        }
+        var re = new RegExp(pairCore, 'g');
+        var m;
+        var lastNonTiny = null;
+        while ((m = re.exec(str)) !== null) {
+            var cand = fromMatch(m);
+            if (!cand) continue;
+            if (!looksLikeTinyStreetNumberPair(cand.lat, cand.lng)) lastNonTiny = cand;
+        }
+        if (lastNonTiny) return lastNonTiny;
+        return fromMatch(str.match(new RegExp(pairCore)));
     }
 
     /** Postcode suffix from resolved location string (Search / GPS), if present. */
