@@ -1,8 +1,8 @@
-/* Flight Report page — standalone form (flight-notes.css) */
+/* Flight Report page - standalone form (flight-notes.css) */
 
 /*
  * Global style.css sets html, body { height: 100%; overflow: hidden } for the map app.
- * That locks the document — override both roots so this page can scroll.
+ * That locks the document - override both roots so this page can scroll.
  */
 html.flight-notes-mode {
     height: auto;
@@ -259,6 +259,13 @@ body.checklist-mode.cl-light-theme .fn-top-clear-btn:hover {
     font-size: 0.95rem;
 }
 
+.fn-battery-lead {
+    margin: -6px 0 14px;
+    color: var(--sidebar-text-muted, #9999aa);
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
 .fn-form {
     display: flex;
     flex-direction: column;
@@ -481,7 +488,7 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     align-self: flex-end;
 }
 
-/* Narrow main column (~≤560px): deliberate rows — no broken flex-wrap */
+/* Narrow main column (~≤560px): deliberate rows - no broken flex-wrap */
 @container fn-main (max-width: 34.99rem) {
     .fn-when-controls {
         display: grid;
@@ -635,6 +642,19 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     grid-column: 1 / -1;
 }
 
+.fn-location-primary-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 12px;
+    margin-bottom: 12px;
+}
+
+.fn-location-primary-fields .fn-field-grow {
+    flex: 1 1 160px;
+    min-width: 0;
+}
+
 .fn-location-row {
     display: flex;
     flex-direction: column;
@@ -706,6 +726,114 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     background: var(--input-bg);
 }
 
+.fn-extra-locations {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.fn-extra-locations-heading {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sidebar-text-muted);
+}
+
+.fn-extra-locations-lead {
+    margin: 0 0 14px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.fn-extra-locations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.fn-extra-locations-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.fn-extra-loc-global-status {
+    flex: 1;
+    min-width: 160px;
+}
+
+.fn-extra-loc-card {
+    padding: 14px 14px 16px;
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: var(--radius, 6px);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+body.flight-notes-mode.fn-light-theme .fn-extra-loc-card {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.fn-extra-loc-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 12px;
+    margin-bottom: 10px;
+}
+
+.fn-extra-loc-card-head .fn-field-grow {
+    flex: 1 1 160px;
+    min-width: 0;
+}
+
+.fn-extra-loc-title {
+    flex: 1 1 100%;
+    margin: 0 0 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--sidebar-text);
+}
+
+.fn-extra-loc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.fn-extra-loc-result {
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.fn-extra-loc-result[hidden] {
+    display: none !important;
+}
+
+.fn-extra-loc-map-wrap .fn-mini-map {
+    width: min(100%, min(88vw, 340px));
+}
+
+.fn-extra-loc-status {
+    font-size: 0.8rem;
+    color: var(--sidebar-text-muted);
+    min-width: 120px;
+}
+
+.fn-extra-loc-status.fn-gps-error {
+    color: var(--danger, #e05555);
+}
+
+.fn-extra-loc-status.fn-gps-ok {
+    color: var(--success, #4caf50);
+}
+
 .fn-gps-status {
     font-size: 0.85rem;
     color: var(--sidebar-text-muted);
@@ -725,6 +853,127 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
+}
+
+/* ALoS help (Batteries section): collapsible reference under section title */
+.fn-alos-help {
+    margin: 0 0 14px;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.fn-alos-help-summary {
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+    color: var(--primary, #5b8def);
+    padding: 6px 0;
+    user-select: none;
+}
+
+.fn-alos-help-summary::-webkit-details-marker {
+    display: none;
+}
+
+.fn-alos-help-body {
+    margin-top: 8px;
+    padding: 12px 14px;
+    background: rgba(91, 141, 239, 0.08);
+    border-radius: var(--radius, 6px);
+    border: 1px solid var(--sidebar-border);
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.fn-alos-help-lead,
+.fn-alos-help-note {
+    margin: 0 0 10px;
+}
+
+.fn-alos-help-note {
+    font-size: 0.78rem;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.fn-alos-help-sub {
+    margin: 14px 0 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.fn-alos-help-sub:first-of-type {
+    margin-top: 0;
+}
+
+.fn-alos-help-list {
+    margin: 0 0 8px;
+    padding-left: 1.15rem;
+}
+
+.fn-alos-help-list li {
+    margin-bottom: 4px;
+}
+
+.fn-alos-help-p {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.fn-alos-help-nested {
+    margin-top: 12px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.fn-alos-help-nested-summary {
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+    color: var(--sidebar-text, #e0e0e8);
+    padding: 4px 0;
+    user-select: none;
+}
+
+.fn-alos-help-nested-summary::-webkit-details-marker {
+    display: none;
+}
+
+.fn-alos-help-nested-body {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm, 4px);
+    border: 1px solid var(--sidebar-border);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.fn-alos-help-example {
+    margin: 0 0 8px;
+    font-size: 0.77rem;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.fn-alos-help-example:last-child {
+    margin-bottom: 0;
+}
+
+.fn-alos-minutes-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.fn-alos-minute-field .fn-label {
+    margin-top: 0;
+}
+
+.fn-input-alos-min {
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .fn-add-battery-wrap {
@@ -925,7 +1174,7 @@ body.flight-notes-mode.fn-light-theme .fn-weather-hint-sub {
     }
 }
 
-/* Segmented control — clearer than native radios on Safari/iOS (avoids “one checkbox” look) */
+/* Segmented control - clearer than native radios on Safari/iOS (avoids “one checkbox” look) */
 .fn-export-theme-box {
     position: relative;
     display: flex;
@@ -1063,7 +1312,7 @@ body.flight-notes-mode.fn-light-theme .fn-export-theme-segment-opt input:checked
     }
 }
 
-/* Page theme in header — icon toggle (same pattern as Checklist) */
+/* Page theme in header - icon toggle (same pattern as Checklist) */
 .fn-theme-toggle {
     display: inline-flex;
     align-items: center;
@@ -1145,7 +1394,7 @@ body.flight-notes-mode.fn-light-theme .fn-theme-toggle:hover {
     filter: brightness(1.08);
 }
 
-/* Primary-style accent (Now, GPS, Fetch weather) — compact min-width in .fn-when-controls */
+/* Primary-style accent (Now, GPS, Fetch weather) - compact min-width in .fn-when-controls */
 .fn-btn.fn-btn-now {
     padding: 12px 22px;
     font-weight: 700;
@@ -1250,6 +1499,14 @@ body.flight-notes-mode.fn-light-theme .fn-lead {
     color: #555;
 }
 
+body.flight-notes-mode.fn-light-theme .fn-battery-lead {
+    color: #555;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-extra-locations-lead {
+    color: #555;
+}
+
 body.flight-notes-mode.fn-light-theme .fn-privacy-summary {
     color: #555;
 }
@@ -1328,6 +1585,41 @@ body.flight-notes-mode.fn-light-theme .fn-gps-status {
 body.flight-notes-mode.fn-light-theme .fn-battery-card {
     background: #f5f6f8;
     border-color: #d8d9dc;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-alos-help {
+    color: #555;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-alos-help-body {
+    background: #eef2fb;
+    border-color: #d0d4e0;
+    color: #1a1a1a;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-alos-help-note {
+    color: #666;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-alos-help-sub {
+    color: #1a1a1a;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-alos-help-p {
+    color: #1a1a1a;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-alos-help-nested-summary {
+    color: #1a1a1a;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-alos-help-nested-body {
+    background: #f0f2f8;
+    border-color: #d0d4e0;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-alos-help-example {
+    color: #555;
 }
 
 body.flight-notes-mode.fn-light-theme .fn-battery-flight-readonly {

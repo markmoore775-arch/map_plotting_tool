@@ -13,79 +13,120 @@
     var FN_DRAFT_FIELD_IDS = [
         'fnDate',
         'fnTime',
+        'fnLocationLabel',
         'fnLocation',
         'fnReference',
         'fnDeconflictions',
         'fnUas',
-        'fnBattery1',
+        'fnBattery1Name',
+        'fnBattery1Site',
+        'fnBattery1Voltage',
         'fnBattery1Rp1',
         'fnBattery1Rp2',
         'fnBattery1Launch',
         'fnBattery1Land',
         'fnBattery1FlightTime',
+        'fnBattery1AmberMin',
+        'fnBattery1RedMin',
         'fnBattery1Alos',
-        'fnBattery2',
+        'fnBattery2Name',
+        'fnBattery2Site',
+        'fnBattery2Voltage',
         'fnBattery2Rp1',
         'fnBattery2Rp2',
         'fnBattery2Launch',
         'fnBattery2Land',
         'fnBattery2FlightTime',
+        'fnBattery2AmberMin',
+        'fnBattery2RedMin',
         'fnBattery2Alos',
-        'fnBattery3',
+        'fnBattery3Name',
+        'fnBattery3Site',
+        'fnBattery3Voltage',
         'fnBattery3Rp1',
         'fnBattery3Rp2',
         'fnBattery3Launch',
         'fnBattery3Land',
         'fnBattery3FlightTime',
+        'fnBattery3AmberMin',
+        'fnBattery3RedMin',
         'fnBattery3Alos',
-        'fnBattery4',
+        'fnBattery4Name',
+        'fnBattery4Site',
+        'fnBattery4Voltage',
         'fnBattery4Rp1',
         'fnBattery4Rp2',
         'fnBattery4Launch',
         'fnBattery4Land',
         'fnBattery4FlightTime',
+        'fnBattery4AmberMin',
+        'fnBattery4RedMin',
         'fnBattery4Alos',
-        'fnBattery5',
+        'fnBattery5Name',
+        'fnBattery5Site',
+        'fnBattery5Voltage',
         'fnBattery5Rp1',
         'fnBattery5Rp2',
         'fnBattery5Launch',
         'fnBattery5Land',
         'fnBattery5FlightTime',
+        'fnBattery5AmberMin',
+        'fnBattery5RedMin',
         'fnBattery5Alos',
-        'fnBattery6',
+        'fnBattery6Name',
+        'fnBattery6Site',
+        'fnBattery6Voltage',
         'fnBattery6Rp1',
         'fnBattery6Rp2',
         'fnBattery6Launch',
         'fnBattery6Land',
         'fnBattery6FlightTime',
+        'fnBattery6AmberMin',
+        'fnBattery6RedMin',
         'fnBattery6Alos',
-        'fnBattery7',
+        'fnBattery7Name',
+        'fnBattery7Site',
+        'fnBattery7Voltage',
         'fnBattery7Rp1',
         'fnBattery7Rp2',
         'fnBattery7Launch',
         'fnBattery7Land',
         'fnBattery7FlightTime',
+        'fnBattery7AmberMin',
+        'fnBattery7RedMin',
         'fnBattery7Alos',
-        'fnBattery8',
+        'fnBattery8Name',
+        'fnBattery8Site',
+        'fnBattery8Voltage',
         'fnBattery8Rp1',
         'fnBattery8Rp2',
         'fnBattery8Launch',
         'fnBattery8Land',
         'fnBattery8FlightTime',
+        'fnBattery8AmberMin',
+        'fnBattery8RedMin',
         'fnBattery8Alos',
-        'fnBattery9',
+        'fnBattery9Name',
+        'fnBattery9Site',
+        'fnBattery9Voltage',
         'fnBattery9Rp1',
         'fnBattery9Rp2',
         'fnBattery9Launch',
         'fnBattery9Land',
         'fnBattery9FlightTime',
+        'fnBattery9AmberMin',
+        'fnBattery9RedMin',
         'fnBattery9Alos',
-        'fnBattery10',
+        'fnBattery10Name',
+        'fnBattery10Site',
+        'fnBattery10Voltage',
         'fnBattery10Rp1',
         'fnBattery10Rp2',
         'fnBattery10Launch',
         'fnBattery10Land',
         'fnBattery10FlightTime',
+        'fnBattery10AmberMin',
+        'fnBattery10RedMin',
         'fnBattery10Alos',
         'fnWeather',
         'fnAirspaceRadiusKm',
@@ -97,7 +138,7 @@
     /** How many battery cards (1–FN_BATTERY_MAX) are shown; exported to email/PDF and saved in draft (v2). */
     var fnVisibleBatteryCount = 1;
 
-    var BATTERY_N_FIELD_SUFFIXES = ['', 'Rp1', 'Rp2', 'Launch', 'Land', 'FlightTime', 'Alos'];
+    var BATTERY_N_FIELD_SUFFIXES = ['Name', 'Site', 'Voltage', 'Rp1', 'Rp2', 'Launch', 'Land', 'FlightTime', 'AmberMin', 'RedMin', 'Alos'];
 
     function getVisibleBatteryCount() {
         return fnVisibleBatteryCount;
@@ -184,14 +225,14 @@
                     fields[id] = el.value || '';
                 }
             }
-            localStorage.setItem(
-                FN_DRAFT_STORAGE_KEY,
-                JSON.stringify({
-                    v: 2,
-                    fields: fields,
-                    visibleBatteryCount: fnVisibleBatteryCount
-                })
-            );
+            var draftPayload = {
+                v: 2,
+                fields: fields,
+                visibleBatteryCount: fnVisibleBatteryCount
+            };
+            var extras = serializeExtraLocations();
+            if (extras.length) draftPayload.extraLocations = extras;
+            localStorage.setItem(FN_DRAFT_STORAGE_KEY, JSON.stringify(draftPayload));
         } catch (e) {}
     }
 
@@ -222,11 +263,23 @@
                     el.value = data.fields[id];
                 }
             }
+            var bnLegacy;
+            for (bnLegacy = 1; bnLegacy <= FN_BATTERY_MAX; bnLegacy++) {
+                var legacyKey = 'fnBattery' + bnLegacy;
+                if (!Object.prototype.hasOwnProperty.call(data.fields, legacyKey)) continue;
+                var legacyVal = data.fields[legacyKey];
+                if (legacyVal == null || !String(legacyVal).trim()) continue;
+                var nameLegacyEl = document.getElementById('fnBattery' + bnLegacy + 'Name');
+                if (nameLegacyEl && !String(nameLegacyEl.value || '').trim()) {
+                    nameLegacyEl.value = String(legacyVal);
+                }
+            }
             if (data.v === 2 && typeof data.visibleBatteryCount === 'number') {
                 visibleHint = Math.min(FN_BATTERY_MAX, Math.max(1, Math.round(data.visibleBatteryCount)));
             } else {
                 visibleHint = deriveVisibleBatteryCountFromFields();
             }
+            deserializeExtraLocations(data.extraLocations);
             return visibleHint;
         } catch (e) {
             return visibleHint;
@@ -243,6 +296,12 @@
 
     var miniMap = null;
     var fnLocationPreviewTimer = null;
+
+    /** Additional operational locations (same mission); each row has its own mini map. Max rows. */
+    var FN_EXTRA_LOC_MAX = 8;
+    var fnExtraLocationRows = [];
+    var fnExtraRowPreviewIdCounter = 0;
+    var fnExtraLocPreviewTimers = {};
 
     var fnAirspaceRadiusKm = 3;
     var fnLastNotams = null;
@@ -448,7 +507,7 @@
                     typeof NotamPib !== 'undefined'
                         ? NotamPib.notamBadgeMeta(cat)
                         : { label: 'NOTAM', cssClass: 'badge-notam-general' };
-                var vert = n.verticalSummary ? escapeHtmlFn(n.verticalSummary) : '—';
+                var vert = n.verticalSummary ? escapeHtmlFn(n.verticalSummary) : '-';
                 var adNote = n.itemA ? '<br>AD: ' + escapeHtmlFn(n.itemA) : '';
                 content.insertAdjacentHTML(
                     'beforeend',
@@ -483,7 +542,7 @@
                         escapeHtmlFn(dist) +
                         ' km</p>' +
                         '<p><strong>Radius</strong> ' +
-                        escapeHtmlFn(n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm + ' NM' : '—') +
+                        escapeHtmlFn(n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm + ' NM' : '-') +
                         '</p>' +
                         '<p><strong>Vertical</strong> ' +
                         vert +
@@ -744,7 +803,7 @@
                 typeof NotamPib !== 'undefined'
                     ? NotamPib.notamBadgeMeta(n.uasCategory || 'other').label
                     : 'NOTAM';
-            lines.push('NOTAM ' + (n.id || '—') + ' (' + tag + ')');
+            lines.push('NOTAM ' + (n.id || '-') + ' (' + tag + ')');
             lines.push('Distance: ' + dist + ' km from your location');
             if (n.radiusNm > 0 && n.radiusNm < 999) lines.push('Radius: ' + n.radiusNm + ' NM');
             if (n.verticalSummary) lines.push('Vertical (Q-line / text): ' + n.verticalSummary);
@@ -754,7 +813,7 @@
             lines.push('Text: ' + txt);
             return lines.join('\n');
         }
-        return '—';
+        return '-';
     }
 
     async function appendAirspacePdfPages(doc) {
@@ -903,7 +962,7 @@
     }
 
     function dash(s) {
-        return s ? s : '—';
+        return s ? s : '-';
     }
 
     /** HTML date input is yyyy-mm-dd; exports show dd-mm-yyyy. */
@@ -952,33 +1011,58 @@
 
         lines.push('Date: ' + dash(formatDateForExportDdMmYyyy(trimVal('fnDate'))));
         lines.push('Time: ' + dash(trimVal('fnTime')));
+        var locLab = trimVal('fnLocationLabel');
+        if (locLab) lines.push('Location label: ' + dash(locLab));
         lines.push('Location: ' + dash(trimVal('fnLocation')));
         var llPlain = parseLatLngFromLocationString(trimVal('fnLocation'));
         if (llPlain) {
             lines.push('Map (OpenStreetMap): ' + openStreetMapLink(llPlain.lat, llPlain.lng));
         }
+        var exLines = serializeExtraLocations();
+        if (exLines.length) {
+            lines.push('');
+            lines.push('Additional operational locations:');
+            for (var ei = 0; ei < exLines.length; ei++) {
+                var ex = exLines[ei];
+                lines.push(
+                    '  Additional ' +
+                        (ei + 1) +
+                        ' label: ' +
+                        dash(ex.label || '—')
+                );
+                lines.push('  Additional ' + (ei + 1) + ' location: ' + dash(ex.text || '—'));
+                var llEx = parseLatLngFromLocationString(ex.text || '');
+                if (llEx) {
+                    lines.push('  Additional ' + (ei + 1) + ' map: ' + openStreetMapLink(llEx.lat, llEx.lng));
+                }
+            }
+        }
         lines.push('Reference: ' + dash(trimVal('fnReference')));
         lines.push('UAS: ' + dash(trimVal('fnUas')));
         lines.push('Deconflictions:');
-        lines.push(trimVal('fnDeconflictions') || '—');
+        lines.push(trimVal('fnDeconflictions') || '-');
 
         var bn;
         var battMax = getVisibleBatteryCount();
         for (bn = 1; bn <= battMax; bn++) {
             var b = 'fnBattery' + bn;
-            lines.push('Battery ' + bn + ': ' + dash(trimVal(b)));
+            lines.push('Battery ' + bn + ' name: ' + dash(trimVal(b + 'Name')));
+            lines.push('Battery ' + bn + ' site: ' + dash(trimVal(b + 'Site')));
+            lines.push('Battery ' + bn + ' voltage: ' + dash(trimVal(b + 'Voltage')));
             lines.push('Battery ' + bn + ' Remote Pilot 1: ' + dash(trimVal(b + 'Rp1')));
             lines.push('Battery ' + bn + ' Remote Pilot 2: ' + dash(trimVal(b + 'Rp2')));
             lines.push('Battery ' + bn + ' launch: ' + dash(trimVal(b + 'Launch')));
             lines.push('Battery ' + bn + ' landing: ' + dash(trimVal(b + 'Land')));
             lines.push('Battery ' + bn + ' flight time: ' + dash(trimVal(b + 'FlightTime')));
+            lines.push('Battery ' + bn + ' minutes (Amber): ' + dash(trimVal(b + 'AmberMin')));
+            lines.push('Battery ' + bn + ' minutes (Red): ' + dash(trimVal(b + 'RedMin')));
             lines.push('Battery ' + bn + ' ALoS comments: ' + dash(trimVal(b + 'Alos').replace(/\n/g, ' ')));
         }
         lines.push('Weather: ' + dash(trimVal('fnWeather').replace(/\n/g, ' ')));
         lines.push('Airspace: ' + fnAirspaceSummaryForExport());
         lines.push('');
         lines.push('Notes:');
-        lines.push(trimVal('fnNotes') || '—');
+        lines.push(trimVal('fnNotes') || '-');
 
         return lines.join('\n');
     }
@@ -988,31 +1072,47 @@
         var llPdf = parseLatLngFromLocationString(trimVal('fnLocation'));
         var mapLinkRow = llPdf
             ? ['Map (OpenStreetMap)', openStreetMapLink(llPdf.lat, llPdf.lng)]
-            : ['Map (OpenStreetMap)', '—'];
+            : ['Map (OpenStreetMap)', '-'];
         var rows = [
             ['Date', dash(formatDateForExportDdMmYyyy(trimVal('fnDate')))],
             ['Time', dash(trimVal('fnTime'))],
+            ['Location label', dash(trimVal('fnLocationLabel'))],
             ['Location', dash(trimVal('fnLocation'))],
-            mapLinkRow,
+            mapLinkRow
+        ];
+        var exPdf = serializeExtraLocations();
+        for (var ei = 0; ei < exPdf.length; ei++) {
+            rows.push(['Add. location ' + (ei + 1) + ' label', dash(exPdf[ei].label || '—')]);
+            rows.push(['Add. location ' + (ei + 1) + ' details', dash(exPdf[ei].text || '—')]);
+            var llExP = parseLatLngFromLocationString(exPdf[ei].text || '');
+            if (llExP) {
+                rows.push(['Add. location ' + (ei + 1) + ' map', openStreetMapLink(llExP.lat, llExP.lng)]);
+            }
+        }
+        rows.push(
             ['Reference', dash(trimVal('fnReference'))],
             ['UAS', dash(trimVal('fnUas'))],
-            ['Deconflictions', trimVal('fnDeconflictions') || '—']
-        ];
+            ['Deconflictions', trimVal('fnDeconflictions') || '-']
+        );
         var bn;
         var battMaxPdf = getVisibleBatteryCount();
         for (bn = 1; bn <= battMaxPdf; bn++) {
             var b = 'fnBattery' + bn;
-            rows.push(['Battery ' + bn, dash(trimVal(b))]);
+            rows.push(['Battery ' + bn + ' name', dash(trimVal(b + 'Name'))]);
+            rows.push(['Battery ' + bn + ' site', trimVal(b + 'Site') || '—']);
+            rows.push(['Battery ' + bn + ' voltage', dash(trimVal(b + 'Voltage'))]);
             rows.push(['Battery ' + bn + ' Remote Pilot 1', dash(trimVal(b + 'Rp1'))]);
             rows.push(['Battery ' + bn + ' Remote Pilot 2', dash(trimVal(b + 'Rp2'))]);
             rows.push(['Battery ' + bn + ' launch', dash(trimVal(b + 'Launch'))]);
             rows.push(['Battery ' + bn + ' landing', dash(trimVal(b + 'Land'))]);
             rows.push(['Battery ' + bn + ' flight time', dash(trimVal(b + 'FlightTime'))]);
-            rows.push(['Battery ' + bn + ' ALoS comments', trimVal(b + 'Alos') || '—']);
+            rows.push(['Battery ' + bn + ' minutes (Amber)', dash(trimVal(b + 'AmberMin'))]);
+            rows.push(['Battery ' + bn + ' minutes (Red)', dash(trimVal(b + 'RedMin'))]);
+            rows.push(['Battery ' + bn + ' ALoS comments', trimVal(b + 'Alos') || '-']);
         }
-        rows.push(['Weather', w || '—']);
+        rows.push(['Weather', w || '-']);
         rows.push(['Airspace', fnAirspaceSummaryForExport()]);
-        rows.push(['Notes', trimVal('fnNotes') || '—']);
+        rows.push(['Notes', trimVal('fnNotes') || '-']);
         return rows;
     }
 
@@ -1077,20 +1177,20 @@
     }
 
     function directionToCardinal(deg) {
-        if (deg == null || isNaN(deg)) return '—';
+        if (deg == null || isNaN(deg)) return '-';
         var dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
         var idx = Math.round(((deg % 360) / 22.5)) % 16;
         return dirs[idx];
     }
 
     function formatVisibility(m) {
-        if (m == null || isNaN(m)) return '—';
+        if (m == null || isNaN(m)) return '-';
         if (m >= 10000) return (m / 1000).toFixed(1) + ' km';
         return Math.round(m) + ' m';
     }
 
     function formatWindRow(speed, dir) {
-        if (speed == null || isNaN(speed)) return '—';
+        if (speed == null || isNaN(speed)) return '-';
         return Math.round(speed) + ' km/h ' + directionToCardinal(dir);
     }
 
@@ -1362,14 +1462,14 @@
         var modelLabel = WX_MODEL_LABELS[model] || model;
 
         var gusts = data.wind_gusts_10m;
-        var gustsStr = gusts != null ? Math.round(gusts) + ' km/h' : '—';
+        var gustsStr = gusts != null ? Math.round(gusts) + ' km/h' : '-';
         var wind120Str = formatWindRow(data.wind_speed_120m, data.wind_direction_120m);
         var gusts120 =
-            data.wind_speed_120m != null ? Math.round(data.wind_speed_120m * GUST_120M_MULTIPLIER) + ' km/h' : '—';
+            data.wind_speed_120m != null ? Math.round(data.wind_speed_120m * GUST_120M_MULTIPLIER) + ' km/h' : '-';
 
         var cloudTotal = data.cloud_cover;
         var cloudLow = data.cloud_cover_low;
-        var cloudStr = '—';
+        var cloudStr = '-';
         if (cloudTotal != null) {
             cloudStr =
                 cloudLow != null
@@ -1379,7 +1479,7 @@
 
         var precip = data.precipitation;
         var precipProb = data.precipitation_probability;
-        var precipStr = '—';
+        var precipStr = '-';
         if (precip != null) {
             precipStr =
                 precipProb != null
@@ -1388,14 +1488,14 @@
         }
 
         var temp = data.temperature_2m;
-        var tempStr = temp != null ? Math.round(temp) + ' °C' : '—';
+        var tempStr = temp != null ? Math.round(temp) + ' °C' : '-';
 
         var lines = [];
         lines.push('Open-Meteo forecast (Flight Weather source)');
         lines.push('Coordinates: ' + lat.toFixed(6) + ', ' + lng.toFixed(6));
         lines.push(
             'Forecast hour: ' +
-                (displayTime || '—') +
+                (displayTime || '-') +
                 (usedTargetTime ? ' (from Date/Time fields)' : ' (current time)')
         );
         lines.push('Model: ' + modelLabel);
@@ -1533,7 +1633,7 @@
                 dateEl.showPicker();
                 return;
             } catch (e) {
-                /* InvalidStateError / NotSupportedError — fall through */
+                /* InvalidStateError / NotSupportedError - fall through */
             }
         }
         focusDate();
@@ -1725,11 +1825,16 @@
         if (kind === 'ok') el.classList.add('fn-gps-ok');
     }
 
+    function destroyLeafletMapInstance(m) {
+        if (!m) return;
+        try {
+            m.remove();
+        } catch (e) {}
+    }
+
     function destroyMiniMap() {
-        if (miniMap) {
-            miniMap.remove();
-            miniMap = null;
-        }
+        destroyLeafletMapInstance(miniMap);
+        miniMap = null;
     }
 
     function hideLocationResult() {
@@ -1737,7 +1842,7 @@
         if (wrap) wrap.hidden = true;
         destroyMiniMap();
         var pc = document.getElementById('fnPostcodeDisplay');
-        if (pc) pc.textContent = '—';
+        if (pc) pc.textContent = '-';
     }
 
     function scheduleSyncLocationPreviewFromField() {
@@ -1756,11 +1861,12 @@
         if (ll) {
             wrap.hidden = false;
             var extracted = extractPostcodeFromLocationField(trimVal('fnLocation'));
-            if (pcDisp) pcDisp.textContent = extracted || '—';
+            if (pcDisp) pcDisp.textContent = extracted || '-';
             initMiniMap(ll.lat, ll.lng);
         } else {
             hideLocationResult();
         }
+        updateBatterySiteDatalist();
     }
 
     /**
@@ -1793,11 +1899,9 @@
             });
     }
 
-    function initMiniMap(lat, lng) {
-        destroyMiniMap();
-        var el = document.getElementById('fnMiniMap');
-        if (!el || typeof L === 'undefined') return;
-        miniMap = L.map(el, {
+    function createLeafletMiniMap(containerEl, lat, lng) {
+        if (!containerEl || typeof L === 'undefined') return null;
+        var m = L.map(containerEl, {
             zoomControl: true,
             attributionControl: true
         }).setView([lat, lng], 16);
@@ -1806,16 +1910,443 @@
                 '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
             maxZoom: 19,
             crossOrigin: true
-        }).addTo(miniMap);
-        L.marker([lat, lng]).addTo(miniMap);
+        }).addTo(m);
+        L.marker([lat, lng]).addTo(m);
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
-                if (miniMap) miniMap.invalidateSize();
+                if (m) m.invalidateSize();
             });
         });
         setTimeout(function () {
-            if (miniMap) miniMap.invalidateSize();
+            if (m) m.invalidateSize();
         }, 200);
+        return m;
+    }
+
+    function initMiniMap(lat, lng) {
+        destroyMiniMap();
+        var el = document.getElementById('fnMiniMap');
+        if (!el) return;
+        miniMap = createLeafletMiniMap(el, lat, lng);
+    }
+
+    function setExtraLocGlobalStatus(message, kind) {
+        var el = document.getElementById('fnExtraLocGlobalStatus');
+        if (!el) return;
+        el.textContent = message || '';
+        el.classList.remove('fn-gps-error', 'fn-gps-ok');
+        if (kind === 'error') el.classList.add('fn-gps-error');
+        if (kind === 'ok') el.classList.add('fn-gps-ok');
+    }
+
+    function setExtraRowStatus(row, message, kind) {
+        if (!row || !row.statusEl) return;
+        row.statusEl.textContent = message || '';
+        row.statusEl.classList.remove('fn-gps-error', 'fn-gps-ok');
+        if (kind === 'error') row.statusEl.classList.add('fn-gps-error');
+        if (kind === 'ok') row.statusEl.classList.add('fn-gps-ok');
+    }
+
+    function clearExtraRowPreviewTimer(row) {
+        if (!row || row._previewTid == null) return;
+        var t = fnExtraLocPreviewTimers[row._previewTid];
+        if (t) clearTimeout(t);
+        delete fnExtraLocPreviewTimers[row._previewTid];
+    }
+
+    function scheduleSyncExtraRowFromField(row) {
+        if (!row) return;
+        if (row._previewTid == null) row._previewTid = ++fnExtraRowPreviewIdCounter;
+        var tid = row._previewTid;
+        if (fnExtraLocPreviewTimers[tid]) clearTimeout(fnExtraLocPreviewTimers[tid]);
+        fnExtraLocPreviewTimers[tid] = setTimeout(function () {
+            delete fnExtraLocPreviewTimers[tid];
+            syncExtraRowMapPreview(row);
+        }, 300);
+    }
+
+    function syncExtraRowMapPreview(row) {
+        if (!row) return;
+        destroyLeafletMapInstance(row.map);
+        row.map = null;
+        var ll = parseLatLngFromLocationString(String(row.textInput.value || '').trim());
+        if (!row.resultWrap || !row.mapEl || !row.pcEl) return;
+        if (ll) {
+            row.resultWrap.hidden = false;
+            var extracted = extractPostcodeFromLocationField(String(row.textInput.value || '').trim());
+            row.pcEl.textContent = extracted || '—';
+            row.map = createLeafletMiniMap(row.mapEl, ll.lat, ll.lng);
+        } else {
+            row.resultWrap.hidden = true;
+            row.pcEl.textContent = '—';
+        }
+    }
+
+    function applyResolvedCoordsToExtraRow(row, lat, lng, postcodeHint, okMessage) {
+        var loc = lat.toFixed(6) + ', ' + lng.toFixed(6);
+        if (row.resultWrap) row.resultWrap.hidden = false;
+        if (row.pcEl) row.pcEl.textContent = postcodeHint != null ? postcodeHint : '…';
+        if (row.textInput) {
+            row.textInput.value =
+                postcodeHint != null && postcodeHint !== ''
+                    ? loc + ' · Postcode: ' + postcodeHint
+                    : loc;
+        }
+        saveFlightNotesDraft();
+        setTimeout(function () {
+            syncExtraRowMapPreview(row);
+        }, 0);
+        if (postcodeHint != null) {
+            setExtraRowStatus(row, okMessage, 'ok');
+            setExtraLocGlobalStatus('', '');
+            updateBatterySiteDatalist();
+        } else {
+            setExtraRowStatus(row, 'Looking up postcode…', '');
+            reversePostcode(lat, lng).then(function (pc) {
+                if (!row.root || !row.root.parentNode) return;
+                if (row.pcEl) row.pcEl.textContent = pc || '—';
+                if (row.textInput && pc) {
+                    row.textInput.value = loc + ' · Postcode: ' + pc;
+                }
+                setExtraRowStatus(row, okMessage, 'ok');
+                saveFlightNotesDraft();
+                updateBatterySiteDatalist();
+            });
+        }
+    }
+
+    function onExtraRowSearchClick(row) {
+        var q = String(row.textInput.value || '').trim();
+        if (!q) {
+            setExtraRowStatus(row, 'Enter a postcode, address, or place to search.', 'error');
+            return;
+        }
+        if (row.searchBtn) row.searchBtn.disabled = true;
+        setExtraRowStatus(row, 'Searching…', '');
+        nominatimSearch(q)
+            .then(function (hit) {
+                if (row.searchBtn) row.searchBtn.disabled = false;
+                if (!hit) {
+                    setExtraRowStatus(row, 'No results found.', 'error');
+                    return;
+                }
+                var blat = parseFloat(hit.lat);
+                var blng = parseFloat(hit.lon);
+                if (isNaN(blat) || isNaN(blng)) {
+                    setExtraRowStatus(row, 'Invalid result from search.', 'error');
+                    return;
+                }
+                var pc = postcodeFromNominatimHit(hit);
+                applyResolvedCoordsToExtraRow(row, blat, blng, pc, 'Location updated from search.');
+            })
+            .catch(function () {
+                if (row.searchBtn) row.searchBtn.disabled = false;
+                setExtraRowStatus(row, 'Search failed.', 'error');
+            });
+    }
+
+    function onExtraRowGpsClick(row) {
+        var blocked =
+            typeof GeoLocate !== 'undefined' && GeoLocate.secureContextBlockedMessage
+                ? GeoLocate.secureContextBlockedMessage()
+                : null;
+        if (blocked) {
+            setExtraRowStatus(row, blocked, 'error');
+            return;
+        }
+        if (!navigator.geolocation) {
+            setExtraRowStatus(row, 'Geolocation is not available.', 'error');
+            return;
+        }
+        if (row.gpsBtn) row.gpsBtn.disabled = true;
+        setExtraRowStatus(row, 'Getting location…', '');
+
+        function onOk(pos) {
+            if (row.gpsBtn) row.gpsBtn.disabled = false;
+            applyResolvedCoordsToExtraRow(row, pos.coords.latitude, pos.coords.longitude, null, 'Location updated from GPS.');
+        }
+        function onFail(err) {
+            if (err && err.handledByIosStandalonePrompt) {
+                if (row.gpsBtn) row.gpsBtn.disabled = false;
+                setExtraRowStatus(row, '', '');
+                return;
+            }
+            var msg;
+            if (typeof GeoLocate !== 'undefined' && GeoLocate.geolocationErrorMessage) {
+                msg = GeoLocate.geolocationErrorMessage(err);
+            } else {
+                msg = 'Could not get location.';
+                if (err && err.code === 1) msg = 'Location permission denied.';
+                else if (err && err.code === 2) msg = 'Location unavailable.';
+                else if (err && err.code === 3) msg = 'Location request timed out.';
+            }
+            syncExtraRowMapPreview(row);
+            if (row.gpsBtn) row.gpsBtn.disabled = false;
+            setExtraRowStatus(row, msg, 'error');
+        }
+
+        if (typeof GeoLocate !== 'undefined' && GeoLocate.getCurrentPositionRobust) {
+            GeoLocate.getCurrentPositionRobust(onOk, onFail);
+        } else {
+            navigator.geolocation.getCurrentPosition(onOk, onFail, {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            });
+        }
+    }
+
+    function removeExtraLocationRow(row) {
+        var idx = fnExtraLocationRows.indexOf(row);
+        if (idx < 0) return;
+        clearExtraRowPreviewTimer(row);
+        destroyLeafletMapInstance(row.map);
+        row.map = null;
+        if (row.root && row.root.parentNode) row.root.parentNode.removeChild(row.root);
+        fnExtraLocationRows.splice(idx, 1);
+        renumberExtraLocationTitles();
+        syncFnAddExtraLocationButtonState();
+        updateBatterySiteDatalist();
+        saveFlightNotesDraft();
+    }
+
+    function renumberExtraLocationTitles() {
+        var i;
+        for (i = 0; i < fnExtraLocationRows.length; i++) {
+            if (fnExtraLocationRows[i].titleEl) {
+                fnExtraLocationRows[i].titleEl.textContent = 'Additional location ' + (i + 1);
+            }
+        }
+    }
+
+    function syncFnAddExtraLocationButtonState() {
+        var btn = document.getElementById('fnAddExtraLocationBtn');
+        if (!btn) return;
+        if (fnExtraLocationRows.length >= FN_EXTRA_LOC_MAX) {
+            btn.disabled = true;
+            btn.title = 'Maximum ' + FN_EXTRA_LOC_MAX + ' additional locations';
+        } else {
+            btn.disabled = false;
+            btn.title = 'Add another resolved site with its own mini map';
+        }
+    }
+
+    function serializeExtraLocations() {
+        var out = [];
+        var i;
+        for (i = 0; i < fnExtraLocationRows.length; i++) {
+            var r = fnExtraLocationRows[i];
+            out.push({
+                label: String(r.labelInput.value || '').trim(),
+                text: String(r.textInput.value || '').trim()
+            });
+        }
+        return out;
+    }
+
+    function clearAllExtraLocationRows() {
+        while (fnExtraLocationRows.length) {
+            var row = fnExtraLocationRows[0];
+            clearExtraRowPreviewTimer(row);
+            destroyLeafletMapInstance(row.map);
+            row.map = null;
+            if (row.root && row.root.parentNode) row.root.parentNode.removeChild(row.root);
+            fnExtraLocationRows.shift();
+        }
+        syncFnAddExtraLocationButtonState();
+        updateBatterySiteDatalist();
+    }
+
+    function deserializeExtraLocations(arr) {
+        clearAllExtraLocationRows();
+        if (!arr || !arr.length) {
+            return;
+        }
+        var i;
+        for (i = 0; i < arr.length && fnExtraLocationRows.length < FN_EXTRA_LOC_MAX; i++) {
+            var item = arr[i];
+            addExtraLocationRow(false);
+            var row = fnExtraLocationRows[fnExtraLocationRows.length - 1];
+            if (item && item.label != null) row.labelInput.value = String(item.label);
+            if (item && item.text != null) row.textInput.value = String(item.text);
+            syncExtraRowMapPreview(row);
+        }
+        syncFnAddExtraLocationButtonState();
+        updateBatterySiteDatalist();
+    }
+
+    function updateBatterySiteDatalist() {
+        var dl = document.getElementById('fnBatterySiteDatalist');
+        if (!dl) return;
+        dl.innerHTML = '';
+        var mainLl = parseLatLngFromLocationString(trimVal('fnLocation'));
+        if (mainLl) {
+            var o0 = document.createElement('option');
+            var mainLab = trimVal('fnLocationLabel');
+            var prefix = mainLab || 'Main location';
+            o0.value =
+                prefix + ': ' + mainLl.lat.toFixed(5) + ', ' + mainLl.lng.toFixed(5);
+            dl.appendChild(o0);
+        }
+        var ri;
+        for (ri = 0; ri < fnExtraLocationRows.length; ri++) {
+            var row = fnExtraLocationRows[ri];
+            var raw = String(row.textInput.value || '').trim();
+            if (!raw) continue;
+            var ll = parseLatLngFromLocationString(raw);
+            var lab =
+                String(row.labelInput.value || '').trim() || 'Additional location ' + (ri + 1);
+            var opt = document.createElement('option');
+            opt.value = ll
+                ? lab + ': ' + ll.lat.toFixed(5) + ', ' + ll.lng.toFixed(5)
+                : lab + ': ' + raw.slice(0, 120);
+            dl.appendChild(opt);
+        }
+    }
+
+    function addExtraLocationRow(fromClick) {
+        if (fnExtraLocationRows.length >= FN_EXTRA_LOC_MAX) {
+            if (fromClick) setExtraLocGlobalStatus('Maximum ' + FN_EXTRA_LOC_MAX + ' additional locations.', 'error');
+            return;
+        }
+        var listEl = document.getElementById('fnExtraLocationsList');
+        if (!listEl) return;
+
+        var root = document.createElement('div');
+        root.className = 'fn-extra-loc-card';
+
+        var titleEl = document.createElement('h4');
+        titleEl.className = 'fn-extra-loc-title';
+        titleEl.textContent = 'Additional location ' + (fnExtraLocationRows.length + 1);
+
+        var head = document.createElement('div');
+        head.className = 'fn-extra-loc-card-head';
+
+        var labelWrap = document.createElement('div');
+        labelWrap.className = 'fn-field-grow';
+        var labelLbl = document.createElement('label');
+        labelLbl.className = 'fn-label';
+        labelLbl.textContent = 'Label (optional)';
+        var labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.className = 'fn-input';
+        labelInput.setAttribute('autocomplete', 'off');
+        labelInput.placeholder = 'e.g. Secondary TOLA';
+        labelWrap.appendChild(labelLbl);
+        labelWrap.appendChild(labelInput);
+
+        var textWrap = document.createElement('div');
+        textWrap.className = 'fn-field-grow';
+        var textLbl = document.createElement('label');
+        textLbl.className = 'fn-label';
+        textLbl.textContent = 'Address or coordinates';
+        var textInput = document.createElement('input');
+        textInput.type = 'text';
+        textInput.className = 'fn-input';
+        textInput.setAttribute('autocomplete', 'street-address');
+        textInput.placeholder = 'Postcode, place, or lat, lng — then Search or GPS';
+        textWrap.appendChild(textLbl);
+        textWrap.appendChild(textInput);
+
+        head.appendChild(titleEl);
+        head.appendChild(labelWrap);
+        head.appendChild(textWrap);
+
+        var actions = document.createElement('div');
+        actions.className = 'fn-extra-loc-actions';
+        var searchBtn = document.createElement('button');
+        searchBtn.type = 'button';
+        searchBtn.className = 'fn-btn fn-btn-secondary';
+        searchBtn.textContent = 'Search location';
+        var gpsBtn = document.createElement('button');
+        gpsBtn.type = 'button';
+        gpsBtn.className = 'fn-btn fn-btn-now';
+        gpsBtn.textContent = 'Use current GPS';
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'fn-btn fn-btn-secondary';
+        removeBtn.textContent = 'Remove';
+        var statusEl = document.createElement('span');
+        statusEl.className = 'fn-extra-loc-status';
+        statusEl.setAttribute('role', 'status');
+        actions.appendChild(searchBtn);
+        actions.appendChild(gpsBtn);
+        actions.appendChild(removeBtn);
+        actions.appendChild(statusEl);
+
+        var resultWrap = document.createElement('div');
+        resultWrap.className = 'fn-extra-loc-result';
+        resultWrap.hidden = true;
+        var pcLine = document.createElement('p');
+        pcLine.className = 'fn-postcode-line';
+        var pcLabel = document.createElement('span');
+        pcLabel.className = 'fn-postcode-label';
+        pcLabel.textContent = 'Postcode';
+        var pcEl = document.createElement('span');
+        pcEl.className = 'fn-postcode-value fn-extra-loc-pc';
+        pcEl.textContent = '—';
+        pcLine.appendChild(pcLabel);
+        pcLine.appendChild(document.createTextNode(' '));
+        pcLine.appendChild(pcEl);
+        var mapWrap = document.createElement('div');
+        mapWrap.className = 'fn-extra-loc-map-wrap';
+        var mapEl = document.createElement('div');
+        mapEl.className = 'fn-mini-map';
+        mapEl.setAttribute('aria-label', 'Map centered on this additional location');
+        mapWrap.appendChild(mapEl);
+        resultWrap.appendChild(pcLine);
+        resultWrap.appendChild(mapWrap);
+
+        root.appendChild(head);
+        root.appendChild(actions);
+        root.appendChild(resultWrap);
+        listEl.appendChild(root);
+
+        var row = {
+            root: root,
+            titleEl: titleEl,
+            labelInput: labelInput,
+            textInput: textInput,
+            searchBtn: searchBtn,
+            gpsBtn: gpsBtn,
+            removeBtn: removeBtn,
+            statusEl: statusEl,
+            resultWrap: resultWrap,
+            mapEl: mapEl,
+            pcEl: pcEl,
+            map: null,
+            _previewTid: null
+        };
+        fnExtraLocationRows.push(row);
+
+        labelInput.addEventListener('input', function () {
+            updateBatterySiteDatalist();
+            scheduleFlightNotesDraftSave();
+        });
+        textInput.addEventListener('input', function () {
+            scheduleSyncExtraRowFromField(row);
+            updateBatterySiteDatalist();
+            scheduleFlightNotesDraftSave();
+        });
+
+        searchBtn.addEventListener('click', function () {
+            onExtraRowSearchClick(row);
+        });
+        gpsBtn.addEventListener('click', function () {
+            onExtraRowGpsClick(row);
+        });
+        removeBtn.addEventListener('click', function () {
+            removeExtraLocationRow(row);
+        });
+
+        renumberExtraLocationTitles();
+        syncFnAddExtraLocationButtonState();
+        if (fromClick) {
+            setExtraLocGlobalStatus('', '');
+            textInput.focus();
+        }
+        updateBatterySiteDatalist();
+        saveFlightNotesDraft();
     }
 
     function postcodeFromNominatimHit(hit) {
@@ -1862,6 +2393,7 @@
             input.value = postcodeHint != null ? loc + ' · Postcode: ' + postcodeHint : loc;
         }
         saveFlightNotesDraft();
+        updateBatterySiteDatalist();
         setTimeout(function () {
             initMiniMap(lat, lng);
         }, 0);
@@ -1870,12 +2402,13 @@
         } else {
             setGpsStatus('Looking up postcode…', '');
             reversePostcode(lat, lng).then(function (pc) {
-                if (pcDisp) pcDisp.textContent = pc || '—';
+                if (pcDisp) pcDisp.textContent = pc || '-';
                 if (input && pc) {
                     input.value = loc + ' · Postcode: ' + pc;
                 }
                 setGpsStatus(okMessage, 'ok');
                 saveFlightNotesDraft();
+                updateBatterySiteDatalist();
             });
         }
     }
@@ -2227,6 +2760,8 @@
         if (ac) ac.innerHTML = '';
         var al = document.getElementById('fnAirspaceLoading');
         if (al) al.classList.add('hidden');
+        clearAllExtraLocationRows();
+        setExtraLocGlobalStatus('', '');
         var form = document.getElementById('flightReportForm');
         if (form) form.reset();
         initFnManualDateSelects();
@@ -2366,6 +2901,22 @@
             fnLocInput.addEventListener('input', scheduleSyncLocationPreviewFromField);
             fnLocInput.addEventListener('change', syncLocationPreviewFromField);
         }
+        var fnLocLabelInput = document.getElementById('fnLocationLabel');
+        if (fnLocLabelInput) {
+            fnLocLabelInput.addEventListener('input', function () {
+                updateBatterySiteDatalist();
+            });
+            fnLocLabelInput.addEventListener('change', function () {
+                updateBatterySiteDatalist();
+            });
+        }
+        var addExtraLocBtn = document.getElementById('fnAddExtraLocationBtn');
+        if (addExtraLocBtn) {
+            addExtraLocBtn.addEventListener('click', function () {
+                addExtraLocationRow(true);
+            });
+        }
+        syncFnAddExtraLocationButtonState();
         var addBatteryBtn = document.getElementById('fnAddBatteryBtn');
         if (addBatteryBtn) {
             addBatteryBtn.addEventListener('click', function () {
