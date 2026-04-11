@@ -76,8 +76,8 @@
                         <input type="text" id="fnReference" name="fnReference" class="fn-input">
                     </div>
                     <div class="fn-field">
-                        <label class="fn-label" for="fnUas">UAS</label>
-                        <input type="text" id="fnUas" name="fnUas" class="fn-input">
+                        <label class="fn-label" for="fnUas">UAS (mission)</label>
+                        <input type="text" id="fnUas" name="fnUas" class="fn-input" title="Default when a battery sortie UAS field is left blank">
                     </div>
                     <div class="fn-field fn-field-span-2">
                         <label class="fn-label" for="fnDeconflictions">Deconflictions</label>
@@ -181,7 +181,7 @@
 
             <section class="fn-section" aria-labelledby="fn-batt-heading">
                 <h2 id="fn-batt-heading" class="fn-section-title">Batteries</h2>
-                <p class="fn-battery-lead">Use <strong>Site or coordinates</strong> on each battery when that sortie was away from the main <strong>Location</strong> (exports and email include it). If you added <strong>Additional operational locations</strong> above, use the field&rsquo;s suggestions to paste a consistent label and coordinates. Weather, airspace, and the primary mini map still use the main Location only.</p>
+                <p class="fn-battery-lead">Use <strong>Site or coordinates</strong> on each battery when that flight was away from the main <strong>Location</strong> (exports and email include it). If you added <strong>Additional operational locations</strong> above, use the field&rsquo;s suggestions to paste a consistent label and coordinates. Weather, airspace, and the primary mini map still use the main Location only.</p>
                 <details class="fn-alos-help">
                     <summary class="fn-alos-help-summary">ALoS model (help)</summary>
                     <div class="fn-alos-help-body">
@@ -264,6 +264,12 @@
                         <input type="text" id="fnBattery1Site" name="fnBattery1Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery1Voltage">Voltage</label>
                         <input type="text" id="fnBattery1Voltage" name="fnBattery1Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery1Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery1Uas" name="fnBattery1Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery1MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery1MaxAltFt" name="fnBattery1MaxAltFt" class="fn-input" value="400" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery1MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery1MaxDistM" name="fnBattery1MaxDistM" class="fn-input" value="500" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery1Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery1Rp1" name="fnBattery1Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery1Rp2">Remote Pilot 2</label>
@@ -301,6 +307,12 @@
                         <input type="text" id="fnBattery2Site" name="fnBattery2Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery2Voltage">Voltage</label>
                         <input type="text" id="fnBattery2Voltage" name="fnBattery2Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery2Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery2Uas" name="fnBattery2Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery2MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery2MaxAltFt" name="fnBattery2MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery2MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery2MaxDistM" name="fnBattery2MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery2Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery2Rp1" name="fnBattery2Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery2Rp2">Remote Pilot 2</label>
@@ -338,6 +350,12 @@
                         <input type="text" id="fnBattery3Site" name="fnBattery3Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery3Voltage">Voltage</label>
                         <input type="text" id="fnBattery3Voltage" name="fnBattery3Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery3Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery3Uas" name="fnBattery3Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery3MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery3MaxAltFt" name="fnBattery3MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery3MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery3MaxDistM" name="fnBattery3MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery3Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery3Rp1" name="fnBattery3Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery3Rp2">Remote Pilot 2</label>
@@ -375,6 +393,12 @@
                         <input type="text" id="fnBattery4Site" name="fnBattery4Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery4Voltage">Voltage</label>
                         <input type="text" id="fnBattery4Voltage" name="fnBattery4Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery4Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery4Uas" name="fnBattery4Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery4MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery4MaxAltFt" name="fnBattery4MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery4MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery4MaxDistM" name="fnBattery4MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery4Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery4Rp1" name="fnBattery4Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery4Rp2">Remote Pilot 2</label>
@@ -412,6 +436,12 @@
                         <input type="text" id="fnBattery5Site" name="fnBattery5Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery5Voltage">Voltage</label>
                         <input type="text" id="fnBattery5Voltage" name="fnBattery5Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery5Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery5Uas" name="fnBattery5Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery5MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery5MaxAltFt" name="fnBattery5MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery5MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery5MaxDistM" name="fnBattery5MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery5Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery5Rp1" name="fnBattery5Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery5Rp2">Remote Pilot 2</label>
@@ -449,6 +479,12 @@
                         <input type="text" id="fnBattery6Site" name="fnBattery6Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery6Voltage">Voltage</label>
                         <input type="text" id="fnBattery6Voltage" name="fnBattery6Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery6Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery6Uas" name="fnBattery6Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery6MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery6MaxAltFt" name="fnBattery6MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery6MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery6MaxDistM" name="fnBattery6MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery6Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery6Rp1" name="fnBattery6Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery6Rp2">Remote Pilot 2</label>
@@ -486,6 +522,12 @@
                         <input type="text" id="fnBattery7Site" name="fnBattery7Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery7Voltage">Voltage</label>
                         <input type="text" id="fnBattery7Voltage" name="fnBattery7Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery7Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery7Uas" name="fnBattery7Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery7MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery7MaxAltFt" name="fnBattery7MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery7MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery7MaxDistM" name="fnBattery7MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery7Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery7Rp1" name="fnBattery7Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery7Rp2">Remote Pilot 2</label>
@@ -523,6 +565,12 @@
                         <input type="text" id="fnBattery8Site" name="fnBattery8Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery8Voltage">Voltage</label>
                         <input type="text" id="fnBattery8Voltage" name="fnBattery8Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery8Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery8Uas" name="fnBattery8Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery8MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery8MaxAltFt" name="fnBattery8MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery8MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery8MaxDistM" name="fnBattery8MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery8Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery8Rp1" name="fnBattery8Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery8Rp2">Remote Pilot 2</label>
@@ -560,6 +608,12 @@
                         <input type="text" id="fnBattery9Site" name="fnBattery9Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery9Voltage">Voltage</label>
                         <input type="text" id="fnBattery9Voltage" name="fnBattery9Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery9Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery9Uas" name="fnBattery9Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery9MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery9MaxAltFt" name="fnBattery9MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery9MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery9MaxDistM" name="fnBattery9MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery9Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery9Rp1" name="fnBattery9Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery9Rp2">Remote Pilot 2</label>
@@ -597,6 +651,12 @@
                         <input type="text" id="fnBattery10Site" name="fnBattery10Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Coordinates, place name, or pick a listed location" autocomplete="off">
                         <label class="fn-label" for="fnBattery10Voltage">Voltage</label>
                         <input type="text" id="fnBattery10Voltage" name="fnBattery10Voltage" class="fn-input">
+                        <label class="fn-label" for="fnBattery10Uas">UAS (this battery)</label>
+                        <input type="text" id="fnBattery10Uas" name="fnBattery10Uas" class="fn-input" title="If blank, mission UAS applies" autocomplete="off">
+                        <label class="fn-label" for="fnBattery10MaxAltFt">Max altitude (ft)</label>
+                        <input type="number" id="fnBattery10MaxAltFt" name="fnBattery10MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
+                        <label class="fn-label" for="fnBattery10MaxDistM">Max distance (m)</label>
+                        <input type="number" id="fnBattery10MaxDistM" name="fnBattery10MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery10Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery10Rp1" name="fnBattery10Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery10Rp2">Remote Pilot 2</label>
@@ -790,6 +850,6 @@
     <script src="js/notam-pib.js?v=1"></script>
     <script src="js/airspace-nearby.js?v=3"></script>
     <script src="js/geolocation-helpers.js?v=6"></script>
-    <script src="js/flight-notes.js?v=35"></script>
+    <script src="js/flight-notes.js?v=38"></script>
 </body>
 </html>

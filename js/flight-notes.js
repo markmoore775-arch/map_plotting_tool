@@ -8,6 +8,10 @@
     /** Max battery slots on the Flight Report form (cards 2–this many can be revealed). */
     var FN_BATTERY_MAX = 10;
 
+    /** Default max altitude / distance per sortie (editable); used when fields are blank. */
+    var FN_BATTERY_DEFAULT_MAX_ALT_FT = '400';
+    var FN_BATTERY_DEFAULT_MAX_DIST_M = '500';
+
     /** Draft form fields: local only, same origin; cleared when user clears the form. */
     var FN_DRAFT_STORAGE_KEY = 'airplotFlightNotesDraft_v1';
     var FN_DRAFT_FIELD_IDS = [
@@ -21,6 +25,9 @@
         'fnBattery1Name',
         'fnBattery1Site',
         'fnBattery1Voltage',
+        'fnBattery1Uas',
+        'fnBattery1MaxAltFt',
+        'fnBattery1MaxDistM',
         'fnBattery1Rp1',
         'fnBattery1Rp2',
         'fnBattery1Launch',
@@ -32,6 +39,9 @@
         'fnBattery2Name',
         'fnBattery2Site',
         'fnBattery2Voltage',
+        'fnBattery2Uas',
+        'fnBattery2MaxAltFt',
+        'fnBattery2MaxDistM',
         'fnBattery2Rp1',
         'fnBattery2Rp2',
         'fnBattery2Launch',
@@ -43,6 +53,9 @@
         'fnBattery3Name',
         'fnBattery3Site',
         'fnBattery3Voltage',
+        'fnBattery3Uas',
+        'fnBattery3MaxAltFt',
+        'fnBattery3MaxDistM',
         'fnBattery3Rp1',
         'fnBattery3Rp2',
         'fnBattery3Launch',
@@ -54,6 +67,9 @@
         'fnBattery4Name',
         'fnBattery4Site',
         'fnBattery4Voltage',
+        'fnBattery4Uas',
+        'fnBattery4MaxAltFt',
+        'fnBattery4MaxDistM',
         'fnBattery4Rp1',
         'fnBattery4Rp2',
         'fnBattery4Launch',
@@ -65,6 +81,9 @@
         'fnBattery5Name',
         'fnBattery5Site',
         'fnBattery5Voltage',
+        'fnBattery5Uas',
+        'fnBattery5MaxAltFt',
+        'fnBattery5MaxDistM',
         'fnBattery5Rp1',
         'fnBattery5Rp2',
         'fnBattery5Launch',
@@ -76,6 +95,9 @@
         'fnBattery6Name',
         'fnBattery6Site',
         'fnBattery6Voltage',
+        'fnBattery6Uas',
+        'fnBattery6MaxAltFt',
+        'fnBattery6MaxDistM',
         'fnBattery6Rp1',
         'fnBattery6Rp2',
         'fnBattery6Launch',
@@ -87,6 +109,9 @@
         'fnBattery7Name',
         'fnBattery7Site',
         'fnBattery7Voltage',
+        'fnBattery7Uas',
+        'fnBattery7MaxAltFt',
+        'fnBattery7MaxDistM',
         'fnBattery7Rp1',
         'fnBattery7Rp2',
         'fnBattery7Launch',
@@ -98,6 +123,9 @@
         'fnBattery8Name',
         'fnBattery8Site',
         'fnBattery8Voltage',
+        'fnBattery8Uas',
+        'fnBattery8MaxAltFt',
+        'fnBattery8MaxDistM',
         'fnBattery8Rp1',
         'fnBattery8Rp2',
         'fnBattery8Launch',
@@ -109,6 +137,9 @@
         'fnBattery9Name',
         'fnBattery9Site',
         'fnBattery9Voltage',
+        'fnBattery9Uas',
+        'fnBattery9MaxAltFt',
+        'fnBattery9MaxDistM',
         'fnBattery9Rp1',
         'fnBattery9Rp2',
         'fnBattery9Launch',
@@ -120,6 +151,9 @@
         'fnBattery10Name',
         'fnBattery10Site',
         'fnBattery10Voltage',
+        'fnBattery10Uas',
+        'fnBattery10MaxAltFt',
+        'fnBattery10MaxDistM',
         'fnBattery10Rp1',
         'fnBattery10Rp2',
         'fnBattery10Launch',
@@ -138,7 +172,22 @@
     /** How many battery cards (1–FN_BATTERY_MAX) are shown; exported to email/PDF and saved in draft (v2). */
     var fnVisibleBatteryCount = 1;
 
-    var BATTERY_N_FIELD_SUFFIXES = ['Name', 'Site', 'Voltage', 'Rp1', 'Rp2', 'Launch', 'Land', 'FlightTime', 'AmberMin', 'RedMin', 'Alos'];
+    var BATTERY_N_FIELD_SUFFIXES = [
+        'Name',
+        'Site',
+        'Voltage',
+        'Uas',
+        'MaxAltFt',
+        'MaxDistM',
+        'Rp1',
+        'Rp2',
+        'Launch',
+        'Land',
+        'FlightTime',
+        'AmberMin',
+        'RedMin',
+        'Alos'
+    ];
 
     function getVisibleBatteryCount() {
         return fnVisibleBatteryCount;
@@ -148,7 +197,9 @@
         var b = 'fnBattery' + n;
         var i;
         for (i = 0; i < BATTERY_N_FIELD_SUFFIXES.length; i++) {
-            var id = b + BATTERY_N_FIELD_SUFFIXES[i];
+            var suf = BATTERY_N_FIELD_SUFFIXES[i];
+            if (suf === 'MaxAltFt' || suf === 'MaxDistM') continue;
+            var id = b + suf;
             var el = document.getElementById(id);
             if (el && String(el.value || '').trim()) return true;
         }
@@ -162,6 +213,20 @@
             if (batteryNHasAnyValue(n)) max = n;
         }
         return max;
+    }
+
+    function ensureBatteryLimitDefaults(n) {
+        var altEl = document.getElementById('fnBattery' + n + 'MaxAltFt');
+        var distEl = document.getElementById('fnBattery' + n + 'MaxDistM');
+        if (altEl && !String(altEl.value || '').trim()) altEl.value = FN_BATTERY_DEFAULT_MAX_ALT_FT;
+        if (distEl && !String(distEl.value || '').trim()) distEl.value = FN_BATTERY_DEFAULT_MAX_DIST_M;
+    }
+
+    function applyBatteryLimitDefaultsForVisible() {
+        var n;
+        for (n = 1; n <= fnVisibleBatteryCount; n++) {
+            ensureBatteryLimitDefaults(n);
+        }
     }
 
     function setVisibleBatteryCount(count) {
@@ -201,7 +266,16 @@
             var suf = BATTERY_N_FIELD_SUFFIXES[i];
             if (suf === 'FlightTime') continue;
             var el = document.getElementById(b + suf);
-            if (el) el.value = '';
+            if (!el) continue;
+            if (suf === 'MaxAltFt') {
+                el.value = FN_BATTERY_DEFAULT_MAX_ALT_FT;
+                continue;
+            }
+            if (suf === 'MaxDistM') {
+                el.value = FN_BATTERY_DEFAULT_MAX_DIST_M;
+                continue;
+            }
+            el.value = '';
         }
         updateBatteryFlightTimeForIndex(n);
     }
@@ -733,19 +807,15 @@
         }
     }
 
-    async function ensureFnAirspaceForPdf() {
+    /**
+     * Re-fetch NOTAMs and UK airspace for the main location, rebuild the Airspace tab DOM and mini maps.
+     * Used before PDF export so the summary row and appended airspace pages match current coordinates and options.
+     */
+    async function refreshFnAirspaceDataForPdfExport() {
         if (typeof AirspaceNearby === 'undefined' || typeof L === 'undefined') return;
         var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
         if (!ll) return;
-        if (fnAirspaceMaps.length > 0) return;
-        if (
-            fnAirspaceDataLoaded &&
-            fnLastNotams &&
-            fnLastAirspace &&
-            fnLastNotams.length + fnLastAirspace.length === 0
-        ) {
-            return;
-        }
+        destroyFnAirspaceMaps();
         var r = readFnAirspaceRadiusFromInput();
         fnAirspaceRadiusKm = r;
         syncFnAirspaceIntroKm();
@@ -757,12 +827,15 @@
             fnAirspaceDataLoaded = true;
             var c = document.getElementById('fnAirspaceContent');
             if (c) renderFnAirspaceHtml(notams, air, ll.lat, ll.lng);
+            await new Promise(function (res) {
+                setTimeout(res, 50);
+            });
             populateFnAirspaceMaps(ll.lat, ll.lng, notams, air);
             await new Promise(function (res) {
-                setTimeout(res, 900);
+                setTimeout(res, 1000);
             });
         } catch (e) {
-            console.warn('Flight Report: PDF airspace prefetch failed', e);
+            console.warn('Flight Report: PDF airspace refresh failed', e);
         }
     }
 
@@ -820,7 +893,6 @@
         if (typeof html2canvas === 'undefined' || typeof doc.autoTable !== 'function') return;
         var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
         if (!ll) return;
-        await ensureFnAirspaceForPdf();
         var notams = fnLastNotams || [];
         var airspace = fnLastAirspace || [];
         if (notams.length === 0 && airspace.length === 0) return;
@@ -1001,44 +1073,204 @@
         );
     }
 
+    function fnPdfMixRgb(a, b, t) {
+        return [
+            Math.round(a[0] * (1 - t) + b[0] * t),
+            Math.round(a[1] * (1 - t) + b[1] * t),
+            Math.round(a[2] * (1 - t) + b[2] * t)
+        ];
+    }
+
+    /** Section title row spanning both columns (Flight Report PDF). */
+    function fnPdfBannerRow(title) {
+        var c = PdfTheme.colors();
+        return [
+            {
+                content: title,
+                colSpan: 2,
+                styles: {
+                    fillColor: fnPdfMixRgb(c.surface, c.accent, 0.35),
+                    textColor: c.text,
+                    fontStyle: 'bold',
+                    fontSize: 8.5,
+                    cellPadding: { left: 4, right: 4, top: 2.5, bottom: 2.5 },
+                    halign: 'left',
+                    valign: 'middle'
+                }
+            }
+        ];
+    }
+
+    /** Subtle body row tint by section (pairs with `rowSections` from buildFlightReportPdfTableBody). */
+    function fnPdfBodyFillForSection(sectionKey) {
+        var c = PdfTheme.colors();
+        var light = c.bg[0] > 200;
+        var tLo = light ? 0.06 : 0.12;
+        var tHi = light ? 0.1 : 0.18;
+        var blue = [95, 140, 230];
+        var warm = [215, 125, 55];
+        var green = [70, 145, 95];
+        if (sectionKey === 'when') return fnPdfMixRgb(c.bg, c.accent, tLo);
+        if (String(sectionKey).indexOf('site-') === 0) return fnPdfMixRgb(c.bg, blue, tLo);
+        if (sectionKey === 'mission') return fnPdfMixRgb(c.bg, c.accent, tLo * 0.85);
+        if (String(sectionKey).indexOf('battery-') === 0) return fnPdfMixRgb(c.bg, warm, tLo);
+        if (sectionKey === 'conditions') return fnPdfMixRgb(c.bg, green, tLo);
+        if (sectionKey === 'airspace') return fnPdfMixRgb(c.bg, blue, light ? 0.05 : 0.12);
+        if (sectionKey === 'notes') return fnPdfMixRgb(c.bg, c.surface, light ? 0.4 : 0.25);
+        return c.surface;
+    }
+
     /**
-     * Plain-text block for email body and PDF source of truth.
+     * PDF table body with section banners + parallel rowSections for styling.
+     * @returns {{ body: Array, rowSections: string[], fieldColW: number }}
+     */
+    function buildFlightReportPdfTableBody() {
+        var body = [];
+        var rowSections = [];
+        var fieldColW = 52;
+
+        function pushRow(field, detail, section) {
+            body.push([field, detail]);
+            rowSections.push(section);
+        }
+        function pushBanner(title) {
+            body.push(fnPdfBannerRow(title));
+            rowSections.push('banner');
+        }
+
+        pushBanner('Schedule');
+        pushRow('Date', dash(formatDateForExportDdMmYyyy(trimVal('fnDate'))), 'when');
+        pushRow('Time', dash(trimVal('fnTime')), 'when');
+
+        pushBanner('Site 1 (primary operational location)');
+        pushRow('Site 1: label', dash(trimVal('fnLocationLabel')), 'site-1');
+        pushRow('Site 1: address or coordinates', dash(trimVal('fnLocation')), 'site-1');
+        var llPdf = parseLatLngFromLocationString(trimVal('fnLocation'));
+        pushRow(
+            'Site 1: map (OpenStreetMap)',
+            llPdf ? openStreetMapLink(llPdf.lat, llPdf.lng) : '-',
+            'site-1'
+        );
+
+        var exPdf = serializeExtraLocations();
+        for (var ei = 0; ei < exPdf.length; ei++) {
+            var siteNum = ei + 2;
+            var sk = 'site-' + siteNum;
+            var userLab = String(exPdf[ei].label || '').trim();
+            var bannerTitle =
+                'Site ' +
+                siteNum +
+                (userLab ? ': ' + userLab : ' (additional operational location)');
+            pushBanner(bannerTitle);
+            pushRow('Site ' + siteNum + ': label', dash(exPdf[ei].label || '-'), sk);
+            pushRow('Site ' + siteNum + ': address or coordinates', dash(exPdf[ei].text || '-'), sk);
+            var llExP = parseLatLngFromLocationString(exPdf[ei].text || '');
+            pushRow(
+                'Site ' + siteNum + ': map (OpenStreetMap)',
+                llExP ? openStreetMapLink(llExP.lat, llExP.lng) : '-',
+                sk
+            );
+        }
+
+        pushBanner('Mission');
+        pushRow('Reference', dash(trimVal('fnReference')), 'mission');
+        pushRow('UAS (mission)', dash(trimVal('fnUas')), 'mission');
+        pushRow('Deconflictions', trimVal('fnDeconflictions') || '-', 'mission');
+
+        var bn;
+        var battMaxPdf = getVisibleBatteryCount();
+        for (bn = 1; bn <= battMaxPdf; bn++) {
+            var b = 'fnBattery' + bn;
+            var bsec = 'battery-' + bn;
+            pushBanner('Battery ' + bn);
+            pushRow('Battery ' + bn + ': name', dash(trimVal(b + 'Name')), bsec);
+            pushRow('Battery ' + bn + ': site or coordinates', trimVal(b + 'Site') || '-', bsec);
+            pushRow('Battery ' + bn + ': voltage', dash(trimVal(b + 'Voltage')), bsec);
+            pushRow(
+                'Battery ' + bn + ': UAS',
+                dash(trimVal(b + 'Uas') || trimVal('fnUas')),
+                bsec
+            );
+            pushRow(
+                'Battery ' + bn + ': max altitude (ft)',
+                dash(trimVal(b + 'MaxAltFt') || FN_BATTERY_DEFAULT_MAX_ALT_FT),
+                bsec
+            );
+            pushRow(
+                'Battery ' + bn + ': max distance (m)',
+                dash(trimVal(b + 'MaxDistM') || FN_BATTERY_DEFAULT_MAX_DIST_M),
+                bsec
+            );
+            pushRow('Battery ' + bn + ': Remote Pilot 1', dash(trimVal(b + 'Rp1')), bsec);
+            pushRow('Battery ' + bn + ': Remote Pilot 2', dash(trimVal(b + 'Rp2')), bsec);
+            pushRow('Battery ' + bn + ': launch', dash(trimVal(b + 'Launch')), bsec);
+            pushRow('Battery ' + bn + ': landing', dash(trimVal(b + 'Land')), bsec);
+            pushRow('Battery ' + bn + ': flight time', dash(trimVal(b + 'FlightTime')), bsec);
+            pushRow('Battery ' + bn + ': minutes (Amber)', dash(trimVal(b + 'AmberMin')), bsec);
+            pushRow('Battery ' + bn + ': minutes (Red)', dash(trimVal(b + 'RedMin')), bsec);
+            pushRow('Battery ' + bn + ': ALoS comments', trimVal(b + 'Alos') || '-', bsec);
+        }
+
+        var w = trimVal('fnWeather');
+        pushBanner('Conditions');
+        pushRow('Weather', w || '-', 'conditions');
+
+        pushBanner('Airspace');
+        pushRow('Airspace summary', fnAirspaceSummaryForExport(), 'airspace');
+
+        pushBanner('Notes');
+        pushRow('General notes', trimVal('fnNotes') || '-', 'notes');
+
+        return { body: body, rowSections: rowSections, fieldColW: fieldColW };
+    }
+
+    /**
+     * Plain-text block for email body (aligned with PDF section naming).
      */
     function buildNotesPlainText() {
         var lines = [];
         lines.push('AirPlot v4: Flight Report');
         lines.push('');
 
+        lines.push('--- Schedule ---');
         lines.push('Date: ' + dash(formatDateForExportDdMmYyyy(trimVal('fnDate'))));
         lines.push('Time: ' + dash(trimVal('fnTime')));
-        var locLab = trimVal('fnLocationLabel');
-        if (locLab) lines.push('Location label: ' + dash(locLab));
-        lines.push('Location: ' + dash(trimVal('fnLocation')));
+
+        lines.push('');
+        lines.push('--- Site 1 (primary operational location) ---');
+        lines.push('Site 1 (label): ' + dash(trimVal('fnLocationLabel')));
+        lines.push('Site 1 (address or coordinates): ' + dash(trimVal('fnLocation')));
         var llPlain = parseLatLngFromLocationString(trimVal('fnLocation'));
         if (llPlain) {
-            lines.push('Map (OpenStreetMap): ' + openStreetMapLink(llPlain.lat, llPlain.lng));
+            lines.push('Site 1 (map, OpenStreetMap): ' + openStreetMapLink(llPlain.lat, llPlain.lng));
         }
+
         var exLines = serializeExtraLocations();
-        if (exLines.length) {
+        for (var ei = 0; ei < exLines.length; ei++) {
+            var siteNum = ei + 2;
+            var ex = exLines[ei];
+            var userLab = String(ex.label || '').trim();
             lines.push('');
-            lines.push('Additional operational locations:');
-            for (var ei = 0; ei < exLines.length; ei++) {
-                var ex = exLines[ei];
+            lines.push(
+                '--- Site ' +
+                    siteNum +
+                    (userLab ? ': ' + userLab : ' (additional operational location)') +
+                    ' ---'
+            );
+            lines.push('Site ' + siteNum + ' (label): ' + dash(ex.label || '-'));
+            lines.push('Site ' + siteNum + ' (address or coordinates): ' + dash(ex.text || '-'));
+            var llEx = parseLatLngFromLocationString(ex.text || '');
+            if (llEx) {
                 lines.push(
-                    '  Additional ' +
-                        (ei + 1) +
-                        ' label: ' +
-                        dash(ex.label || '—')
+                    'Site ' + siteNum + ' (map, OpenStreetMap): ' + openStreetMapLink(llEx.lat, llEx.lng)
                 );
-                lines.push('  Additional ' + (ei + 1) + ' location: ' + dash(ex.text || '—'));
-                var llEx = parseLatLngFromLocationString(ex.text || '');
-                if (llEx) {
-                    lines.push('  Additional ' + (ei + 1) + ' map: ' + openStreetMapLink(llEx.lat, llEx.lng));
-                }
             }
         }
+
+        lines.push('');
+        lines.push('--- Mission ---');
         lines.push('Reference: ' + dash(trimVal('fnReference')));
-        lines.push('UAS: ' + dash(trimVal('fnUas')));
+        lines.push('UAS (mission): ' + dash(trimVal('fnUas')));
         lines.push('Deconflictions:');
         lines.push(trimVal('fnDeconflictions') || '-');
 
@@ -1046,74 +1278,39 @@
         var battMax = getVisibleBatteryCount();
         for (bn = 1; bn <= battMax; bn++) {
             var b = 'fnBattery' + bn;
-            lines.push('Battery ' + bn + ' name: ' + dash(trimVal(b + 'Name')));
-            lines.push('Battery ' + bn + ' site: ' + dash(trimVal(b + 'Site')));
-            lines.push('Battery ' + bn + ' voltage: ' + dash(trimVal(b + 'Voltage')));
-            lines.push('Battery ' + bn + ' Remote Pilot 1: ' + dash(trimVal(b + 'Rp1')));
-            lines.push('Battery ' + bn + ' Remote Pilot 2: ' + dash(trimVal(b + 'Rp2')));
-            lines.push('Battery ' + bn + ' launch: ' + dash(trimVal(b + 'Launch')));
-            lines.push('Battery ' + bn + ' landing: ' + dash(trimVal(b + 'Land')));
-            lines.push('Battery ' + bn + ' flight time: ' + dash(trimVal(b + 'FlightTime')));
-            lines.push('Battery ' + bn + ' minutes (Amber): ' + dash(trimVal(b + 'AmberMin')));
-            lines.push('Battery ' + bn + ' minutes (Red): ' + dash(trimVal(b + 'RedMin')));
-            lines.push('Battery ' + bn + ' ALoS comments: ' + dash(trimVal(b + 'Alos').replace(/\n/g, ' ')));
+            lines.push('');
+            lines.push('--- Battery ' + bn + ' ---');
+            lines.push('Battery ' + bn + ' (name): ' + dash(trimVal(b + 'Name')));
+            lines.push('Battery ' + bn + ' (site or coordinates): ' + dash(trimVal(b + 'Site')));
+            lines.push('Battery ' + bn + ' (voltage): ' + dash(trimVal(b + 'Voltage')));
+            lines.push('Battery ' + bn + ' (UAS): ' + dash(trimVal(b + 'Uas') || trimVal('fnUas')));
+            lines.push(
+                'Battery ' + bn + ' (max altitude, ft): ' + dash(trimVal(b + 'MaxAltFt') || FN_BATTERY_DEFAULT_MAX_ALT_FT)
+            );
+            lines.push(
+                'Battery ' + bn + ' (max distance, m): ' + dash(trimVal(b + 'MaxDistM') || FN_BATTERY_DEFAULT_MAX_DIST_M)
+            );
+            lines.push('Battery ' + bn + ' (Remote Pilot 1): ' + dash(trimVal(b + 'Rp1')));
+            lines.push('Battery ' + bn + ' (Remote Pilot 2): ' + dash(trimVal(b + 'Rp2')));
+            lines.push('Battery ' + bn + ' (launch): ' + dash(trimVal(b + 'Launch')));
+            lines.push('Battery ' + bn + ' (landing): ' + dash(trimVal(b + 'Land')));
+            lines.push('Battery ' + bn + ' (flight time): ' + dash(trimVal(b + 'FlightTime')));
+            lines.push('Battery ' + bn + ' (minutes, Amber): ' + dash(trimVal(b + 'AmberMin')));
+            lines.push('Battery ' + bn + ' (minutes, Red): ' + dash(trimVal(b + 'RedMin')));
+            lines.push('Battery ' + bn + ' (ALoS comments): ' + dash(trimVal(b + 'Alos').replace(/\n/g, ' ')));
         }
-        lines.push('Weather: ' + dash(trimVal('fnWeather').replace(/\n/g, ' ')));
-        lines.push('Airspace: ' + fnAirspaceSummaryForExport());
+
         lines.push('');
-        lines.push('Notes:');
+        lines.push('--- Conditions ---');
+        lines.push('Weather: ' + dash(trimVal('fnWeather').replace(/\n/g, ' ')));
+        lines.push('');
+        lines.push('--- Airspace ---');
+        lines.push('Airspace summary: ' + fnAirspaceSummaryForExport());
+        lines.push('');
+        lines.push('--- Notes ---');
         lines.push(trimVal('fnNotes') || '-');
 
         return lines.join('\n');
-    }
-
-    function tableRowsForPdf() {
-        var w = trimVal('fnWeather');
-        var llPdf = parseLatLngFromLocationString(trimVal('fnLocation'));
-        var mapLinkRow = llPdf
-            ? ['Map (OpenStreetMap)', openStreetMapLink(llPdf.lat, llPdf.lng)]
-            : ['Map (OpenStreetMap)', '-'];
-        var rows = [
-            ['Date', dash(formatDateForExportDdMmYyyy(trimVal('fnDate')))],
-            ['Time', dash(trimVal('fnTime'))],
-            ['Location label', dash(trimVal('fnLocationLabel'))],
-            ['Location', dash(trimVal('fnLocation'))],
-            mapLinkRow
-        ];
-        var exPdf = serializeExtraLocations();
-        for (var ei = 0; ei < exPdf.length; ei++) {
-            rows.push(['Add. location ' + (ei + 1) + ' label', dash(exPdf[ei].label || '—')]);
-            rows.push(['Add. location ' + (ei + 1) + ' details', dash(exPdf[ei].text || '—')]);
-            var llExP = parseLatLngFromLocationString(exPdf[ei].text || '');
-            if (llExP) {
-                rows.push(['Add. location ' + (ei + 1) + ' map', openStreetMapLink(llExP.lat, llExP.lng)]);
-            }
-        }
-        rows.push(
-            ['Reference', dash(trimVal('fnReference'))],
-            ['UAS', dash(trimVal('fnUas'))],
-            ['Deconflictions', trimVal('fnDeconflictions') || '-']
-        );
-        var bn;
-        var battMaxPdf = getVisibleBatteryCount();
-        for (bn = 1; bn <= battMaxPdf; bn++) {
-            var b = 'fnBattery' + bn;
-            rows.push(['Battery ' + bn + ' name', dash(trimVal(b + 'Name'))]);
-            rows.push(['Battery ' + bn + ' site', trimVal(b + 'Site') || '—']);
-            rows.push(['Battery ' + bn + ' voltage', dash(trimVal(b + 'Voltage'))]);
-            rows.push(['Battery ' + bn + ' Remote Pilot 1', dash(trimVal(b + 'Rp1'))]);
-            rows.push(['Battery ' + bn + ' Remote Pilot 2', dash(trimVal(b + 'Rp2'))]);
-            rows.push(['Battery ' + bn + ' launch', dash(trimVal(b + 'Launch'))]);
-            rows.push(['Battery ' + bn + ' landing', dash(trimVal(b + 'Land'))]);
-            rows.push(['Battery ' + bn + ' flight time', dash(trimVal(b + 'FlightTime'))]);
-            rows.push(['Battery ' + bn + ' minutes (Amber)', dash(trimVal(b + 'AmberMin'))]);
-            rows.push(['Battery ' + bn + ' minutes (Red)', dash(trimVal(b + 'RedMin'))]);
-            rows.push(['Battery ' + bn + ' ALoS comments', trimVal(b + 'Alos') || '-']);
-        }
-        rows.push(['Weather', w || '-']);
-        rows.push(['Airspace', fnAirspaceSummaryForExport()]);
-        rows.push(['Notes', trimVal('fnNotes') || '-']);
-        return rows;
     }
 
     // ---- Open-Meteo (same API as js/weather.js, Flight Weather) ----
@@ -2012,11 +2209,11 @@
         if (ll) {
             row.resultWrap.hidden = false;
             var extracted = extractPostcodeFromLocationField(String(row.textInput.value || '').trim());
-            row.pcEl.textContent = extracted || '—';
+            row.pcEl.textContent = extracted || '-';
             row.map = createLeafletMiniMap(row.mapEl, ll.lat, ll.lng);
         } else {
             row.resultWrap.hidden = true;
-            row.pcEl.textContent = '—';
+            row.pcEl.textContent = '-';
         }
     }
 
@@ -2042,7 +2239,7 @@
             setExtraRowStatus(row, 'Looking up postcode…', '');
             reversePostcode(lat, lng).then(function (pc) {
                 if (!row.root || !row.root.parentNode) return;
-                if (row.pcEl) row.pcEl.textContent = pc || '—';
+                if (row.pcEl) row.pcEl.textContent = pc || '-';
                 if (row.textInput && pc) {
                     row.textInput.value = loc + ' · Postcode: ' + pc;
                 }
@@ -2282,7 +2479,7 @@
         textInput.type = 'text';
         textInput.className = 'fn-input';
         textInput.setAttribute('autocomplete', 'street-address');
-        textInput.placeholder = 'Postcode, place, or lat, lng — then Search or GPS';
+        textInput.placeholder = 'Postcode, place, or lat, lng - then Search or GPS';
         textWrap.appendChild(textLbl);
         textWrap.appendChild(textInput);
 
@@ -2322,7 +2519,7 @@
         pcLabel.textContent = 'Postcode';
         var pcEl = document.createElement('span');
         pcEl.className = 'fn-postcode-value fn-extra-loc-pc';
-        pcEl.textContent = '—';
+        pcEl.textContent = '-';
         pcLine.appendChild(pcLabel);
         pcLine.appendChild(document.createTextNode(' '));
         pcLine.appendChild(pcEl);
@@ -2568,17 +2765,25 @@
     }
 
     /**
-     * Rasterise the Flight Report Leaflet mini-map for PDF (same idea as PdfTheme.captureSquareMap).
+     * Rasterise a Leaflet mini-map container for PDF (same idea as PdfTheme.captureSquareMap).
+     * @param {HTMLElement|null} mapEl
+     * @param {object|null} leafletMap Leaflet map instance
      */
-    async function tryCaptureMiniMapPng() {
-        var mapEl = document.getElementById('fnMiniMap');
-        if (!mapEl || !miniMap || typeof html2canvas === 'undefined') return null;
+    async function tryCaptureLeafletMapPng(mapEl, leafletMap) {
+        if (!mapEl || !leafletMap || typeof html2canvas === 'undefined') return null;
         await new Promise(function (resolve) {
-            setTimeout(resolve, 500);
+            setTimeout(resolve, 400);
         });
-        if (miniMap) miniMap.invalidateSize();
         try {
-            var capBg = document.body.classList.contains('fn-light-theme') ? '#e8eaed' : '#1a1a2e';
+            leafletMap.invalidateSize();
+        } catch (e) {}
+        try {
+            var capBg =
+                typeof PdfTheme !== 'undefined' && PdfTheme.colors
+                    ? PdfTheme.colors().mapBg
+                    : document.body.classList.contains('fn-light-theme')
+                      ? '#e8eaed'
+                      : '#1a1a2e';
             var h2cMini =
                 typeof MapCapture !== 'undefined' && MapCapture.html2canvasOptions
                     ? MapCapture.html2canvasOptions(capBg, { scale: 2 })
@@ -2599,6 +2804,145 @@
             console.warn('Flight Report: map screenshot failed', e);
             return null;
         }
+    }
+
+    /** Sync main + additional location previews so Leaflet maps exist for PDF capture. */
+    function syncAllFlightReportLocationMapPreviews() {
+        syncLocationPreviewFromField();
+        var ri;
+        for (ri = 0; ri < fnExtraLocationRows.length; ri++) {
+            var row = fnExtraLocationRows[ri];
+            var raw = String(row.textInput.value || '').trim();
+            if (!raw) continue;
+            if (!parseLatLngFromLocationString(raw)) continue;
+            if (row.resultWrap) row.resultWrap.hidden = false;
+            syncExtraRowMapPreview(row);
+        }
+    }
+
+    /** Ordered slots (main first, then additional locations) that have a live map. */
+    function getFlightReportPdfLocationMapSlots() {
+        var slots = [];
+        var mainLl = parseLatLngFromLocationString(trimVal('fnLocation'));
+        if (mainLl) {
+            var mainEl = document.getElementById('fnMiniMap');
+            if (mainEl && miniMap) {
+                slots.push({
+                    label: trimVal('fnLocationLabel') || 'Main location',
+                    mapEl: mainEl,
+                    map: miniMap
+                });
+            }
+        }
+        for (var ri = 0; ri < fnExtraLocationRows.length; ri++) {
+            var row = fnExtraLocationRows[ri];
+            var raw = String(row.textInput.value || '').trim();
+            if (!raw) continue;
+            if (!parseLatLngFromLocationString(raw)) continue;
+            if (!row.mapEl || !row.map) continue;
+            var lab = String(row.labelInput.value || '').trim() || 'Additional location ' + (ri + 1);
+            slots.push({ label: lab, mapEl: row.mapEl, map: row.map });
+        }
+        return slots;
+    }
+
+    /**
+     * Capture PNG shots for every mission location map (main + additional).
+     * @returns {Promise<Array<{ label: string, shot: { dataUrl: string, width: number, height: number } | null }>>}
+     */
+    async function captureAllFlightReportLocationMapsForPdf() {
+        syncAllFlightReportLocationMapPreviews();
+        await new Promise(function (resolve) {
+            setTimeout(resolve, 650);
+        });
+        var slots = getFlightReportPdfLocationMapSlots();
+        if (!slots.length) {
+            syncLocationPreviewFromField();
+            await new Promise(function (resolve) {
+                setTimeout(resolve, 350);
+            });
+            slots = getFlightReportPdfLocationMapSlots();
+        }
+        var out = [];
+        var si;
+        for (si = 0; si < slots.length; si++) {
+            var s = slots[si];
+            var shot = await tryCaptureLeafletMapPng(s.mapEl, s.map);
+            out.push({ label: s.label, shot: shot });
+        }
+        return out;
+    }
+
+    /**
+     * Draw location map(s) and labels at the top of the flight report PDF page.
+     * @returns {number} Y position (mm) below the block for the next content
+     */
+    function layoutFlightReportLocationMapsOnPdf(doc, locationShots, startY) {
+        if (!locationShots || !locationShots.length) return startY;
+        var margin = 10;
+        var pageW = PdfTheme.pageWidthMm();
+        var usableW = pageW - 20;
+        var gap = 4;
+        var cols = locationShots.length === 1 ? 1 : 2;
+        var maxMapH = cols === 1 ? 100 : 56;
+        var tc = PdfTheme.colors();
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(tc.text[0], tc.text[1], tc.text[2]);
+
+        var y = startY;
+        var idx = 0;
+        while (idx < locationShots.length) {
+            var remaining = locationShots.length - idx;
+            var inRow = cols === 1 ? 1 : Math.min(cols, remaining);
+            var rowCellW = (usableW - gap * (inRow - 1)) / inRow;
+            var rowTop = y;
+            var rowMaxBottom = rowTop;
+            var j;
+            for (j = 0; j < inRow; j++) {
+                var item = locationShots[idx + j];
+                var x0 = margin + j * (rowCellW + gap);
+                var labelLines = doc.splitTextToSize(String(item.label || ''), rowCellW - 1);
+                if (!labelLines.length) labelLines = [''];
+                var labelStartY = rowTop + 4;
+                doc.text(labelLines, x0, labelStartY);
+                var labelBlockH = labelLines.length * 4.2;
+                var imgTop = labelStartY + labelBlockH + 1;
+                if (item.shot && item.shot.dataUrl) {
+                    var dims = mapImageSizeMm(
+                        item.shot.width,
+                        item.shot.height,
+                        rowCellW - 2,
+                        maxMapH
+                    );
+                    var mapX = x0 + (rowCellW - dims.w) / 2;
+                    try {
+                        doc.addImage(item.shot.dataUrl, 'PNG', mapX, imgTop, dims.w, dims.h);
+                    } catch (e) {
+                        doc.setFont('helvetica', 'italic');
+                        doc.setFontSize(8);
+                        doc.setTextColor(tc.muted[0], tc.muted[1], tc.muted[2]);
+                        doc.text('Map image failed', x0, imgTop + 4);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(9);
+                        doc.setTextColor(tc.text[0], tc.text[1], tc.text[2]);
+                    }
+                    rowMaxBottom = Math.max(rowMaxBottom, imgTop + dims.h + 4);
+                } else {
+                    doc.setFont('helvetica', 'italic');
+                    doc.setFontSize(8);
+                    doc.setTextColor(tc.muted[0], tc.muted[1], tc.muted[2]);
+                    doc.text('No map preview for this site', x0, imgTop + 2);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9);
+                    doc.setTextColor(tc.text[0], tc.text[1], tc.text[2]);
+                    rowMaxBottom = Math.max(rowMaxBottom, imgTop + 10);
+                }
+            }
+            y = rowMaxBottom;
+            idx += inRow;
+        }
+        return y + 2;
     }
 
     function isFlightNotesExportLightTheme() {
@@ -2622,35 +2966,48 @@
             PdfTheme.setLight(isFlightNotesExportLightTheme());
             await PdfTheme.loadLogo();
 
+            await refreshFnAirspaceDataForPdfExport();
+
             var ts = PdfTheme.tableStyles();
             var doc = PdfTheme.createDoc();
             PdfTheme.addHeader(doc, 'Flight Report', true);
 
             var startY = 26;
-            var mapShot = await tryCaptureMiniMapPng();
-            if (mapShot && mapShot.dataUrl) {
-                var maxW = 100;
-                var maxH = 100;
-                var dims = mapImageSizeMm(mapShot.width, mapShot.height, maxW, maxH);
-                var pageW = PdfTheme.pageWidthMm();
-                var mapX = (pageW - dims.w) / 2;
-                doc.addImage(mapShot.dataUrl, 'PNG', mapX, startY, dims.w, dims.h);
-                startY = startY + dims.h + 4;
-            }
+            var locationShots = await captureAllFlightReportLocationMapsForPdf();
+            startY = layoutFlightReportLocationMapsOnPdf(doc, locationShots, startY);
 
-            var body = tableRowsForPdf();
+            var pdfBodyMeta = buildFlightReportPdfTableBody();
             var tableW = PdfTheme.pageWidthMm() - 20;
-            var fieldColW = 42;
+            var tsNoAlt = Object.assign({}, ts);
+            delete tsNoAlt.alternateRowStyles;
             doc.autoTable({
                 startY: startY,
                 head: [['Field', 'Details']],
-                body: body,
+                body: pdfBodyMeta.body,
                 tableWidth: tableW,
                 columnStyles: {
-                    0: { cellWidth: fieldColW },
-                    1: { cellWidth: tableW - fieldColW }
+                    0: { cellWidth: pdfBodyMeta.fieldColW },
+                    1: { cellWidth: tableW - pdfBodyMeta.fieldColW }
                 },
-                ...ts
+                ...tsNoAlt,
+                didParseCell: function (data) {
+                    if (data.section !== 'body') return;
+                    var rawRow = data.row.raw;
+                    if (
+                        rawRow &&
+                        rawRow.length === 1 &&
+                        rawRow[0] &&
+                        rawRow[0].colSpan === 2
+                    ) {
+                        return;
+                    }
+                    var rs = pdfBodyMeta.rowSections[data.row.index];
+                    if (!rs || rs === 'banner') return;
+                    var fill = fnPdfBodyFillForSection(rs);
+                    if (fill) data.cell.styles.fillColor = fill;
+                    var tc = PdfTheme.colors();
+                    data.cell.styles.textColor = tc.text;
+                }
             });
 
             await appendAirspacePdfPages(doc);
@@ -2872,6 +3229,7 @@
         consumePendingWeatherFromFlightWeather();
         setVisibleBatteryCount(initialBatterySlots);
         updateAllBatteryFlightTimes();
+        applyBatteryLimitDefaultsForVisible();
         syncFnAirspaceIntroKm();
         syncManualSelectsFromDateInput();
         syncLocationPreviewFromField();
@@ -2960,6 +3318,7 @@
             addBatteryBtn.addEventListener('click', function () {
                 if (fnVisibleBatteryCount >= FN_BATTERY_MAX) return;
                 setVisibleBatteryCount(fnVisibleBatteryCount + 1);
+                ensureBatteryLimitDefaults(fnVisibleBatteryCount);
                 scheduleFlightNotesDraftSave();
             });
         }
