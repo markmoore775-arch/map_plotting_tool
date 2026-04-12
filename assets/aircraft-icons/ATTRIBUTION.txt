@@ -1,3 +1,3 @@
 Aircraft silhouette SVGs are from the free ADS-B Radar (macOS) icon set.
-License: personal and commercial use with attribution — see
+License: personal and commercial use with attribution - see
 https://adsb-radar.com/ and https://apps.apple.com/app/id1538149835

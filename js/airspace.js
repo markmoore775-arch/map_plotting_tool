@@ -135,7 +135,7 @@
     }
 
     function formatTime(ts) {
-        if (ts == null) return '—';
+        if (ts == null) return '-';
         try {
             const sec = typeof ts === 'number' && ts > 1e12 ? Math.floor(ts / 1000) : ts;
             return new Date(sec * 1000).toLocaleTimeString(undefined, {
@@ -144,7 +144,7 @@
                 second: '2-digit'
             });
         } catch (e) {
-            return '—';
+            return '-';
         }
     }
 
@@ -494,7 +494,7 @@
             const ft = Math.round(Number(rec.altM) * 3.280839895);
             base = ft + "' · " + Math.round(Number(rec.altM)) + 'm';
         } else {
-            base = '—';
+            base = '-';
         }
         if (
             aglMeters != null &&
@@ -572,7 +572,7 @@
     }
 
     function fmtNum(n, suffix) {
-        if (n == null || Number.isNaN(Number(n))) return '—';
+        if (n == null || Number.isNaN(Number(n))) return '-';
         return Math.round(Number(n)) + (suffix || '');
     }
 
@@ -586,7 +586,7 @@
         } else if (isGroundAircraft(a)) {
             base = 'GND';
         } else {
-            base = '—';
+            base = '-';
         }
         if (
             aglMeters != null &&
@@ -611,15 +611,15 @@
         const alt =
             a.alt_baro != null && !Number.isNaN(a.alt_baro)
                 ? fmtNum(a.alt_baro, ' ft baro')
-                : '—';
+                : '-';
         const altg =
             a.alt_geom != null && !Number.isNaN(a.alt_geom)
                 ? fmtNum(a.alt_geom, ' ft geom')
                 : null;
-        const gs = a.gs != null ? fmtNum(a.gs, ' kt') : '—';
-        const trk = a.track != null ? fmtNum(a.track, '°') : '—';
-        const sq = (a.squawk && String(a.squawk).trim()) || '—';
-        const cat = (a.category && String(a.category).trim()) || '—';
+        const gs = a.gs != null ? fmtNum(a.gs, ' kt') : '-';
+        const trk = a.track != null ? fmtNum(a.track, '°') : '-';
+        const sq = (a.squawk && String(a.squawk).trim()) || '-';
+        const cat = (a.category && String(a.category).trim()) || '-';
         const mach = a.mach != null ? Number(a.mach).toFixed(3) : null;
         const tas = a.tas != null ? fmtNum(a.tas, ' kt') : null;
         const ias = a.ias != null ? fmtNum(a.ias, ' kt') : null;
@@ -657,21 +657,21 @@
             ],
             ['Speed', 'GS ' + gs + (tas ? ' · TAS ' + tas : '') + (ias ? ' · IAS ' + ias : '')],
             ['Track / heading', 'Track ' + trk + (thd ? ' · TH ' + thd : '') + (mhdg ? ' · MH ' + mhdg : '')],
-            ['Vert rate', (br ? 'Baro ' + br : '') + (br && gr ? ' · ' : '') + (gr ? 'Geom ' + gr : '') || '—'],
-            ['Wind', wd && ws ? wd + ' / ' + ws : '—'],
-            ['Mach', mach || '—'],
+            ['Vert rate', (br ? 'Baro ' + br : '') + (br && gr ? ' · ' : '') + (gr ? 'Geom ' + gr : '') || '-'],
+            ['Wind', wd && ws ? wd + ' / ' + ws : '-'],
+            ['Mach', mach || '-'],
             ['Squawk', escapeHtml(sq)],
             ['Category', escapeHtml(cat)],
             [
                 'Type',
                 typ || desc
                     ? escapeHtml(typ + (desc ? ': ' + desc : ''))
-                    : '—'
+                    : '-'
             ],
-            ['Registration', reg ? escapeHtml(reg) : '—'],
-            ['Position', dst || '—'],
-            ['Bearing', dir || '—'],
-            ['Nav alt (MCP)', navAlt || '—']
+            ['Registration', reg ? escapeHtml(reg) : '-'],
+            ['Position', dst || '-'],
+            ['Bearing', dir || '-'],
+            ['Nav alt (MCP)', navAlt || '-']
         ];
 
         let table = '<table class="airspace-popup-table">';
@@ -680,7 +680,7 @@
                 continue;
             }
             if (
-                rows[r][1] === '—' &&
+                rows[r][1] === '-' &&
                 rows[r][0] !== 'Squawk' &&
                 rows[r][0] !== 'Category' &&
                 rows[r][0] !== 'Registration'
@@ -713,12 +713,12 @@
     function buildOgnPopupHtml(rec, trailPts, aglMeters) {
         const id = rec && rec.id ? String(rec.id) : '';
         const cs = rec && rec.callsign ? String(rec.callsign) : '';
-        const altM = rec && rec.altM != null ? Math.round(Number(rec.altM)) + ' m MSL' : '—';
+        const altM = rec && rec.altM != null ? Math.round(Number(rec.altM)) + ' m MSL' : '-';
         const altFt =
             rec && rec.altM != null ? Math.round(Number(rec.altM) * 3.280839895) + ' ft' : null;
-        const trk = rec && rec.track != null ? fmtNum(rec.track, '°') : '—';
-        const spd = rec && rec.speed != null ? String(rec.speed) : '—';
-        const clb = rec && rec.climb != null ? String(rec.climb) : '—';
+        const trk = rec && rec.track != null ? fmtNum(rec.track, '°') : '-';
+        const spd = rec && rec.speed != null ? String(rec.speed) : '-';
+        const clb = rec && rec.climb != null ? String(rec.climb) : '-';
         const tlen = trailPts ? trailPts.length : 0;
         let trailNote =
             '<p class="airspace-popup-muted">Trail: <strong>' +
@@ -732,8 +732,8 @@
 
         const rows = [
             ['Source', 'Open Glider Network (live.glidernet.org)'],
-            ['Device ID', id ? escapeHtml(id) : '—'],
-            ['Callsign / name', cs ? escapeHtml(cs) : '—'],
+            ['Device ID', id ? escapeHtml(id) : '-'],
+            ['Callsign / name', cs ? escapeHtml(cs) : '-'],
             ['Altitude', altFt ? altM + ' · ' + altFt : altM],
             [
                 'AGL (approx.)',
@@ -1412,7 +1412,7 @@
 
                 let nAdsb = 0;
                 let nOgn = 0;
-                let adsbTime = '—';
+                let adsbTime = '-';
 
                 if (wantAdsb) {
                     if (adRes.ok && adRes.data) {
@@ -1472,7 +1472,7 @@
                         '~' +
                         rNm.toFixed(0) +
                         ' NM · ADSB.lol' +
-                        (adsbTime !== '—' ? ' · data ' + escapeHtml(adsbTime) : '');
+                        (adsbTime !== '-' ? ' · data ' + escapeHtml(adsbTime) : '');
                 }
                 if (wantAdsb && wantOgn && detail) detail += ' · ';
                 if (wantOgn && ognRes.ok) {

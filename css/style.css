@@ -787,7 +787,7 @@ body.sidebar-collapsed .map-logo {
     visibility: hidden;
 }
 
-/* Hide mobile Help FAB — sits outside header; would show through splash fade-in */
+/* Hide mobile Help FAB - sits outside header; would show through splash fade-in */
 .intro-overlay:not(.hidden) ~ .mobile-map-actions,
 .intro-overlay:not(.hidden) ~ .sidebar-open--planner-map {
     visibility: hidden;
@@ -843,7 +843,7 @@ body.sidebar-collapsed .map-logo {
     letter-spacing: 0.02em;
 }
 
-/* Icon-only home chip from tablet widths up — frees top bar for tool labels (e.g. Flight Report on iPad portrait) */
+/* Icon-only home chip from tablet widths up - frees top bar for tool labels (e.g. Flight Report on iPad portrait) */
 @media (max-width: 900px) {
     .fp-welcome-title {
         display: none;
@@ -1554,7 +1554,7 @@ body.sidebar-collapsed .sidebar {
 }
 
 @media (max-width: 600px) {
-    /* Fully remove from layout when collapsed — no off-screen bottom strip */
+    /* Fully remove from layout when collapsed - no off-screen bottom strip */
     body.sidebar-collapsed .sidebar {
         display: none;
     }
@@ -2417,7 +2417,7 @@ select {
     margin-right: auto;
 }
 
-/* Geolocation iOS standalone modal — light theme (matches body.fn-light-theme, same tokens as #helpModal.help-modal--light) */
+/* Geolocation iOS standalone modal - light theme (matches body.fn-light-theme, same tokens as #helpModal.help-modal--light) */
 #geolocateIosStandaloneModal.geolocate-ios-standalone-modal--light .modal-content {
     background: #f8f9fb;
     border-color: #d0d0d0;
@@ -3449,7 +3449,7 @@ a.airspace-choice-btn {
         top: calc(var(--ap-top-header-height) + 8px);
     }
 
-    /* Collapsible tool strip: first control is 44px — keep » clear of it */
+    /* Collapsible tool strip: first control is 44px - keep » clear of it */
     body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) {
         --ap-planner-sidebar-open-left-offset: 64px;
     }
@@ -3536,7 +3536,7 @@ a.airspace-choice-btn {
     }
 
     /*
-     * Touch targets: floating UI only. Do not force min-height on .sidebar .btn / .point-item —
+     * Touch targets: floating UI only. Do not force min-height on .sidebar .btn / .point-item  - 
      * that made controls taller on phones than on desktop (same padding should yield same size).
      */
     .ctx-item {
@@ -3559,7 +3559,7 @@ a.airspace-choice-btn {
         opacity: 1;
     }
 
-    /* Do not target attribution links — flex + 44px min turns each <a> into a row and wraps the bar */
+    /* Do not target attribution links - flex + 44px min turns each <a> into a row and wraps the bar */
     .leaflet-control:not(.leaflet-control-attribution) a,
     .leaflet-control-locate a {
         min-width: 44px;
@@ -3691,7 +3691,7 @@ a.airspace-choice-btn {
         z-index: 1000;
     }
 
-    /* Planner: layers sit below top chrome (52px) — keep FABs below that stack */
+    /* Planner: layers sit below top chrome (52px) - keep FABs below that stack */
     body:not(.weather-mode):not(.flight-planning-mode) .mobile-map-actions {
         top: calc(env(safe-area-inset-top, 0px) + 52px + 10px + 44px + 20px);
     }
@@ -3752,7 +3752,7 @@ a.airspace-choice-btn {
         font-weight: 500;
     }
 
-    /* Hide Help chip on mobile — use FAB */
+    /* Hide Help chip on mobile - use FAB */
     .map-top-actions {
         display: none !important;
     }
@@ -3866,7 +3866,7 @@ a.airspace-choice-btn {
 
 /*
  * Mobile: Leaflet's .leaflet-bottom.leaflet-right only sets bottom+right (no left), so the
- * corner box shrink-wraps to ~legend width — attribution then wraps in a tall narrow strip.
+ * corner box shrink-wraps to ~legend width - attribution then wraps in a tall narrow strip.
  * Pin left:0 + right:0 so the bar spans the full map; stack legend (end) then full-width attribution.
  */
 @media (max-width: 768px) {
@@ -3937,14 +3937,14 @@ a.airspace-choice-btn {
         vertical-align: -0.15em;
     }
 
-    /* App footer (© line) — just above Leaflet attribution row */
+    /* App footer (© line) - just above Leaflet attribution row */
     body:not(.weather-mode):not(.flight-planning-mode) .app-footer {
         bottom: calc(20px + max(8px, env(safe-area-inset-bottom, 0px)));
     }
 
     /*
      * Mapbox wordmark + “Improve this map” sit bottom-center by default and sit under our
-     * full-width Leaflet attribution strip — lift them above it (Mapbox raster + Leaflet).
+     * full-width Leaflet attribution strip - lift them above it (Mapbox raster + Leaflet).
      */
     .leaflet-container .mapbox-logo,
     .leaflet-container .mapbox-map-logo,
@@ -4933,7 +4933,7 @@ a.airspace-choice-btn {
     color: #3a6dd0;
 }
 
-/* Drawing style — lives in sidebar (see .sidebar .draw-style-panel) */
+/* Drawing style - lives in sidebar (see .sidebar .draw-style-panel) */
 
 /* map-top-actions: Help chip inside ap-shell .fn-top-bar on index */
 

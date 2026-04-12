@@ -14,7 +14,7 @@
      * @param {string} opts.title
      * @param {string} opts.message
      * @param {string} [opts.confirmLabel='Confirm']
-     * @param {boolean} [opts.danger=true] — false uses btn-primary for confirm
+     * @param {boolean} [opts.danger=true] - false uses btn-primary for confirm
      * @returns {Promise<boolean>}
      */
     function showConfirmModal(opts) {

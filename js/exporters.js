@@ -289,7 +289,7 @@ const Exporters = (() => {
 
             shapes.forEach(function (s, i) {
                 const typeStr = (s.type || 'unknown').charAt(0).toUpperCase() + (s.type || 'unknown').slice(1);
-                const label = s.label || s.text || '—';
+                const label = s.label || s.text || '-';
                 let details = '';
 
                 if (s.type === 'circle' && s.center) {
@@ -309,7 +309,7 @@ const Exporters = (() => {
                     { text: String(i + 1), options: cellOpts },
                     { text: typeStr, options: cellOpts },
                     { text: label, options: cellOpts },
-                    { text: details || '—', options: cellOpts }
+                    { text: details || '-', options: cellOpts }
                 ]);
 
                 if (shRows.length > 15 && i < shapes.length - 1) {
@@ -380,7 +380,7 @@ const Exporters = (() => {
             PdfTheme.addHeader(doc, 'Shapes & Drawings');
             var shBody = shapes.map(function (s, i) {
                 var typeStr = (s.type || 'unknown').charAt(0).toUpperCase() + (s.type || 'unknown').slice(1);
-                var label = s.label || s.text || '—';
+                var label = s.label || s.text || '-';
                 var details = '';
                 if (s.type === 'circle' && s.center) {
                     var r = s.radius >= 1000 ? (s.radius / 1000).toFixed(2) + ' km' : Math.round(s.radius) + ' m';
@@ -394,7 +394,7 @@ const Exporters = (() => {
                 } else if (s.type === 'text' && s.position) {
                     details = 'At ' + s.position[0].toFixed(5) + ', ' + s.position[1].toFixed(5);
                 }
-                return [String(i + 1), typeStr, label, details || '—'];
+                return [String(i + 1), typeStr, label, details || '-'];
             });
             doc.autoTable({
                 startY: 18,

@@ -1,5 +1,5 @@
 /* ============================================
-   AIRSPACE NEARBY — Shared NOTAM + UK airspace fetch
+   AIRSPACE NEARBY - Shared NOTAM + UK airspace fetch
    Used by Flight Weather and Flight Report
    ============================================ */
 
@@ -95,9 +95,9 @@ var AirspaceNearby = (function () {
      * @param {number} lng
      * @param {number} radiusKm
      * @param {object} [options]
-     * @param {boolean} [options.droneRelevantOnly] — keyword filter (UAS, danger, crane, …)
-     * @param {boolean} [options.hideAerodromeGround] — drop heuristic “airfield ops” NOTAMs
-     * @param {boolean} [options.prioritiseUas] — sort UAS-relevant categories first
+     * @param {boolean} [options.droneRelevantOnly] - keyword filter (UAS, danger, crane, …)
+     * @param {boolean} [options.hideAerodromeGround] - drop heuristic “airfield ops” NOTAMs
+     * @param {boolean} [options.prioritiseUas] - sort UAS-relevant categories first
      */
     async function fetchNearbyNotams(lat, lng, radiusKm, options) {
         options = options || {};
@@ -176,10 +176,10 @@ var AirspaceNearby = (function () {
                     var props = f.properties || {};
                     return {
                         category: classifyAirspaceFeature(f),
-                        designator: props.designator || props.id || '—',
-                        name: props.name || '—',
-                        lower: props.lowerLimit || props.lower || '—',
-                        upper: props.upperLimit || props.upper || '—',
+                        designator: props.designator || props.id || '-',
+                        name: props.name || '-',
+                        lower: props.lowerLimit || props.lower || '-',
+                        upper: props.upperLimit || props.upper || '-',
                         type: props.type || '',
                         source: props.source || '',
                         description: props.description || '',

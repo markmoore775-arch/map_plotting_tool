@@ -270,7 +270,7 @@ async function main() {
         const typeEl = getFirstByLocalName(timeSlice, 'type');
         const type = typeEl ? getTextContent(typeEl) : '';
 
-        // Skip EGRU (UAS FRZ/RPZ) features — the NATS KML provides these with
+        // Skip EGRU (UAS FRZ/RPZ) features - the NATS KML provides these with
         // richer descriptions and better arc-tessellated geometry.
         if (designator.toUpperCase().startsWith('EGRU')) continue;
 

@@ -157,7 +157,7 @@
                     function showFailed() {
                         if (feedback) {
                             feedback.classList.remove('hidden');
-                            feedback.textContent = 'Could not copy — select the link above and copy manually';
+                            feedback.textContent = 'Could not copy - select the link above and copy manually';
                         }
                         if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer);
                         copyFeedbackTimer = setTimeout(function () {
@@ -235,7 +235,7 @@
 
     /**
      * WebKit / iOS-style environments: avoid high-accuracy-first and rely on gentle getCurrentPosition.
-     * iPad “desktop” UA is often Macintosh + touch (maxTouchPoints can be 1 — treat MacIntel + any touch as iPad-class).
+     * iPad “desktop” UA is often Macintosh + touch (maxTouchPoints can be 1 - treat MacIntel + any touch as iPad-class).
      * All iOS store browsers use CriOS, FxiOS, EdgiOS, etc.; match those even when “iPad” is absent from UA.
      */
     function prefersGentleGeoOptions() {
@@ -251,7 +251,7 @@
     /**
      * Safari on iOS/iPad often never settles navigator.permissions.query({ name: 'geolocation' }),
      * so awaiting it before getCurrentPosition means we never start the real request (Chrome iOS
-     * resolves the query — CriOS / FxiOS / EdgiOS). Skip the probe and call geolocation directly.
+     * resolves the query - CriOS / FxiOS / EdgiOS). Skip the probe and call geolocation directly.
      */
     function skipPermissionsQueryBeforeGeolocation() {
         var ua = navigator.userAgent || '';
@@ -384,7 +384,7 @@
             if (fromHomeScreen) {
                 return (
                     base +
-                    'Apple’s iOS WebKit often breaks geolocation for home-screen web apps (standalone mode)—not an AirPlot bug. Open this page in Safari or Chrome instead. ' +
+                    'Apple’s iOS WebKit often breaks geolocation for home-screen web apps (standalone mode) - not an AirPlot bug. Open this page in Safari or Chrome instead. ' +
                     settings +
                     alt
                 );

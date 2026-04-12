@@ -1,5 +1,5 @@
 /* ============================================
-   AIRSPACE — Live ADS-B traffic (ADSB.lol)
+   AIRSPACE - Live ADS-B traffic (ADSB.lol)
    Full-screen map, toolbar, status, help panel
    ============================================ */
 
@@ -193,7 +193,7 @@ body.airspace-mode .leaflet-popup-close-button {
     border-left: 3px solid var(--airspace-icon-high, #fca5a5);
 }
 
-/* OGN / glider-class (cyan) — distinct from ADS-B hazard reds */
+/* OGN / glider-class (cyan) - distinct from ADS-B hazard reds */
 .airspace-icon--ogn .airspace-plane-img {
     filter: brightness(0) saturate(100%) invert(72%) sepia(51%) saturate(536%) hue-rotate(149deg) brightness(95%) contrast(92%);
 }
@@ -227,7 +227,7 @@ body.airspace-mode.ap-shell #map {
     top: var(--ap-top-header-height);
 }
 
-/* Leaflet controls — below fixed fn-top-bar (style.css body.ap-shell) */
+/* Leaflet controls - below fixed fn-top-bar (style.css body.ap-shell) */
 body.airspace-mode .leaflet-top.leaflet-left {
     top: calc(52px + env(safe-area-inset-top, 0px));
 }
@@ -246,7 +246,7 @@ body.airspace-mode.ap-shell .leaflet-top.leaflet-left {
     }
 }
 
-/* Floating toolbar — status on its own row on wide viewports so it isn’t squeezed to zero
+/* Floating toolbar - status on its own row on wide viewports so it isn’t squeezed to zero
    (nowrap row + flex-shrink:0 controls made the status column collapse when controls > bar width). */
 .airspace-toolbar {
     position: fixed;
@@ -499,7 +499,7 @@ a.airspace-btn.airspace-view-switch {
     flex-shrink: 0;
 }
 
-/* Bottom attribution strip — above floating toolbar (taller when status is on a second row) */
+/* Bottom attribution strip - above floating toolbar (taller when status is on a second row) */
 .airspace-attribution {
     position: fixed;
     left: 0;
@@ -522,7 +522,7 @@ a.airspace-btn.airspace-view-switch {
     pointer-events: auto;
 }
 
-/* Logo corner — above attribution + toolbar */
+/* Logo corner - above attribution + toolbar */
 .airspace-logo {
     position: fixed;
     bottom: max(158px, calc(158px + env(safe-area-inset-bottom, 0px)));

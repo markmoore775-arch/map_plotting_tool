@@ -1,5 +1,5 @@
 /* ============================================
-   UK PIB NOTAM — shared parse, classify, vertical limits
+   UK PIB NOTAM - shared parse, classify, vertical limits
    Source: https://jonty.github.io/uk-notam-archive/data/PIB.xml
    ============================================ */
 

@@ -1425,8 +1425,8 @@
 
                 exclusions.forEach(function (exc, i) {
                     let typeStr = exc.type.charAt(0).toUpperCase() + exc.type.slice(1);
-                    let centreStr = '—';
-                    let sizeStr = '—';
+                    let centreStr = '-';
+                    let sizeStr = '-';
 
                     if (exc.type === 'circle' && exc.center) {
                         centreStr = exc.center[0].toFixed(6) + ', ' + exc.center[1].toFixed(6);
@@ -1572,8 +1572,8 @@
                 PdfTheme.addHeader(doc, 'Exclusion Zones');
                 var exBody = exclusions.map(function (exc, i) {
                     var typeStr = exc.type.charAt(0).toUpperCase() + exc.type.slice(1);
-                    var centreStr = '—';
-                    var sizeStr = '—';
+                    var centreStr = '-';
+                    var sizeStr = '-';
                     if (exc.type === 'circle' && exc.center) {
                         centreStr = exc.center[0].toFixed(6) + ', ' + exc.center[1].toFixed(6);
                         sizeStr = getRadiusText(exc.radius);

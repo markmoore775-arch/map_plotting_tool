@@ -21,12 +21,12 @@ body.airspace-adsbx-mode {
     }
 }
 
-/* Welcome pill: default style.css pins top: 12px — shift below our banner on this page only */
+/* Welcome pill: default style.css pins top: 12px - shift below our banner on this page only */
 body.airspace-adsbx-mode .fp-welcome-bar {
     top: calc(env(safe-area-inset-top, 0px) + 12px + var(--adsbx-banner-stack));
 }
 
-/* Zoom + locate — below welcome bar (same idea as Leaflet on airspace / weather) */
+/* Zoom + locate - below welcome bar (same idea as Leaflet on airspace / weather) */
 .adsbx-map-controls-wrap {
     position: fixed;
     top: calc(

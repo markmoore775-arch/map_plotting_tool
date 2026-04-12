@@ -125,20 +125,20 @@ Enable **NOTAM** in the UK airspace key. Click the arrow (▼) for options:
 
 - **Max radius**: Cap displayed circle size (5–50 NM or All). Default 12 NM reduces clutter from very large NOTAMs.
 - **Drone-relevant only**: Keep NOTAMs that match UAS/hazard keywords (e.g. UAS, crane, TDA, BVLOS, danger area).
-- **Hide airfield ops**: Hide typical aerodrome ground-ops NOTAMs (taxiway, lighting, comms, runway works, etc.) when they are not also tagged as UAS-relevant by keywords. Heuristic only—always confirm on the official NATS PIB.
+- **Hide airfield ops**: Hide typical aerodrome ground-ops NOTAMs (taxiway, lighting, comms, runway works, etc.) when they are not also tagged as UAS-relevant by keywords. Heuristic only - always confirm on the official NATS PIB.
 - **Opacity**: Fill opacity (about 3–20%).
 
 Popups show **vertical limits** from the PIB **Q-line** (`Lower` / `Upper`, shown as e.g. SFC–UNL or flight levels) where present, plus a short note to verify on an official briefing for flight-critical use.
 
-Circle colours reflect triage: **amber** (strong UAS/hazard keywords), **orange** (“check” — e.g. temporary restricted wording), **purple** (airfield-ops class), **slate** (other).
+Circle colours reflect triage: **amber** (strong UAS/hazard keywords), **orange** (“check” - e.g. temporary restricted wording), **purple** (airfield-ops class), **slate** (other).
 
 ### Flight Weather and Flight Report
 
 The Airspace tab / section uses the same data. After setting **Search radius**, use **Refresh**. Optional NOTAM controls:
 
-- **Drone-keyword filter** — same idea as “Drone-relevant only” on the map.
-- **Hide airfield ops** — same heuristic as on the map.
-- **Prioritise for UAS** — sort so UAS-relevant categories appear first.
+- **Drone-keyword filter** - same idea as “Drone-relevant only” on the map.
+- **Hide airfield ops** - same heuristic as on the map.
+- **Prioritise for UAS** - sort so UAS-relevant categories appear first.
 
 List rows use coloured **tags** (UAS / hazard, UAS check, Airfield ops, NOTAM). **Vertical (Q-line / text)** uses structured Q-line values when the PIB includes them, with a few simple text fallbacks; treat as advisory and cross-check NATS AIS if altitude matters.
 

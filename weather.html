@@ -21,7 +21,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/weather.css?v=40">
+    <link rel="stylesheet" href="css/weather.css?v=41">
 </head>
 <body class="weather-mode ap-shell">
     <script>
@@ -164,6 +164,10 @@
                     <div class="weather-tab-panel active" id="weatherTabSummary">
                         <div class="weather-summary" id="weatherSummary"></div>
                         <div class="weather-summary-text" id="weatherSummaryText"></div>
+                        <details class="weather-how-calculated" id="weatherHowCalculated">
+                            <summary>How this is calculated</summary>
+                            <div class="weather-how-calculated-body" id="weatherHowCalculatedBody"></div>
+                        </details>
                         <div class="weather-alt-section">
                             <h3 class="weather-alt-heading">Wind by altitude</h3>
                             <p class="weather-alt-note">Gusts are only measured at 10 m by the weather model. Gusts at 120 m are estimated (≈1.3× sustained).</p>
@@ -172,22 +176,22 @@
                                     <div class="weather-alt-title">Ground (10 m)</div>
                                     <div class="weather-detail-row">
                                         <span class="weather-detail-label">Sustained</span>
-                                        <span class="weather-detail-value" id="weatherWind10m">—</span>
+                                        <span class="weather-detail-value" id="weatherWind10m">-</span>
                                     </div>
                                     <div class="weather-detail-row">
                                         <span class="weather-detail-label">Gusts</span>
-                                        <span class="weather-detail-value" id="weatherGusts">—</span>
+                                        <span class="weather-detail-value" id="weatherGusts">-</span>
                                     </div>
                                 </div>
                                 <div class="weather-alt-block">
                                     <div class="weather-alt-title">120 m AGL</div>
                                     <div class="weather-detail-row">
                                         <span class="weather-detail-label">Sustained</span>
-                                        <span class="weather-detail-value" id="weatherWind120m">—</span>
+                                        <span class="weather-detail-value" id="weatherWind120m">-</span>
                                     </div>
                                     <div class="weather-detail-row">
                                         <span class="weather-detail-label">Gusts (est.)</span>
-                                        <span class="weather-detail-value" id="weatherGusts120m">—</span>
+                                        <span class="weather-detail-value" id="weatherGusts120m">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -195,19 +199,19 @@
                         <div class="weather-details">
                             <div class="weather-detail-row">
                                 <span class="weather-detail-label">Visibility</span>
-                                <span class="weather-detail-value" id="weatherVisibility">—</span>
+                                <span class="weather-detail-value" id="weatherVisibility">-</span>
                             </div>
                             <div class="weather-detail-row">
                                 <span class="weather-detail-label">Cloud cover</span>
-                                <span class="weather-detail-value" id="weatherClouds">—</span>
+                                <span class="weather-detail-value" id="weatherClouds">-</span>
                             </div>
                             <div class="weather-detail-row">
                                 <span class="weather-detail-label">Precipitation</span>
-                                <span class="weather-detail-value" id="weatherPrecip">—</span>
+                                <span class="weather-detail-value" id="weatherPrecip">-</span>
                             </div>
                             <div class="weather-detail-row">
                                 <span class="weather-detail-label">Temperature</span>
-                                <span class="weather-detail-value" id="weatherTemp">—</span>
+                                <span class="weather-detail-value" id="weatherTemp">-</span>
                             </div>
                         </div>
                         <p class="weather-attribution" id="weatherAttribution">Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
@@ -252,7 +256,7 @@
                                     </thead>
                                     <tbody id="weatherHourlyBody"></tbody>
                                 </table>
-                                <p class="weather-hourly-rag-legend">Forecast cells use the same rules as the Summary. Each colour states <strong>why</strong> (wind, gusts, visibility, and rain in the hour—including a drizzle allowance before rain counts as amber). Hover a row for the full wording.</p>
+                                <p class="weather-hourly-rag-legend">Cell colours match Summary flight suitability (Green / Amber / Red). Hover a row for the full per-hour wording. For wind, gust, visibility, and rain rules, open the Summary tab and expand <strong>How this is calculated</strong>.</p>
                             </div>
                         </div>
                         <div id="weatherHourlyEmpty" class="weather-hourly-empty hidden">
@@ -332,6 +336,6 @@
     <script src="js/pdf-theme.js?v=6"></script>
     <script src="js/notam-pib.js?v=1"></script>
     <script src="js/airspace-nearby.js?v=3"></script>
-    <script src="js/weather.js?v=23"></script>
+    <script src="js/weather.js?v=24"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 /* ============================================
-   ADS-B EXCHANGE EMBED — zoom / geolocation
+   ADS-B EXCHANGE EMBED - zoom / geolocation
    Recentres iframe via globe URL lat, lon, zoom
    (same placement pattern as Leaflet on airspace/weather)
    ============================================ */

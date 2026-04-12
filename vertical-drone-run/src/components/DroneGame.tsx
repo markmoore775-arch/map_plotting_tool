@@ -3,7 +3,7 @@ import { Play, RotateCcw, Trophy, Zap, Heart } from 'lucide-react';
 
 // --- Game Constants ---
 const DRONE_SIZE = 30;
-/** +20% vs former 1.8 — initial scroll and all ramped speeds scale together. */
+/** +20% vs former 1.8 - initial scroll and all ramped speeds scale together. */
 const BASE_SPEED = 1.8 * 1.2;
 /** Normalize physics to this reference framerate (scroll, timers, shots). */
 const REFERENCE_FPS = 60;
@@ -390,7 +390,7 @@ export default function DroneGame() {
     };
   }, []);
 
-  // Handle Touch Input (only during active run — avoids drift during countdown / menus)
+  // Handle Touch Input (only during active run - avoids drift during countdown / menus)
   useEffect(() => {
     if (gameState !== 'playing') return;
     const canvas = canvasRef.current;
@@ -781,7 +781,7 @@ export default function DroneGame() {
       ctx.restore();
     };
 
-    /** Traffic cone — rubber base, tapered frustum, two reflective bands. */
+    /** Traffic cone - rubber base, tapered frustum, two reflective bands. */
     const drawCone = (ctx: CanvasRenderingContext2D, obs: Obstacle) => {
       ctx.save();
       ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
@@ -889,7 +889,7 @@ export default function DroneGame() {
       ctx.restore();
     };
 
-    /** Lattice transmission tower — side view: tapering legs, cross-arms, X-braced bays. */
+    /** Lattice transmission tower - side view: tapering legs, cross-arms, X-braced bays. */
     const drawPylon = (ctx: CanvasRenderingContext2D, obs: Obstacle) => {
       ctx.save();
       ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
@@ -1114,7 +1114,7 @@ export default function DroneGame() {
         state.trail.unshift({ x: p.x + p.width / 2, y: p.y + p.height / 2 });
         if (state.trail.length > 15) state.trail.pop();
 
-        // Score — same rate as former “every 5 ref frames”
+        // Score - same rate as former “every 5 ref frames”
         state.scorePulseAccum += rf;
         while (state.scorePulseAccum >= 5) {
           state.scorePulseAccum -= 5;
@@ -1637,7 +1637,7 @@ export default function DroneGame() {
       )}
 
       <div className="relative w-full h-screen overflow-hidden bg-slate-900">
-        {/* Score, best, lives — top left (keeps top-right clear for Training menu link) */}
+        {/* Score, best, lives - top left (keeps top-right clear for Training menu link) */}
         <div
           className="absolute z-10 flex max-w-[calc(100vw-7rem)] flex-row flex-wrap items-start gap-2 pointer-events-none"
           style={{
@@ -1711,7 +1711,7 @@ export default function DroneGame() {
               <br/>
               <span className="text-slate-300">Touch:</span> your drone <span className="text-rose-300 font-semibold">fires automatically</span>.
               <br/><br/>
-              <span className="text-slate-500 text-sm">Staying still in one spot draws heavier traffic your way—keep moving.</span>
+              <span className="text-slate-500 text-sm">Staying still in one spot draws heavier traffic your way - keep moving.</span>
             </p>
             <div className="mb-6 flex w-full max-w-[300px] flex-col gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Difficulty</span>

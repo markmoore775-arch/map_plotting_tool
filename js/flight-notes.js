@@ -306,6 +306,10 @@
             };
             var extras = serializeExtraLocations();
             if (extras.length) draftPayload.extraLocations = extras;
+            var airSiteSel = document.getElementById('fnAirspaceSiteSelect');
+            if (airSiteSel && airSiteSel.value && !airSiteSel.disabled) {
+                draftPayload.airspaceSiteId = airSiteSel.value;
+            }
             localStorage.setItem(FN_DRAFT_STORAGE_KEY, JSON.stringify(draftPayload));
         } catch (e) {}
     }
@@ -354,6 +358,7 @@
                 visibleHint = deriveVisibleBatteryCountFromFields();
             }
             deserializeExtraLocations(data.extraLocations);
+            syncFnAirspaceSiteSelectOptions(data.airspaceSiteId);
             return visibleHint;
         } catch (e) {
             return visibleHint;
@@ -382,6 +387,112 @@
     var fnLastAirspace = null;
     var fnAirspaceMaps = [];
     var fnAirspaceDataLoaded = false;
+
+    function missionAirspaceSiteKey(lat, lng) {
+        return lat.toFixed(4) + ',' + lng.toFixed(4);
+    }
+
+    /** Primary Location plus additional rows with parseable coordinates; duplicates (same ~10 m) omitted. */
+    function getMissionAirspaceSitesDeduped() {
+        var list = [];
+        var seen = {};
+        var mainLl = parseLatLngFromLocationString(trimVal('fnLocation'));
+        if (mainLl) {
+            var k0 = missionAirspaceSiteKey(mainLl.lat, mainLl.lng);
+            seen[k0] = true;
+            list.push({
+                id: 'primary',
+                label: trimVal('fnLocationLabel') || 'Primary location',
+                lat: mainLl.lat,
+                lng: mainLl.lng
+            });
+        }
+        var ri;
+        for (ri = 0; ri < fnExtraLocationRows.length; ri++) {
+            var row = fnExtraLocationRows[ri];
+            var raw = String(row.textInput.value || '').trim();
+            var ll = parseLatLngFromLocationString(raw);
+            if (!ll) continue;
+            var k = missionAirspaceSiteKey(ll.lat, ll.lng);
+            if (seen[k]) continue;
+            seen[k] = true;
+            var lab =
+                String(row.labelInput.value || '').trim() || 'Additional location ' + (ri + 1);
+            list.push({ id: 'extra-' + ri, label: lab, lat: ll.lat, lng: ll.lng, extraRowIndex: ri });
+        }
+        return list;
+    }
+
+    function syncFnAirspaceSiteSelectOptions(preferredId) {
+        var sel = document.getElementById('fnAirspaceSiteSelect');
+        if (!sel) return;
+        var sites = getMissionAirspaceSitesDeduped();
+        var prev = preferredId != null ? preferredId : sel.value;
+        sel.innerHTML = '';
+        if (!sites.length) {
+            var o0 = document.createElement('option');
+            o0.value = 'primary';
+            o0.textContent = 'Resolve coordinates in Location (or an additional site) first';
+            o0.disabled = true;
+            sel.appendChild(o0);
+            sel.value = 'primary';
+            sel.disabled = true;
+            return;
+        }
+        sel.disabled = false;
+        var si;
+        for (si = 0; si < sites.length; si++) {
+            var s = sites[si];
+            var opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.label + ' · ' + s.lat.toFixed(4) + ', ' + s.lng.toFixed(4);
+            sel.appendChild(opt);
+        }
+        var ok = false;
+        for (si = 0; si < sites.length; si++) {
+            if (sites[si].id === prev) {
+                ok = true;
+                break;
+            }
+        }
+        sel.value = ok ? prev : sites[0].id;
+    }
+
+    function getFnAirspaceSelectedSiteFromUi() {
+        var sel = document.getElementById('fnAirspaceSiteSelect');
+        var want = sel && sel.value ? sel.value : 'primary';
+        var sites = getMissionAirspaceSitesDeduped();
+        var i;
+        for (i = 0; i < sites.length; i++) {
+            if (sites[i].id === want) return sites[i];
+        }
+        return sites.length ? sites[0] : null;
+    }
+
+    async function fetchFnAirspaceNearPoint(lat, lng, r) {
+        if (typeof AirspaceNearby === 'undefined') {
+            throw new Error('Airspace module not loaded');
+        }
+        var notams = await AirspaceNearby.fetchNearbyNotams(lat, lng, r, fnNotamFetchOptions());
+        var air = await AirspaceNearby.fetchNearbyAirspace(lat, lng, r);
+        return { notams: notams, airspace: air };
+    }
+
+    function applyFnAirspaceBundleToUi(notams, airspace, lat, lng) {
+        fnLastNotams = notams;
+        fnLastAirspace = airspace;
+        fnAirspaceDataLoaded = true;
+        fnAirspaceRadiusKm = readFnAirspaceRadiusFromInput();
+        destroyFnAirspaceMaps();
+        var content = document.getElementById('fnAirspaceContent');
+        if (content) renderFnAirspaceHtml(notams, airspace, lat, lng);
+        return new Promise(function (resolve) {
+            setTimeout(function () {
+                populateFnAirspaceMaps(lat, lng, notams, airspace);
+                resolve();
+            }, 50);
+        });
+    }
 
     function escapeHtmlFn(str) {
         if (str == null) return '';
@@ -468,12 +579,35 @@
     }
 
     function fnAirspaceSummaryForExport() {
+        var sites = getMissionAirspaceSitesDeduped();
+        var r = readFnAirspaceRadiusFromInput();
+        if (!sites.length) {
+            return 'No mission coordinates; resolve Location (or an additional site) before Refresh.';
+        }
         if (!fnAirspaceDataLoaded) {
-            return 'n/a (set coordinates and tap Refresh in Airspace)';
+            return (
+                sites.length +
+                ' location(s) at ' +
+                r +
+                ' km. Tap Refresh in Airspace (PDF still appends every location with coordinates).'
+            );
         }
         var na = (fnLastNotams || []).length;
         var nb = (fnLastAirspace || []).length;
-        return fnAirspaceRadiusKm + ' km · ' + (na + nb) + ' item(s) · maps after table';
+        var sel = getFnAirspaceSelectedSiteFromUi();
+        var label = sel ? sel.label : 'Selected';
+        var tail = r + ' km · ' + (na + nb) + ' item(s) on screen · maps after table';
+        if (sites.length <= 1) {
+            return tail;
+        }
+        return (
+            sites.length +
+            ' mission location(s); on-screen: ' +
+            label +
+            ' (' +
+            tail +
+            '). PDF includes airspace appendix for each location.'
+        );
     }
 
     function renderFnAirspaceHtml(notams, airspace, lat, lng) {
@@ -777,9 +911,12 @@
             alert('Airspace data module not loaded.');
             return;
         }
-        var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
-        if (!ll) {
-            alert('Location must include latitude and longitude (e.g. 51.05, -0.08).');
+        syncFnAirspaceSiteSelectOptions();
+        var site = getFnAirspaceSelectedSiteFromUi();
+        if (!site) {
+            alert(
+                'Resolve coordinates for at least one mission location (Location or an additional site with lat, lng), then Refresh.'
+            );
             return;
         }
         var r = readFnAirspaceRadiusFromInput();
@@ -787,55 +924,15 @@
         syncFnAirspaceIntroKm();
         destroyFnAirspaceMaps();
         var loading = document.getElementById('fnAirspaceLoading');
-        var content = document.getElementById('fnAirspaceContent');
         if (loading) loading.classList.remove('hidden');
         try {
-            var notams = await AirspaceNearby.fetchNearbyNotams(ll.lat, ll.lng, r, fnNotamFetchOptions());
-            var air = await AirspaceNearby.fetchNearbyAirspace(ll.lat, ll.lng, r);
-            fnLastNotams = notams;
-            fnLastAirspace = air;
-            fnAirspaceDataLoaded = true;
-            if (content) renderFnAirspaceHtml(notams, air, ll.lat, ll.lng);
-            setTimeout(function () {
-                populateFnAirspaceMaps(ll.lat, ll.lng, notams, air);
-            }, 50);
+            var bundle = await fetchFnAirspaceNearPoint(site.lat, site.lng, r);
+            await applyFnAirspaceBundleToUi(bundle.notams, bundle.airspace, site.lat, site.lng);
         } catch (e) {
             console.error('Flight Report airspace load failed:', e);
             alert('Failed to load airspace data.');
         } finally {
             if (loading) loading.classList.add('hidden');
-        }
-    }
-
-    /**
-     * Re-fetch NOTAMs and UK airspace for the main location, rebuild the Airspace tab DOM and mini maps.
-     * Used before PDF export so the summary row and appended airspace pages match current coordinates and options.
-     */
-    async function refreshFnAirspaceDataForPdfExport() {
-        if (typeof AirspaceNearby === 'undefined' || typeof L === 'undefined') return;
-        var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
-        if (!ll) return;
-        destroyFnAirspaceMaps();
-        var r = readFnAirspaceRadiusFromInput();
-        fnAirspaceRadiusKm = r;
-        syncFnAirspaceIntroKm();
-        try {
-            var notams = await AirspaceNearby.fetchNearbyNotams(ll.lat, ll.lng, r, fnNotamFetchOptions());
-            var air = await AirspaceNearby.fetchNearbyAirspace(ll.lat, ll.lng, r);
-            fnLastNotams = notams;
-            fnLastAirspace = air;
-            fnAirspaceDataLoaded = true;
-            var c = document.getElementById('fnAirspaceContent');
-            if (c) renderFnAirspaceHtml(notams, air, ll.lat, ll.lng);
-            await new Promise(function (res) {
-                setTimeout(res, 50);
-            });
-            populateFnAirspaceMaps(ll.lat, ll.lng, notams, air);
-            await new Promise(function (res) {
-                setTimeout(res, 1000);
-            });
-        } catch (e) {
-            console.warn('Flight Report: PDF airspace refresh failed', e);
         }
     }
 
@@ -889,13 +986,42 @@
         return '-';
     }
 
-    async function appendAirspacePdfPages(doc) {
+    /**
+     * @param {object} [opt] - When set, use for this appendix only: siteTitle, lat, lng, notams, airspace.
+     */
+    async function appendAirspacePdfPages(doc, opt) {
         if (typeof html2canvas === 'undefined' || typeof doc.autoTable !== 'function') return;
-        var ll = parseLatLngFromLocationString(trimVal('fnLocation'));
+        opt = opt || {};
+        var ll =
+            opt.lat != null && opt.lng != null && isFinite(opt.lat) && isFinite(opt.lng)
+                ? { lat: opt.lat, lng: opt.lng }
+                : parseLatLngFromLocationString(trimVal('fnLocation'));
         if (!ll) return;
-        var notams = fnLastNotams || [];
-        var airspace = fnLastAirspace || [];
-        if (notams.length === 0 && airspace.length === 0) return;
+        var notams = opt.notams != null ? opt.notams : fnLastNotams || [];
+        var airspace = opt.airspace != null ? opt.airspace : fnLastAirspace || [];
+        var siteTitle = opt.siteTitle || 'Primary location';
+        var rKm = readFnAirspaceRadiusFromInput();
+        fnAirspaceRadiusKm = rKm;
+
+        if (notams.length === 0 && airspace.length === 0) {
+            PdfTheme.newPage(doc);
+            PdfTheme.addHeader(doc, 'Airspace & NOTAMs · ' + siteTitle + ' (' + rKm + ' km)', false);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(85, 85, 85);
+            doc.text(
+                'No NOTAMs or UK restriction polygons within ' +
+                    rKm +
+                    ' km of ' +
+                    ll.lat.toFixed(5) +
+                    ', ' +
+                    ll.lng.toFixed(5) +
+                    '.',
+                10,
+                16
+            );
+            return;
+        }
 
         var items = [];
         airspace.forEach(function (a, i) {
@@ -964,14 +1090,22 @@
         var detailColW = tableW - MAP_COL_W;
 
         PdfTheme.newPage(doc);
-        PdfTheme.addHeader(doc, 'Airspace & NOTAMs (' + fnAirspaceRadiusKm + ' km)', false);
+        PdfTheme.addHeader(doc, 'Airspace & NOTAMs · ' + siteTitle + ' (' + rKm + ' km)', false);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         doc.setTextColor(85, 85, 85);
-        doc.text('One row per restriction or NOTAM: map (left) and full details (right). Maps are indicative.', 10, 14);
+        doc.text(
+            'Centre: ' +
+                ll.lat.toFixed(5) +
+                ', ' +
+                ll.lng.toFixed(5) +
+                '. One row per restriction or NOTAM: map (left) and full details (right). Maps are indicative.',
+            10,
+            14
+        );
 
         doc.autoTable({
-            startY: 18,
+            startY: 22,
             head: [['Map', 'Details']],
             body: body,
             tableWidth: tableW,
@@ -1492,8 +1626,16 @@
             precip > SUIT_PRECIP_RED_MM;
 
         if (isRed) {
-            var whyR = redHits.length ? 'Red because: ' + redHits.join('; ') + '. ' : '';
-            return { level: 'poor', text: 'Red: ' + whyR + tailPoor };
+            var technicalR = redHits.length ? 'Red because: ' + redHits.join('; ') + '.' : '';
+            var explainerR = (technicalR ? technicalR + ' ' : '') + tailPoor;
+            return {
+                level: 'poor',
+                label: 'Red',
+                brief: tailPoor,
+                technical: technicalR,
+                explainer: explainerR,
+                text: 'Red: ' + explainerR
+            };
         }
 
         var amberHits = [];
@@ -1537,15 +1679,23 @@
             precip > SUIT_PRECIP_AMBER_MM;
 
         if (isAmber) {
-            var whyA = amberHits.length ? 'Amber because: ' + amberHits.join('; ') + '. ' : '';
-            return { level: 'caution', text: 'Amber: ' + whyA + tailCaution };
+            var technicalA = amberHits.length ? 'Amber because: ' + amberHits.join('; ') + '.' : '';
+            var explainerA = (technicalA ? technicalA + ' ' : '') + tailCaution;
+            return {
+                level: 'caution',
+                label: 'Amber',
+                brief: tailCaution,
+                technical: technicalA,
+                explainer: explainerA,
+                text: 'Amber: ' + explainerA
+            };
         }
 
         var precipPhrase =
             precip <= 0
                 ? 'no meaningful rain in the forecast hour'
                 : '~' + suitFormatPrecipMmFn(precip) + ' mm rain in the hour (green at ≤ ' + SUIT_PRECIP_AMBER_MM + ' mm)';
-        var whyG =
+        var technicalG =
             'Green band: ~' +
             Math.round(sustained) +
             ' km/h sustained and ~' +
@@ -1562,8 +1712,70 @@
             SUIT_VIS_AMBER_M / 1000 +
             ' km, or rain above ~' +
             SUIT_PRECIP_AMBER_MM +
-            ' mm. ';
-        return { level: 'good', text: 'Green: ' + whyG + tailGood };
+            ' mm.';
+        var explainerG = technicalG + ' ' + tailGood;
+        return {
+            level: 'good',
+            label: 'Green',
+            brief: tailGood,
+            technical: technicalG,
+            explainer: explainerG,
+            text: 'Green: ' + explainerG
+        };
+    }
+
+    /** Plain methodology lines; keep in sync with js/weather.js buildWeatherRagMethodologyPlainLines. */
+    function buildWeatherRagMethodologyPlainLinesFn(usedTargetTime) {
+        var lines = [];
+        lines.push('Forecast hour selection:');
+        if (usedTargetTime) {
+            lines.push(
+                '- With Date and Time set above, the nearest Open-Meteo hourly bin to that instant is used.'
+            );
+        } else {
+            lines.push('- When Date or Time is not set, the latest hourly bin at or before the current moment is used.');
+        }
+        lines.push('');
+        lines.push('Wind and gusts (summary hour):');
+        lines.push('- Sustained wind uses the higher of 10 m and 120 m.');
+        lines.push(
+            '- Gusts use the higher of 10 m gusts and an estimate at 120 m from sustained 120 m wind (factor ' +
+                GUST_120M_MULTIPLIER +
+                ') when 120 m data exists.'
+        );
+        lines.push('');
+        lines.push('Flight suitability thresholds (model units; km/h, m, mm in the hour):');
+        lines.push(
+            '- Sustained wind: amber above ~' +
+                SUIT_SUSTAINED_AMBER_KMH +
+                ' km/h, red above ~' +
+                SUIT_SUSTAINED_RED_KMH +
+                ' km/h (uses the higher of 10 m and 120 m).'
+        );
+        lines.push(
+            '- Gusts: amber above ~' +
+                SUIT_GUST_AMBER_KMH +
+                ' km/h, red above ~' +
+                SUIT_GUST_RED_KMH +
+                ' km/h (includes 120 m estimate where available).'
+        );
+        lines.push(
+            '- Visibility: amber below ~' +
+                SUIT_VIS_AMBER_M / 1000 +
+                ' km, red below ~' +
+                SUIT_VIS_RED_M / 1000 +
+                ' km.'
+        );
+        lines.push(
+            '- Rain in the hour: trace/drizzle up to ~' +
+                SUIT_PRECIP_AMBER_MM +
+                ' mm/h stays in the green band; above ~' +
+                SUIT_PRECIP_AMBER_MM +
+                ' mm/h trends amber; above ~' +
+                SUIT_PRECIP_RED_MM +
+                ' mm/h trends red.'
+        );
+        return lines;
     }
 
     function deriveSummaryText(hourlySlice, suitability) {
@@ -1572,7 +1784,7 @@
         var start = hourlySlice.startIdx;
         var timeLen = (h.time && h.time.length) || 0;
         var count = Math.min(12, timeLen - start);
-        if (count <= 0) return suitability.text;
+        if (count <= 0) return '';
 
         function sliceFilter(key, pred) {
             var arr = h[key] || [];
@@ -1610,7 +1822,7 @@
         var parts = [];
         if (w10Min != null && w10Max != null) {
             if (w10Min === w10Max) parts.push('Sustained 10 m: ' + Math.round(w10Max) + ' km/h');
-            else parts.push('Sustained 10 m: ' + Math.round(w10Min) + '–' + Math.round(w10Max) + ' km/h');
+            else parts.push('Sustained 10 m: ' + Math.round(w10Min) + '-' + Math.round(w10Max) + ' km/h');
         }
         if (gustsMax != null) parts.push('Gusts 10 m: up to ' + Math.round(gustsMax) + ' km/h');
         if (w120Max != null) {
@@ -1735,8 +1947,15 @@
         );
         lines.push('Model: ' + modelLabel);
         lines.push('');
-        lines.push('Summary: ' + suitability.text);
+        lines.push('Summary: ' + suitability.label + ': ' + suitability.brief);
         if (summaryText) lines.push(summaryText);
+        lines.push('');
+        lines.push('--- How this is calculated ---');
+        if (suitability.technical) lines.push(suitability.technical);
+        lines.push('');
+        buildWeatherRagMethodologyPlainLinesFn(usedTargetTime).forEach(function (ln) {
+            lines.push(ln);
+        });
         lines.push('');
         lines.push('10 m wind: ' + formatWindRow(data.wind_speed_10m, data.wind_direction_10m));
         lines.push('10 m gusts: ' + gustsStr);
@@ -2215,6 +2434,7 @@
             row.resultWrap.hidden = true;
             row.pcEl.textContent = '-';
         }
+        syncFnAirspaceSiteSelectOptions();
     }
 
     function applyResolvedCoordsToExtraRow(row, lat, lng, postcodeHint, okMessage) {
@@ -2437,6 +2657,7 @@
                 : lab + ': ' + raw.slice(0, 120);
             dl.appendChild(opt);
         }
+        syncFnAirspaceSiteSelectOptions();
     }
 
     function addExtraLocationRow(fromClick) {
@@ -2966,8 +3187,6 @@
             PdfTheme.setLight(isFlightNotesExportLightTheme());
             await PdfTheme.loadLogo();
 
-            await refreshFnAirspaceDataForPdfExport();
-
             var ts = PdfTheme.tableStyles();
             var doc = PdfTheme.createDoc();
             PdfTheme.addHeader(doc, 'Flight Report', true);
@@ -3010,7 +3229,67 @@
                 }
             });
 
-            await appendAirspacePdfPages(doc);
+            var sitesPdf = getMissionAirspaceSitesDeduped();
+            var rPdf = readFnAirspaceRadiusFromInput();
+            fnAirspaceRadiusKm = rPdf;
+            var selAirPdf = document.getElementById('fnAirspaceSiteSelect');
+            var origSiteId = selAirPdf && selAirPdf.value ? selAirPdf.value : 'primary';
+            if (sitesPdf.length) {
+                var si;
+                for (si = 0; si < sitesPdf.length; si++) {
+                    var sp = sitesPdf[si];
+                    destroyFnAirspaceMaps();
+                    try {
+                        var bundlePdf = await fetchFnAirspaceNearPoint(sp.lat, sp.lng, rPdf);
+                        await applyFnAirspaceBundleToUi(
+                            bundlePdf.notams,
+                            bundlePdf.airspace,
+                            sp.lat,
+                            sp.lng
+                        );
+                        await new Promise(function (res) {
+                            setTimeout(res, 120);
+                        });
+                        await appendAirspacePdfPages(doc, {
+                            siteTitle: sp.label,
+                            lat: sp.lat,
+                            lng: sp.lng,
+                            notams: bundlePdf.notams,
+                            airspace: bundlePdf.airspace
+                        });
+                    } catch (ePdfSite) {
+                        console.warn('Flight Report: PDF airspace appendix failed for site', sp.id, ePdfSite);
+                    }
+                }
+                var restoreSite = null;
+                var sj;
+                for (sj = 0; sj < sitesPdf.length; sj++) {
+                    if (sitesPdf[sj].id === origSiteId) {
+                        restoreSite = sitesPdf[sj];
+                        break;
+                    }
+                }
+                if (!restoreSite) restoreSite = sitesPdf[0];
+                destroyFnAirspaceMaps();
+                try {
+                    var bundleRestore = await fetchFnAirspaceNearPoint(
+                        restoreSite.lat,
+                        restoreSite.lng,
+                        rPdf
+                    );
+                    await applyFnAirspaceBundleToUi(
+                        bundleRestore.notams,
+                        bundleRestore.airspace,
+                        restoreSite.lat,
+                        restoreSite.lng
+                    );
+                    if (selAirPdf) selAirPdf.value = restoreSite.id;
+                } catch (eRestore) {
+                    console.warn('Flight Report: airspace UI restore after PDF failed', eRestore);
+                }
+            } else {
+                fnAirspaceDataLoaded = false;
+            }
 
             PdfTheme.addAllFooters(doc);
 
@@ -3181,6 +3460,7 @@
         closeClearModal();
         closeRemoveBatteryModal();
         autoResizeConditionsTextarea();
+        syncFnAirspaceSiteSelectOptions();
     }
 
     function init() {
@@ -3241,6 +3521,13 @@
             fnAirspaceRadius.addEventListener('change', function () {
                 syncFnAirspaceIntroKm();
                 scheduleFlightNotesDraftSave();
+            });
+        }
+        var fnAirspaceSiteSel = document.getElementById('fnAirspaceSiteSelect');
+        if (fnAirspaceSiteSel) {
+            fnAirspaceSiteSel.addEventListener('change', function () {
+                scheduleFlightNotesDraftSave();
+                loadFnAirspaceTab();
             });
         }
 

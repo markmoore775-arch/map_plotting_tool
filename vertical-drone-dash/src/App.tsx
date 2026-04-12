@@ -1060,7 +1060,7 @@ export default function App() {
 
       <div className="relative w-full h-full overflow-hidden">
         
-        {/* HUD — top-left row: score, high score, zone (stays under training link on the right) */}
+        {/* HUD - top-left row: score, high score, zone (stays under training link on the right) */}
         <div
           className="absolute z-10 flex flex-row flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 pointer-events-none max-w-[min(100%,calc(100vw-9rem))]"
           style={{

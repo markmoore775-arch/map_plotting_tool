@@ -917,7 +917,7 @@
         html += '<div class="quick-edit-field">';
         html += '<input class="quick-edit-label" type="text" value="" placeholder="Label...">';
         html += '</div>';
-        html += '<div class="quick-edit-elevation">Elevation: <span class="elevation-value">—</span></div>';
+        html += '<div class="quick-edit-elevation">Elevation: <span class="elevation-value">-</span></div>';
         html += '<div class="quick-edit-actions">';
         html += `<a href="#" class="quick-edit-details" data-point-id="${point.id}">View details</a>`;
         html += `<a href="#" class="quick-edit-more" data-point-id="${point.id}">Edit...</a>`;
@@ -986,10 +986,10 @@
                     point.elevation = elev;
                     if (elevationEl) elevationEl.textContent = `${elev.toFixed(1)} m AMSL`;
                 } else if (elevationEl) {
-                    elevationEl.textContent = '—';
+                    elevationEl.textContent = '-';
                 }
             }).catch(() => {
-                if (elevationEl) elevationEl.textContent = '—';
+                if (elevationEl) elevationEl.textContent = '-';
             });
         } else if (elevationEl && !mapboxToken) {
             elevationEl.closest('.quick-edit-elevation').style.display = 'none';
@@ -1934,7 +1934,7 @@
                 } else if (result && result.error) {
                     const short =
                         result.code === 'QuotaExceeded'
-                            ? 'API quota exceeded or plan lacks this feature — upgrade at what3words.com/select-plan'
+                            ? 'API quota exceeded or plan lacks this feature - upgrade at what3words.com/select-plan'
                             : result.error;
                     w3wEl.textContent = short;
                     w3wEl.title = result.code ? `${result.code}: ${result.error}` : result.error;
@@ -1946,7 +1946,7 @@
                 w3wEl.textContent = 'Error';
             });
         } else {
-            w3wEl.textContent = '—';
+            w3wEl.textContent = '-';
             w3wHint.style.display = '';
         }
 
@@ -1961,13 +1961,13 @@
                     point.elevation = elev;
                     elevationEl.textContent = `${elev.toFixed(1)} m AMSL`;
                 } else {
-                    elevationEl.textContent = '—';
+                    elevationEl.textContent = '-';
                 }
             }).catch(() => {
-                elevationEl.textContent = '—';
+                elevationEl.textContent = '-';
             });
         } else {
-            elevationEl.textContent = '—';
+            elevationEl.textContent = '-';
         }
 
         openModal('pointDetailsModal');
@@ -1980,7 +1980,7 @@
         modal.querySelectorAll('.detail-copyable').forEach(el => {
             el.addEventListener('click', () => {
                 let text = el.textContent.trim();
-                if (!text || text === '—' || text === 'Loading…' || text === 'Error') return;
+                if (!text || text === '-' || text === 'Loading…' || text === 'Error') return;
                 navigator.clipboard.writeText(text).then(() => {
                     el.classList.add('copied');
                     setTimeout(() => el.classList.remove('copied'), 1200);
@@ -1997,15 +1997,15 @@
             const elev = document.getElementById('detailElevation').textContent.trim();
 
             const rows = [];
-            if (dec && dec !== '—')
+            if (dec && dec !== '-')
                 rows.push({ label: 'Decimal', value: dec });
-            if (dms && dms !== '—')
+            if (dms && dms !== '-')
                 rows.push({ label: 'DMS', value: dms });
-            if (grid && grid !== '—' && grid !== 'Outside UK grid')
+            if (grid && grid !== '-' && grid !== 'Outside UK grid')
                 rows.push({ label: 'OS Grid Ref', value: grid });
-            if (w3w && w3w !== '—' && w3w !== 'Loading…' && w3w !== 'Not available' && w3w !== 'Error')
+            if (w3w && w3w !== '-' && w3w !== 'Loading…' && w3w !== 'Not available' && w3w !== 'Error')
                 rows.push({ label: 'What3Words', value: '///' + w3w.replace(/^\/\/\//, '') });
-            if (elev && elev !== '—' && elev !== 'Loading…')
+            if (elev && elev !== '-' && elev !== 'Loading…')
                 rows.push({ label: 'Elevation', value: elev });
 
             const maxLabel = Math.max(...rows.map(r => r.label.length));
@@ -2310,7 +2310,7 @@
         let summaryRows = '';
         for (const [label, id] of stats) {
             const el = document.getElementById(id);
-            const val = el ? el.textContent : '—';
+            const val = el ? el.textContent : '-';
             const isPositive = el && el.classList.contains('positive');
             const isNegative = el && el.classList.contains('negative');
             const valColor = isPositive ? 'color:#1a8a3f;' : isNegative ? 'color:#c0392b;' : '';
@@ -2369,7 +2369,7 @@ ${summaryRows}
 
         const plainStats = stats.map(([label, id]) => {
             const el = document.getElementById(id);
-            return `${label}: ${el ? el.textContent : '—'}`;
+            return `${label}: ${el ? el.textContent : '-'}`;
         }).join('\n');
 
         let plainTable = '#\tDist (m)\tLat\tLng\tAltitude (m)\tChange\n';
@@ -2483,11 +2483,11 @@ ${summaryRows}
             const totalDistKm = totalDistM / 1000;
 
             function fmtAlt(v) {
-                if (v == null || Number.isNaN(v)) return '—';
+                if (v == null || Number.isNaN(v)) return '-';
                 return `${v.toFixed(1)} m`;
             }
             function fmtChange(v) {
-                if (v == null || Number.isNaN(v) || v === 0) return '—';
+                if (v == null || Number.isNaN(v) || v === 0) return '-';
                 const s = v > 0 ? '+' : '';
                 return `${s}${v.toFixed(1)} m`;
             }
@@ -2532,8 +2532,8 @@ ${summaryRows}
                     <td>${distances[i].toFixed(0)}</td>
                     <td>${pt.lat.toFixed(5)}</td>
                     <td>${pt.lng.toFixed(5)}</td>
-                    <td>${elev != null ? elev.toFixed(1) : '—'}</td>
-                    <td class="${changeClass}">${change != null && change !== 0 ? (change > 0 ? '+' : '') + change.toFixed(1) + ' m' : '—'}</td>
+                    <td>${elev != null ? elev.toFixed(1) : '-'}</td>
+                    <td class="${changeClass}">${change != null && change !== 0 ? (change > 0 ? '+' : '') + change.toFixed(1) + ' m' : '-'}</td>
                 `;
                 tbody.appendChild(tr);
             }
@@ -3398,9 +3398,9 @@ ${summaryRows}
         if (!el) return;
         let text = '';
         if (typeof Drawings !== 'undefined' && Drawings.getSelectedShapeId && Drawings.getSelectedShapeId()) {
-            text = 'Drag to move — Double-click for properties — Esc to deselect';
+            text = 'Drag to move - Double-click for properties - Esc to deselect';
         } else if (typeof Drawings !== 'undefined' && Drawings.isDrawingActive && Drawings.isDrawingActive()) {
-            text = 'Finish on the map — Adjust style in the Draw tab';
+            text = 'Finish on the map - Adjust style in the Draw tab';
         } else if (dropPointMode || dropPointPickerOpen) {
             text = 'Click the map to place a point';
         }

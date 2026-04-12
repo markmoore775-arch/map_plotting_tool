@@ -22,7 +22,7 @@ body.weather-mode.ap-shell #map {
     top: var(--ap-top-header-height);
 }
 
-/* Zoom + locate + info — below fixed fn-top-bar (see style.css body.ap-shell #map top) */
+/* Zoom + locate + info - below fixed fn-top-bar (see style.css body.ap-shell #map top) */
 body.weather-mode .leaflet-top.leaflet-left {
     top: calc(52px + env(safe-area-inset-top, 0px));
 }
@@ -413,7 +413,7 @@ body.ap-shell.fn-light-theme.weather-mode .weather-btn-primary:focus-visible {
         font-size: 12px;
     }
 
-    /* Only hide label text on the map dock — not report header (Flight Report / PPTX / PDF). */
+    /* Only hide label text on the map dock - not report header (Flight Report / PPTX / PDF). */
     .weather-map-dock .weather-btn span:not(.weather-btn-text),
     .weather-model-label {
         display: none;
@@ -871,7 +871,7 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     color: var(--primary, #5b8def);
 }
 
-/* Full-screen overlay: flex center — avoids transform on the Leaflet map ancestor (transform breaks tile positioning) */
+/* Full-screen overlay: flex center - avoids transform on the Leaflet map ancestor (transform breaks tile positioning) */
 .weather-report-overlay {
     position: fixed;
     inset: 0;
@@ -890,7 +890,7 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     display: none !important;
 }
 
-/* Weather report panel (no transform — parent overlay centers it) */
+/* Weather report panel (no transform - parent overlay centers it) */
 .weather-report {
     position: relative;
     flex-shrink: 0;
@@ -1129,7 +1129,7 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     display: block;
 }
 
-/* Suitability summary — coloured status word + neutral explainer */
+/* Suitability summary - coloured status word + neutral explainer */
 .weather-summary.weather-summary--subtle {
     padding: 12px 14px;
     border-radius: 6px;
@@ -1242,7 +1242,7 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     margin-bottom: 16px;
 }
 
-/* RAG key — matches table cell tints so Green / Amber / Red are not confused */
+/* RAG key - matches table cell tints so Green / Amber / Red are not confused */
 .weather-hourly-rag-key {
     display: flex;
     flex-wrap: wrap;
@@ -1346,7 +1346,7 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     overflow-wrap: break-word;
 }
 
-/* Time column: nowrap — fixed layout + break-word was splitting "12:00" as 12:0 / 0 */
+/* Time column: nowrap - fixed layout + break-word was splitting "12:00" as 12:0 / 0 */
 .weather-hourly-table th:first-child,
 .weather-hourly-table td:first-child {
     white-space: nowrap;
@@ -1367,7 +1367,7 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     background: rgba(102, 187, 106, 0.22);
 }
 
-/* True amber / orange — kept separate from red (pink) tints */
+/* True amber / orange - kept separate from red (pink) tints */
 .weather-hourly-cell--caution {
     background: rgba(255, 152, 0, 0.28);
     box-shadow: inset 3px 0 0 0 rgba(255, 193, 7, 0.85);
@@ -1906,6 +1906,78 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     color: #1a1a1a;
 }
 
+/* Flight suitability methodology (Summary tab) */
+.weather-how-calculated {
+    margin-top: 10px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: var(--sidebar-text-muted, #9999aa);
+    border: 1px solid var(--sidebar-border, #3a3a50);
+    border-radius: 6px;
+    padding: 0;
+}
+
+.weather-how-calculated summary {
+    cursor: pointer;
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--primary, #5b8def);
+    user-select: none;
+    list-style: none;
+}
+
+.weather-how-calculated summary::before {
+    content: '▸ ';
+}
+
+.weather-how-calculated[open] summary::before {
+    content: '▾ ';
+}
+
+.weather-how-calculated summary::-webkit-details-marker {
+    display: none;
+}
+
+.weather-how-calculated-body {
+    padding: 4px 12px 12px;
+    line-height: 1.6;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-how-calculated-body p {
+    margin: 0 0 8px;
+}
+
+.weather-how-calculated-body p:last-child {
+    margin-bottom: 0;
+}
+
+.weather-how-calculated-body strong {
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-how-calculated-technical {
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--sidebar-border, #3a3a50);
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.weather-light-theme .weather-how-calculated {
+    border-color: #d0d0d0;
+}
+
+.weather-light-theme .weather-how-calculated-body,
+.weather-light-theme .weather-how-calculated-body strong,
+.weather-light-theme .weather-how-calculated-technical {
+    color: #1a1a1a;
+}
+
+.weather-light-theme .weather-how-calculated-technical {
+    border-bottom-color: #e0e0e0;
+}
+
 /* App logo - bottom right */
 .weather-logo {
     position: fixed;
@@ -1968,7 +2040,7 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* Hand off to Flight Report (report header) — same contrast model as export buttons + primary accent stripe */
+/* Hand off to Flight Report (report header) - same contrast model as export buttons + primary accent stripe */
 .weather-btn-flight-report {
     display: inline-flex;
     align-items: center;

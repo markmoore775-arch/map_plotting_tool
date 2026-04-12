@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css?v=27">
+    <link rel="stylesheet" href="css/flight-notes.css?v=30">
     <!-- Leaflet (mini map for GPS location) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -181,7 +181,7 @@
 
             <section class="fn-section" aria-labelledby="fn-batt-heading">
                 <h2 id="fn-batt-heading" class="fn-section-title">Batteries</h2>
-                <p class="fn-battery-lead">Use <strong>Site or coordinates</strong> on each battery when that flight was away from the main <strong>Location</strong> (exports and email include it). If you added <strong>Additional operational locations</strong> above, use the field&rsquo;s suggestions to paste a consistent label and coordinates. Weather, airspace, and the primary mini map still use the main Location only.</p>
+                <p class="fn-battery-lead">Use <strong>Site or coordinates</strong> on each battery when that flight was away from the main <strong>Location</strong> (exports and email include it). If you added <strong>Additional operational locations</strong> above, use the field&rsquo;s suggestions to paste a consistent label and coordinates. <strong>Weather</strong> and the <strong>primary mini map</strong> still use the main Location only. <strong>Airspace:</strong> choose which mission site to preview in the Airspace section; <strong>Export PDF</strong> appends NOTAM and zone appendices for every location with resolved coordinates.</p>
                 <details class="fn-alos-help">
                     <summary class="fn-alos-help-summary">ALoS model (help)</summary>
                     <div class="fn-alos-help-body">
@@ -710,47 +710,67 @@
                     </button>
                     <span id="fnWeatherFetchStatus" class="fn-weather-fetch-status" role="status" aria-live="polite"></span>
                 </div>
-                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Time uses <strong>Date</strong> and <strong>Time</strong> above when both are set; otherwise the current hour. <span class="fn-weather-hint-sub">RAG uses the same rules as Flight Weather (wind, gusts, visibility, rain in the hour; trace drizzle up to 0.5 mm/h stays in the green band).</span></p>
+                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Forecast values use your mission <strong>Date</strong> and <strong>Time</strong> when both are set.</p>
+                <details class="fn-weather-how">
+                    <summary class="fn-weather-how-summary">How this is calculated</summary>
+                    <div class="fn-weather-how-body">
+                        <p>When <strong>Date</strong> or <strong>Time</strong> is missing, the report uses the latest Open-Meteo hourly bin at or before the current moment (same idea as choosing <strong>Now</strong> on Flight Weather).</p>
+                        <p>Flight suitability (Green / Amber / Red) uses the same rules as Flight Weather: sustained wind (higher of 10 m and 120 m), gusts (higher of 10 m gusts and an estimate from 120 m sustained wind), visibility, and rain in the hour. Trace drizzle up to <strong>0.5</strong> mm/h stays in the green band; higher hourly totals trend amber or red. Expand <strong>How this is calculated</strong> on the Flight Weather Summary tab for the full threshold list.</p>
+                    </div>
+                </details>
                 <label class="fn-label" for="fnWeather">Conditions</label>
                 <textarea id="fnWeather" name="fnWeather" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Wind, visibility, cloud, etc."></textarea>
             </section>
 
             <section class="fn-section" aria-labelledby="fn-airspace-heading">
                 <h2 id="fn-airspace-heading" class="fn-section-title">Airspace</h2>
-                <p class="fn-airspace-intro">
+                <p class="fn-airspace-intro fn-airspace-scope">
                     NOTAMs, FRZs, and restricted airspace within
-                    <strong id="fnAirspaceIntroKm">3</strong> km of the location (latitude &amp; longitude in <strong>Location</strong> above).
+                    <strong id="fnAirspaceIntroKm">3</strong> km of the <strong>mission location you choose below</strong> (coordinates from <strong>Location</strong> or an <strong>additional operational location</strong> with a resolved lat/lng).
                 </p>
-                <div class="fn-airspace-toolbar">
-                    <label class="fn-label fn-airspace-radius-label" for="fnAirspaceRadiusKm">Search radius (km)</label>
-                    <input type="number" class="fn-input fn-airspace-radius-input" id="fnAirspaceRadiusKm" name="fnAirspaceRadiusKm" min="1" max="100" step="1" value="3" inputmode="numeric" />
-                    <button type="button" class="fn-btn fn-btn-now" id="fnAirspaceRefreshBtn" title="Load NOTAMs and UK airspace near your coordinates">
-                        Refresh
-                    </button>
+                <div class="fn-airspace-panel fn-airspace-panel--controls" aria-label="Airspace search controls">
+                    <h3 class="fn-airspace-panel-title">Search &amp; filters</h3>
+                    <div class="fn-airspace-toolbar">
+                        <label class="fn-label fn-airspace-radius-label" for="fnAirspaceRadiusKm">Search radius (km)</label>
+                        <input type="number" class="fn-input fn-airspace-radius-input" id="fnAirspaceRadiusKm" name="fnAirspaceRadiusKm" min="1" max="100" step="1" value="3" inputmode="numeric" />
+                        <button type="button" class="fn-btn fn-btn-now" id="fnAirspaceRefreshBtn" title="Load NOTAMs and UK airspace near your coordinates">
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="fn-airspace-site-row">
+                        <label class="fn-label" for="fnAirspaceSiteSelect">Show airspace for</label>
+                        <select id="fnAirspaceSiteSelect" class="fn-input fn-airspace-site-select" title="Preview NOTAMs and UK zones around this mission point" aria-label="Mission location for airspace preview"></select>
+                    </div>
+                    <div class="fn-airspace-notam-filters" role="group" aria-label="NOTAM filters">
+                        <label class="fn-airspace-filter-label">
+                            <input type="checkbox" id="fnNotamDroneOnly" name="fnNotamDroneOnly" />
+                            Drone-keyword filter
+                        </label>
+                        <label class="fn-airspace-filter-label">
+                            <input type="checkbox" id="fnNotamHideAd" name="fnNotamHideAd" />
+                            Hide airfield ops
+                        </label>
+                        <label class="fn-airspace-filter-label">
+                            <input type="checkbox" id="fnNotamPrioritise" name="fnNotamPrioritise" />
+                            Prioritise for UAS
+                        </label>
+                    </div>
                 </div>
-                <div class="fn-airspace-notam-filters" role="group" aria-label="NOTAM filters">
-                    <label class="fn-airspace-filter-label">
-                        <input type="checkbox" id="fnNotamDroneOnly" name="fnNotamDroneOnly" />
-                        Drone-keyword filter
-                    </label>
-                    <label class="fn-airspace-filter-label">
-                        <input type="checkbox" id="fnNotamHideAd" name="fnNotamHideAd" />
-                        Hide airfield ops
-                    </label>
-                    <label class="fn-airspace-filter-label">
-                        <input type="checkbox" id="fnNotamPrioritise" name="fnNotamPrioritise" />
-                        Prioritise for UAS
-                    </label>
+                <div class="fn-airspace-panel fn-airspace-panel--caveats" role="note">
+                    <h3 class="fn-airspace-panel-title">Source notes</h3>
+                    <p class="fn-airspace-vertical-hint">Vertical limits show Q-line values from the PIB where present; verify on the official NATS briefing if critical.</p>
                 </div>
-                <p class="fn-airspace-vertical-hint">Vertical limits show Q-line values from the PIB where present; verify on the official NATS briefing if critical.</p>
-                <div id="fnAirspaceLoading" class="fn-airspace-loading hidden" role="status" aria-live="polite">
-                    <p>Loading airspace data…</p>
+                <div class="fn-airspace-panel fn-airspace-panel--results" aria-label="Airspace and NOTAM results">
+                    <h3 class="fn-airspace-panel-title">NOTAMs &amp; zones</h3>
+                    <div id="fnAirspaceLoading" class="fn-airspace-loading hidden" role="status" aria-live="polite">
+                        <p>Loading airspace data…</p>
+                    </div>
+                    <div id="fnAirspaceContent" class="fn-airspace-content"></div>
+                    <p class="fn-airspace-attribution">
+                        NOTAMs:
+                        <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS) · Airspace: UK AIP / NATS
+                    </p>
                 </div>
-                <div id="fnAirspaceContent" class="fn-airspace-content"></div>
-                <p class="fn-airspace-attribution">
-                    NOTAMs:
-                    <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS) · Airspace: UK AIP / NATS
-                </p>
             </section>
 
             <section class="fn-section" aria-labelledby="fn-notes-heading">
@@ -850,6 +870,6 @@
     <script src="js/notam-pib.js?v=1"></script>
     <script src="js/airspace-nearby.js?v=3"></script>
     <script src="js/geolocation-helpers.js?v=6"></script>
-    <script src="js/flight-notes.js?v=38"></script>
+    <script src="js/flight-notes.js?v=40"></script>
 </body>
 </html>
