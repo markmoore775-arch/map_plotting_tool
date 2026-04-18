@@ -22,6 +22,8 @@
   },
   "devDependencies": {
     "@tmcw/togeojson": "^4.7.0",
+    "@turf/helpers": "^7.3.4",
+    "@turf/simplify": "^7.3.4",
     "@xmldom/xmldom": "^0.8.11",
     "adm-zip": "^0.5.16",
     "sharp": "^0.34.5"

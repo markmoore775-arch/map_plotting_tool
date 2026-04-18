@@ -62,6 +62,14 @@ node scripts/convert-airspace-data.js path/to/file.kmz -o assets/uk-airspace.geo
 
 The script supports both `.kml` and `.kmz` files.
 
+**Optional simplification** (fewer vertices, smoother shapes at map scale; tolerance is in degrees, typical values `0.0003`–`0.001`):
+
+```bash
+node scripts/convert-airspace-data.js path/to/file.kmz -o assets/uk-airspace.geojson --simplify-tolerance 0.0005
+```
+
+Requires dev dependency `@turf/simplify` (`npm install`). Use a single output file unless you maintain separate full versus simplified assets yourself.
+
 ---
 
 ## Data Updates

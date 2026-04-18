@@ -21,11 +21,10 @@
         'fnLocation',
         'fnReference',
         'fnDeconflictions',
-        'fnUas',
+        'fnBattery1Uas',
         'fnBattery1Name',
         'fnBattery1Site',
         'fnBattery1Voltage',
-        'fnBattery1Uas',
         'fnBattery1MaxAltFt',
         'fnBattery1MaxDistM',
         'fnBattery1Rp1',
@@ -36,10 +35,10 @@
         'fnBattery1AmberMin',
         'fnBattery1RedMin',
         'fnBattery1Alos',
+        'fnBattery2Uas',
         'fnBattery2Name',
         'fnBattery2Site',
         'fnBattery2Voltage',
-        'fnBattery2Uas',
         'fnBattery2MaxAltFt',
         'fnBattery2MaxDistM',
         'fnBattery2Rp1',
@@ -50,10 +49,10 @@
         'fnBattery2AmberMin',
         'fnBattery2RedMin',
         'fnBattery2Alos',
+        'fnBattery3Uas',
         'fnBattery3Name',
         'fnBattery3Site',
         'fnBattery3Voltage',
-        'fnBattery3Uas',
         'fnBattery3MaxAltFt',
         'fnBattery3MaxDistM',
         'fnBattery3Rp1',
@@ -64,10 +63,10 @@
         'fnBattery3AmberMin',
         'fnBattery3RedMin',
         'fnBattery3Alos',
+        'fnBattery4Uas',
         'fnBattery4Name',
         'fnBattery4Site',
         'fnBattery4Voltage',
-        'fnBattery4Uas',
         'fnBattery4MaxAltFt',
         'fnBattery4MaxDistM',
         'fnBattery4Rp1',
@@ -78,10 +77,10 @@
         'fnBattery4AmberMin',
         'fnBattery4RedMin',
         'fnBattery4Alos',
+        'fnBattery5Uas',
         'fnBattery5Name',
         'fnBattery5Site',
         'fnBattery5Voltage',
-        'fnBattery5Uas',
         'fnBattery5MaxAltFt',
         'fnBattery5MaxDistM',
         'fnBattery5Rp1',
@@ -92,10 +91,10 @@
         'fnBattery5AmberMin',
         'fnBattery5RedMin',
         'fnBattery5Alos',
+        'fnBattery6Uas',
         'fnBattery6Name',
         'fnBattery6Site',
         'fnBattery6Voltage',
-        'fnBattery6Uas',
         'fnBattery6MaxAltFt',
         'fnBattery6MaxDistM',
         'fnBattery6Rp1',
@@ -106,10 +105,10 @@
         'fnBattery6AmberMin',
         'fnBattery6RedMin',
         'fnBattery6Alos',
+        'fnBattery7Uas',
         'fnBattery7Name',
         'fnBattery7Site',
         'fnBattery7Voltage',
-        'fnBattery7Uas',
         'fnBattery7MaxAltFt',
         'fnBattery7MaxDistM',
         'fnBattery7Rp1',
@@ -120,10 +119,10 @@
         'fnBattery7AmberMin',
         'fnBattery7RedMin',
         'fnBattery7Alos',
+        'fnBattery8Uas',
         'fnBattery8Name',
         'fnBattery8Site',
         'fnBattery8Voltage',
-        'fnBattery8Uas',
         'fnBattery8MaxAltFt',
         'fnBattery8MaxDistM',
         'fnBattery8Rp1',
@@ -134,10 +133,10 @@
         'fnBattery8AmberMin',
         'fnBattery8RedMin',
         'fnBattery8Alos',
+        'fnBattery9Uas',
         'fnBattery9Name',
         'fnBattery9Site',
         'fnBattery9Voltage',
-        'fnBattery9Uas',
         'fnBattery9MaxAltFt',
         'fnBattery9MaxDistM',
         'fnBattery9Rp1',
@@ -148,10 +147,10 @@
         'fnBattery9AmberMin',
         'fnBattery9RedMin',
         'fnBattery9Alos',
+        'fnBattery10Uas',
         'fnBattery10Name',
         'fnBattery10Site',
         'fnBattery10Voltage',
-        'fnBattery10Uas',
         'fnBattery10MaxAltFt',
         'fnBattery10MaxDistM',
         'fnBattery10Rp1',
@@ -173,10 +172,10 @@
     var fnVisibleBatteryCount = 1;
 
     var BATTERY_N_FIELD_SUFFIXES = [
+        'Uas',
         'Name',
         'Site',
         'Voltage',
-        'Uas',
         'MaxAltFt',
         'MaxDistM',
         'Rp1',
@@ -1308,7 +1307,6 @@
 
         pushBanner('Mission');
         pushRow('Reference', dash(trimVal('fnReference')), 'mission');
-        pushRow('UAS (mission)', dash(trimVal('fnUas')), 'mission');
         pushRow('Deconflictions', trimVal('fnDeconflictions') || '-', 'mission');
 
         var bn;
@@ -1317,14 +1315,10 @@
             var b = 'fnBattery' + bn;
             var bsec = 'battery-' + bn;
             pushBanner('Battery ' + bn);
-            pushRow('Battery ' + bn + ': name', dash(trimVal(b + 'Name')), bsec);
+            pushRow('Battery ' + bn + ': UAS Name', dash(trimVal(b + 'Uas')), bsec);
+            pushRow('Battery ' + bn + ': Battery Name', dash(trimVal(b + 'Name')), bsec);
             pushRow('Battery ' + bn + ': site or coordinates', trimVal(b + 'Site') || '-', bsec);
             pushRow('Battery ' + bn + ': voltage', dash(trimVal(b + 'Voltage')), bsec);
-            pushRow(
-                'Battery ' + bn + ': UAS',
-                dash(trimVal(b + 'Uas') || trimVal('fnUas')),
-                bsec
-            );
             pushRow(
                 'Battery ' + bn + ': max altitude (ft)',
                 dash(trimVal(b + 'MaxAltFt') || FN_BATTERY_DEFAULT_MAX_ALT_FT),
@@ -1404,7 +1398,6 @@
         lines.push('');
         lines.push('--- Mission ---');
         lines.push('Reference: ' + dash(trimVal('fnReference')));
-        lines.push('UAS (mission): ' + dash(trimVal('fnUas')));
         lines.push('Deconflictions:');
         lines.push(trimVal('fnDeconflictions') || '-');
 
@@ -1414,10 +1407,10 @@
             var b = 'fnBattery' + bn;
             lines.push('');
             lines.push('--- Battery ' + bn + ' ---');
-            lines.push('Battery ' + bn + ' (name): ' + dash(trimVal(b + 'Name')));
+            lines.push('Battery ' + bn + ' (UAS Name): ' + dash(trimVal(b + 'Uas')));
+            lines.push('Battery ' + bn + ' (Battery Name): ' + dash(trimVal(b + 'Name')));
             lines.push('Battery ' + bn + ' (site or coordinates): ' + dash(trimVal(b + 'Site')));
             lines.push('Battery ' + bn + ' (voltage): ' + dash(trimVal(b + 'Voltage')));
-            lines.push('Battery ' + bn + ' (UAS): ' + dash(trimVal(b + 'Uas') || trimVal('fnUas')));
             lines.push(
                 'Battery ' + bn + ' (max altitude, ft): ' + dash(trimVal(b + 'MaxAltFt') || FN_BATTERY_DEFAULT_MAX_ALT_FT)
             );
@@ -2658,6 +2651,31 @@
             dl.appendChild(opt);
         }
         syncFnAirspaceSiteSelectOptions();
+        syncBatterySiteFieldAffordance();
+    }
+
+    function syncBatterySiteFieldAffordance() {
+        var dl = document.getElementById('fnBatterySiteDatalist');
+        var nOpts = dl ? dl.querySelectorAll('option').length : 0;
+        var showMulti = nOpts > 1;
+        var i;
+        for (i = 1; i <= FN_BATTERY_MAX; i++) {
+            var inp = document.getElementById('fnBattery' + i + 'Site');
+            var hint = document.getElementById('fnBattery' + i + 'SiteHint');
+            if (!inp || !hint) continue;
+            if (showMulti) {
+                hint.classList.remove('hidden');
+                hint.setAttribute('aria-hidden', 'false');
+                inp.setAttribute('aria-describedby', 'fnBattery' + i + 'SiteHint');
+                inp.title =
+                    'Use the arrow in this field or start typing to pick a saved mission location, or enter your own text.';
+            } else {
+                hint.classList.add('hidden');
+                hint.setAttribute('aria-hidden', 'true');
+                inp.removeAttribute('aria-describedby');
+                inp.removeAttribute('title');
+            }
+        }
     }
 
     function addExtraLocationRow(fromClick) {
@@ -3460,7 +3478,7 @@
         closeClearModal();
         closeRemoveBatteryModal();
         autoResizeConditionsTextarea();
-        syncFnAirspaceSiteSelectOptions();
+        updateBatterySiteDatalist();
     }
 
     function init() {

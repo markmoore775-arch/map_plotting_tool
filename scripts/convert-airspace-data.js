@@ -41,10 +41,15 @@ function resolveInputPath(filePath) {
 const args = process.argv.slice(2);
 let inputPath = null;
 let outputPath = path.join(__dirname, '..', 'assets', 'uk-airspace.geojson');
+/** @type {number|null} */
+let simplifyTolerance = null;
 
 for (let i = 0; i < args.length; i++) {
     if (args[i] === '-o' && args[i + 1]) {
         outputPath = args[i + 1];
+        i++;
+    } else if (args[i] === '--simplify-tolerance' && args[i + 1]) {
+        simplifyTolerance = parseFloat(args[i + 1]);
         i++;
     } else if (!args[i].startsWith('-')) {
         inputPath = args[i];
@@ -57,6 +62,7 @@ Usage: node scripts/convert-airspace-data.js <input.kml|input.kmz|input.zip> [-o
 
   input.kml / input.kmz / input.zip  Path to NATS UAS Airspace Restrictions file
   -o output.geojson      Output path (default: assets/uk-airspace.geojson)
+  --simplify-tolerance N Optional: simplify geometries (degrees, e.g. 0.0005). Requires @turf/simplify.
 
 To obtain the NATS data:
   1. Register at https://nats-uk.ead-it.com/cms-nats/opencms/en/registration/
@@ -189,6 +195,28 @@ async function main() {
             };
         })
     };
+
+    if (simplifyTolerance != null && simplifyTolerance > 0) {
+        let simplify;
+        try {
+            simplify = require('@turf/simplify').simplify || require('@turf/simplify').default;
+        } catch (e) {
+            console.error('Install @turf/simplify for --simplify-tolerance (npm install @turf/simplify)');
+            process.exit(1);
+        }
+        let ok = 0;
+        mapped.features = mapped.features.map(function (f) {
+            if (!f || !f.geometry) return f;
+            try {
+                const out = simplify(f, { tolerance: simplifyTolerance, highQuality: true });
+                ok++;
+                return out;
+            } catch (err) {
+                return f;
+            }
+        });
+        console.log('Simplified', ok, 'features @ tolerance', simplifyTolerance);
+    }
 
     const outDir = path.dirname(outputPath);
     if (!fs.existsSync(outDir)) {

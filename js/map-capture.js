@@ -47,6 +47,15 @@ const MapCapture = (function () {
         return sq.toDataURL('image/png');
     }
 
+    /** html2canvas uses off-screen iframes; remove any that were not detached (seen on some mobile browsers). */
+    function removeOrphanHtml2canvasIframes() {
+        try {
+            document.querySelectorAll('iframe.html2canvas-container').forEach(function (el) {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            });
+        } catch (e) { /* ignore */ }
+    }
+
     async function captureSquareMap(mapElement, mapBg) {
         if (typeof html2canvas === 'undefined') {
             return solidPlaceholderDataUrl(mapBg);
@@ -57,6 +66,8 @@ const MapCapture = (function () {
         } catch (e) {
             console.warn('Map capture failed, using placeholder', e);
             return solidPlaceholderDataUrl(mapBg);
+        } finally {
+            removeOrphanHtml2canvasIframes();
         }
     }
 
@@ -70,6 +81,8 @@ const MapCapture = (function () {
         } catch (e) {
             console.warn('Map capture failed, using placeholder', e);
             return solidPlaceholderDataUrl(mapBg);
+        } finally {
+            removeOrphanHtml2canvasIframes();
         }
     }
 
@@ -77,6 +90,7 @@ const MapCapture = (function () {
         tileCorsOptions: tileCorsOptions,
         html2canvasOptions: html2canvasOptions,
         captureSquareMap: captureSquareMap,
-        captureFullMapToDataUrl: captureFullMapToDataUrl
+        captureFullMapToDataUrl: captureFullMapToDataUrl,
+        removeOrphanHtml2canvasIframes: removeOrphanHtml2canvasIframes
     };
 })();

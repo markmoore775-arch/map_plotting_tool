@@ -370,6 +370,18 @@
         if (report) report.classList.toggle('weather-light-theme', isWeatherExportLightTheme());
     }
 
+    /** After many html2canvas captures, WebKit/Chromium can stop painting CSS-mask header icons until the bar is nudged. */
+    function nudgeApShellChromeAfterRasterExport() {
+        var bar = document.getElementById('mapTopChrome');
+        if (!bar) return;
+        requestAnimationFrame(function () {
+            bar.style.setProperty('transform', 'translateZ(0.02px)');
+            requestAnimationFrame(function () {
+                bar.style.removeProperty('transform');
+            });
+        });
+    }
+
     // ---- Helpers ----
     function directionToCardinal(deg) {
         if (deg == null || isNaN(deg)) return '-';
@@ -1691,6 +1703,10 @@
         } catch (e) {
             console.warn('Weather PPTX minimap capture failed', e);
             return null;
+        } finally {
+            if (typeof MapCapture !== 'undefined' && MapCapture.removeOrphanHtml2canvasIframes) {
+                MapCapture.removeOrphanHtml2canvasIframes();
+            }
         }
     }
 
@@ -1830,6 +1846,10 @@
             } catch (e) {
                 console.warn('Weather PDF: airspace minimap capture failed', e);
                 pdfMapEntries.push(null);
+            } finally {
+                if (typeof MapCapture !== 'undefined' && MapCapture.removeOrphanHtml2canvasIframes) {
+                    MapCapture.removeOrphanHtml2canvasIframes();
+                }
             }
         }
 
@@ -2942,6 +2962,7 @@
         } finally {
             btn.disabled = false;
             btn.querySelector('span').textContent = origText;
+            nudgeApShellChromeAfterRasterExport();
         }
     }
 
@@ -3525,6 +3546,7 @@
         } finally {
             btn.disabled = false;
             btn.querySelector('span').textContent = origText;
+            nudgeApShellChromeAfterRasterExport();
         }
     }
 
