@@ -14,6 +14,8 @@
 
     /** Draft form fields: local only, same origin; cleared when user clears the form. */
     var FN_DRAFT_STORAGE_KEY = 'airplotFlightNotesDraft_v1';
+    /** NOTAM filter checkboxes (Airspace tab); defaults favour drone-focused triage. */
+    var FN_NOTAM_FILTER_STORAGE_KEY = 'airplotFlightNotesNotamFilters_v1';
     var FN_DRAFT_FIELD_IDS = [
         'fnDate',
         'fnTime',
@@ -321,6 +323,41 @@
         }, 250);
     }
 
+    function applyFnNotamFiltersFromStorage() {
+        var defaults = { droneOnly: true, hideAd: true, hideCeiling: true, prioritise: false };
+        var o = defaults;
+        try {
+            var raw = localStorage.getItem(FN_NOTAM_FILTER_STORAGE_KEY);
+            if (raw) o = Object.assign({}, defaults, JSON.parse(raw));
+        } catch (e) { /* keep defaults */ }
+        var drone = document.getElementById('fnNotamDroneOnly');
+        var hideAd = document.getElementById('fnNotamHideAd');
+        var hideCeil = document.getElementById('fnNotamHideCeiling');
+        var pri = document.getElementById('fnNotamPrioritise');
+        if (drone) drone.checked = !!o.droneOnly;
+        if (hideAd) hideAd.checked = !!o.hideAd;
+        if (hideCeil) hideCeil.checked = !!o.hideCeiling;
+        if (pri) pri.checked = !!o.prioritise;
+    }
+
+    function saveFnNotamFiltersToStorage() {
+        try {
+            var drone = document.getElementById('fnNotamDroneOnly');
+            var hideAd = document.getElementById('fnNotamHideAd');
+            var hideCeil = document.getElementById('fnNotamHideCeiling');
+            var pri = document.getElementById('fnNotamPrioritise');
+            localStorage.setItem(
+                FN_NOTAM_FILTER_STORAGE_KEY,
+                JSON.stringify({
+                    droneOnly: !!(drone && drone.checked),
+                    hideAd: !!(hideAd && hideAd.checked),
+                    hideCeiling: !!(hideCeil && hideCeil.checked),
+                    prioritise: !!(pri && pri.checked)
+                })
+            );
+        } catch (e) { /* ignore */ }
+    }
+
     /**
      * Restores field values from localStorage. Returns suggested visible battery count (1–FN_BATTERY_MAX).
      */
@@ -553,6 +590,7 @@
         return {
             droneRelevantOnly: on('fnNotamDroneOnly'),
             hideAerodromeGround: on('fnNotamHideAd'),
+            hideAboveDroneCeiling: on('fnNotamHideCeiling'),
             prioritiseUas: on('fnNotamPrioritise')
         };
     }
@@ -1931,25 +1969,7 @@
         var tempStr = temp != null ? Math.round(temp) + ' °C' : '-';
 
         var lines = [];
-        lines.push('Open-Meteo forecast (Flight Weather source)');
-        lines.push('Coordinates: ' + lat.toFixed(6) + ', ' + lng.toFixed(6));
-        lines.push(
-            'Forecast hour: ' +
-                (displayTime || '-') +
-                (usedTargetTime ? ' (from Date/Time fields)' : ' (current time)')
-        );
-        lines.push('Model: ' + modelLabel);
-        lines.push('');
-        lines.push('Summary: ' + suitability.label + ': ' + suitability.brief);
-        if (summaryText) lines.push(summaryText);
-        lines.push('');
-        lines.push('--- How this is calculated ---');
-        if (suitability.technical) lines.push(suitability.technical);
-        lines.push('');
-        buildWeatherRagMethodologyPlainLinesFn(usedTargetTime).forEach(function (ln) {
-            lines.push(ln);
-        });
-        lines.push('');
+        lines.push('--- Forecast (selected hour) ---');
         lines.push('10 m wind: ' + formatWindRow(data.wind_speed_10m, data.wind_direction_10m));
         lines.push('10 m gusts: ' + gustsStr);
         lines.push('120 m wind: ' + wind120Str);
@@ -1958,6 +1978,31 @@
         lines.push('Cloud cover: ' + cloudStr);
         lines.push('Precipitation: ' + precipStr);
         lines.push('Temperature (2 m): ' + tempStr);
+        if (summaryText) {
+            lines.push('');
+            lines.push('--- Next 12 hours (range from selected hour) ---');
+            lines.push(summaryText);
+        }
+        lines.push('');
+        lines.push('--- Assessment ---');
+        lines.push(suitability.label + ': ' + suitability.brief);
+        lines.push('');
+        lines.push('--- How this is calculated ---');
+        if (suitability.technical) lines.push(suitability.technical);
+        lines.push('');
+        buildWeatherRagMethodologyPlainLinesFn(usedTargetTime).forEach(function (ln) {
+            lines.push(ln);
+        });
+        lines.push('');
+        lines.push('--- Source ---');
+        lines.push('Open-Meteo forecast (Flight Weather source)');
+        lines.push('Coordinates: ' + lat.toFixed(6) + ', ' + lng.toFixed(6));
+        lines.push(
+            'Forecast hour: ' +
+                (displayTime || '-') +
+                (usedTargetTime ? ' (from Date/Time fields)' : ' (current time)')
+        );
+        lines.push('Model: ' + modelLabel);
         lines.push('');
         lines.push('Data: Open-Meteo https://open-meteo.com/ (CC BY 4.0)');
         return lines.join('\n');
@@ -3548,6 +3593,12 @@
                 loadFnAirspaceTab();
             });
         }
+
+        applyFnNotamFiltersFromStorage();
+        ['fnNotamDroneOnly', 'fnNotamHideAd', 'fnNotamHideCeiling', 'fnNotamPrioritise'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('change', saveFnNotamFiltersToStorage);
+        });
 
         var nowBtn = document.getElementById('fnNowBtn');
         var todayBtn = document.getElementById('fnTodayBtn');

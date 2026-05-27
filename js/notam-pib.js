@@ -30,6 +30,9 @@
 
     var UAS_CATEGORY_ORDER = { uas_high: 0, uas_maybe: 1, other: 2, aerodrome_ground: 3 };
 
+    /** Default upper bound for VLOS/BVLOS-style triage (ft AMSL-style vs Q-line FL units). */
+    var DEFAULT_DRONE_CEILING_FT = 600;
+
     function formatNotamDate(str) {
         if (str == null || str === '') return '';
         var raw = String(str).trim();
@@ -72,6 +75,36 @@
     function isDroneKeywordRelevant(notam) {
         var text = (notam && notam.text ? notam.text : '').toUpperCase();
         return DRONE_KEYWORDS.some(function (kw) { return text.includes(kw.toUpperCase()); });
+    }
+
+    /**
+     * Drone-focused list/map filter: UAS/hazard keywords, strong UAS category, or event/restriction triage (uas_maybe).
+     */
+    function notamPassesDroneFocusFilter(notam) {
+        if (!notam) return false;
+        var cat = notam.uasCategory;
+        if (cat === 'uas_high' || cat === 'uas_maybe') return true;
+        return isDroneKeywordRelevant(notam);
+    }
+
+    /**
+     * True if PIB Q-line vertical limits could overlap SFC–ceilingFt (ceilingFt/100 as FL units).
+     * Missing or partial Q-line: keep (conservative).
+     */
+    function notamOverlapsDroneCeilingFt(notam, ceilingFt) {
+        if (ceilingFt == null || ceilingFt <= 0) return true;
+        var ceilingFl = ceilingFt / 100;
+        var lo = notam && notam.qLower;
+        var hi = notam && notam.qUpper;
+        if (lo == null && hi == null) return true;
+        if (lo == null || hi == null) return true;
+        var l = Number(lo);
+        var h = Number(hi);
+        if (isNaN(l) || isNaN(h)) return true;
+        var hiCap = h >= 999 ? 999 : h;
+        if (l > ceilingFl) return false;
+        if (hiCap < 0) return false;
+        return true;
     }
 
     function classifyNotamForUas(notam) {
@@ -242,6 +275,9 @@
         formatNotamDate: formatNotamDate,
         parseCoord: parseCoord,
         isDroneKeywordRelevant: isDroneKeywordRelevant,
+        notamPassesDroneFocusFilter: notamPassesDroneFocusFilter,
+        notamOverlapsDroneCeilingFt: notamOverlapsDroneCeilingFt,
+        DEFAULT_DRONE_CEILING_FT: DEFAULT_DRONE_CEILING_FT,
         classifyNotamForUas: classifyNotamForUas,
         formatVerticalFromQLine: formatVerticalFromQLine,
         compareNotamsUasPriority: compareNotamsUasPriority,

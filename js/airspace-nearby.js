@@ -95,8 +95,10 @@ var AirspaceNearby = (function () {
      * @param {number} lng
      * @param {number} radiusKm
      * @param {object} [options]
-     * @param {boolean} [options.droneRelevantOnly] - keyword filter (UAS, danger, crane, …)
+     * @param {boolean} [options.droneRelevantOnly] - drone triage (uas_high / uas_maybe / hazard keywords)
      * @param {boolean} [options.hideAerodromeGround] - drop heuristic “airfield ops” NOTAMs
+     * @param {boolean} [options.hideAboveDroneCeiling] - drop NOTAMs whose Q-line band lies entirely above droneCeilingFt
+     * @param {number} [options.droneCeilingFt] - default NP.DEFAULT_DRONE_CEILING_FT (600)
      * @param {boolean} [options.prioritiseUas] - sort UAS-relevant categories first
      */
     async function fetchNearbyNotams(lat, lng, radiusKm, options) {
@@ -106,6 +108,12 @@ var AirspaceNearby = (function () {
                 console.warn('NotamPib not loaded; NOTAM list unavailable');
                 return [];
             }
+            var ceilingFt =
+                options.droneCeilingFt != null
+                    ? options.droneCeilingFt
+                    : NP.DEFAULT_DRONE_CEILING_FT != null
+                        ? NP.DEFAULT_DRONE_CEILING_FT
+                        : 600;
             var xmlText = await NP.fetchPibXml();
             var doc = new DOMParser().parseFromString(xmlText, 'text/xml');
             var all = NP.parsePibNotamsFromDoc(doc);
@@ -116,12 +124,17 @@ var AirspaceNearby = (function () {
             });
             if (options.droneRelevantOnly) {
                 filtered = filtered.filter(function (n) {
-                    return NP.isDroneKeywordRelevant(n);
+                    return NP.notamPassesDroneFocusFilter(n);
                 });
             }
             if (options.hideAerodromeGround) {
                 filtered = filtered.filter(function (n) {
                     return n.uasCategory !== 'aerodrome_ground';
+                });
+            }
+            if (options.hideAboveDroneCeiling) {
+                filtered = filtered.filter(function (n) {
+                    return NP.notamOverlapsDroneCeilingFt(n, ceilingFt);
                 });
             }
             if (options.prioritiseUas) {

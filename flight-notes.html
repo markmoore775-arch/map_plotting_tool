@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css?v=32">
+    <link rel="stylesheet" href="css/flight-notes.css?v=33">
     <!-- Leaflet (mini map for GPS location) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -769,12 +769,16 @@
                     </div>
                     <div class="fn-airspace-notam-filters" role="group" aria-label="NOTAM filters">
                         <label class="fn-airspace-filter-label">
-                            <input type="checkbox" id="fnNotamDroneOnly" name="fnNotamDroneOnly" />
-                            Drone-keyword filter
+                            <input type="checkbox" id="fnNotamDroneOnly" name="fnNotamDroneOnly" checked />
+                            Drone-focused (UAS / events)
                         </label>
                         <label class="fn-airspace-filter-label">
-                            <input type="checkbox" id="fnNotamHideAd" name="fnNotamHideAd" />
+                            <input type="checkbox" id="fnNotamHideAd" name="fnNotamHideAd" checked />
                             Hide airfield ops
+                        </label>
+                        <label class="fn-airspace-filter-label">
+                            <input type="checkbox" id="fnNotamHideCeiling" name="fnNotamHideCeiling" checked />
+                            Hide above 600 ft (Q-line)
                         </label>
                         <label class="fn-airspace-filter-label">
                             <input type="checkbox" id="fnNotamPrioritise" name="fnNotamPrioritise" />
@@ -784,7 +788,7 @@
                 </div>
                 <div class="fn-airspace-panel fn-airspace-panel--caveats" role="note">
                     <h3 class="fn-airspace-panel-title">Source notes</h3>
-                    <p class="fn-airspace-vertical-hint">Vertical limits show Q-line values from the PIB where present; verify on the official NATS briefing if critical.</p>
+                    <p class="fn-airspace-vertical-hint">600 ft band uses PIB Q-line FL units (not AGL); unknown Q-lines are kept. Not a substitute for an official NATS briefing.</p>
                 </div>
                 <div class="fn-airspace-panel fn-airspace-panel--results" aria-label="Airspace and NOTAM results">
                     <h3 class="fn-airspace-panel-title">NOTAMs &amp; zones</h3>
@@ -893,9 +897,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="js/pdf-theme.js?v=6"></script>
-    <script src="js/notam-pib.js?v=1"></script>
-    <script src="js/airspace-nearby.js?v=3"></script>
+    <script src="js/notam-pib.js?v=2"></script>
+    <script src="js/airspace-nearby.js?v=4"></script>
     <script src="js/geolocation-helpers.js?v=6"></script>
-    <script src="js/flight-notes.js?v=40"></script>
+    <script src="js/flight-notes.js?v=42"></script>
 </body>
 </html>

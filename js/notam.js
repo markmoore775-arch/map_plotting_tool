@@ -102,8 +102,10 @@
         var config = {
             maxRadius: 12,
             excludeRadius999: true,
-            droneRelevantOnly: false,
-            hideAerodromeGround: false,
+            droneRelevantOnly: true,
+            hideAerodromeGround: true,
+            hideAboveDroneCeiling: true,
+            droneCeilingFt: (NP && NP.DEFAULT_DRONE_CEILING_FT) || 600,
             fillOpacity: 0.08,
             zoomFilterRadius: 10
         };
@@ -124,8 +126,9 @@
             var toShow = allCircles.filter(function (c) {
                 var notam = c._notamData;
                 if (!notam) return false;
-                if (config.droneRelevantOnly && NP && !NP.isDroneKeywordRelevant(notam)) return false;
+                if (config.droneRelevantOnly && NP && !NP.notamPassesDroneFocusFilter(notam)) return false;
                 if (config.hideAerodromeGround && notam.uasCategory === 'aerodrome_ground') return false;
+                if (config.hideAboveDroneCeiling && NP && !NP.notamOverlapsDroneCeilingFt(notam, config.droneCeilingFt)) return false;
                 if (notam.radiusNm > effectiveMaxRadius) return false;
                 if (bounds && !circleIntersectsBounds(c, bounds)) return false;
                 return true;
@@ -218,6 +221,8 @@
                 if (opts.excludeRadius999 != null) config.excludeRadius999 = opts.excludeRadius999;
                 if (opts.droneRelevantOnly != null) config.droneRelevantOnly = opts.droneRelevantOnly;
                 if (opts.hideAerodromeGround != null) config.hideAerodromeGround = opts.hideAerodromeGround;
+                if (opts.hideAboveDroneCeiling != null) config.hideAboveDroneCeiling = opts.hideAboveDroneCeiling;
+                if (opts.droneCeilingFt != null) config.droneCeilingFt = opts.droneCeilingFt;
                 if (opts.fillOpacity != null) config.fillOpacity = opts.fillOpacity;
                 if (opts.zoomFilterRadius != null) config.zoomFilterRadius = opts.zoomFilterRadius;
                 buildCircles();

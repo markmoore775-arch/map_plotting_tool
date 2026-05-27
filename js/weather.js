@@ -185,6 +185,7 @@
         return {
             droneRelevantOnly: on('weatherNotamDroneOnly'),
             hideAerodromeGround: on('weatherNotamHideAd'),
+            hideAboveDroneCeiling: on('weatherNotamHideCeiling'),
             prioritiseUas: on('weatherNotamPrioritise')
         };
     }
@@ -216,6 +217,7 @@
             var exportTheme = document.querySelector('input[name="weatherExportTheme"]:checked');
             var dOnly = document.getElementById('weatherNotamDroneOnly');
             var hideAd = document.getElementById('weatherNotamHideAd');
+            var hideCeil = document.getElementById('weatherNotamHideCeiling');
             var priUas = document.getElementById('weatherNotamPrioritise');
             var payload = {
                 v: 1,
@@ -230,6 +232,7 @@
                 airspaceRadiusKm: airspaceSearchRadiusKm,
                 notamDroneOnly: !!(dOnly && dOnly.checked),
                 notamHideAd: !!(hideAd && hideAd.checked),
+                notamHideCeiling: !!(hideCeil && hideCeil.checked),
                 notamPrioritise: !!(priUas && priUas.checked),
                 exportTheme: exportTheme ? exportTheme.value : 'light'
             };
@@ -309,6 +312,8 @@
             if (dOnly && d.notamDroneOnly != null) dOnly.checked = !!d.notamDroneOnly;
             var hideAd = document.getElementById('weatherNotamHideAd');
             if (hideAd && d.notamHideAd != null) hideAd.checked = !!d.notamHideAd;
+            var hideCeil = document.getElementById('weatherNotamHideCeiling');
+            if (hideCeil && d.notamHideCeiling != null) hideCeil.checked = !!d.notamHideCeiling;
             var priUas = document.getElementById('weatherNotamPrioritise');
             if (priUas && d.notamPrioritise != null) priUas.checked = !!d.notamPrioritise;
 
@@ -1183,25 +1188,7 @@
         const tempStr = temp != null ? Math.round(temp) + ' °C' : '-';
 
         const lines = [];
-        lines.push('Open-Meteo forecast (Flight Weather source)');
-        lines.push('Coordinates: ' + lat.toFixed(6) + ', ' + lng.toFixed(6));
-        lines.push(
-            'Forecast hour: ' +
-                (displayTime || '-') +
-                (usedTargetTime ? ' (from Date/Time fields)' : ' (current time)')
-        );
-        lines.push('Model: ' + modelLabel);
-        lines.push('');
-        lines.push('Summary: ' + suitability.label + ': ' + suitability.brief);
-        if (summaryText) lines.push(summaryText);
-        lines.push('');
-        lines.push('--- How this is calculated ---');
-        if (suitability.technical) lines.push(suitability.technical);
-        lines.push('');
-        buildWeatherRagMethodologyPlainLines(usedTargetTime).forEach(function (ln) {
-            lines.push(ln);
-        });
-        lines.push('');
+        lines.push('--- Forecast (selected hour) ---');
         lines.push('10 m wind: ' + formatWindRow(data.wind_speed_10m, data.wind_direction_10m));
         lines.push('10 m gusts: ' + gustsStr);
         lines.push('120 m wind: ' + wind120Str);
@@ -1210,6 +1197,31 @@
         lines.push('Cloud cover: ' + cloudStr);
         lines.push('Precipitation: ' + precipStr);
         lines.push('Temperature (2 m): ' + tempStr);
+        if (summaryText) {
+            lines.push('');
+            lines.push('--- Next 12 hours (range from selected hour) ---');
+            lines.push(summaryText);
+        }
+        lines.push('');
+        lines.push('--- Assessment ---');
+        lines.push(suitability.label + ': ' + suitability.brief);
+        lines.push('');
+        lines.push('--- How this is calculated ---');
+        if (suitability.technical) lines.push(suitability.technical);
+        lines.push('');
+        buildWeatherRagMethodologyPlainLines(usedTargetTime).forEach(function (ln) {
+            lines.push(ln);
+        });
+        lines.push('');
+        lines.push('--- Source ---');
+        lines.push('Open-Meteo forecast (Flight Weather source)');
+        lines.push('Coordinates: ' + lat.toFixed(6) + ', ' + lng.toFixed(6));
+        lines.push(
+            'Forecast hour: ' +
+                (displayTime || '-') +
+                (usedTargetTime ? ' (from Date/Time fields)' : ' (current time)')
+        );
+        lines.push('Model: ' + modelLabel);
         lines.push('');
         lines.push('Data: Open-Meteo https://open-meteo.com/ (CC BY 4.0)');
         return lines.join('\n');
@@ -3733,7 +3745,7 @@
             weatherDateTimeEl.addEventListener('change', scheduleWeatherDraftSave);
             weatherDateTimeEl.addEventListener('input', scheduleWeatherDraftSave);
         }
-        ['weatherNotamDroneOnly', 'weatherNotamHideAd', 'weatherNotamPrioritise'].forEach(function (id) {
+        ['weatherNotamDroneOnly', 'weatherNotamHideAd', 'weatherNotamHideCeiling', 'weatherNotamPrioritise'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.addEventListener('change', scheduleWeatherDraftSave);
         });

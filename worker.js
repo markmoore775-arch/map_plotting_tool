@@ -7,27 +7,36 @@ export default {
     const url = new URL(request.url);
     const path = normalizePath(url.pathname);
 
+    if (path === '/unlock') {
+      return handleUnlock(request, env);
+    }
+
+    if (path === '/logout') {
+      return handleLogout();
+    }
+
+    const authed = await isAuthenticated(request, env);
+
     if (path === '/api/aviation') {
+      if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
       return handleAviationApi(request);
     }
 
     if (path === '/api/adsb') {
+      if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
       return handleAdsbApi(request);
     }
 
     if (path === '/api/ogn') {
+      if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
       return handleOgnApi(request);
     }
 
-    // Temporary test mode: disable all password protection.
-    if (path === '/unlock' || path === '/logout') {
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: DEFAULT_NEXT_PATH,
-          'Set-Cookie': `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
-        }
-      });
+    if (!authed) {
+      if (path === '/game-over.gif') {
+        return env.ASSETS.fetch(request);
+      }
+      return htmlResponse(renderOfflinePage({ next: buildNextPath(request) }));
     }
 
     // Backwards compatibility: old launch links may still target /app.
@@ -42,13 +51,30 @@ export default {
   }
 };
 
-function isProtectedRoute(pathname) {
-  const path = normalizePath(pathname);
-  return path === '/app'
-    || path === '/weather'
-    || path === '/weather.html'
-    || path === '/flight-planning'
-    || path === '/flight-planning.html';
+async function isAuthenticated(request, env) {
+  const cookieHeader = request.headers.get('Cookie') || '';
+  const cookies = parseCookies(cookieHeader);
+  const token = cookies[SESSION_COOKIE] || '';
+  return verifySessionToken(token, env.AUTH_SECRET || '');
+}
+
+function buildNextPath(request) {
+  const url = new URL(request.url);
+  const path = normalizePath(url.pathname);
+  if (path === '/') {
+    return DEFAULT_NEXT_PATH;
+  }
+  return normalizeNextPath(path + url.search);
+}
+
+function handleLogout() {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: '/',
+      'Set-Cookie': `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
+    }
+  });
 }
 
 function normalizePath(pathname) {
@@ -230,14 +256,6 @@ async function handleAviationApi(request) {
   });
 }
 
-function redirectToUnlock(nextPath) {
-  const loc = '/unlock?next=' + encodeURIComponent(nextPath);
-  return new Response(null, {
-    status: 302,
-    headers: { Location: loc }
-  });
-}
-
 async function handleUnlock(request, env) {
   const url = new URL(request.url);
   const next = normalizeNextPath(url.searchParams.get('next') || DEFAULT_NEXT_PATH);
@@ -303,7 +321,7 @@ function renderUnlockPage({ next, error }) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unlock AirPlot</title>
+  <title>Login — AirPlot</title>
   <style>
     :root { color-scheme: dark; }
     body {
@@ -363,16 +381,80 @@ function renderUnlockPage({ next, error }) {
 </head>
 <body>
   <main class="card">
-    <h1>Enter Password</h1>
-    <p>This area is protected. Enter the shared password to continue.</p>
+    <h1>Login</h1>
+    <p>Enter the password to access AirPlot.</p>
     ${safeError}
     <form method="post" action="/unlock">
       <input type="hidden" name="next" value="${safeNext}">
       <label for="password">Password</label>
       <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
-      <button type="submit">Unlock</button>
+      <button type="submit">Login</button>
     </form>
   </main>
+</body>
+</html>`;
+}
+
+function renderOfflinePage({ next }) {
+  const loginHref = '/unlock?next=' + encodeURIComponent(next || DEFAULT_NEXT_PATH);
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AirPlot</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #050508;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+    }
+    .login-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(21, 21, 31, 0.85);
+      color: #f4f4f5;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      backdrop-filter: blur(8px);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .login-btn:hover {
+      background: rgba(37, 37, 55, 0.95);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .gif-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      max-width: 100%;
+    }
+    .gif-wrap img {
+      max-width: min(92vw, 498px);
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <a class="login-btn" href="${loginHref}">Login</a>
+  <div class="gif-wrap">
+    <img src="/game-over.gif" alt="">
+  </div>
 </body>
 </html>`;
 }

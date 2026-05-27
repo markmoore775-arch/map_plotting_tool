@@ -370,7 +370,9 @@
                     const droneLbl = L.DomUtil.create('label', 'fp-notam-check', droneRow);
                     const droneCb = L.DomUtil.create('input', '', droneLbl);
                     droneCb.type = 'checkbox';
-                    droneLbl.appendChild(document.createTextNode(' Drone-keyword only'));
+                    droneCb.checked = true;
+                    droneLbl.title = 'Drone-focused: UAS/hazard keywords, UAS check, and event/restriction triage';
+                    droneLbl.appendChild(document.createTextNode(' Drone-focused'));
                     L.DomEvent.on(droneCb, 'change', function () {
                         fpNotamModule.setOptions({ droneRelevantOnly: droneCb.checked });
                     });
@@ -378,9 +380,21 @@
                     const adLbl = L.DomUtil.create('label', 'fp-notam-check', adRow);
                     const adCb = L.DomUtil.create('input', '', adLbl);
                     adCb.type = 'checkbox';
+                    adCb.checked = true;
                     adLbl.appendChild(document.createTextNode(' Hide airfield ops'));
                     L.DomEvent.on(adCb, 'change', function () {
                         fpNotamModule.setOptions({ hideAerodromeGround: adCb.checked });
+                    });
+                    const ceilRow = L.DomUtil.create('div', 'fp-notam-opt-row', optsEl);
+                    const ceilLbl = L.DomUtil.create('label', 'fp-notam-check', ceilRow);
+                    const ceilCb = L.DomUtil.create('input', '', ceilLbl);
+                    ceilCb.type = 'checkbox';
+                    ceilCb.checked = true;
+                    ceilLbl.title =
+                        'Hide NOTAMs whose Q-line lower limit is entirely above 600 ft (SFC–600 ft band). Unknown Q-line: kept.';
+                    ceilLbl.appendChild(document.createTextNode(' Hide above 600 ft (Q-line)'));
+                    L.DomEvent.on(ceilCb, 'change', function () {
+                        fpNotamModule.setOptions({ hideAboveDroneCeiling: ceilCb.checked });
                     });
                     const opRow = L.DomUtil.create('div', 'fp-notam-opt-row', optsEl);
                     const opLbl = L.DomUtil.create('label', 'fp-notam-opacity-lbl', opRow);
@@ -393,6 +407,12 @@
                     opRg.value = '0.08';
                     L.DomEvent.on(opRg, 'input', function () {
                         fpNotamModule.setOptions({ fillOpacity: parseFloat(opRg.value) });
+                    });
+                    fpNotamModule.setOptions({
+                        droneRelevantOnly: true,
+                        hideAerodromeGround: true,
+                        hideAboveDroneCeiling: true,
+                        droneCeilingFt: 600
                     });
                     L.DomEvent.on(notamCb, 'change', function () {
                         if (notamCb.checked) {

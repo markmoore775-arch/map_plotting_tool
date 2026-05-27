@@ -285,11 +285,12 @@
                             <button type="button" class="btn btn-secondary weather-airspace-refresh-btn" id="weatherAirspaceRefreshBtn">Refresh</button>
                         </div>
                         <div class="weather-airspace-notam-filters" role="group" aria-label="NOTAM filters">
-                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamDroneOnly"> Drone-keyword filter</label>
-                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamHideAd"> Hide airfield ops</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamDroneOnly" checked> Drone-focused (UAS / events)</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamHideAd" checked> Hide airfield ops</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamHideCeiling" checked> Hide above 600 ft (Q-line)</label>
                             <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamPrioritise"> Prioritise for UAS</label>
                         </div>
-                        <p class="weather-airspace-vertical-hint">Vertical limits show Q-line values from the PIB where present; verify on the official NATS briefing if critical.</p>
+                        <p class="weather-airspace-vertical-hint">600 ft band uses PIB Q-line FL units (not AGL); unknown Q-lines are kept. Not a substitute for an official NATS briefing.</p>
                         <div id="weatherAirspaceLoading" class="weather-airspace-loading hidden">
                             <div class="spinner"></div>
                             <p>Loading airspace data…</p>
@@ -334,8 +335,8 @@
     <script src="js/ap-shell-theme.js?v=1"></script>
     <script src="js/pptx-theme.js?v=10"></script>
     <script src="js/pdf-theme.js?v=6"></script>
-    <script src="js/notam-pib.js?v=1"></script>
-    <script src="js/airspace-nearby.js?v=3"></script>
-    <script src="js/weather.js?v=25"></script>
+    <script src="js/notam-pib.js?v=2"></script>
+    <script src="js/airspace-nearby.js?v=4"></script>
+    <script src="js/weather.js?v=26"></script>
 </body>
 </html>

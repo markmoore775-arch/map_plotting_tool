@@ -62,7 +62,7 @@
 
     function defaultPrefs() {
         return {
-            version: 3,
+            version: 4,
             displayPreset: 'readable',
             layers: {
                 prohibited: true,
@@ -83,6 +83,9 @@
             notam: {
                 droneRelevantOnly: true,
                 hideAerodromeGround: true,
+                hideAboveDroneCeiling: true,
+                droneCeilingFt: 600,
+                mapEnabled: false,
                 maxRadius: 12,
                 fillOpacity: 0.08
             }
@@ -99,7 +102,7 @@
                 ? o.displayPreset
                 : 'custom';
         return {
-            version: 3,
+            version: 4,
             displayPreset: displayPresetMerged,
             layers: Object.assign({}, d.layers, o.layers || {}),
             outlineMode: typeof o.outlineMode === 'boolean' ? o.outlineMode : d.outlineMode,
@@ -772,6 +775,9 @@
                 maxRadius: prefs.notam.maxRadius,
                 droneRelevantOnly: prefs.notam.droneRelevantOnly,
                 hideAerodromeGround: prefs.notam.hideAerodromeGround,
+                hideAboveDroneCeiling:
+                    prefs.notam.hideAboveDroneCeiling != null ? prefs.notam.hideAboveDroneCeiling : true,
+                droneCeilingFt: prefs.notam.droneCeilingFt != null ? prefs.notam.droneCeilingFt : 600,
                 fillOpacity: prefs.notam.fillOpacity
             });
         }
@@ -993,7 +999,7 @@
                         let allChecked = true;
                         itemCbs.forEach(function (cb) {
                             const key = cb.dataset.type;
-                            if (key === 'notam' || key === 'rat') return;
+                            if (key === 'rat') return;
                             if (!cb.checked) allChecked = false;
                         });
                         selectAllCb.checked = allChecked;
@@ -1002,7 +1008,20 @@
                         const itemCbs = container.querySelectorAll('.airspace-legend-item-cb:not(.airspace-select-all-cb)');
                         itemCbs.forEach(function (cb) {
                             const key = cb.dataset.type;
-                            if (key === 'notam' || key === 'rat') return;
+                            if (key === 'rat') return;
+                            if (key === 'notam') {
+                                if (!notamModule) return;
+                                cb.checked = selectAllCb.checked;
+                                prefs.notam.mapEnabled = selectAllCb.checked;
+                                if (selectAllCb.checked) {
+                                    notamModule.loadNotams(function () {
+                                        notamModule.addToMap();
+                                    });
+                                } else {
+                                    notamModule.removeFromMap();
+                                }
+                                return;
+                            }
                             cb.checked = selectAllCb.checked;
                             prefs.layers[key] = selectAllCb.checked;
                             if (selectAllCb.checked) {
@@ -1172,6 +1191,7 @@
                         const cb = L.DomUtil.create('input', 'airspace-legend-item-cb', itemLabel);
                         cb.type = 'checkbox';
                         cb.dataset.type = 'notam';
+                        cb.checked = prefs.notam.mapEnabled === true;
                         const swatch = L.DomUtil.create('span', 'airspace-legend-swatch', itemLabel);
                         swatch.style.backgroundColor = '#dc2626';
                         const lbl = L.DomUtil.create('span', 'airspace-legend-label', itemLabel);
@@ -1180,7 +1200,7 @@
                         const droneCb = L.DomUtil.create('input', 'airspace-notam-drone-cb', droneInline);
                         droneCb.type = 'checkbox';
                         droneCb.checked = !!prefs.notam.droneRelevantOnly;
-                        droneInline.title = 'Show only UAS/drone-relevant NOTAMs';
+                        droneInline.title = 'Drone-focused: UAS/hazard keywords, UAS check, and event/restriction triage';
                         droneInline.appendChild(document.createTextNode(' Drone'));
                         const adInline = L.DomUtil.create('label', 'airspace-notam-inline-check', mainRow);
                         const adCb = L.DomUtil.create('input', 'airspace-notam-ad-cb', adInline);
@@ -1201,13 +1221,29 @@
                             optsWrap.style.display = isOpen ? 'none' : 'block';
                             expandBtn.textContent = isOpen ? '\u25BC' : '\u25B2';
                         });
+                        const ceilingRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
+                        const ceilingLbl = L.DomUtil.create('label', 'airspace-notam-option-label', ceilingRow);
+                        const ceilingCb = L.DomUtil.create('input', '', ceilingLbl);
+                        ceilingCb.type = 'checkbox';
+                        ceilingCb.checked =
+                            prefs.notam.hideAboveDroneCeiling != null ? !!prefs.notam.hideAboveDroneCeiling : true;
+                        ceilingLbl.appendChild(
+                            document.createTextNode(' Hide NOTAMs above 600 ft (Q-line; SFC–600 ft band)')
+                        );
+                        ceilingLbl.title =
+                            'Drop NOTAMs whose lower vertical limit is entirely above FL006 (600 ft). Unknown Q-line: kept.';
+
                         notamModule.setOptions({
                             droneRelevantOnly: droneCb.checked,
                             hideAerodromeGround: adCb.checked,
+                            hideAboveDroneCeiling: ceilingCb.checked,
+                            droneCeilingFt: prefs.notam.droneCeilingFt != null ? prefs.notam.droneCeilingFt : 600,
                             maxRadius: prefs.notam.maxRadius,
                             fillOpacity: prefs.notam.fillOpacity
                         });
                         L.DomEvent.on(cb, 'change', function () {
+                            prefs.notam.mapEnabled = cb.checked;
+                            savePrefs(prefs);
                             if (cb.checked) {
                                 notamModule.loadNotams(function () {
                                     notamModule.addToMap();
@@ -1215,18 +1251,25 @@
                             } else {
                                 notamModule.removeFromMap();
                             }
+                            updateSelectAllState();
                         });
                         function persistNotamOpts() {
                             prefs.notam.droneRelevantOnly = droneCb.checked;
                             prefs.notam.hideAerodromeGround = adCb.checked;
+                            prefs.notam.hideAboveDroneCeiling = ceilingCb.checked;
+                            prefs.notam.droneCeilingFt =
+                                prefs.notam.droneCeilingFt != null ? prefs.notam.droneCeilingFt : 600;
                             savePrefs(prefs);
                             notamModule.setOptions({
                                 droneRelevantOnly: prefs.notam.droneRelevantOnly,
-                                hideAerodromeGround: prefs.notam.hideAerodromeGround
+                                hideAerodromeGround: prefs.notam.hideAerodromeGround,
+                                hideAboveDroneCeiling: prefs.notam.hideAboveDroneCeiling,
+                                droneCeilingFt: prefs.notam.droneCeilingFt
                             });
                         }
                         L.DomEvent.on(droneCb, 'change', persistNotamOpts);
                         L.DomEvent.on(adCb, 'change', persistNotamOpts);
+                        L.DomEvent.on(ceilingCb, 'change', persistNotamOpts);
 
                         const maxRadiusRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
                         const maxRadiusLabel = L.DomUtil.create('label', 'airspace-notam-option-label', maxRadiusRow);
@@ -1262,6 +1305,12 @@
                             savePrefs(prefs);
                             notamModule.setOptions({ fillOpacity: val });
                         });
+                        if (cb.checked) {
+                            notamModule.loadNotams(function () {
+                                notamModule.addToMap();
+                            });
+                        }
+                        updateSelectAllState();
                     }
                     if (ratModule) {
                         const li = L.DomUtil.create('li', 'airspace-legend-item', list);
