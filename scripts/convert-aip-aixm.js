@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Convert NATS UK ICAO AIP Dataset (AIXM 5.1 XML) to GeoJSON for AirPlot.
+ * Convert NATS UK ICAO AIP Dataset (AIXM 5.1 XML) to GeoJSON for AirPlan.
  *
  * Usage:
  *   node scripts/convert-aip-aixm.js <input.xml|input.zip>
@@ -13,7 +13,7 @@
  *
  * The download is typically a ZIP containing AIXM XML file(s).
  * This script extracts airspace features (CTR, TMA, FIR, Prohibited, Restricted, Danger, etc.)
- * and outputs GeoJSON compatible with AirPlot's airspace module.
+ * and outputs GeoJSON compatible with AirPlan's airspace module.
  */
 
 const fs = require('fs');

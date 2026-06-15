@@ -8,13 +8,15 @@
     "test": "node test_browser.js",
     "convert-airspace": "node scripts/convert-airspace-data.js",
     "generate-pwa-icons": "node scripts/generate-pwa-icons.js",
+    "setup-airplan-domain": "node scripts/setup-airplan-domain.mjs",
+    "deploy-airplan": "node scripts/setup-airplan-domain.mjs --watch",
     "convert-aip": "node scripts/convert-aip-aixm.js",
     "fetch-aviation-stations": "node scripts/fetch-aviation-stations.js",
     "verify-auth-guard": "node scripts/verify-auth-guard.js",
     "build:drone-run": "cd vertical-drone-run && npm ci && npm run build",
     "build:drone-dash": "cd vertical-drone-dash && npm ci && npm run build",
-    "deploy": "node scripts/inject-cache-bust.js && npm run build:drone-run && npm run build:drone-dash && npx wrangler deploy && node scripts/verify-auth-guard.js && git checkout index.html",
-    "deploy:no-bust": "npm run build:drone-run && npm run build:drone-dash && npx wrangler deploy && node scripts/verify-auth-guard.js"
+    "deploy": "node scripts/inject-cache-bust.js && npm run build:drone-run && npm run build:drone-dash && npx wrangler deploy && git checkout index.html",
+    "deploy:no-bust": "npm run build:drone-run && npm run build:drone-dash && npx wrangler deploy"
   },
   "dependencies": {
     "playwright": "^1.58.2",

@@ -30,8 +30,31 @@
     /* Light chrome icons: dark theme grey-blue (same family as --sidebar-bg), not accent blue */
     --ap-light-chrome-icon: #1e1e2e;
     --ap-light-chrome-icon-emphasis: #0f172a;
-    /* airplot-icon.svg is white; tint to --ap-light-chrome-icon */
-    --ap-light-airplot-icon-filter: brightness(0) saturate(100%) invert(8%) sepia(10%) saturate(2585%) hue-rotate(201deg) brightness(102%) contrast(90%);
+    /* airplan-icon.svg is white; tint to --ap-light-chrome-icon (legacy icon-only uses) */
+    --ap-light-airplan-icon-filter: brightness(0) saturate(100%) invert(8%) sepia(10%) saturate(2585%) hue-rotate(201deg) brightness(102%) contrast(90%);
+    --ap-brand-logo-dark: url('../assets/airplanlogowhite.png');
+    --ap-brand-logo-light: url('../assets/airplanlogoblack.png');
+}
+
+/* Brand wordmark PNG: white on dark UI; swap to black PNG in light theme */
+.ap-brand-logo {
+    display: block;
+    height: auto;
+    width: auto;
+    object-fit: contain;
+}
+
+.fp-welcome-home-link:has(.ap-brand-logo) .fp-welcome-title {
+    display: none;
+}
+
+.sidebar-header:has(.ap-brand-logo) .sidebar-title {
+    display: none;
+}
+
+.fp-welcome-home-link .ap-brand-logo {
+    height: 22px;
+    width: auto;
 }
 
 /* Reset */
@@ -1346,10 +1369,6 @@ body.ap-shell.fn-light-theme .fp-welcome-home-link:hover {
     color: #0f172a;
 }
 
-body.ap-shell.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
-    filter: var(--ap-light-airplot-icon-filter);
-}
-
 body.ap-shell.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
     color: #0a0a0a;
 }
@@ -1428,9 +1447,6 @@ body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-
     color: #0a0a0a;
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-logo {
-    filter: var(--ap-light-airplot-icon-filter);
-}
 
 body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-toggle:hover {
     color: #0f172a;

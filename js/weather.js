@@ -8,7 +8,7 @@
 
     const WEATHER_STATUS_HTML_DEFAULT = [
         '<div class="weather-help-doc">',
-        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlot v4.0) shows forecast and aviation data for one point on the map. The map <strong>info (ⓘ)</strong> control opens or closes this panel.</p>',
+        '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlan v1.0) shows forecast and aviation data for one point on the map. The map <strong>info (ⓘ)</strong> control opens or closes this panel.</p>',
         '<section class="weather-help-section" aria-labelledby="weather-help-steps-title">',
         '<h3 class="weather-help-section-title" id="weather-help-steps-title">Quick steps</h3>',
         '<ol class="weather-help-list">',
@@ -29,14 +29,14 @@
         '</div>',
         '</details>',
         '<section class="weather-help-section" aria-labelledby="weather-help-related-title">',
-        '<h3 class="weather-help-section-title" id="weather-help-related-title">Elsewhere in AirPlot</h3>',
-        '<p class="weather-help-section-text weather-help-section-text--muted">Attribution and data sources appear in the report. <strong>AirPlot</strong> (logo and name, top-left) returns to the full home screen; the <strong>tool strip</strong> beside it switches to Planner, Weather, Airspace, Checklist, or Flight Report in one tap.</p>',
+        '<h3 class="weather-help-section-title" id="weather-help-related-title">Elsewhere in AirPlan</h3>',
+        '<p class="weather-help-section-text weather-help-section-text--muted">Attribution and data sources appear in the report. <strong>AirPlan</strong> (logo and name, top-left) returns to the full home screen; the <strong>tool strip</strong> beside it switches to Planner, Weather, Airspace, Checklist, or Flight Report in one tap.</p>',
         '<div class="weather-help-links">',
         '<a href="index.html" class="weather-help-link-chip">Home</a>',
         '<a href="flight-notes.html" class="weather-help-link-chip">Flight Report</a>',
         '<a href="checklist.html" class="weather-help-link-chip">Checklist</a>',
         '</div>',
-        '<p class="weather-help-footnote">The header tool strip matches other AirPlot pages so you can move between those tools without going home.</p>',
+        '<p class="weather-help-footnote">The header tool strip matches other AirPlan pages so you can move between those tools without going home.</p>',
         '</section>',
         '</div>'
     ].join('');
@@ -1430,7 +1430,7 @@
             '</table>' +
             '<p style="margin-top:10px">' + info.equiv + '</p>' +
             '<table class="model-equiv-table" style="margin-top:10px">' +
-            '<tr><th>Service</th><th>Primary Model</th><th>AirPlot Equivalent</th></tr>' +
+            '<tr><th>Service</th><th>Primary Model</th><th>AirPlan Equivalent</th></tr>' +
             '<tr><td>BBC Weather</td><td>ECMWF IFS (via MeteoGroup/DTN)</td><td class="equiv-highlight">ECMWF IFS</td></tr>' +
             '<tr><td>Met Office</td><td>Met Office UKV (2 km) + Global</td><td class="equiv-highlight">UK Met Office</td></tr>' +
             '<tr><td>Windy.com</td><td>ECMWF IFS (default), GFS, ICON</td><td class="equiv-highlight">ECMWF IFS / GFS</td></tr>' +
@@ -2437,7 +2437,7 @@
 
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';
-            pptx.author = 'AirPlot v4';
+            pptx.author = 'AirPlan v1';
             pptx.subject = 'Flight Weather Report';
 
             const logo = await PptxTheme.loadLogo();
@@ -2953,7 +2953,7 @@
             var equivHeader = [
                 { text: 'Service', options: headerOpts },
                 { text: 'Primary Model', options: headerOpts },
-                { text: 'AirPlot Equivalent', options: headerOpts },
+                { text: 'AirPlan Equivalent', options: headerOpts },
                 { text: 'Match', options: headerOpts }
             ];
             var equivRows = [equivHeader,
@@ -3529,7 +3529,7 @@
 
             doc.autoTable({
                 startY: 58,
-                head: [['Service', 'Primary Model', 'AirPlot Equivalent', 'Match']],
+                head: [['Service', 'Primary Model', 'AirPlan Equivalent', 'Match']],
                 body: [
                     ['BBC Weather', 'ECMWF IFS (via MeteoGroup/DTN)', 'ECMWF IFS', 'Direct equivalent'],
                     ['Met Office', 'Met Office UKV (2 km) + Global', 'UK Met Office', 'Direct equivalent'],

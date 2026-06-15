@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>AirPlot</title>
-    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <title>AirPlan</title>
+    <link rel="icon" href="assets/airplan-icon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icon-180.png">
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -65,13 +65,13 @@
         <!-- Splash (logo only; welcome card appears after splash-done) -->
         <div class="intro-splash" aria-hidden="true">
             <div class="intro-splash-inner">
-                <img src="assets/airplot-logo.png" alt="" class="intro-splash-logo">
+                <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo intro-splash-logo">
             </div>
         </div>
         <!-- Welcome card -->
         <div class="intro-content">
             <div class="intro-logo-wrap">
-                <img src="assets/airplot-logo.png" alt="AirPlot" class="intro-logo">
+                <img src="assets/airplanlogowhite.png" alt="AirPlan" class="ap-brand-logo intro-logo">
             </div>
             <p class="intro-tagline">Mapping, weather, flight documentation, and checklists in one place.</p>
             <nav class="intro-launchpad" aria-label="Main tools">
@@ -101,7 +101,7 @@
                 <span class="intro-ref-sep" aria-hidden="true">·</span>
                 <a href="knowledge.html" id="introKnowledgeBtn">Knowledge Base</a>
                 <span class="intro-ref-sep" aria-hidden="true">·</span>
-                <button type="button" class="intro-ref-link-btn" id="introHelpBtn">How to Use AirPlot</button>
+                <button type="button" class="intro-ref-link-btn" id="introHelpBtn">How to Use AirPlan</button>
             </nav>
             <!-- DJI Mission Planner: remove class intro-dji-welcome-hidden to show on welcome again -->
             <div class="intro-dji-section intro-dji-welcome-hidden">
@@ -113,11 +113,11 @@
                 </a>
             </div>
             <div class="intro-disclaimer">
-                <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in How to Use AirPlot.
+                <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in How to Use AirPlan.
             </div>
-            <p class="intro-support">Questions, feedback, or bugs: <a href="mailto:support@airplot.app">support@airplot.app</a></p>
+            <p class="intro-support">Questions, feedback, or bugs: <a href="mailto:support@airplan.uk">support@airplan.uk</a></p>
             <p class="intro-privacy"><a href="privacy.html">Privacy Policy</a></p>
-            <p class="intro-copyright">v4.0 · &copy; M Moore</p>
+            <p class="intro-copyright">v1.0 · &copy; M Moore</p>
         </div>
     </div>
 
@@ -125,8 +125,8 @@
     <aside id="sidebar" class="sidebar" aria-label="Planning tools">
         <div id="sidebarSheetHandle" class="sidebar-sheet-handle" role="presentation" aria-hidden="true"></div>
         <div class="sidebar-header">
-            <img src="assets/airplot-icon.svg" alt="" class="sidebar-logo" aria-hidden="true">
-            <h1 class="sidebar-title">AirPlot</h1>
+            <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo sidebar-logo" aria-hidden="true">
+            <h1 class="sidebar-title">AirPlan</h1>
             <button id="sidebarToggle" class="sidebar-toggle" title="Collapse sidebar">&laquo;</button>
         </div>
 
@@ -362,13 +362,13 @@
 
     <header class="fn-top-bar" id="mapTopChrome">
         <div class="fn-top-bar-start">
-            <nav class="fp-welcome-bar" aria-label="AirPlot home">
-                <a href="index.html" class="fp-welcome-home-link" id="mainWelcomeLink" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
-                    <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
-                    <span class="fp-welcome-title">AirPlot</span>
+            <nav class="fp-welcome-bar" aria-label="AirPlan home">
+                <a href="index.html" class="fp-welcome-home-link" id="mainWelcomeLink" title="Return to AirPlan welcome screen" aria-label="AirPlan home, return to welcome screen">
+                    <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo fp-welcome-logo" />
+                    <span class="fp-welcome-title">AirPlan</span>
                 </a>
             </nav>
-            <nav class="ap-tool-nav" aria-label="AirPlot tools">
+            <nav class="ap-tool-nav" aria-label="AirPlan tools">
                 <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Planner, current page"><span class="ap-tool-nav__icon ap-tool-nav__icon--planner" aria-hidden="true"></span><span class="ap-tool-nav__label">Planner</span></span>
                 <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon ap-tool-nav__icon--weather" aria-hidden="true"></span><span class="ap-tool-nav__label">Weather</span></a>
                 <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon ap-tool-nav__icon--airspace" aria-hidden="true"></span><span class="ap-tool-nav__label">Airspace</span></a>
@@ -393,17 +393,17 @@
 
     <!-- Map logo (always visible when using the app) -->
     <div class="map-logo" aria-hidden="true">
-        <img src="assets/airplot-icon.svg" alt="AirPlot">
+        <img src="assets/airplanlogowhite.png" alt="AirPlan" class="ap-brand-logo">
     </div>
 
     <div id="mapContextHint" class="map-context-hint" role="status" aria-live="polite"></div>
 
     <!-- Footer -->
     <footer class="app-footer">
-        <img src="assets/airplot-icon.svg" alt="" class="app-footer-logo" aria-hidden="true">
+        <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo app-footer-logo" aria-hidden="true">
         <span>&copy; M Moore</span>
         <span class="app-footer-sep">|</span>
-        <a href="mailto:support@airplot.app" class="app-footer-disclaimer-link" title="Email support">Support</a>
+        <a href="mailto:support@airplan.uk" class="app-footer-disclaimer-link" title="Email support">Support</a>
         <span class="app-footer-sep">|</span>
         <a href="privacy.html" class="app-footer-disclaimer-link" title="Privacy Policy">Privacy</a>
         <span class="app-footer-sep">|</span>
@@ -695,7 +695,7 @@
         </div>
     </div>
 
-    <!-- Airspace: AirPlot map vs ADS-B Exchange (no remembered choice) -->
+    <!-- Airspace: AirPlan map vs ADS-B Exchange (no remembered choice) -->
     <div id="airspaceChoiceModal" class="modal hidden">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
@@ -706,7 +706,7 @@
             <div class="modal-body">
                 <p class="airspace-choice-lead">Choose a view. You&rsquo;ll see this each time you pick <strong>Airspace</strong> from the welcome screen.</p>
                 <div class="airspace-choice-actions">
-                    <a href="airspace.html" class="btn btn-primary airspace-choice-btn">AirPlot Airspace</a>
+                    <a href="airspace.html" class="btn btn-primary airspace-choice-btn">AirPlan Airspace</a>
                     <p class="airspace-choice-hint">Leaflet map, ADSB.lol, optional AGL (Mapbox), session trails.</p>
                     <a href="airspace-adsbx.html" class="btn btn-secondary airspace-choice-btn">ADS-B Exchange</a>
                     <p class="airspace-choice-hint">Embedded third-party globe. If the frame is blank, use the link on that page to open Exchange in a new tab.</p>
@@ -723,7 +723,7 @@
         <div class="modal-backdrop"></div>
         <div class="modal-content modal-large">
             <div class="modal-header help-modal-header">
-                <h2 id="helpModalTitle">AirPlot Help</h2>
+                <h2 id="helpModalTitle">AirPlan Help</h2>
                 <div class="help-modal-header-end">
                     <button type="button" class="fn-theme-toggle" id="helpModalThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Help window colours (same as Flight Report; stored in this browser)">
                         <span class="fn-theme-toggle-icon fn-theme-toggle-icon--moon fn-theme-toggle-icon--svg" aria-hidden="true"></span>
@@ -734,8 +734,8 @@
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p class="help-overview-lead"><strong>AirPlot</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail. The <strong>tool strip</strong> at the top (Planner, Weather, Airspace, Checklist, Flight Report) switches between those pages in one tap; tap <strong>AirPlot</strong> (logo and name, top-left) when you want the full home screen (training, knowledge, DJI planner, airspace chooser, etc.). <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
-                    <p class="help-overview-support">Questions, feedback, or bug reports: <a href="mailto:support@airplot.app">support@airplot.app</a></p>
+                    <p class="help-overview-lead"><strong>AirPlan</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail. The <strong>tool strip</strong> at the top (Planner, Weather, Airspace, Checklist, Flight Report) switches between those pages in one tap; tap <strong>AirPlan</strong> (logo and name, top-left) when you want the full home screen (training, knowledge, DJI planner, airspace chooser, etc.). <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
+                    <p class="help-overview-support">Questions, feedback, or bug reports: <a href="mailto:support@airplan.uk">support@airplan.uk</a></p>
                     <p class="help-overview-legal"><a href="privacy.html">Privacy Policy</a> · <a href="robots.txt">robots.txt</a> · <a href="sitemap.xml">Sitemap</a></p>
                     <div class="help-tool-grid">
                         <button type="button" class="help-tool-card" data-help-tab="points">
@@ -805,7 +805,7 @@
                         <div class="help-overview-more-body">
                             <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo and redo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
                             <p><strong>Weather:</strong> Tap the map to select a location, pick a forecast model (for example ECMWF IFS, GFS, UK Met Office, GEM Canada), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with small maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM and airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
-                            <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> can open a chooser: <a href="airspace.html">AirPlot Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
+                            <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> can open a chooser: <a href="airspace.html">AirPlan Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
                             <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear Report</strong> (beside the page title or at the bottom; both ask for confirmation), or clear site data. Use the header <strong>tool strip</strong> to open Weather, Airspace, Checklist, or Planner without returning to the welcome screen.</p>
                             <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. The header <strong>tool strip</strong> switches to Flight Report, Planner, Weather, or Airspace without going home.</p>
                             <p><strong>Save files:</strong> Planning <strong>Save Project</strong> / <strong>Load Project</strong> JSON uses the same format as v2; older project files still load.</p>
@@ -979,11 +979,11 @@
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-sidebar">
                                 <h3>Sidebar &amp; footer</h3>
-                                <p>Collapse the sidebar (‹ button) for more map space. When collapsed, reopen it with the <strong>»</strong> control on the map (below the top bar, left edge). Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes <strong>Support</strong> (<a href="mailto:support@airplot.app">support@airplot.app</a>), <strong>Privacy</strong> (<a href="privacy.html">policy</a>), and <strong>Disclaimer</strong> (same content as the Disclaimer tab).</p>
+                                <p>Collapse the sidebar (‹ button) for more map space. When collapsed, reopen it with the <strong>»</strong> control on the map (below the top bar, left edge). Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes <strong>Support</strong> (<a href="mailto:support@airplan.uk">support@airplan.uk</a>), <strong>Privacy</strong> (<a href="privacy.html">policy</a>), and <strong>Disclaimer</strong> (same content as the Disclaimer tab).</p>
                             </section>
                             <section class="help-section" id="help-map-mobile">
                                 <h3>Small screens</h3>
-                                <p>On narrow viewports the sidebar opens as a sheet; use <strong>»</strong> below the top bar (left of the map) to open it again after you collapse it. <strong>AirPlot</strong> (logo and name in the top bar - same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>tool strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
+                                <p>On narrow viewports the sidebar opens as a sheet; use <strong>»</strong> below the top bar (left of the map) to open it again after you collapse it. <strong>AirPlan</strong> (logo and name in the top bar - same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>tool strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
                             </section>
                         </div>
                     </details>
@@ -1005,19 +1005,19 @@
                     <section class="help-section" id="help-rc-report">
                         <h3>Flight Report</h3>
                         <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use current GPS</strong> on HTTPS), mission fields (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send by email</strong>.</p>
-                        <p><strong>Local draft:</strong> What you type is saved in this browser until you use <strong>Clear Report</strong> (beside the page title or at the bottom; both ask for confirmation), or clear site data. Nothing is sent to AirPlot servers.</p>
+                        <p><strong>Local draft:</strong> What you type is saved in this browser until you use <strong>Clear Report</strong> (beside the page title or at the bottom; both ask for confirmation), or clear site data. Nothing is sent to AirPlan servers.</p>
                         <p><strong>Switch tools:</strong> On Flight Report, the header <strong>tool strip</strong> opens Planner, Weather, Airspace, Checklist, or stays on Flight Report in the same tab without returning to the welcome screen.</p>
                     </section>
                     <section class="help-section" id="help-rc-checklist">
                         <h3>Checklist (M4T / TD)</h3>
-                        <p>Open <strong>Checklist</strong> from the welcome screen or via <a href="checklist.html">checklist.html</a>. The page lists pre-flight, take-off, landing, and post-flight sections with checkboxes, overall and per-section progress, <strong>Mark all complete</strong> per section, and optional short notes beside selected items (e.g. max altitude and max flight distance). Use <strong>Reset All</strong> to clear everything; confirmation uses the same modal style as elsewhere in AirPlot.</p>
+                        <p>Open <strong>Checklist</strong> from the welcome screen or via <a href="checklist.html">checklist.html</a>. The page lists pre-flight, take-off, landing, and post-flight sections with checkboxes, overall and per-section progress, <strong>Mark all complete</strong> per section, and optional short notes beside selected items (e.g. max altitude and max flight distance). Use <strong>Reset All</strong> to clear everything; confirmation uses the same modal style as elsewhere in AirPlan.</p>
                         <p><strong>Exports:</strong> <strong>Send by email</strong> builds a plain-text summary (mailto opens your mail app; long text may copy to the clipboard first). <strong>Export to PDF</strong> uses the browser print dialog (save as PDF). Both include an <strong>exported</strong> date and time. A duplicate progress and action bar appears at the bottom of the page so you do not need to scroll back to the top to reset or export.</p>
                         <p><strong>Local state:</strong> Checklist progress and notes are stored in this browser (not on our servers) until you reset or clear site data.</p>
                         <p><strong>Switch tools:</strong> On the checklist page, the header <strong>tool strip</strong> opens Flight Report, Planner, Weather, or Airspace without going home.</p>
                     </section>
                     <section class="help-section" id="help-rc-welcome">
                         <h3>Welcome screen</h3>
-                        <p>From any tool, <strong>AirPlot</strong> (logo and name, top-left) returns to the AirPlot welcome screen for the full launcher (including training, knowledge, DJI planner, and the airspace chooser). Use the <strong>tool strip</strong> when you only need to hop between the five main tools.</p>
+                        <p>From any tool, <strong>AirPlan</strong> (logo and name, top-left) returns to the AirPlan welcome screen for the full launcher (including training, knowledge, DJI planner, and the airspace chooser). Use the <strong>tool strip</strong> when you only need to hop between the five main tools.</p>
                     </section>
                 </div>
                 <div class="tab-panel" id="help-tab-references">
@@ -1062,7 +1062,7 @@
                 <div class="tab-panel" id="help-tab-disclaimer">
                     <section class="help-section" id="help-disclaimer-intro">
                         <h3>Disclaimer</h3>
-                        <p>AirPlot is a planning and visualisation tool for drone operations. Please read the following carefully.</p>
+                        <p>AirPlan is a planning and visualisation tool for drone operations. Please read the following carefully.</p>
                     </section>
                     <section class="help-section help-section--legal" id="help-disclaimer-body">
                         <h4>Use at your own risk</h4>
@@ -1413,6 +1413,7 @@
     <script src="https://unpkg.com/@elfalem/leaflet-curve@0.9.2/leaflet.curve.js"></script>
 
     <!-- App Scripts -->
+    <script src="js/ap-brand-logo.js?v=1"></script>
     <script src="js/ap-shell-theme.js?v=2"></script>
     <script src="js/config.js"></script>
     <script src="js/confirm-modal.js"></script>
@@ -1425,8 +1426,8 @@
     <script src="js/elevation.js"></script>
     <script src="js/converters.js"></script>
     <script src="js/drawings.js"></script>
-    <script src="js/pptx-theme.js?v=10"></script>
-    <script src="js/pdf-theme.js?v=6"></script>
+    <script src="js/pptx-theme.js?v=11"></script>
+    <script src="js/pdf-theme.js?v=7"></script>
     <script src="js/exporters.js?v=9"></script>
     <script src="js/io.js"></script>
     <script src="js/app.js"></script>

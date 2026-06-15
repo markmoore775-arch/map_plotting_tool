@@ -4,11 +4,11 @@
   "compatibility_date": "2026-02-19",
   "routes": [
     {
-      "pattern": "airplot.app",
+      "pattern": "airplan.uk",
       "custom_domain": true
     },
     {
-      "pattern": "www.airplot.app",
+      "pattern": "www.airplan.uk",
       "custom_domain": true
     }
   ],

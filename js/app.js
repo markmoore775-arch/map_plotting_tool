@@ -618,7 +618,7 @@
             method: 'GET',
             headers: {
                 Accept: 'application/json',
-                'User-Agent': 'AirPlot/4.0 (https://airplot.app; support@airplot.app)'
+                'User-Agent': 'AirPlan/1.0 (https://airplan.uk; support@airplan.uk)'
             },
             mode: 'cors'
         })

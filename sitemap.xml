@@ -1,62 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://airplot.app/</loc>
+    <loc>https://airplan.uk/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://airplot.app/privacy.html</loc>
+    <loc>https://airplan.uk/privacy.html</loc>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://airplot.app/weather.html</loc>
+    <loc>https://airplan.uk/weather.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://airplot.app/flight-planning.html</loc>
+    <loc>https://airplan.uk/flight-planning.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://airplot.app/flight-notes.html</loc>
+    <loc>https://airplan.uk/flight-notes.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://airplot.app/checklist.html</loc>
+    <loc>https://airplan.uk/checklist.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://airplot.app/airspace.html</loc>
+    <loc>https://airplan.uk/airspace.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://airplot.app/airspace-adsbx.html</loc>
+    <loc>https://airplan.uk/airspace-adsbx.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://airplot.app/training.html</loc>
+    <loc>https://airplan.uk/training.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://airplot.app/knowledge.html</loc>
+    <loc>https://airplan.uk/knowledge.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://airplot.app/drone-run/</loc>
+    <loc>https://airplan.uk/drone-run/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://airplot.app/drone-dash/</loc>
+    <loc>https://airplan.uk/drone-dash/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

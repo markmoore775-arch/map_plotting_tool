@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flight Report | AirPlot</title>
-    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <title>Flight Report | AirPlan</title>
+    <link rel="icon" href="assets/airplan-icon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icon-180.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,13 +22,13 @@
 <body class="flight-notes-mode">
     <header class="fn-top-bar">
         <div class="fn-top-bar-start">
-            <nav class="fp-welcome-bar" aria-label="AirPlot home">
-                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
-                    <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
-                    <span class="fp-welcome-title">AirPlot</span>
+            <nav class="fp-welcome-bar" aria-label="AirPlan home">
+                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlan welcome screen" aria-label="AirPlan home, return to welcome screen">
+                    <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo fp-welcome-logo" />
+                    <span class="fp-welcome-title">AirPlan</span>
                 </a>
             </nav>
-            <nav class="ap-tool-nav" aria-label="AirPlot tools">
+            <nav class="ap-tool-nav" aria-label="AirPlan tools">
                 <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon ap-tool-nav__icon--planner" aria-hidden="true"></span><span class="ap-tool-nav__label">Planner</span></a>
                 <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon ap-tool-nav__icon--weather" aria-hidden="true"></span><span class="ap-tool-nav__label">Weather</span></a>
                 <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon ap-tool-nav__icon--airspace" aria-hidden="true"></span><span class="ap-tool-nav__label">Airspace</span></a>
@@ -57,7 +57,7 @@
                 <summary class="fn-privacy-summary"><span class="fn-privacy-summary-icon" aria-hidden="true">ℹ️</span> Privacy info</summary>
                 <div class="fn-disclaimer-body" role="note">
                     <p>
-                        <strong>Privacy:</strong> AirPlot does not save your flight report on our servers. What you enter stays in this browser on this device and is not uploaded to us.
+                        <strong>Privacy:</strong> AirPlan does not save your flight report on our servers. What you enter stays in this browser on this device and is not uploaded to us.
                         Your draft is saved locally so you can leave this page and return later; use <strong>Clear Report</strong> next to the page title or at the bottom to wipe it from this browser.
                         For a portable copy, use <strong>export to PDF</strong> or <strong>send by email</strong>.
                         Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch Weather Report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed report text is not sent to those services.
@@ -182,7 +182,7 @@
                     <summary class="fn-alos-help-summary">ALoS model (help)</summary>
                     <div class="fn-alos-help-body">
                         <p class="fn-alos-help-lead"><strong>What to record:</strong> Enter minutes in <strong>Amber</strong> and <strong>Red</strong> in each battery&rsquo;s fields below. Use <strong>ALoS comments</strong> for narrative: ground risk, air risk (including live traffic / ADS-B-style monitoring), mitigations, and how traffic checks influenced decisions.</p>
-                        <p class="fn-alos-help-note" role="note">This summary is for prompting only. Follow your organisation&rsquo;s authorised operations material; AirPlot does not replace unit-specific SOPs. Many UAS flight log templates also expect <strong>occurrences</strong>, <strong>observations</strong>, and <strong>issues</strong> as a minimum.</p>
+                        <p class="fn-alos-help-note" role="note">This summary is for prompting only. Follow your organisation&rsquo;s authorised operations material; AirPlan does not replace unit-specific SOPs. Many UAS flight log templates also expect <strong>occurrences</strong>, <strong>observations</strong>, and <strong>issues</strong> as a minimum.</p>
                         <h3 class="fn-alos-help-sub">Air / distance and height (typical envelope)</h3>
                         <ul class="fn-alos-help-list">
                             <li><strong>Green-style VLOS band</strong>: horizontal distance up to about <strong>500&nbsp;m</strong> and height up to about <strong>400&nbsp;ft</strong>.</li>
@@ -896,10 +896,11 @@
     <script src="js/map-capture.js?v=2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="js/pdf-theme.js?v=6"></script>
+    <script src="js/pdf-theme.js?v=7"></script>
     <script src="js/notam-pib.js?v=2"></script>
     <script src="js/airspace-nearby.js?v=4"></script>
     <script src="js/geolocation-helpers.js?v=6"></script>
+    <script src="js/ap-brand-logo.js?v=1"></script>
     <script src="js/flight-notes.js?v=42"></script>
 </body>
 </html>

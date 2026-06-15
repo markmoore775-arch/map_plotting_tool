@@ -1,6 +1,6 @@
-# Drone Dash (AirPlot training)
+# Drone Dash (AirPlan training)
 
-Side-scrolling training game opened from [training.html](../training.html) in the AirPlot project. For entertainment and stick practice only; it does not count towards flight currency.
+Side-scrolling training game opened from [training.html](../training.html) in the AirPlan project. For entertainment and stick practice only; it does not count towards flight currency.
 
 ## Run locally
 
@@ -10,4 +10,4 @@ Side-scrolling training game opened from [training.html](../training.html) in th
 2. If the template expects it, set `GEMINI_API_KEY` in `.env.local`.
 3. `npm run dev`
 
-The upstream AI Studio project link (if present in the scaffold) is optional; AirPlot serves the built assets from `drone-dash/` after `npm run build` in this folder.
+The upstream AI Studio project link (if present in the scaffold) is optional; AirPlan serves the built assets from `drone-dash/` after `npm run build` in this folder.

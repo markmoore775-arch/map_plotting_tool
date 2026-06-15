@@ -1395,7 +1395,7 @@
      */
     function buildNotesPlainText() {
         var lines = [];
-        lines.push('AirPlot v4: Flight Report');
+        lines.push('AirPlan v1: Flight Report');
         lines.push('');
 
         lines.push('--- Schedule ---');
@@ -3553,6 +3553,9 @@
                 localStorage.setItem('fnLightTheme', light ? '1' : '0');
             } catch (e) {}
             syncFnThemeToggleButton();
+            if (typeof window.syncApBrandLogos === 'function') {
+                window.syncApBrandLogos(!!light);
+            }
         }
 
         var fnThemeBtn = document.getElementById('fnThemeToggle');

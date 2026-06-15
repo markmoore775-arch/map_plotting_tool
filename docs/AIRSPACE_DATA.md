@@ -1,8 +1,8 @@
 # UK Airspace Data – Real NATS UAS Data
 
-AirPlot **v4** includes a separate **[Airspace](../airspace.html)** page for **live ADS-B traffic** (hazard-themed map, altitude labels, session trails, optional OGN glider-class overlay). That feature uses the [ADSB.lol](https://api.adsb.lol/docs) API, not the GeoJSON files described here. Optional **approx. AGL** on that page uses Mapbox Terrain-RGB when `js/config.js` includes a Mapbox token.
+AirPlan **v1** includes a separate **[Airspace](../airspace.html)** page for **live ADS-B traffic** (hazard-themed map, altitude labels, session trails, optional OGN glider-class overlay). That feature uses the [ADSB.lol](https://api.adsb.lol/docs) API, not the GeoJSON files described here. Optional **approx. AGL** on that page uses Mapbox Terrain-RGB when `js/config.js` includes a Mapbox token.
 
-This document covers **Planning** mode **UK airspace** layers: AirPlot can display UK airspace restrictions (Prohibited, Restricted, Danger, FRZ) using official NATS UAS data. The guide below explains how to obtain and convert that data.
+This document covers **Planning** mode **UK airspace** layers: AirPlan can display UK airspace restrictions (Prohibited, Restricted, Danger, FRZ) using official NATS UAS data. The guide below explains how to obtain and convert that data.
 
 ## Quick Start
 
@@ -84,7 +84,7 @@ NATS updates the UAS Flight Restrictions dataset every **28 days** (AIRAC cycle)
 
 ## Airspace Types
 
-The converter maps NATS designators to AirPlot types:
+The converter maps NATS designators to AirPlan types:
 
 | NATS Designator | Type | Colour |
 |-----------------|------|--------|
@@ -123,9 +123,9 @@ npm install @tmcw/togeojson @xmldom/xmldom adm-zip
 
 ## NOTAM (Temporary Restrictions)
 
-AirPlot fetches NOTAMs from the [UK NOTAM Archive](https://jonty.github.io/uk-notam-archive/) (NATS AIS Contingency, hourly updated). The PIB XML is parsed in one shared module ([`js/notam-pib.js`](../js/notam-pib.js)) so the main map, Flight Weather, Flight Report, and DJI Mission Planner stay consistent.
+AirPlan fetches NOTAMs from the [UK NOTAM Archive](https://jonty.github.io/uk-notam-archive/) (NATS AIS Contingency, hourly updated). The PIB XML is parsed in one shared module ([`js/notam-pib.js`](../js/notam-pib.js)) so the main map, Flight Weather, Flight Report, and DJI Mission Planner stay consistent.
 
-**Geometry:** the feed supplies a centre coordinate and a radius, which AirPlot draws as a circle. Complex boundaries described only in NOTAM text are not plotted.
+**Geometry:** the feed supplies a centre coordinate and a radius, which AirPlan draws as a circle. Complex boundaries described only in NOTAM text are not plotted.
 
 ### Main map (index)
 
@@ -156,7 +156,7 @@ The map includes a **NOTAM** control (bottom-left) with the same toggle, max rad
 
 ## RA(T) – Restricted Area Temporary
 
-AirPlot can display RA(T)s from the [UK Airspace Service](https://airspace.bgaladder.net/) (BGA). **Registration required** at airspace.bgaladder.net. Add your username and password in **Settings** to enable the RA(T) layer.
+AirPlan can display RA(T)s from the [UK Airspace Service](https://airspace.bgaladder.net/) (BGA). **Registration required** at airspace.bgaladder.net. Add your username and password in **Settings** to enable the RA(T) layer.
 
 ## Data Validity
 
@@ -166,7 +166,7 @@ When you run the conversion script, the output GeoJSON includes metadata with th
 
 ## UK ICAO AIP Dataset (AIXM)
 
-AirPlot can optionally display additional airspace from the **UK ICAO AIP Dataset** (CTR, TMA, FIR, etc.) alongside ENR 5.1. This dataset is in AIXM 5.1 XML format and requires conversion.
+AirPlan can optionally display additional airspace from the **UK ICAO AIP Dataset** (CTR, TMA, FIR, etc.) alongside ENR 5.1. This dataset is in AIXM 5.1 XML format and requires conversion.
 
 ### Obtaining the AIP Dataset
 
@@ -193,7 +193,7 @@ The script accepts `.xml` or `.zip` files. Output defaults to `assets/uk-aip-air
 
 ### Integration
 
-If `assets/uk-aip-airspace.geojson` exists, AirPlot loads it automatically and merges it with ENR 5.1 data. AIP features (CTR, TMA, FIR, etc.) appear in the **Other** category in the airspace key. If the file is missing, the app works normally with ENR 5.1 only.
+If `assets/uk-aip-airspace.geojson` exists, AirPlan loads it automatically and merges it with ENR 5.1 data. AIP features (CTR, TMA, FIR, etc.) appear in the **Other** category in the airspace key. If the file is missing, the app works normally with ENR 5.1 only.
 
 ### AIP Conversion Troubleshooting
 

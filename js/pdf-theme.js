@@ -9,6 +9,8 @@ const PdfTheme = (() => {
     /** PDF exports default to light theme (paper-style). */
     let _light = true;
     let _logoBase64 = null;
+    /** airplanlogowhite/black.png aspect (width / height). */
+    var LOGO_ASPECT = 840 / 938;
 
     const DARK = {
         bg: [30, 30, 46],
@@ -39,80 +41,28 @@ const PdfTheme = (() => {
     function C() { return _light ? LIGHT : DARK; }
     function hex(rgb) { return '#' + rgb.map(function (v) { return v.toString(16).padStart(2, '0'); }).join(''); }
 
-    function setLight(v) { _light = !!v; }
-
-    /**
-     * Convert raster logo (white on dark) to black glyph on white for PDF headers.
-     */
-    function dataUrlToBlackOnWhitePng(dataUrl) {
-        return new Promise(function (resolve, reject) {
-            var img = new Image();
-            img.onload = function () {
-                try {
-                    var w = img.naturalWidth;
-                    var h = img.naturalHeight;
-                    if (!w || !h) {
-                        resolve(dataUrl);
-                        return;
-                    }
-                    var canvas = document.createElement('canvas');
-                    canvas.width = w;
-                    canvas.height = h;
-                    var ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    var id = ctx.getImageData(0, 0, w, h);
-                    var d = id.data;
-                    var lumThreshold = 135;
-                    for (var i = 0; i < d.length; i += 4) {
-                        var lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                        if (lum > lumThreshold) {
-                            d[i] = 0;
-                            d[i + 1] = 0;
-                            d[i + 2] = 0;
-                            d[i + 3] = 255;
-                        } else {
-                            d[i] = 255;
-                            d[i + 1] = 255;
-                            d[i + 2] = 255;
-                            d[i + 3] = 255;
-                        }
-                    }
-                    ctx.putImageData(id, 0, 0);
-                    resolve(canvas.toDataURL('image/png'));
-                } catch (err) {
-                    reject(err);
-                }
-            };
-            img.onerror = function () {
-                resolve(dataUrl);
-            };
-            img.src = dataUrl;
-        });
+    function setLight(v) {
+        _light = !!v;
+        _logoBase64 = null;
     }
 
     async function loadLogo() {
         if (_logoBase64) return _logoBase64;
-        var paths = ['assets/icon-192.png', 'assets/airplot-icon.png'];
-        for (var i = 0; i < paths.length; i++) {
-            try {
-                var resp = await fetch(paths[i]);
-                if (!resp.ok) continue;
-                var blob = await resp.blob();
-                var rawUrl = await new Promise(function (resolve, reject) {
-                    var reader = new FileReader();
-                    reader.onerror = function () { reject(new Error('read failed')); };
-                    reader.onloadend = function () { resolve(reader.result); };
-                    reader.readAsDataURL(blob);
-                });
-                try {
-                    _logoBase64 = await dataUrlToBlackOnWhitePng(rawUrl);
-                } catch (e) {
-                    _logoBase64 = rawUrl;
-                }
-                return _logoBase64;
-            } catch (e) { /* try next */ }
+        var path = _light ? 'assets/airplanlogoblack.png' : 'assets/airplanlogowhite.png';
+        try {
+            var resp = await fetch(path);
+            if (!resp.ok) return null;
+            var blob = await resp.blob();
+            _logoBase64 = await new Promise(function (resolve, reject) {
+                var reader = new FileReader();
+                reader.onerror = function () { reject(new Error('read failed')); };
+                reader.onloadend = function () { resolve(reader.result); };
+                reader.readAsDataURL(blob);
+            });
+            return _logoBase64;
+        } catch (e) {
+            return null;
         }
-        return null;
     }
 
     /** A4 portrait (mm); all PDF reports use this. */
@@ -141,15 +91,15 @@ const PdfTheme = (() => {
         doc.rect(0, 0, PAGE_W, barH, 'F');
         var logoLeft = 10;
         var logoTop = 5;
-        var logoW = 14;
-        var logoH = 14;
+        var logoH = isTitlePage ? 14 : 10;
+        var logoW = logoH * LOGO_ASPECT;
         if (_logoBase64) {
             try {
                 if (isTitlePage) {
                     doc.addImage(_logoBase64, 'PNG', logoLeft, logoTop, logoW, logoH);
                 } else {
-                    logoW = 10;
                     logoH = 10;
+                    logoW = logoH * LOGO_ASPECT;
                     logoTop = 3.5;
                     logoLeft = PAGE_W - 10 - logoW;
                     doc.addImage(_logoBase64, 'PNG', logoLeft, logoTop, logoW, logoH);
@@ -158,7 +108,7 @@ const PdfTheme = (() => {
         }
         if (title) {
             var titleSize = isTitlePage ? 22 : 16;
-            var titleX = isTitlePage && _logoBase64 ? 28 : 10;
+            var titleX = isTitlePage && _logoBase64 ? logoLeft + logoW + 4 : 10;
             var titleY;
             if (_logoBase64) {
                 titleY = logoTop + logoH / 2;
@@ -184,7 +134,7 @@ const PdfTheme = (() => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(6);
         doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-        doc.text('AirPlot v4', pw - 10, ph - 1.2, { align: 'right' });
+        doc.text('AirPlan v1', pw - 10, ph - 1.2, { align: 'right' });
         var pages = doc.internal.getNumberOfPages();
         var current = doc.internal.getCurrentPageInfo().pageNumber;
         doc.text('Page ' + current + ' of ' + pages, 10, ph - 1.2);

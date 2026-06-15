@@ -117,7 +117,7 @@
                 '<button type="button" class="modal-close" aria-label="Close">&times;</button>' +
                 '</div>' +
                 '<div class="modal-body">' +
-                '<p><strong>This is a limitation in Apple&rsquo;s iOS WebKit</strong> when a site runs from the home screen icon (standalone mode): GPS and &ldquo;show my location&rdquo; often fail or never complete. <strong>It is not an AirPlot bug.</strong></p>' +
+                '<p><strong>This is a limitation in Apple&rsquo;s iOS WebKit</strong> when a site runs from the home screen icon (standalone mode): GPS and &ldquo;show my location&rdquo; often fail or never complete. <strong>It is not an AirPlan bug.</strong></p>' +
                 '<p><strong>What to do:</strong> copy the address below, open <strong>Safari</strong>, <strong>Chrome</strong>, or another browser you prefer, paste it into the address bar, then load the page and use location there.</p>' +
                 '<p class="geolocate-ios-standalone-url-label">Page address</p>' +
                 '<div class="geolocate-ios-standalone-url-box">' +
@@ -384,7 +384,7 @@
             if (fromHomeScreen) {
                 return (
                     base +
-                    'Apple’s iOS WebKit often breaks geolocation for home-screen web apps (standalone mode) - not an AirPlot bug. Open this page in Safari or Chrome instead. ' +
+                    'Apple’s iOS WebKit often breaks geolocation for home-screen web apps (standalone mode) - not an AirPlan bug. Open this page in Safari or Chrome instead. ' +
                     settings +
                     alt
                 );

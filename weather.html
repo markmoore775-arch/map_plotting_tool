@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flight Weather | AirPlot</title>
-    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <title>Flight Weather | AirPlan</title>
+    <link rel="icon" href="assets/airplan-icon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icon-180.png">
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -31,13 +31,13 @@
 
     <header class="fn-top-bar" id="mapTopChrome">
         <div class="fn-top-bar-start">
-            <nav class="fp-welcome-bar" aria-label="AirPlot home">
-                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
-                    <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
-                    <span class="fp-welcome-title">AirPlot</span>
+            <nav class="fp-welcome-bar" aria-label="AirPlan home">
+                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlan welcome screen" aria-label="AirPlan home, return to welcome screen">
+                    <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo fp-welcome-logo" />
+                    <span class="fp-welcome-title">AirPlan</span>
                 </a>
             </nav>
-            <nav class="ap-tool-nav" aria-label="AirPlot tools">
+            <nav class="ap-tool-nav" aria-label="AirPlan tools">
                 <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon ap-tool-nav__icon--planner" aria-hidden="true"></span><span class="ap-tool-nav__label">Planner</span></a>
                 <span class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" aria-label="Weather, current page"><span class="ap-tool-nav__icon ap-tool-nav__icon--weather" aria-hidden="true"></span><span class="ap-tool-nav__label">Weather</span></span>
                 <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon ap-tool-nav__icon--airspace" aria-hidden="true"></span><span class="ap-tool-nav__label">Airspace</span></a>
@@ -313,7 +313,7 @@
 
     <!-- App logo -->
     <div class="weather-logo" aria-hidden="true">
-        <img src="assets/airplot-icon.svg" alt="AirPlot">
+        <img src="assets/airplanlogowhite.png" alt="AirPlan" class="ap-brand-logo">
     </div>
 
     <!-- Leaflet JS -->
@@ -332,9 +332,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
+    <script src="js/ap-brand-logo.js?v=1"></script>
     <script src="js/ap-shell-theme.js?v=1"></script>
-    <script src="js/pptx-theme.js?v=10"></script>
-    <script src="js/pdf-theme.js?v=6"></script>
+    <script src="js/pptx-theme.js?v=11"></script>
+    <script src="js/pdf-theme.js?v=7"></script>
     <script src="js/notam-pib.js?v=2"></script>
     <script src="js/airspace-nearby.js?v=4"></script>
     <script src="js/weather.js?v=26"></script>

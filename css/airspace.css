@@ -533,8 +533,8 @@ a.airspace-btn.airspace-view-switch {
 }
 
 .airspace-logo img {
-    width: 28px;
     height: 28px;
+    width: auto;
 }
 
 @media (max-width: 900px) {

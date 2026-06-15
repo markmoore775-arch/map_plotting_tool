@@ -1,42 +1,18 @@
-const SESSION_COOKIE = 'airplot_session';
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12; // 12 hours
-const DEFAULT_NEXT_PATH = '/index.html?autostart=1';
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = normalizePath(url.pathname);
 
-    if (path === '/unlock') {
-      return handleUnlock(request, env);
-    }
-
-    if (path === '/logout') {
-      return handleLogout();
-    }
-
-    const authed = await isAuthenticated(request, env);
-
     if (path === '/api/aviation') {
-      if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
       return handleAviationApi(request);
     }
 
     if (path === '/api/adsb') {
-      if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
       return handleAdsbApi(request);
     }
 
     if (path === '/api/ogn') {
-      if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
       return handleOgnApi(request);
-    }
-
-    if (!authed) {
-      if (path === '/game-over.gif') {
-        return env.ASSETS.fetch(request);
-      }
-      return htmlResponse(renderOfflinePage({ next: buildNextPath(request) }));
     }
 
     // Backwards compatibility: old launch links may still target /app.
@@ -51,55 +27,83 @@ export default {
   }
 };
 
-async function isAuthenticated(request, env) {
-  const cookieHeader = request.headers.get('Cookie') || '';
-  const cookies = parseCookies(cookieHeader);
-  const token = cookies[SESSION_COOKIE] || '';
-  return verifySessionToken(token, env.AUTH_SECRET || '');
-}
-
-function buildNextPath(request) {
-  const url = new URL(request.url);
-  const path = normalizePath(url.pathname);
-  if (path === '/') {
-    return DEFAULT_NEXT_PATH;
-  }
-  return normalizeNextPath(path + url.search);
-}
-
-function handleLogout() {
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: '/',
-      'Set-Cookie': `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
-    }
-  });
-}
-
 function normalizePath(pathname) {
   if (!pathname || pathname === '/') return '/';
   return pathname.replace(/\/+$/, '') || '/';
 }
 
-function parseCookies(cookieHeader) {
-  const out = {};
-  cookieHeader.split(';').forEach((part) => {
-    const idx = part.indexOf('=');
-    if (idx <= 0) return;
-    const key = part.slice(0, idx).trim();
-    const val = part.slice(idx + 1).trim();
-    out[key] = decodeURIComponent(val);
-  });
-  return out;
+const ADSB_CACHE_SECONDS = 5;
+const ADSB_LOL_BASE = 'https://api.adsb.lol/v2';
+const AIRPLANES_LIVE_BASE = 'https://api.airplanes.live/v2';
+const ADSB_UPSTREAM_HEADERS = {
+  Accept: 'application/json',
+  'User-Agent': 'AirPlan/1.0 (+https://airplan.uk; airspace traffic proxy)'
+};
+
+function roundAdsbCoord(value) {
+  return Math.round(value * 100) / 100;
 }
 
-function normalizeNextPath(nextRaw) {
-  if (!nextRaw || typeof nextRaw !== 'string') return DEFAULT_NEXT_PATH;
-  if (!nextRaw.startsWith('/')) return DEFAULT_NEXT_PATH;
-  if (nextRaw.startsWith('//')) return DEFAULT_NEXT_PATH;
-  if (nextRaw.startsWith('/unlock')) return DEFAULT_NEXT_PATH;
-  return nextRaw;
+function buildAdsbCacheRequest(requestUrl, query) {
+  const cacheUrl = new URL(requestUrl);
+  cacheUrl.search = new URLSearchParams(query).toString();
+  return new Request(cacheUrl.toString(), { method: 'GET' });
+}
+
+function adsbJsonResponse(body, extraHeaders) {
+  const headers = {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': `public, max-age=${ADSB_CACHE_SECONDS}`,
+    ...(extraHeaders || {})
+  };
+  return new Response(body, { status: 200, headers });
+}
+
+async function fetchAdsbUpstream(upstreamUrl) {
+  return fetch(upstreamUrl, {
+    headers: ADSB_UPSTREAM_HEADERS,
+    cf: {
+      cacheTtl: ADSB_CACHE_SECONDS,
+      cacheEverything: true
+    }
+  });
+}
+
+function buildAdsbLolUrl(query) {
+  if (query.hex) {
+    return `${ADSB_LOL_BASE}/hex/${query.hex}`;
+  }
+  return `${ADSB_LOL_BASE}/lat/${query.latKey}/lon/${query.lonKey}/dist/${query.distKey}`;
+}
+
+function buildAirplanesLiveUrl(query) {
+  if (query.hex) {
+    return `${AIRPLANES_LIVE_BASE}/hex/${query.hex}`;
+  }
+  return `${AIRPLANES_LIVE_BASE}/point/${query.latKey}/${query.lonKey}/${query.distKey}`;
+}
+
+async function fetchAdsbWithFailover(query) {
+  const primaryUrl = buildAdsbLolUrl(query);
+  let primary = await fetchAdsbUpstream(primaryUrl);
+  if (!primary.ok && primary.status === 429) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    primary = await fetchAdsbUpstream(primaryUrl);
+  }
+  if (primary.ok) {
+    return { response: primary, source: 'adsblol' };
+  }
+
+  const fallbackUrl = buildAirplanesLiveUrl(query);
+  const fallback = await fetchAdsbUpstream(fallbackUrl);
+  if (fallback.ok) {
+    return { response: fallback, source: 'airplaneslive' };
+  }
+
+  return {
+    response: primary.status >= fallback.status ? primary : fallback,
+    source: null
+  };
 }
 
 async function handleAdsbApi(request) {
@@ -109,7 +113,8 @@ async function handleAdsbApi(request) {
 
   const url = new URL(request.url);
   const hexRaw = url.searchParams.get('hex');
-  let upstreamUrl;
+  let query;
+  let cacheQuery;
 
   if (hexRaw != null && hexRaw !== '') {
     const hex = String(hexRaw)
@@ -118,7 +123,8 @@ async function handleAdsbApi(request) {
     if (!/^[0-9a-f]{6}$/.test(hex)) {
       return jsonResponse({ error: 'Invalid hex (expect 6 hex chars)' }, 400);
     }
-    upstreamUrl = `https://api.adsb.lol/v2/hex/${hex}`;
+    query = { hex };
+    cacheQuery = { hex };
   } else {
     const lat = Number(url.searchParams.get('lat'));
     const lon = Number(url.searchParams.get('lon'));
@@ -134,29 +140,44 @@ async function handleAdsbApi(request) {
       return jsonResponse({ error: 'Invalid dist (nm)' }, 400);
     }
 
-    upstreamUrl =
-      `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/${dist}`;
+    const latKey = roundAdsbCoord(lat);
+    const lonKey = roundAdsbCoord(lon);
+    const distKey = Math.round(dist);
+    query = { latKey, lonKey, distKey };
+    cacheQuery = {
+      lat: String(latKey),
+      lon: String(lonKey),
+      dist: String(distKey)
+    };
   }
 
-  const upstream = await fetch(upstreamUrl, {
-    headers: { Accept: 'application/json' }
-  });
+  const cache = caches.default;
+  const cacheRequest = buildAdsbCacheRequest(request.url, cacheQuery);
+  const cached = await cache.match(cacheRequest);
+
+  const result = await fetchAdsbWithFailover(query);
+  const upstream = result.response;
 
   if (!upstream.ok) {
+    if (cached) {
+      return adsbJsonResponse(await cached.text(), {
+        'X-AirPlan-Cache': 'stale',
+        'X-AirPlan-Source': 'stale'
+      });
+    }
+    const status = upstream.status === 429 ? 429 : 502;
     return jsonResponse(
       { error: `Upstream returned HTTP ${upstream.status}` },
-      502
+      status
     );
   }
 
   const body = await upstream.text();
-  return new Response(body, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store'
-    }
+  const response = adsbJsonResponse(body, {
+    'X-AirPlan-Source': result.source || 'adsblol'
   });
+  await cache.put(cacheRequest, response.clone());
+  return response;
 }
 
 async function handleOgnApi(request) {
@@ -256,219 +277,6 @@ async function handleAviationApi(request) {
   });
 }
 
-async function handleUnlock(request, env) {
-  const url = new URL(request.url);
-  const next = normalizeNextPath(url.searchParams.get('next') || DEFAULT_NEXT_PATH);
-  const isPost = request.method.toUpperCase() === 'POST';
-
-  const cookieHeader = request.headers.get('Cookie') || '';
-  const cookies = parseCookies(cookieHeader);
-  const existingSession = cookies[SESSION_COOKIE] || '';
-  const alreadyAuthenticated = await verifySessionToken(existingSession, env.AUTH_SECRET || '');
-  if (alreadyAuthenticated && !isPost) {
-    return new Response(null, {
-      status: 302,
-      headers: { Location: next }
-    });
-  }
-
-  if (!isPost) {
-    return htmlResponse(renderUnlockPage({ next, error: '' }));
-  }
-
-  const form = await request.formData();
-  const password = String(form.get('password') || '');
-  const postedNext = normalizeNextPath(String(form.get('next') || next));
-  const expected = env.SITE_PASS || '';
-
-  if (!expected) {
-    return htmlResponse(renderUnlockPage({
-      next: postedNext,
-      error: 'Password protection is not configured yet.'
-    }), 500);
-  }
-
-  if (!constantTimeEqual(password, expected)) {
-    return htmlResponse(renderUnlockPage({
-      next: postedNext,
-      error: 'Incorrect password. Please try again.'
-    }), 401);
-  }
-
-  if (!env.AUTH_SECRET) {
-    return htmlResponse(renderUnlockPage({
-      next: postedNext,
-      error: 'Server auth secret is missing. Ask admin to set AUTH_SECRET.'
-    }), 500);
-  }
-
-  const token = await createSessionToken(env.AUTH_SECRET);
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: postedNext,
-      'Set-Cookie': `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${SESSION_MAX_AGE_SECONDS}`
-    }
-  });
-}
-
-function renderUnlockPage({ next, error }) {
-  const safeNext = escapeHtml(next || DEFAULT_NEXT_PATH);
-  const safeError = error ? `<p class="error">${escapeHtml(error)}</p>` : '';
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login — AirPlot</title>
-  <style>
-    :root { color-scheme: dark; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: radial-gradient(circle at 20% 10%, #22233a 0%, #0a0a0f 50%, #050508 100%);
-      color: #f4f4f5;
-      font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
-    }
-    .card {
-      width: min(92vw, 420px);
-      background: rgba(21, 21, 31, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
-      padding: 24px;
-      box-shadow: 0 20px 45px rgba(0,0,0,0.45);
-    }
-    h1 { margin: 0 0 8px; font-size: 1.35rem; font-weight: 700; }
-    p { margin: 0 0 16px; color: #c9c9cf; line-height: 1.45; }
-    label { display: block; margin: 10px 0 6px; font-weight: 600; font-size: 0.92rem; }
-    input[type="password"] {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px 13px;
-      border-radius: 10px;
-      border: 1px solid #3d3d4f;
-      background: #101018;
-      color: #fff;
-      outline: none;
-    }
-    input[type="password"]:focus { border-color: #5b8def; }
-    button {
-      margin-top: 14px;
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #fff;
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      cursor: pointer;
-    }
-    button:hover { filter: brightness(1.08); }
-    .error {
-      margin: 0 0 10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: rgba(220, 38, 38, 0.16);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fecaca;
-      font-size: 0.9rem;
-    }
-  </style>
-</head>
-<body>
-  <main class="card">
-    <h1>Login</h1>
-    <p>Enter the password to access AirPlot.</p>
-    ${safeError}
-    <form method="post" action="/unlock">
-      <input type="hidden" name="next" value="${safeNext}">
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
-      <button type="submit">Login</button>
-    </form>
-  </main>
-</body>
-</html>`;
-}
-
-function renderOfflinePage({ next }) {
-  const loginHref = '/unlock?next=' + encodeURIComponent(next || DEFAULT_NEXT_PATH);
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AirPlot</title>
-  <style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #050508;
-      font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
-    }
-    .login-btn {
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      z-index: 10;
-      padding: 10px 18px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: rgba(21, 21, 31, 0.85);
-      color: #f4f4f5;
-      font-size: 0.92rem;
-      font-weight: 600;
-      text-decoration: none;
-      backdrop-filter: blur(8px);
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .login-btn:hover {
-      background: rgba(37, 37, 55, 0.95);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-    .gif-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      max-width: 100%;
-    }
-    .gif-wrap img {
-      max-width: min(92vw, 498px);
-      height: auto;
-      display: block;
-    }
-  </style>
-</head>
-<body>
-  <a class="login-btn" href="${loginHref}">Login</a>
-  <div class="gif-wrap">
-    <img src="/game-over.gif" alt="">
-  </div>
-</body>
-</html>`;
-}
-
-function htmlResponse(html, status = 200) {
-  return new Response(html, {
-    status,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store'
-    }
-  });
-}
-
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -477,81 +285,4 @@ function jsonResponse(data, status = 200) {
       'Cache-Control': 'no-store'
     }
   });
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function constantTimeEqual(a, b) {
-  const aa = new TextEncoder().encode(String(a));
-  const bb = new TextEncoder().encode(String(b));
-  if (aa.length !== bb.length) return false;
-  let diff = 0;
-  for (let i = 0; i < aa.length; i++) diff |= (aa[i] ^ bb[i]);
-  return diff === 0;
-}
-
-async function createSessionToken(secret) {
-  const expires = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS;
-  const nonce = crypto.randomUUID().replaceAll('-', '');
-  const payload = `${expires}.${nonce}`;
-  const signature = await signPayload(payload, secret);
-  return `${toBase64Url(payload)}.${toBase64Url(signature)}`;
-}
-
-async function verifySessionToken(token, secret) {
-  if (!token || !secret) return false;
-  const parts = token.split('.');
-  if (parts.length !== 2) return false;
-
-  const payload = fromBase64Url(parts[0]);
-  const providedSig = fromBase64Url(parts[1]);
-  if (!payload || !providedSig) return false;
-
-  const expectedSig = await signPayload(payload, secret);
-  if (!constantTimeEqual(providedSig, expectedSig)) return false;
-
-  const dot = payload.indexOf('.');
-  if (dot <= 0) return false;
-  const expires = Number(payload.slice(0, dot));
-  if (!Number.isFinite(expires)) return false;
-  return Math.floor(Date.now() / 1000) < expires;
-}
-
-async function signPayload(payload, secret) {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
-  return bytesToBinary(new Uint8Array(sig));
-}
-
-function toBase64Url(str) {
-  return btoa(str).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-}
-
-function fromBase64Url(str) {
-  try {
-    const normalized = str.replaceAll('-', '+').replaceAll('_', '/');
-    const pad = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
-    return atob(normalized + pad);
-  } catch (_) {
-    return '';
-  }
-}
-
-function bytesToBinary(bytes) {
-  let out = '';
-  for (let i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]);
-  return out;
 }

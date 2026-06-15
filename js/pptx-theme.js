@@ -8,6 +8,8 @@ const PptxTheme = (() => {
 
     let logoBase64 = null;
     let _light = false;
+    /** airplanlogowhite/black.png aspect (width / height). */
+    var LOGO_ASPECT = 840 / 938;
 
     const COLORS_DARK = {
         darkBg:      '1E1E2E',
@@ -41,85 +43,30 @@ const PptxTheme = (() => {
 
     function setLight(isLight) {
         _light = !!isLight;
-    }
-
-    /**
-     * Match PdfTheme: raster logo (light glyph on dark) → black pin/drone on white for slide headers.
-     */
-    function dataUrlToBlackOnWhitePng(dataUrl) {
-        return new Promise(function (resolve, reject) {
-            var img = new Image();
-            img.onload = function () {
-                try {
-                    var w = img.naturalWidth;
-                    var h = img.naturalHeight;
-                    if (!w || !h) {
-                        resolve(dataUrl);
-                        return;
-                    }
-                    var canvas = document.createElement('canvas');
-                    canvas.width = w;
-                    canvas.height = h;
-                    var ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    var id = ctx.getImageData(0, 0, w, h);
-                    var d = id.data;
-                    var lumThreshold = 135;
-                    for (var i = 0; i < d.length; i += 4) {
-                        var lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                        if (lum > lumThreshold) {
-                            d[i] = 0;
-                            d[i + 1] = 0;
-                            d[i + 2] = 0;
-                            d[i + 3] = 255;
-                        } else {
-                            d[i] = 255;
-                            d[i + 1] = 255;
-                            d[i + 2] = 255;
-                            d[i + 3] = 255;
-                        }
-                    }
-                    ctx.putImageData(id, 0, 0);
-                    resolve(canvas.toDataURL('image/png'));
-                } catch (err) {
-                    reject(err);
-                }
-            };
-            img.onerror = function () {
-                resolve(dataUrl);
-            };
-            img.src = dataUrl;
-        });
+        logoBase64 = null;
     }
 
     async function loadLogo() {
         if (logoBase64) return logoBase64;
-        const paths = ['assets/icon-192.png', 'assets/airplot-icon.png'];
-        for (let i = 0; i < paths.length; i++) {
-            try {
-                const resp = await fetch(paths[i]);
-                if (!resp.ok) continue;
-                const blob = await resp.blob();
-                const rawUrl = await new Promise(function (resolve, reject) {
-                    const reader = new FileReader();
-                    reader.onerror = function () {
-                        reject(new Error('read failed'));
-                    };
-                    reader.onloadend = function () {
-                        resolve(reader.result);
-                    };
-                    reader.readAsDataURL(blob);
-                });
-                try {
-                    logoBase64 = await dataUrlToBlackOnWhitePng(rawUrl);
-                } catch (e) {
-                    logoBase64 = rawUrl;
-                }
-                return logoBase64;
-            } catch (e) { /* try next */ }
+        var path = _light ? 'assets/airplanlogoblack.png' : 'assets/airplanlogowhite.png';
+        try {
+            var resp = await fetch(path);
+            if (!resp.ok) return null;
+            var blob = await resp.blob();
+            logoBase64 = await new Promise(function (resolve, reject) {
+                var reader = new FileReader();
+                reader.onerror = function () {
+                    reject(new Error('read failed'));
+                };
+                reader.onloadend = function () {
+                    resolve(reader.result);
+                };
+                reader.readAsDataURL(blob);
+            });
+            return logoBase64;
+        } catch (e) {
+            return null;
         }
-        console.warn('Could not load logo for PPTX branding (tried icon-192.png, airplot-icon.png).');
-        return null;
     }
 
     function applyTheme(pptx, logo) {
@@ -130,25 +77,29 @@ const PptxTheme = (() => {
             { rect: { x: 0, y: 0, w: '100%', h: 0.08, fill: { color: C.accent } } },
             { rect: { x: 0, y: 7.28, w: '100%', h: 0.04, fill: { color: C.accent } } },
             { rect: { x: 0, y: 7.32, w: '100%', h: 0.18, fill: { color: C.footerBg } } },
-            { text: { text: 'AirPlot v4', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
+            { text: { text: 'AirPlan v1', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
         ];
         if (logo) {
-            titleObjects.push({ image: { x: 0.35, y: 0.2, w: 0.55, h: 0.55, data: logo } });
+            var titleLogoH = 0.55;
+            var titleLogoW = titleLogoH * LOGO_ASPECT;
+            titleObjects.push({ image: { x: 0.35, y: 0.2, w: titleLogoW, h: titleLogoH, data: logo } });
         }
 
         var contentObjects = [
             { rect: { x: 0, y: 0, w: '100%', h: 0.05, fill: { color: C.accent } } },
             { rect: { x: 0, y: 7.32, w: '100%', h: 0.18, fill: { color: C.footerBg } } },
-            { text: { text: 'AirPlot v4', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
+            { text: { text: 'AirPlan v1', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
         ];
         if (logo) {
-            contentObjects.push({ image: { x: 12.35, y: 0.12, w: 0.4, h: 0.4, data: logo } });
+            var contentLogoH = 0.4;
+            var contentLogoW = contentLogoH * LOGO_ASPECT;
+            contentObjects.push({ image: { x: 12.35 - contentLogoW + 0.4, y: 0.12, w: contentLogoW, h: contentLogoH, data: logo } });
         }
 
         var mapObjects = [
             { rect: { x: 0, y: 0, w: '100%', h: 0.05, fill: { color: C.accent } } },
             { rect: { x: 0, y: 7.32, w: '100%', h: 0.18, fill: { color: C.footerBg } } },
-            { text: { text: 'AirPlot v4', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
+            { text: { text: 'AirPlan v1', options: { x: 11, y: 7.32, w: 2.2, h: 0.18, fontSize: 8, color: footerTextColor, fontFace: 'Arial', align: 'right', valign: 'middle' } } }
         ];
 
         pptx.defineSlideMaster({ title: 'TITLE_SLIDE', background: { color: C.darkBg }, objects: titleObjects });

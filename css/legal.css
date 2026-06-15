@@ -374,9 +374,6 @@ body.knowledge-page.fn-light-theme .fp-welcome-home-link:hover {
     color: #0f172a;
 }
 
-body.knowledge-page.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
-    filter: var(--ap-light-airplot-icon-filter, brightness(0) saturate(100%) invert(8%) sepia(10%) saturate(2585%) hue-rotate(201deg) brightness(102%) contrast(90%));
-}
 
 body.knowledge-page.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
     color: #0a0a0a;

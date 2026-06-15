@@ -1,5 +1,5 @@
-# https://airplot.app/
+# https://airplan.uk/
 User-agent: *
 Allow: /
 
-Sitemap: https://airplot.app/sitemap.xml
+Sitemap: https://airplan.uk/sitemap.xml

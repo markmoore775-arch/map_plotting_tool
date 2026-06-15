@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Convert NATS UK UAS Airspace data (KML/KMZ) to GeoJSON for AirPlot.
+ * Convert NATS UK UAS Airspace data (KML/KMZ) to GeoJSON for AirPlan.
  *
  * Usage:
  *   node scripts/convert-airspace-data.js <input.kml|input.kmz>
@@ -160,7 +160,7 @@ async function main() {
         };
     }
 
-    // Map NATS KML properties to AirPlot format
+    // Map NATS KML properties to AirPlan format
     // NATS designators: EGD### (Danger), EGP### (Prohibited), EGR### (Restricted), EGRU### (UAS Restricted), FRZ
     const effectiveDate = extractEffectiveDate(inputPath);
     const mapped = {

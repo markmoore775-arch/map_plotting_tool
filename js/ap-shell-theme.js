@@ -39,6 +39,9 @@
             localStorage.setItem('fnLightTheme', light ? '1' : '0');
         } catch (e) {}
         syncFnThemeToggleButton();
+        if (typeof window.syncApBrandLogos === 'function') {
+            window.syncApBrandLogos(!!light);
+        }
     }
 
     function init() {

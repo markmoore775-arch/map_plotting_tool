@@ -39,7 +39,8 @@ function safePath(rel) {
 function handleAdsbProxy(req, res) {
   const u = new URL(req.url, 'http://localhost');
   const hexParam = u.searchParams.get('hex');
-  let upstream;
+  let primary;
+  let fallback;
   if (hexParam != null && hexParam !== '') {
     const hex = String(hexParam)
       .toLowerCase()
@@ -49,7 +50,8 @@ function handleAdsbProxy(req, res) {
       res.end(JSON.stringify({ error: 'Invalid hex' }));
       return;
     }
-    upstream = `https://api.adsb.lol/v2/hex/${hex}`;
+    primary = `https://api.adsb.lol/v2/hex/${hex}`;
+    fallback = `https://api.airplanes.live/v2/hex/${hex}`;
   } else {
     const lat = Number(u.searchParams.get('lat'));
     const lon = Number(u.searchParams.get('lon'));
@@ -69,21 +71,38 @@ function handleAdsbProxy(req, res) {
       res.end(JSON.stringify({ error: 'Invalid dist' }));
       return;
     }
-    upstream = `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/${dist}`;
+    const latKey = Math.round(lat * 100) / 100;
+    const lonKey = Math.round(lon * 100) / 100;
+    const distKey = Math.round(dist);
+    primary = `https://api.adsb.lol/v2/lat/${latKey}/lon/${lonKey}/dist/${distKey}`;
+    fallback = `https://api.airplanes.live/v2/point/${latKey}/${lonKey}/${distKey}`;
   }
-  https
-    .get(upstream, { headers: { Accept: 'application/json' } }, (upstreamRes) => {
-      const code = upstreamRes.statusCode || 502;
-      res.writeHead(code, {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-store'
-      });
-      upstreamRes.pipe(res);
-    })
-    .on('error', () => {
+
+  function pipeUpstream(upstreamUrl, source, onFail) {
+    https
+      .get(upstreamUrl, { headers: { Accept: 'application/json' } }, (upstreamRes) => {
+        const code = upstreamRes.statusCode || 502;
+        if (code >= 200 && code < 300) {
+          res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'X-AirPlan-Source': source
+          });
+          upstreamRes.pipe(res);
+          return;
+        }
+        upstreamRes.resume();
+        onFail(code);
+      })
+      .on('error', onFail);
+  }
+
+  pipeUpstream(primary, 'adsblol', function () {
+    pipeUpstream(fallback, 'airplaneslive', function () {
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Upstream fetch failed' }));
     });
+  });
 }
 
 function handleOgnProxy(req, res) {
@@ -198,8 +217,8 @@ function serveStatic(req, res) {
   if (rel === 'favicon.ico') {
     const rootIco = safePath('favicon.ico');
     if (!rootIco || !fs.existsSync(rootIco)) {
-      const svg = safePath('assets/airplot-icon.svg');
-      if (svg && fs.existsSync(svg)) rel = 'assets/airplot-icon.svg';
+      const svg = safePath('assets/airplan-icon.svg');
+      if (svg && fs.existsSync(svg)) rel = 'assets/airplan-icon.svg';
     }
   }
   let filePath = safePath(rel);
@@ -275,8 +294,8 @@ function listenFrom(port) {
     }
   });
   server.listen(port, function () {
-    console.log('AirPlot dev: http://localhost:' + port + '/');
-    console.log('  /api/adsb → https://api.adsb.lol (CORS proxy for Airspace)');
+    console.log('AirPlan dev: http://localhost:' + port + '/');
+    console.log('  /api/adsb → ADSB.lol, then airplanes.live fallback (CORS proxy for Airspace)');
     console.log('  /api/ogn → https://live.glidernet.org (OGN lxml; CORS proxy for Airspace)');
     console.log('  /api/aviation → aviationweather.gov METAR/TAF (CORS proxy for Flight Weather)');
   });

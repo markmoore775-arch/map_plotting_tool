@@ -268,7 +268,7 @@ body.flight-planning-mode .leaflet-pm-actions-container {
     /* Geoman draws its own UI - we trigger via our buttons */
 }
 
-/* NOTAM overlay (same PIB as main AirPlot map) */
+/* NOTAM overlay (same PIB as main AirPlan map) */
 body.flight-planning-mode .leaflet-bottom.leaflet-left .fp-notam-control {
     margin-bottom: 100px;
     margin-left: 8px;

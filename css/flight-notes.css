@@ -1529,17 +1529,8 @@ body.flight-notes-mode.fn-light-theme .fp-welcome-home-link:hover {
     color: #0f172a;
 }
 
-/* airplot-icon.svg is white-on-transparent; on the light pill tint to dark-theme grey-blue */
-body.flight-notes-mode.fn-light-theme .fp-welcome-home-link .fp-welcome-logo {
-    filter: var(--ap-light-airplot-icon-filter);
-}
-
 body.flight-notes-mode.fn-light-theme .fp-welcome-home-link .fp-welcome-title {
     color: #0a0a0a;
-}
-
-body.checklist-mode.cl-light-theme .fp-welcome-home-link .fp-welcome-logo {
-    filter: var(--ap-light-airplot-icon-filter);
 }
 
 body.checklist-mode.cl-light-theme .fp-welcome-home-link .fp-welcome-title {

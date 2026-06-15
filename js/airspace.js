@@ -11,15 +11,16 @@
     const OGN_STORAGE_KEY = 'airspaceOgnEnabled';
     const AIRSPACE_MAP_DRAFT_KEY = 'airplotAirspaceMapView_v1';
     let airspaceMapDraftTimer = null;
-    const MIN_POLL_MS = 1100;
+    const MIN_POLL_MS = 3000;
     const MOVE_DEBOUNCE_MS = 500;
+    const PROXY_FETCH_TIMEOUT_MS = 8000;
     const RADIUS_MIN_NM = 5;
     const RADIUS_MAX_NM = 250;
     /** Recent positions per ICAO hex (API has no trail; we build from polls) */
     const MAX_TRAIL_POINTS = 120;
 
     const HELP_HTML = [
-        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlot v4) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> uses the <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> live feed: <strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
+        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlan v1) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> uses the <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> live feed: <strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
         '<p>Optional <strong>approx. AGL</strong> (metres) uses the same <strong>Mapbox Terrain-RGB</strong> source as Planning mode when a token is set in <code>js/config.js</code>. It is <strong>barometric altitude vs terrain model</strong>; not for separation. DEM and altimeter errors apply.</p>',
         '<p><strong>Not for separation.</strong> Situational awareness only.</p>',
         '<p><strong>Steps</strong></p>',
@@ -41,6 +42,8 @@
     let moveDebounce = null;
     let lastFetchAt = 0;
     let isFetching = false;
+    /** Last successful ADS-B provider from /api/adsb (adsblol | airplaneslive | stale). */
+    let lastAdsbSource = 'adsblol';
 
     /** @type {Map<string, number[][]>} */
     const trailByHex = new Map();
@@ -817,66 +820,110 @@
         return ADSB_LOL_BASE + '/hex/' + encodeURIComponent(hexClean);
     }
 
+    function adsbProviderLabel(source) {
+        if (source === 'airplaneslive') return 'airplanes.live';
+        if (source === 'stale') return 'cached ADS-B';
+        return 'ADSB.lol';
+    }
+
+    function fetchWithTimeout(url, options, timeoutMs) {
+        const ms = timeoutMs != null ? timeoutMs : PROXY_FETCH_TIMEOUT_MS;
+        if (typeof AbortController === 'undefined') {
+            return fetch(url, options);
+        }
+        const controller = new AbortController();
+        const timer = setTimeout(function () {
+            controller.abort();
+        }, ms);
+        const merged = Object.assign({}, options || {}, { signal: controller.signal });
+        return fetch(url, merged).finally(function () {
+            clearTimeout(timer);
+        });
+    }
+
+    function fetchJsonFromResponse(res) {
+        if (res.ok) {
+            const source = res.headers.get('X-AirPlan-Source');
+            if (source) lastAdsbSource = source;
+            return res.json();
+        }
+        return res
+            .text()
+            .catch(function () {
+                return '';
+            })
+            .then(function (text) {
+                const err = new Error('same_origin_proxy');
+                err.status = res.status;
+                if (res.status === 429) {
+                    err.message = 'rate_limited';
+                }
+                if (text) {
+                    try {
+                        err.body = JSON.parse(text);
+                    } catch (parseErr) {
+                        err.body = null;
+                    }
+                }
+                throw err;
+            });
+    }
+
     /**
      * 1) Same-origin /api/adsb (npm run serve or Cloudflare Worker)
-     * 2–4) Public relays (Python http.server / Live Server have no /api; 404 here)
+     * 2) Public relays only when same-origin is unavailable (not for rate limits)
      */
     function fetchJsonWithProxy(upstreamUrl, sameOriginQueryString) {
         const sameOrigin = '/api/adsb?' + sameOriginQueryString;
 
-        return fetch(sameOrigin, {
-            method: 'GET',
-            credentials: 'omit',
-            cache: 'no-store'
-        })
-            .then(function (res) {
-                if (res.ok) return res.json();
-                throw new Error('same_origin_proxy');
-            })
-            .catch(function () {
-                return fetch(
-                    'https://api.allorigins.win/get?url=' + encodeURIComponent(upstreamUrl),
-                    {
-                        method: 'GET',
-                        credentials: 'omit',
-                        cache: 'no-store'
-                    }
-                )
-                    .then(function (res) {
-                        if (!res.ok) throw new Error('allorigins');
-                        return res.json();
-                    })
-                    .then(function (data) {
-                        if (typeof data.contents === 'string') {
-                            return JSON.parse(data.contents);
-                        }
-                        throw new Error('allorigins_parse');
-                    });
-            })
-            .catch(function () {
-                return fetch(
+        return fetchWithTimeout(
+            sameOrigin,
+            {
+                method: 'GET',
+                credentials: 'omit',
+                cache: 'no-store'
+            },
+            PROXY_FETCH_TIMEOUT_MS
+        )
+            .then(fetchJsonFromResponse)
+            .catch(function (firstErr) {
+                if (firstErr && firstErr.message === 'rate_limited') {
+                    throw firstErr;
+                }
+                return fetchWithTimeout(
                     'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(upstreamUrl),
                     {
                         method: 'GET',
                         credentials: 'omit',
                         cache: 'no-store'
-                    }
+                    },
+                    PROXY_FETCH_TIMEOUT_MS
                 ).then(function (res) {
                     if (!res.ok) throw new Error('codetabs');
                     return res.json();
                 });
             })
-            .catch(function () {
-                return fetch('https://corsproxy.io/?' + encodeURIComponent(upstreamUrl), {
-                    method: 'GET',
-                    credentials: 'omit',
-                    cache: 'no-store'
-                }).then(function (res) {
+            .catch(function (secondErr) {
+                if (secondErr && secondErr.message === 'rate_limited') {
+                    throw secondErr;
+                }
+                return fetchWithTimeout(
+                    'https://corsproxy.io/?' + encodeURIComponent(upstreamUrl),
+                    {
+                        method: 'GET',
+                        credentials: 'omit',
+                        cache: 'no-store'
+                    },
+                    PROXY_FETCH_TIMEOUT_MS
+                ).then(function (res) {
                     if (!res.ok) throw new Error('corsproxy');
                     return res.json();
                 });
             })
-            .catch(function () {
+            .catch(function (thirdErr) {
+                if (thirdErr && thirdErr.message === 'rate_limited') {
+                    throw thirdErr;
+                }
                 throw new Error('no_proxy');
             });
     }
@@ -918,47 +965,32 @@
         return OGN_LIVE_LXML + '?' + buildOgnQueryString(bounds);
     }
 
-    /**
-     * Same-origin /api/ogn then CORS relays (XML body as text; allorigins wraps JSON).
-     */
     function fetchTextWithProxy(upstreamUrl, sameOriginQueryString) {
         const sameOrigin = '/api/ogn?' + sameOriginQueryString;
 
-        return fetch(sameOrigin, {
-            method: 'GET',
-            credentials: 'omit',
-            cache: 'no-store'
-        })
+        return fetchWithTimeout(
+            sameOrigin,
+            {
+                method: 'GET',
+                credentials: 'omit',
+                cache: 'no-store'
+            },
+            PROXY_FETCH_TIMEOUT_MS
+        )
             .then(function (res) {
                 if (res.ok) return res.text();
                 throw new Error('same_origin_proxy');
             })
             .catch(function () {
-                return fetch(
-                    'https://api.allorigins.win/get?url=' + encodeURIComponent(upstreamUrl),
+                return fetchWithTimeout(
+                    'https://corsproxy.io/?' + encodeURIComponent(upstreamUrl),
                     {
                         method: 'GET',
                         credentials: 'omit',
                         cache: 'no-store'
-                    }
-                )
-                    .then(function (res) {
-                        if (!res.ok) throw new Error('allorigins');
-                        return res.json();
-                    })
-                    .then(function (data) {
-                        if (typeof data.contents === 'string') {
-                            return data.contents;
-                        }
-                        throw new Error('allorigins_parse');
-                    });
-            })
-            .catch(function () {
-                return fetch('https://corsproxy.io/?' + encodeURIComponent(upstreamUrl), {
-                    method: 'GET',
-                    credentials: 'omit',
-                    cache: 'no-store'
-                }).then(function (res) {
+                    },
+                    PROXY_FETCH_TIMEOUT_MS
+                ).then(function (res) {
                     if (!res.ok) throw new Error('corsproxy');
                     return res.text();
                 });
@@ -1423,8 +1455,14 @@
                             adRes.data.now != null ? adRes.data.now : adRes.data.ctime
                         );
                     } else if (!adRes.skipped) {
-                        lastAircraftList = [];
-                        renderAircraftList([]);
+                        const rateLimited =
+                            adRes.error && adRes.error.message === 'rate_limited';
+                        if (!rateLimited) {
+                            lastAircraftList = [];
+                            renderAircraftList([]);
+                        } else if (lastAircraftList.length) {
+                            nAdsb = renderAircraftList(lastAircraftList.slice());
+                        }
                     }
                 }
 
@@ -1446,11 +1484,13 @@
                         bits.push('<strong>' + nAdsb + '</strong> ADS-B');
                     } else {
                         hasErr = true;
-                        bits.push(
-                            adRes.error && adRes.error.message === 'no_proxy'
-                                ? 'ADS-B: no proxy'
-                                : 'ADS-B: failed'
-                        );
+                        if (adRes.error && adRes.error.message === 'rate_limited') {
+                            bits.push('ADS-B: rate limited');
+                        } else if (adRes.error && adRes.error.message === 'no_proxy') {
+                            bits.push('ADS-B: no proxy');
+                        } else {
+                            bits.push('ADS-B: failed');
+                        }
                     }
                 }
                 if (wantOgn) {
@@ -1471,7 +1511,8 @@
                     detail +=
                         '~' +
                         rNm.toFixed(0) +
-                        ' NM · ADSB.lol' +
+                        ' NM · ' +
+                        adsbProviderLabel(lastAdsbSource) +
                         (adsbTime !== '-' ? ' · data ' + escapeHtml(adsbTime) : '');
                 }
                 if (wantAdsb && wantOgn && detail) detail += ' · ';
@@ -1479,10 +1520,16 @@
                     detail += 'OGN live';
                 }
                 if (detail) detail += ' · ';
-                detail += 'refresh ~1s';
+                detail += 'refresh ~' + Math.round(MIN_POLL_MS / 1000) + 's';
 
                 const summary = bits.length ? bits.join(' · ') + ' in view · ' + detail : detail;
 
+                const adsbRateLimited =
+                    wantAdsb &&
+                    !adRes.ok &&
+                    !adRes.skipped &&
+                    adRes.error &&
+                    adRes.error.message === 'rate_limited';
                 const adsbNoProxy =
                     wantAdsb &&
                     !adRes.ok &&
@@ -1496,7 +1543,18 @@
                     ognRes.error &&
                     ognRes.error.message === 'no_proxy';
 
-                if (adsbNoProxy || ognNoProxy) {
+                if (adsbRateLimited) {
+                    let extra = '';
+                    if (lastAircraftList.length) {
+                        extra +=
+                            'Showing last known positions. ';
+                    }
+                    setStatus(
+                        extra +
+                            '<strong>ADSB.lol rate limit</strong>. Retrying with cached traffic shortly.',
+                        true
+                    );
+                } else if (adsbNoProxy || ognNoProxy) {
                     let extra = '';
                     if (wantAdsb && adRes.ok) {
                         extra += '<strong>' + nAdsb + '</strong> ADS-B in view. ';

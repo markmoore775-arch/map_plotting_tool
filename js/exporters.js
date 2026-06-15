@@ -115,7 +115,7 @@ const Exporters = (() => {
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Map Export</name>
-    <description>Exported from Map Plotting Tool</description>${placemarks}
+    <description>Exported from AirPlan</description>${placemarks}
   </Document>
 </kml>`;
 
@@ -199,7 +199,7 @@ const Exporters = (() => {
 
         const pptx = new PptxGenJS();
         pptx.layout = 'LAYOUT_WIDE';
-        pptx.author = 'AirPlot v4';
+        pptx.author = 'AirPlan v1';
         pptx.subject = 'Map Report';
 
         const logo = await PptxTheme.loadLogo();

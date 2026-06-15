@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>DJI Mission Planner | AirPlot</title>
-    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <title>DJI Mission Planner | AirPlan</title>
+    <link rel="icon" href="assets/airplan-icon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icon-180.png">
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -30,10 +30,10 @@
     <div id="map"></div>
 
     <!-- Welcome / home: always visible top-left -->
-    <nav class="fp-welcome-bar" aria-label="AirPlot home">
-        <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
-            <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
-            <span class="fp-welcome-title">AirPlot</span>
+    <nav class="fp-welcome-bar" aria-label="AirPlan home">
+        <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlan welcome screen" aria-label="AirPlan home, return to welcome screen">
+            <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo fp-welcome-logo" />
+            <span class="fp-welcome-title">AirPlan</span>
         </a>
     </nav>
 
@@ -128,8 +128,8 @@
     </div>
 
     <!-- App logo: secondary link home -->
-    <a href="index.html" class="fp-logo" title="Return to welcome screen" aria-label="Return to AirPlot welcome screen">
-        <img src="assets/airplot-icon.svg" alt="">
+    <a href="index.html" class="fp-logo" title="Return to welcome screen" aria-label="Return to AirPlan welcome screen">
+        <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo">
     </a>
 
     <!-- Help modal -->
@@ -141,7 +141,7 @@
                 <button type="button" class="modal-close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="fp-help-lead">Build missions for DJI Pilot 2 (AirPlot v4.0). Switch modes with the toggles at the top of the toolbar.</p>
+                <p class="fp-help-lead">Build missions for DJI Pilot 2 (AirPlan v1.0). Switch modes with the toggles at the top of the toolbar.</p>
                 <h3>Manual Recce</h3>
                 <p>For overlay flight with a POI and exclusion fence (no automated route). Tap <strong>Add Target</strong> and click the map to place the point of interest. Adjust <strong>Radius (m)</strong> for the circular exclusion zone. <strong>Export Recce KMZ</strong> saves <code>Recce_Mission.kmz</code> for import as an overlay in DJI Pilot 2. Fly manually; the aircraft brakes at the fence.</p>
                 <h3>Waypoint Mission</h3>
@@ -151,7 +151,7 @@
                 <h3>SD card &amp; DJI Pilot 2</h3>
                 <p>Use the <strong>SD card</strong> (?) button for step-by-step import: copy the KMZ to the card, insert into the controller, <strong>Flight Route</strong> → <strong>Import Route (KMZ/KML)</strong>. FAT32 is recommended if the card is not read reliably.</p>
                 <h3>Related</h3>
-                <p><a href="index.html?autostart=1">AirPlot map</a> for general planning; <a href="weather.html">Flight Weather</a> for forecasts, METAR/TAF, and exports; <a href="airspace.html">Airspace</a> for live ADS-B (optional OGN); <a href="flight-notes.html">Flight Report</a> for structured records; <a href="checklist.html">M4T / TD Checklist</a> for pre- through post-flight checks. From Report or Checklist, use the header links to switch between them without going home. Use <strong>Welcome</strong> (top-left) or the logo (bottom-right) to return to the AirPlot home screen.</p>
+                <p><a href="index.html?autostart=1">AirPlan map</a> for general planning; <a href="weather.html">Flight Weather</a> for forecasts, METAR/TAF, and exports; <a href="airspace.html">Airspace</a> for live ADS-B (optional OGN); <a href="flight-notes.html">Flight Report</a> for structured records; <a href="checklist.html">M4T / TD Checklist</a> for pre- through post-flight checks. From Report or Checklist, use the header links to switch between them without going home. Use <strong>Welcome</strong> (top-left) or the logo (bottom-right) to return to the AirPlan home screen.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary modal-cancel">Close</button>
@@ -223,6 +223,7 @@
             crossorigin=""></script>
     <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.16.0/dist/leaflet-geoman.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+    <script src="js/ap-brand-logo.js?v=1"></script>
     <script src="js/geolocation-helpers.js?v=6"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
@@ -235,8 +236,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-    <script src="js/pptx-theme.js?v=10"></script>
-    <script src="js/pdf-theme.js?v=6"></script>
+    <script src="js/pptx-theme.js?v=11"></script>
+    <script src="js/pdf-theme.js?v=7"></script>
     <script src="js/config.js"></script>
     <script src="js/confirm-modal.js"></script>
     <script src="js/notam-pib.js?v=2"></script>

@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M4T / TD | AirPlot</title>
-    <link rel="icon" href="assets/airplot-icon.svg" type="image/svg+xml">
+    <title>M4T / TD | AirPlan</title>
+    <link rel="icon" href="assets/airplan-icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-180.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/flight-notes.css?v=16">
     <style>
@@ -907,13 +909,13 @@
 <body class="checklist-mode">
     <header class="fn-top-bar no-print">
         <div class="fn-top-bar-start">
-            <nav class="fp-welcome-bar" aria-label="AirPlot home">
-                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlot welcome screen" aria-label="AirPlot home, return to welcome screen">
-                    <img src="assets/airplot-icon.svg" alt="" width="20" height="20" class="fp-welcome-logo" />
-                    <span class="fp-welcome-title">AirPlot</span>
+            <nav class="fp-welcome-bar" aria-label="AirPlan home">
+                <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlan welcome screen" aria-label="AirPlan home, return to welcome screen">
+                    <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo fp-welcome-logo" />
+                    <span class="fp-welcome-title">AirPlan</span>
                 </a>
             </nav>
-            <nav class="ap-tool-nav" aria-label="AirPlot tools">
+            <nav class="ap-tool-nav" aria-label="AirPlan tools">
                 <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon ap-tool-nav__icon--planner" aria-hidden="true"></span><span class="ap-tool-nav__label">Planner</span></a>
                 <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon ap-tool-nav__icon--weather" aria-hidden="true"></span><span class="ap-tool-nav__label">Weather</span></a>
                 <a href="airspace.html" class="ap-tool-nav__link" title="Live airspace map" aria-label="Airspace"><span class="ap-tool-nav__icon ap-tool-nav__icon--airspace" aria-hidden="true"></span><span class="ap-tool-nav__label">Airspace</span></a>
@@ -1186,6 +1188,7 @@
         </div>
     </div>
 
+    <script src="js/ap-brand-logo.js?v=1"></script>
     <script>
         (function () {
             var STORAGE_KEY = 'airplotChecklistMatrice4T_v1';
@@ -1218,6 +1221,9 @@
             function applyPageTheme(light) {
                 document.body.classList.toggle('cl-light-theme', !!light);
                 syncThemeToggle();
+                if (typeof window.syncApBrandLogos === 'function') {
+                    window.syncApBrandLogos(!!light);
+                }
             }
 
             /** Map saved v1 Section 3 ids after removing old item 7 (c3-7) and renumbering. */
@@ -1450,7 +1456,7 @@
 
             function buildChecklistPlainText() {
                 var lines = [];
-                lines.push('AirPlot v4: M4T / TD checklist');
+                lines.push('AirPlan v1: M4T / TD checklist');
                 lines.push('Exported: ' + formatExportTimestamp());
                 lines.push('');
                 var sections = document.querySelectorAll('.cl-main .cl-section');
