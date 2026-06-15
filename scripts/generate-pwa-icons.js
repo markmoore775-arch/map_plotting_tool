@@ -9,11 +9,12 @@ const sharp = require('sharp');
 
 const ASSETS_DIR = path.join(__dirname, '..', 'assets');
 const LOGO_WHITE_PNG = path.join(ASSETS_DIR, 'airplanlogowhite.png');
+const ICON_BACKGROUND = { r: 10, g: 10, b: 10 }; // #0a0a0a, matches manifest background_color
 
 async function rasterizeIcon(size, outPath, paddingPercent = 0.08) {
   const innerSize = Math.round(size * (1 - paddingPercent * 2));
   const logo = await sharp(LOGO_WHITE_PNG)
-    .resize(innerSize, innerSize, { fit: 'inside', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(innerSize, innerSize, { fit: 'inside' })
     .png()
     .toBuffer();
 
@@ -25,11 +26,13 @@ async function rasterizeIcon(size, outPath, paddingPercent = 0.08) {
     create: {
       width: size,
       height: size,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
+      channels: 3,
+      background: ICON_BACKGROUND
     }
   })
     .composite([{ input: logo, left, top }])
+    .flatten({ background: '#0a0a0a' })
+    .removeAlpha()
     .png()
     .toFile(outPath);
 }
