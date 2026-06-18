@@ -1291,6 +1291,44 @@
         return c.surface;
     }
 
+    function formatFlightReportPilotForSummary(n) {
+        var rp1 = trimVal('fnBattery' + n + 'Rp1');
+        var rp2 = trimVal('fnBattery' + n + 'Rp2');
+        if (rp1 && rp2) return rp1 + ' / ' + rp2;
+        if (rp1) return rp1;
+        if (rp2) return rp2;
+        return '-';
+    }
+
+    /**
+     * Compact summary rows for Flight Report PDF (one row per visible battery).
+     * @returns {{ head: string[][], body: string[][] }}
+     */
+    function buildFlightReportPdfSummaryTable() {
+        var rows = [];
+        var dateStr = dash(formatDateForExportDdMmYyyy(trimVal('fnDate')));
+        var battMax = getVisibleBatteryCount();
+        var bn;
+        for (bn = 1; bn <= battMax; bn++) {
+            var b = 'fnBattery' + bn;
+            rows.push([
+                String(bn),
+                formatFlightReportPilotForSummary(bn),
+                dateStr,
+                dash(trimVal(b + 'Uas')),
+                dash(trimVal(b + 'Name')),
+                dash(trimVal(b + 'Voltage')),
+                dash(trimVal(b + 'FlightTime')),
+                dash(trimVal(b + 'AmberMin')),
+                dash(trimVal(b + 'RedMin'))
+            ]);
+        }
+        return {
+            head: [['Flight', 'Pilot / Observer', 'Date', 'UAS', 'Battery', 'Voltage', 'Duration', 'Min (Amber)', 'Min (Red)']],
+            body: rows
+        };
+    }
+
     /**
      * PDF table body with section banners + parallel rowSections for styling.
      * @returns {{ body: Array, rowSections: string[], fieldColW: number }}
@@ -3258,8 +3296,42 @@
             var locationShots = await captureAllFlightReportLocationMapsForPdf();
             startY = layoutFlightReportLocationMapsOnPdf(doc, locationShots, startY);
 
-            var pdfBodyMeta = buildFlightReportPdfTableBody();
+            var summaryMeta = buildFlightReportPdfSummaryTable();
             var tableW = PdfTheme.pageWidthMm() - 20;
+            var tcSummary = PdfTheme.colors();
+            startY += 2;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(tcSummary.text[0], tcSummary.text[1], tcSummary.text[2]);
+            doc.text('Flight Summary', 10, startY + 3);
+            startY += 6;
+
+            var tsSummary = Object.assign({}, ts, {
+                styles: Object.assign({}, ts.styles, { fontSize: 6 }),
+                headStyles: Object.assign({}, ts.headStyles, { fontSize: 6 }),
+                bodyStyles: Object.assign({}, ts.bodyStyles, { fontSize: 6 })
+            });
+            doc.autoTable({
+                startY: startY,
+                head: summaryMeta.head,
+                body: summaryMeta.body,
+                tableWidth: tableW,
+                columnStyles: {
+                    0: { cellWidth: 11 },
+                    1: { cellWidth: 36 },
+                    2: { cellWidth: 22 },
+                    3: { cellWidth: 28 },
+                    4: { cellWidth: 24 },
+                    5: { cellWidth: 16 },
+                    6: { cellWidth: 18 },
+                    7: { cellWidth: 17 },
+                    8: { cellWidth: 18 }
+                },
+                ...tsSummary
+            });
+            startY = doc.lastAutoTable.finalY + 4;
+
+            var pdfBodyMeta = buildFlightReportPdfTableBody();
             var tsNoAlt = Object.assign({}, ts);
             delete tsNoAlt.alternateRowStyles;
             doc.autoTable({

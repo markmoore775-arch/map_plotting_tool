@@ -50,8 +50,8 @@ function handleAdsbProxy(req, res) {
       res.end(JSON.stringify({ error: 'Invalid hex' }));
       return;
     }
-    primary = `https://api.adsb.lol/v2/hex/${hex}`;
-    fallback = `https://api.airplanes.live/v2/hex/${hex}`;
+    primary = `https://api.airplanes.live/v2/hex/${hex}`;
+    fallback = `https://api.adsb.lol/v2/hex/${hex}`;
   } else {
     const lat = Number(u.searchParams.get('lat'));
     const lon = Number(u.searchParams.get('lon'));
@@ -74,8 +74,8 @@ function handleAdsbProxy(req, res) {
     const latKey = Math.round(lat * 100) / 100;
     const lonKey = Math.round(lon * 100) / 100;
     const distKey = Math.round(dist);
-    primary = `https://api.adsb.lol/v2/lat/${latKey}/lon/${lonKey}/dist/${distKey}`;
-    fallback = `https://api.airplanes.live/v2/point/${latKey}/${lonKey}/${distKey}`;
+    primary = `https://api.airplanes.live/v2/point/${latKey}/${lonKey}/${distKey}`;
+    fallback = `https://api.adsb.lol/v2/lat/${latKey}/lon/${lonKey}/dist/${distKey}`;
   }
 
   function pipeUpstream(upstreamUrl, source, onFail) {
@@ -97,8 +97,8 @@ function handleAdsbProxy(req, res) {
       .on('error', onFail);
   }
 
-  pipeUpstream(primary, 'adsblol', function () {
-    pipeUpstream(fallback, 'airplaneslive', function () {
+  pipeUpstream(primary, 'airplaneslive', function () {
+    pipeUpstream(fallback, 'adsblol', function () {
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Upstream fetch failed' }));
     });
@@ -295,7 +295,7 @@ function listenFrom(port) {
   });
   server.listen(port, function () {
     console.log('AirPlan dev: http://localhost:' + port + '/');
-    console.log('  /api/adsb → ADSB.lol, then airplanes.live fallback (CORS proxy for Airspace)');
+    console.log('  /api/adsb → airplanes.live, then ADSB.lol fallback (CORS proxy for Airspace)');
     console.log('  /api/ogn → https://live.glidernet.org (OGN lxml; CORS proxy for Airspace)');
     console.log('  /api/aviation → aviationweather.gov METAR/TAF (CORS proxy for Flight Weather)');
   });

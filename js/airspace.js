@@ -43,7 +43,7 @@
     let lastFetchAt = 0;
     let isFetching = false;
     /** Last successful ADS-B provider from /api/adsb (adsblol | airplaneslive | stale). */
-    let lastAdsbSource = 'adsblol';
+    let lastAdsbSource = 'airplaneslive';
 
     /** @type {Map<string, number[][]>} */
     const trailByHex = new Map();
@@ -1551,7 +1551,7 @@
                     }
                     setStatus(
                         extra +
-                            '<strong>ADSB.lol rate limit</strong>. Retrying with cached traffic shortly.',
+                            '<strong>Traffic API rate limit</strong>. Retrying with cached traffic shortly.',
                         true
                     );
                 } else if (adsbNoProxy || ognNoProxy) {
