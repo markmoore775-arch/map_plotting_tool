@@ -177,7 +177,7 @@
 
             <section class="fn-section" aria-labelledby="fn-batt-heading">
                 <h2 id="fn-batt-heading" class="fn-section-title">Batteries</h2>
-                <p class="fn-battery-lead">Use <strong>Site or coordinates</strong> on each battery when that flight was away from the main <strong>Location</strong> (exports and email include it). If you added <strong>Additional operational locations</strong> above, use the field&rsquo;s suggestions to paste a consistent label and coordinates. <strong>Weather</strong> and the <strong>primary mini map</strong> still use the main Location only. <strong>Airspace:</strong> choose which mission site to preview in the Airspace section; <strong>Export PDF</strong> appends NOTAM and zone appendices for every location with resolved coordinates.</p>
+                <p class="fn-battery-lead">Use <strong>Site or coordinates</strong> on each battery when that flight was away from the main <strong>Location</strong> (exports and email include it). If you added <strong>Additional operational locations</strong> above, use the field&rsquo;s suggestions to paste a consistent label and coordinates. <strong>Weather</strong> and <strong>Airspace</strong> each let you choose which resolved mission site to use when you have more than one. The <strong>primary mini map</strong> still follows the main Location. <strong>Export PDF</strong> appends NOTAM and zone appendices for every location with resolved coordinates.</p>
                 <details class="fn-alos-help">
                     <summary class="fn-alos-help-summary">ALoS model (help)</summary>
                     <div class="fn-alos-help-body">
@@ -725,9 +725,13 @@
 
             <section class="fn-section" aria-labelledby="fn-weather-heading">
                 <h2 id="fn-weather-heading" class="fn-section-title">Weather</h2>
+                <div id="fnWeatherSiteRow" class="fn-weather-site-row fn-airspace-site-row hidden" aria-hidden="true">
+                    <label class="fn-label" for="fnWeatherSiteSelect">Fetch weather for</label>
+                    <select id="fnWeatherSiteSelect" class="fn-input fn-airspace-site-select" title="Mission location for Open-Meteo forecast" aria-label="Mission location for weather fetch"></select>
+                </div>
                 <div class="fn-weather-actions">
                     <button type="button" class="fn-btn fn-btn-now" id="fnWeatherFetchBtn"
-                        title="Fetches forecast from Open-Meteo (same source as Flight Weather). Location must include latitude and longitude; use Use current GPS or paste coordinates.">
+                        title="Fetches forecast from Open-Meteo (same source as Flight Weather). Resolve coordinates in Location or an additional operational site first.">
                         Fetch Weather Report
                     </button>
                     <button type="button" class="fn-btn fn-btn-secondary" id="fnWeatherClearBtn"
@@ -736,7 +740,7 @@
                     </button>
                     <span id="fnWeatherFetchStatus" class="fn-weather-fetch-status" role="status" aria-live="polite"></span>
                 </div>
-                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Forecast values use your mission <strong>Date</strong> and <strong>Time</strong> when both are set.</p>
+                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Coordinates come from <strong>Location</strong> or an <strong>additional operational location</strong> with a resolved lat/lng. When you have more than one site, choose which to use above. Forecast values use your mission <strong>Date</strong> and <strong>Time</strong> when both are set.</p>
                 <details class="fn-weather-how">
                     <summary class="fn-weather-how-summary">How this is calculated</summary>
                     <div class="fn-weather-how-body">

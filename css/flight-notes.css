@@ -330,6 +330,10 @@ body.checklist-mode.cl-light-theme .fn-top-clear-btn:hover {
     min-height: 72px;
 }
 
+.fn-weather-site-row {
+    margin-bottom: 10px;
+}
+
 .fn-weather-actions {
     display: flex;
     flex-wrap: wrap;
