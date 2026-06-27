@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/airspace.css?v=27">
+    <link rel="stylesheet" href="css/airspace.css?v=30">
 </head>
 <body class="airspace-mode ap-shell">
     <script>
@@ -96,18 +96,21 @@
                         <span class="airspace-view-switch-text">ADS-B Exchange</span>
                     </a>
                 </div>
+                <div class="airspace-toolbar-group">
+                    <button type="button" class="airspace-btn airspace-btn--sources" id="airspaceSourcesBtn" title="Traffic and map data sources">Sources</button>
+                </div>
             </div>
             <div class="airspace-toolbar-status" id="airspaceStatus" aria-live="polite"></div>
         </div>
     </div>
 
-    <p class="airspace-attribution">
-        Traffic: <a href="https://airplanes.live/api-guide/" target="_blank" rel="noopener">airplanes.live</a>
-        (primary; coverage varies),
-        with <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> fallback.
-        Optional <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> (gliders / FLARM-class; coverage varies).
-        Optional AGL: Mapbox Terrain-RGB. Map: layer attribution in the map control.
-    </p>
+    <div id="airspaceDetailSheet" class="airspace-detail-sheet" hidden aria-hidden="true">
+        <div class="airspace-detail-sheet-backdrop" id="airspaceDetailBackdrop"></div>
+        <div class="airspace-detail-sheet-panel" role="dialog" aria-labelledby="airspaceDetailTitle">
+            <button type="button" class="airspace-detail-sheet-close" id="airspaceDetailClose" aria-label="Close">&times;</button>
+            <div id="airspaceDetailBody" class="airspace-detail-sheet-body"></div>
+        </div>
+    </div>
 
     <div class="airspace-logo" aria-hidden="true">
         <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo">
@@ -123,6 +126,6 @@
     <script src="js/ap-shell-theme.js?v=1"></script>
     <script src="js/config.js"></script>
     <script src="js/elevation.js"></script>
-    <script src="js/airspace.js?v=32"></script>
+    <script src="js/airspace.js?v=34"></script>
 </body>
 </html>

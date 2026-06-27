@@ -11,24 +11,33 @@
     const OGN_STORAGE_KEY = 'airspaceOgnEnabled';
     const AIRSPACE_MAP_DRAFT_KEY = 'airplotAirspaceMapView_v1';
     let airspaceMapDraftTimer = null;
-    const MIN_POLL_MS = 3000;
+    const MIN_POLL_MS = 5000;
+    const POLL_MS_MAX = 60000;
     const MOVE_DEBOUNCE_MS = 500;
     const PROXY_FETCH_TIMEOUT_MS = 8000;
     const RADIUS_MIN_NM = 5;
     const RADIUS_MAX_NM = 250;
+    const HEX_FETCH_MAX_AGE_SEC = 15;
+    const MARKER_STALE_AGE_SEC = 30;
     /** Recent positions per ICAO hex (API has no trail; we build from polls) */
     const MAX_TRAIL_POINTS = 120;
 
     const HELP_HTML = [
-        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlan v1) uses <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> uses the <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> live feed: <strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
+        '<p class="airspace-help-lead"><strong>Airspace</strong> (AirPlan v1) shows live traffic for <strong>hazard awareness</strong> while flying drones: aircraft use <strong>red</strong> icons by altitude band, <strong>altitude (ft)</strong> is shown next to each track, and a <strong>session trail</strong> builds while this tab stays open. Optional <strong>OGN (FLARM-class)</strong> adds <strong>cyan</strong> markers for gliders and similar traffic that may not appear on ADS-B.</p>',
         '<p>Optional <strong>approx. AGL</strong> (metres) uses the same <strong>Mapbox Terrain-RGB</strong> source as Planning mode when a token is set in <code>js/config.js</code>. It is <strong>barometric altitude vs terrain model</strong>; not for separation. DEM and altimeter errors apply.</p>',
         '<p><strong>Not for separation.</strong> Situational awareness only.</p>',
         '<p><strong>Steps</strong></p>',
         '<ol class="airspace-help-list">',
-        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. Each marker shows a <strong>type/category silhouette</strong> (ADS-B Radar icon set) tinted <strong>red by altitude band</strong> with <strong>altitude (ft)</strong> under the icon. Tap the marker or label for full detail and the highlighted path. Known <strong>NPAS</strong> police helicopter registrations use the <strong>rotorcraft</strong> icon and an <strong>NPAS</strong> altitude label.</li>',
-        '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session, not full flight history (see ADSB.lol docs for archives).</li>',
+        '<li>Default map is <strong>OpenStreetMap</strong>; switch to <strong>Dark (Carto)</strong> in the layer control for a night-tracker look. Each marker shows a <strong>type/category silhouette</strong> (ADS-B Radar icon set) tinted <strong>red by altitude band</strong> with <strong>altitude (ft)</strong> under the icon. Tap a marker for the <strong>detail panel</strong> and highlighted path. Known <strong>NPAS</strong> police helicopter registrations use the <strong>rotorcraft</strong> icon and an <strong>NPAS</strong> altitude label.</li>',
+        '<li>While details are open, <strong>auto-refresh pauses</strong> so the panel and trail stay on screen. Close the panel or tap <strong>Refresh</strong> to update positions. The red-orange line is from this session, not full flight history. Traffic refreshes about every <strong>5 seconds</strong>.</li>',
         '</ol>',
-        '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code> and <code>/api/ogn</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>'
+        '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code> and <code>/api/ogn</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>',
+        '<div class="airspace-help-sources" id="airspaceHelpSources">',
+        '<p class="airspace-help-sources-title"><strong>Data sources</strong></p>',
+        '<p>Traffic: <a href="https://airplanes.live/api-guide/" target="_blank" rel="noopener">airplanes.live</a> (primary; coverage varies), with <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> fallback.</p>',
+        '<p>Optional <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> (gliders / FLARM-class; coverage varies).</p>',
+        '<p>Optional AGL: Mapbox Terrain-RGB. Map tiles: layer attribution in the map control.</p>',
+        '</div>'
     ].join('');
 
     const DEFAULT_MAP_CENTER = [51.5074, -0.1278];
@@ -42,8 +51,16 @@
     let moveDebounce = null;
     let lastFetchAt = 0;
     let isFetching = false;
+    let pendingForceFetch = false;
+    let currentPollMs = MIN_POLL_MS;
     /** Last successful ADS-B provider from /api/adsb (adsblol | airplaneslive | stale). */
     let lastAdsbSource = 'airplaneslive';
+    /** fresh | stale from X-AirPlan-Cache */
+    let lastAdsbCache = 'fresh';
+    let lastAdsbFetchedAt = 0;
+    let lastAdsbQueryKey = '';
+    let lastAdsbQueryKeyAt = 0;
+    let adsbRateLimited = false;
 
     /** @type {Map<string, number[][]>} */
     const trailByHex = new Map();
@@ -52,7 +69,7 @@
     /** @type {L.Polyline|null} */
     let selectedTrailPolyline = null;
 
-    /** True while a traffic marker popup is open (pauses polling so the panel is not torn down). */
+    /** True while the detail sheet is open (pauses polling so the panel is not torn down). */
     let trafficPopupOpen = false;
     /** ICAO hex of the open popup, preserved across forced re-renders (Refresh). */
     let pinnedHex = null;
@@ -156,6 +173,128 @@
         if (!el) return;
         el.classList.toggle('airspace-status-error', !!isError);
         el.innerHTML = html;
+    }
+
+    function adsbQueryKey(lat, lon, distNm) {
+        return [
+            (Math.round(lat * 100) / 100).toFixed(2),
+            (Math.round(lon * 100) / 100).toFixed(2),
+            String(Math.round(distNm))
+        ].join(',');
+    }
+
+    function aircraftAgeSec(a) {
+        if (!a) return null;
+        if (a.seen_pos != null && !Number.isNaN(Number(a.seen_pos))) {
+            return Number(a.seen_pos);
+        }
+        if (a.seen != null && !Number.isNaN(Number(a.seen))) {
+            return Number(a.seen);
+        }
+        return null;
+    }
+
+    function formatDataAgeLabel(ageSec) {
+        if (ageSec == null || !isFinite(ageSec)) return 'unknown';
+        if (ageSec < 2) return 'just now';
+        return Math.round(ageSec) + 's ago';
+    }
+
+    function isEmergencySquawk(sq) {
+        const s = String(sq || '').trim();
+        return s === '7500' || s === '7600' || s === '7700';
+    }
+
+    function isMarkerStale(a, forceStale) {
+        if (forceStale) return true;
+        const age = aircraftAgeSec(a);
+        if (age == null) return lastAdsbCache === 'stale';
+        return age > MARKER_STALE_AGE_SEC;
+    }
+
+    function pollIntervalSec() {
+        return Math.round(currentPollMs / 1000);
+    }
+
+    function applyRateLimitBackoff() {
+        adsbRateLimited = true;
+        const next = Math.min(POLL_MS_MAX, currentPollMs * 2);
+        if (next !== currentPollMs) {
+            currentPollMs = next;
+            restartPollTimer();
+        }
+    }
+
+    function resetPollInterval() {
+        adsbRateLimited = false;
+        if (currentPollMs !== MIN_POLL_MS) {
+            currentPollMs = MIN_POLL_MS;
+            restartPollTimer();
+        }
+    }
+
+    function restartPollTimer() {
+        if (!pollTimer) return;
+        stopPolling();
+        if (!trafficEnabled && !ognEnabled) return;
+        pollTimer = setInterval(function () {
+            if (document.visibilityState !== 'visible') return;
+            lastFetchAt = 0;
+            fetchTraffic();
+        }, currentPollMs);
+    }
+
+    function distanceLabelForAircraft(a) {
+        if (a.dst != null && !Number.isNaN(Number(a.dst))) {
+            return Number(a.dst).toFixed(1) + ' NM from map centre';
+        }
+        if (!map) return null;
+        const pos = positionLatLon(a);
+        if (!pos) return null;
+        const c = map.getCenter();
+        const m = c.distanceTo(L.latLng(pos.lat, pos.lon));
+        const nm = m / 1852;
+        return nm.toFixed(1) + ' NM from map centre';
+    }
+
+    function droneContextLabel(a, aglMeters) {
+        const parts = [];
+        const altFt = aircraftMslFt(a);
+        if (altFt != null && altFt < 400) {
+            parts.push('Below 400 ft baro/geom');
+        }
+        if (
+            aglMeters != null &&
+            !Number.isNaN(Number(aglMeters)) &&
+            Number(aglMeters) < 120
+        ) {
+            parts.push('Below ~120 m AGL (approx.)');
+        }
+        if (!parts.length) return null;
+        return parts.join(' · ');
+    }
+
+    function buildExternalLinksHtml(hex, reg) {
+        const h = normalizeHex(hex);
+        if (h.length !== 6) return '';
+        const hexUp = h.toUpperCase();
+        let html = '<div class="airspace-detail-links">';
+        html +=
+            '<a href="https://globe.adsbexchange.com/?icao=' +
+            encodeURIComponent(hexUp) +
+            '" target="_blank" rel="noopener">ADS-B Exchange</a>';
+        html +=
+            '<a href="https://globe.airplanes.live/?icao=' +
+            encodeURIComponent(hexUp) +
+            '" target="_blank" rel="noopener">airplanes.live</a>';
+        if (reg) {
+            html +=
+                '<a href="https://www.google.com/search?q=' +
+                encodeURIComponent(String(reg).trim() + ' aircraft') +
+                '" target="_blank" rel="noopener">Registration</a>';
+        }
+        html += '</div>';
+        return html;
     }
 
     function radiusMetersFromBounds(bounds) {
@@ -418,15 +557,17 @@
      * One divIcon: silhouette (img + CSS filter for altitude colour) + altitude pill.
      * Altitude is inside the marker so taps hit the marker (Leaflet tooltips are non-interactive).
      */
-    function aircraftIconHtml(trackDeg, tier, svgRelPath, altitudeText, hexLower) {
+    function aircraftIconHtml(trackDeg, tier, svgRelPath, altitudeText, hexLower, stale) {
         const tr = trackDeg != null && !Number.isNaN(Number(trackDeg)) ? Number(trackDeg) : 0;
         const rot = tr + MAP_ICON_ROTATION_OFFSET;
         const path = svgRelPath || AIRCRAFT_ICON_FALLBACK;
         const src = aircraftIconAbsUrl(path);
         const altElId = 'airspace-marker-alt-' + hexLower;
+        const staleCls = stale ? ' airspace-marker-stale' : '';
         return (
             '<div class="airspace-marker-wrap airspace-marker-tier--' +
             tier +
+            staleCls +
             '">' +
             '<div class="airspace-plane-drop">' +
             '<div class="airspace-plane-spin" style="transform:rotate(' +
@@ -465,7 +606,7 @@
         );
     }
 
-    function trafficAircraftDivIcon(a, aglMeters) {
+    function trafficAircraftDivIcon(a, aglMeters, stale) {
         const tier = altitudeIconTier(a);
         const trk = a.track != null ? a.track : 0;
         const heli = showHelicopterMarker(a);
@@ -474,7 +615,7 @@
         const w = estimateAirspaceIconWidth(altText);
         return L.divIcon({
             className: 'airspace-plane-marker' + (heli ? ' airspace-marker-heli' : ''),
-            html: aircraftIconHtml(trk, tier, aircraftMaskRelPath(a), altText, hex),
+            html: aircraftIconHtml(trk, tier, aircraftMaskRelPath(a), altText, hex, !!stale),
             iconSize: [w, AIRSPACE_MARKER_ICON_H],
             iconAnchor: [Math.round(w / 2), AIRSPACE_MARKER_ANCHOR_Y]
         });
@@ -605,7 +746,7 @@
         return base;
     }
 
-    function buildPopupHtml(a, trailPts, aglMeters) {
+    function buildDetailHtml(a, trailPts, aglMeters) {
         const flight = (a.flight && String(a.flight).trim()) || '';
         const hex = a.hex || '';
         const reg = (a.r && String(a.r).trim()) || '';
@@ -630,14 +771,19 @@
         const gr = a.geom_rate != null ? fmtNum(a.geom_rate, ' ft/min') : null;
         const wd = a.wd != null ? fmtNum(a.wd, '°') : null;
         const ws = a.ws != null ? fmtNum(a.ws, ' kt') : null;
-        const dst = a.dst != null ? Number(a.dst).toFixed(1) + ' NM from query center' : null;
+        const dst = distanceLabelForAircraft(a);
         const dir = a.dir != null ? fmtNum(a.dir, '° rel.') : null;
         const navAlt = a.nav_altitude_mcp != null ? fmtNum(a.nav_altitude_mcp, ' ft') : null;
         const mhdg = a.mag_heading != null ? fmtNum(a.mag_heading, '°') : null;
         const thd = a.true_heading != null ? fmtNum(a.true_heading, '°') : null;
+        const ageSec = aircraftAgeSec(a);
+        const droneCtx = droneContextLabel(a, aglMeters);
+        const feedStale = lastAdsbCache === 'stale';
+        const feedAgeSec =
+            lastAdsbFetchedAt > 0 ? Math.max(0, (Date.now() - lastAdsbFetchedAt) / 1000) : null;
 
         const tlen = trailPts ? trailPts.length : 0;
-        const estSec = Math.max(0, (tlen - 1) * (MIN_POLL_MS / 1000));
+        const estSec = Math.max(0, (tlen - 1) * (currentPollMs / 1000));
         let trailNote =
             '<p class="airspace-popup-muted">Trail: <strong>' +
             tlen +
@@ -648,7 +794,20 @@
         trailNote +=
             '. Full history is not in the public API; this path is built while the page is open.</p>';
 
+        let meta =
+            '<p class="airspace-detail-meta' +
+            (feedStale ? ' airspace-detail-meta--stale' : '') +
+            '">Last ADS-B report: <strong>' +
+            escapeHtml(formatDataAgeLabel(ageSec)) +
+            '</strong> · Feed: ' +
+            escapeHtml(adsbProviderLabel(lastAdsbSource));
+        if (feedStale && feedAgeSec != null) {
+            meta += ' · cached (' + Math.round(feedAgeSec) + 's old)';
+        }
+        meta += '</p>';
+
         const npas = isNpasPoliceHelicopter(a);
+        const squawkRowClass = isEmergencySquawk(sq) ? ' class="airspace-squawk-emergency"' : '';
         const rows = [
             npas ? ['Service', 'NPAS (police helicopter)'] : null,
             ['Altitude', alt + (altg ? ' · ' + altg : '')],
@@ -658,12 +817,13 @@
                     ? '~' + Math.round(Number(aglMeters)) + ' m (terrain vs baro/geom)'
                     : null
             ],
+            ['Drone context', droneCtx],
             ['Speed', 'GS ' + gs + (tas ? ' · TAS ' + tas : '') + (ias ? ' · IAS ' + ias : '')],
             ['Track / heading', 'Track ' + trk + (thd ? ' · TH ' + thd : '') + (mhdg ? ' · MH ' + mhdg : '')],
             ['Vert rate', (br ? 'Baro ' + br : '') + (br && gr ? ' · ' : '') + (gr ? 'Geom ' + gr : '') || '-'],
             ['Wind', wd && ws ? wd + ' / ' + ws : '-'],
             ['Mach', mach || '-'],
-            ['Squawk', escapeHtml(sq)],
+            ['Squawk', escapeHtml(sq), squawkRowClass],
             ['Category', escapeHtml(cat)],
             [
                 'Type',
@@ -672,7 +832,7 @@
                     : '-'
             ],
             ['Registration', reg ? escapeHtml(reg) : '-'],
-            ['Position', dst || '-'],
+            ['Distance', dst || '-'],
             ['Bearing', dir || '-'],
             ['Nav alt (MCP)', navAlt || '-']
         ];
@@ -690,8 +850,11 @@
             ) {
                 continue;
             }
+            const rowCls = rows[r][2] || '';
             table +=
-                '<tr><th>' +
+                '<tr' +
+                rowCls +
+                '><th>' +
                 escapeHtml(rows[r][0]) +
                 '</th><td>' +
                 rows[r][1] +
@@ -700,20 +863,22 @@
         table += '</table>';
 
         return (
-            '<div class="airspace-popup-inner">' +
-            '<div class="airspace-popup-title">' +
+            '<div class="airspace-popup airspace-popup-inner">' +
+            '<div class="airspace-popup-title" id="airspaceDetailTitle">' +
             escapeHtml(flight || '(no callsign)') +
             '</div>' +
             '<div class="airspace-popup-sub">ICAO ' +
             escapeHtml(hex) +
             '</div>' +
+            meta +
             trailNote +
             table +
+            buildExternalLinksHtml(hex, reg) +
             '</div>'
         );
     }
 
-    function buildOgnPopupHtml(rec, trailPts, aglMeters) {
+    function buildOgnDetailHtml(rec, trailPts, aglMeters) {
         const id = rec && rec.id ? String(rec.id) : '';
         const cs = rec && rec.callsign ? String(rec.callsign) : '';
         const altM = rec && rec.altM != null ? Math.round(Number(rec.altM)) + ' m MSL' : '-';
@@ -728,7 +893,7 @@
             tlen +
             '</strong> points in this session';
         if (tlen >= 2) {
-            trailNote += ' (~' + Math.round((tlen - 1) * (MIN_POLL_MS / 1000)) + ' s of samples)';
+            trailNote += ' (~' + Math.round((tlen - 1) * (currentPollMs / 1000)) + ' s of samples)';
         }
         trailNote +=
             '. Open Glider Network; not for separation. Speed/climb are feed-specific units where shown.</p>';
@@ -762,8 +927,8 @@
         table += '</table>';
 
         return (
-            '<div class="airspace-popup-inner">' +
-            '<div class="airspace-popup-title">' +
+            '<div class="airspace-popup airspace-popup-inner">' +
+            '<div class="airspace-popup-title" id="airspaceDetailTitle">' +
             escapeHtml(cs || id || 'OGN target') +
             '</div>' +
             '<div class="airspace-popup-sub">OGN · ' +
@@ -773,6 +938,130 @@
             table +
             '</div>'
         );
+    }
+
+    let detailSheetEl = null;
+    let detailBodyEl = null;
+    let pinnedAdsbAircraft = null;
+    let pinnedOgnRecord = null;
+
+    function getDetailSheetElements() {
+        if (!detailSheetEl) {
+            detailSheetEl = document.getElementById('airspaceDetailSheet');
+            detailBodyEl = document.getElementById('airspaceDetailBody');
+        }
+        return { sheet: detailSheetEl, body: detailBodyEl };
+    }
+
+    function updateDetailSheetBody(html) {
+        const els = getDetailSheetElements();
+        if (els.body) els.body.innerHTML = html;
+    }
+
+    function closeDetailSheet() {
+        const els = getDetailSheetElements();
+        if (!els.sheet) return;
+        els.sheet.hidden = true;
+        els.sheet.setAttribute('aria-hidden', 'true');
+        if (els.body) els.body.innerHTML = '';
+        trafficPopupOpen = false;
+        pinnedHex = null;
+        pinnedOgnId = null;
+        pinnedAdsbAircraft = null;
+        pinnedOgnRecord = null;
+        clearSelectedTrail();
+        lastFetchAt = 0;
+        fetchTraffic();
+    }
+
+    function shouldRefreshHexOnOpen(a) {
+        const age = aircraftAgeSec(a);
+        if (age == null) return true;
+        if (age > HEX_FETCH_MAX_AGE_SEC) return true;
+        if (!a.hex || !positionLatLon(a)) return true;
+        return false;
+    }
+
+    function refreshAdsbDetailFromHex(hex, aircraftFallback) {
+        const h = normalizeHex(hex);
+        fetchAdsbHex(h)
+            .then(function (data) {
+                const list = aircraftListFromResponse(data);
+                const ac0 = list[0] || aircraftFallback;
+                if (!ac0 || !trafficPopupOpen || pinnedHex !== h) return;
+                pinnedAdsbAircraft = ac0;
+                const trailPts = trailByHex.get(h) || [];
+                updateDetailSheetBody(buildDetailHtml(ac0, trailPts));
+                computeAglMeters(ac0, function (agl) {
+                    if (!trafficPopupOpen || pinnedHex !== h) return;
+                    updateDetailSheetBody(buildDetailHtml(ac0, trailPts, agl));
+                });
+            })
+            .catch(function () {});
+    }
+
+    /**
+     * @param {'adsb'|'ogn'} kind
+     * @param {string} key
+     * @param {object} record - aircraft or OGN record
+     */
+    function openDetailSheet(kind, key, record) {
+        const els = getDetailSheetElements();
+        if (!els.sheet || !els.body) return;
+
+        trafficPopupOpen = true;
+        showSelectedTrail(kind, key);
+        setStatus('<strong>Details open</strong> · auto-refresh paused until you close.', false);
+
+        if (kind === 'adsb') {
+            pinnedHex = key;
+            pinnedOgnId = null;
+            pinnedOgnRecord = null;
+            pinnedAdsbAircraft = record;
+            const trailPts = trailByHex.get(key) || [];
+            updateDetailSheetBody(buildDetailHtml(record, trailPts));
+            computeAglMeters(record, function (agl) {
+                if (!trafficPopupOpen || pinnedHex !== key) return;
+                updateDetailSheetBody(buildDetailHtml(record, trailPts, agl));
+            });
+            if (shouldRefreshHexOnOpen(record)) {
+                refreshAdsbDetailFromHex(key, record);
+            }
+        } else {
+            pinnedOgnId = key;
+            pinnedHex = null;
+            pinnedAdsbAircraft = null;
+            pinnedOgnRecord = record;
+            const trailPts = trailByOgnId.get(key) || [];
+            updateDetailSheetBody(buildOgnDetailHtml(record, trailPts));
+            const pseudo = pseudoAircraftFromOgn(record);
+            if (pseudo) {
+                computeAglMeters(pseudo, function (agl) {
+                    if (!trafficPopupOpen || pinnedOgnId !== key) return;
+                    updateDetailSheetBody(buildOgnDetailHtml(record, trailPts, agl));
+                });
+            }
+        }
+
+        els.sheet.hidden = false;
+        els.sheet.setAttribute('aria-hidden', 'false');
+    }
+
+    function wireDetailSheet() {
+        const els = getDetailSheetElements();
+        const closeBtn = document.getElementById('airspaceDetailClose');
+        const backdrop = document.getElementById('airspaceDetailBackdrop');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeDetailSheet);
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', closeDetailSheet);
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && trafficPopupOpen) {
+                closeDetailSheet();
+            }
+        });
     }
 
     function clearSelectedTrail() {
@@ -845,6 +1134,9 @@
         if (res.ok) {
             const source = res.headers.get('X-AirPlan-Source');
             if (source) lastAdsbSource = source;
+            const cacheHdr = res.headers.get('X-AirPlan-Cache');
+            lastAdsbCache = cacheHdr === 'stale' ? 'stale' : 'fresh';
+            lastAdsbFetchedAt = Date.now();
             return res.json();
         }
         return res
@@ -1144,7 +1436,13 @@
                     if (aglM == null) return;
                     trafficLayer.eachLayer(function (layer) {
                         if (layer._airspaceHex !== hexKey) return;
-                        layer.setIcon(trafficAircraftDivIcon(aircraft, aglM));
+                        layer.setIcon(
+                            trafficAircraftDivIcon(
+                                aircraft,
+                                aglM,
+                                isMarkerStale(aircraft)
+                            )
+                        );
                     });
                 });
             })(a, hex);
@@ -1175,27 +1473,16 @@
         }
     }
 
-    function trafficPopupLeafletOptions() {
-        const narrow =
-            typeof window.matchMedia === 'function' &&
-            window.matchMedia('(max-width: 600px)').matches;
-        return {
-            maxWidth: Math.min(340, Math.max(240, window.innerWidth - 32)),
-            closeButton: true,
-            autoPan: true,
-            autoPanPadding: narrow ? [12, 120] : [16, 88]
-        };
-    }
-
-    function renderAircraftList(ac) {
+    function renderAircraftList(ac, renderOpts) {
+        renderOpts = renderOpts || {};
+        const forceStaleMarkers = !!renderOpts.forceStaleMarkers;
         const renderGen = ++airspaceRenderGen;
         clearTraffic();
         recordTrailsFromList(ac);
         if (!ac || !ac.length) {
-            if (pinnedHex) {
-                trafficPopupOpen = false;
+            if (pinnedHex && !trafficPopupOpen) {
                 pinnedHex = null;
-                pinnedOgnId = null;
+                pinnedAdsbAircraft = null;
                 clearSelectedTrail();
             }
             return 0;
@@ -1213,56 +1500,13 @@
             const hex = normalizeHex(a.hex);
             if (hex.length !== 6) continue;
 
-            const icon = trafficAircraftDivIcon(a, undefined);
+            const icon = trafficAircraftDivIcon(a, undefined, isMarkerStale(a, forceStaleMarkers));
 
             const m = L.marker([pos.lat, pos.lon], { icon: icon, interactive: true }).addTo(trafficLayer);
             m._airspaceHex = hex;
 
-            const popupId = 'airspace-popup-body-' + hex;
-            const trailPts = trailByHex.get(hex) || [];
-            m.bindPopup(
-                '<div class="airspace-popup" id="' +
-                    popupId +
-                    '">' +
-                    buildPopupHtml(a, trailPts) +
-                    '</div>',
-                trafficPopupLeafletOptions()
-            );
-
-            m.on('popupopen', function () {
-                trafficPopupOpen = true;
-                pinnedHex = hex;
-                pinnedOgnId = null;
-                showSelectedTrail('adsb', hex);
-                setStatus(
-                    '<strong>Details open</strong> · auto-refresh paused until you close.',
-                    false
-                );
-                fetchAdsbHex(hex)
-                    .then(function (data) {
-                        const list = aircraftListFromResponse(data);
-                        const ac0 = list[0];
-                        const el = document.getElementById(popupId);
-                        if (!el || !ac0) return;
-                        const trailPts = trailByHex.get(hex) || [];
-                        el.innerHTML = buildPopupHtml(ac0, trailPts);
-                        computeAglMeters(ac0, function (agl) {
-                            const el2 = document.getElementById(popupId);
-                            if (!el2 || !trafficPopupOpen || pinnedHex !== hex) return;
-                            el2.innerHTML = buildPopupHtml(ac0, trailPts, agl);
-                        });
-                    })
-                    .catch(function () {});
-            });
-
-            m.on('popupclose', function () {
-                if (suppressTrafficPopupClose) return;
-                trafficPopupOpen = false;
-                pinnedHex = null;
-                pinnedOgnId = null;
-                clearSelectedTrail();
-                lastFetchAt = 0;
-                fetchTraffic();
+            m.on('click', function () {
+                openDetailSheet('adsb', hex, a);
             });
 
             count++;
@@ -1270,19 +1514,28 @@
 
         scheduleAglForList(ac, renderGen);
 
-        if (pinnedHex) {
-            let found = false;
-            trafficLayer.eachLayer(function (layer) {
-                if (layer._airspaceHex === pinnedHex && typeof layer.openPopup === 'function') {
-                    layer.openPopup();
-                    found = true;
+        if (pinnedHex && trafficPopupOpen) {
+            let match = null;
+            for (let j = 0; j < ac.length; j++) {
+                if (normalizeHex(ac[j].hex) === pinnedHex) {
+                    match = ac[j];
+                    break;
                 }
+            }
+            if (match) {
+                pinnedAdsbAircraft = match;
+            }
+            const rec = pinnedAdsbAircraft || { hex: pinnedHex };
+            const trailPts = trailByHex.get(pinnedHex) || [];
+            updateDetailSheetBody(buildDetailHtml(rec, trailPts));
+            computeAglMeters(rec, function (agl) {
+                if (!trafficPopupOpen || pinnedHex !== normalizeHex(rec.hex)) return;
+                updateDetailSheetBody(buildDetailHtml(rec, trailPts, agl));
             });
-            if (!found) {
-                trafficPopupOpen = false;
-                pinnedHex = null;
-                pinnedOgnId = null;
-                clearSelectedTrail();
+            const els = getDetailSheetElements();
+            if (els.sheet) {
+                els.sheet.hidden = false;
+                els.sheet.setAttribute('aria-hidden', 'false');
             }
         }
 
@@ -1294,10 +1547,9 @@
         clearOgnTraffic();
         recordOgnTrailsFromList(list);
         if (!list || !list.length) {
-            if (pinnedOgnId) {
-                trafficPopupOpen = false;
+            if (pinnedOgnId && !trafficPopupOpen) {
                 pinnedOgnId = null;
-                pinnedHex = null;
+                pinnedOgnRecord = null;
                 clearSelectedTrail();
             }
             return 0;
@@ -1315,46 +1567,9 @@
             const m = L.marker([rec.lat, rec.lon], { icon: icon, interactive: true }).addTo(ognLayer);
             m._airspaceOgnId = rec.id;
 
-            const popupId = 'airspace-ogn-popup-' + rec.id;
-            const trailPts = trailByOgnId.get(rec.id) || [];
-            m.bindPopup(
-                '<div class="airspace-popup" id="' +
-                    popupId +
-                    '">' +
-                    buildOgnPopupHtml(rec, trailPts) +
-                    '</div>',
-                trafficPopupLeafletOptions()
-            );
-
             const ognId = rec.id;
-            m.on('popupopen', function () {
-                trafficPopupOpen = true;
-                pinnedOgnId = ognId;
-                pinnedHex = null;
-                showSelectedTrail('ogn', ognId);
-                setStatus(
-                    '<strong>Details open</strong> · auto-refresh paused until you close.',
-                    false
-                );
-                const pseudo = pseudoAircraftFromOgn(rec);
-                if (pseudo) {
-                    computeAglMeters(pseudo, function (agl) {
-                        const el = document.getElementById(popupId);
-                        if (!el || !trafficPopupOpen || pinnedOgnId !== ognId) return;
-                        const tp = trailByOgnId.get(ognId) || [];
-                        el.innerHTML = buildOgnPopupHtml(rec, tp, agl);
-                    });
-                }
-            });
-
-            m.on('popupclose', function () {
-                if (suppressOgnPopupClose) return;
-                trafficPopupOpen = false;
-                pinnedOgnId = null;
-                pinnedHex = null;
-                clearSelectedTrail();
-                lastFetchAt = 0;
-                fetchTraffic();
+            m.on('click', function () {
+                openDetailSheet('ogn', ognId, rec);
             });
 
             count++;
@@ -1362,34 +1577,49 @@
 
         scheduleAglForOgnList(list, renderGen);
 
-        if (pinnedOgnId) {
-            let found = false;
-            ognLayer.eachLayer(function (layer) {
-                if (layer._airspaceOgnId === pinnedOgnId && typeof layer.openPopup === 'function') {
-                    layer.openPopup();
-                    found = true;
+        if (pinnedOgnId && trafficPopupOpen) {
+            let match = null;
+            for (let j = 0; j < list.length; j++) {
+                if (list[j].id === pinnedOgnId) {
+                    match = list[j];
+                    break;
                 }
-            });
-            if (!found) {
-                trafficPopupOpen = false;
-                pinnedOgnId = null;
-                pinnedHex = null;
-                clearSelectedTrail();
+            }
+            if (match) {
+                pinnedOgnRecord = match;
+            }
+            const rec = pinnedOgnRecord || { id: pinnedOgnId };
+            const trailPts = trailByOgnId.get(pinnedOgnId) || [];
+            updateDetailSheetBody(buildOgnDetailHtml(rec, trailPts));
+            const pseudo = pseudoAircraftFromOgn(rec);
+            if (pseudo) {
+                computeAglMeters(pseudo, function (agl) {
+                    if (!trafficPopupOpen || pinnedOgnId !== rec.id) return;
+                    updateDetailSheetBody(buildOgnDetailHtml(rec, trailPts, agl));
+                });
+            }
+            const els = getDetailSheetElements();
+            if (els.sheet) {
+                els.sheet.hidden = false;
+                els.sheet.setAttribute('aria-hidden', 'false');
             }
         }
 
         return count;
     }
 
-    function fetchTraffic(force) {
+    function fetchTraffic(force, fromMove) {
         if ((!trafficEnabled && !ognEnabled) || !map) return;
         if (!force && trafficPopupOpen) return;
 
         const now = Date.now();
-        if (now - lastFetchAt < MIN_POLL_MS && lastFetchAt > 0) {
+        if (!force && now - lastFetchAt < currentPollMs && lastFetchAt > 0) {
             return;
         }
-        if (isFetching) return;
+        if (isFetching) {
+            if (force) pendingForceFetch = true;
+            return;
+        }
 
         const b = map.getBounds();
         if (b.getWest() > b.getEast()) {
@@ -1410,6 +1640,12 @@
             if (rNm == null) {
                 setStatus('Could not compute view radius.', true);
                 return;
+            }
+            if (fromMove && !force) {
+                const key = adsbQueryKey(lat, lon, rNm);
+                if (key === lastAdsbQueryKey && now - lastAdsbQueryKeyAt < currentPollMs) {
+                    return;
+                }
             }
         }
 
@@ -1448,6 +1684,11 @@
 
                 if (wantAdsb) {
                     if (adRes.ok && adRes.data) {
+                        resetPollInterval();
+                        if (rNm != null) {
+                            lastAdsbQueryKey = adsbQueryKey(lat, lon, rNm);
+                            lastAdsbQueryKeyAt = Date.now();
+                        }
                         const list = aircraftListFromResponse(adRes.data);
                         lastAircraftList = list.slice();
                         nAdsb = renderAircraftList(list);
@@ -1460,8 +1701,13 @@
                         if (!rateLimited) {
                             lastAircraftList = [];
                             renderAircraftList([]);
-                        } else if (lastAircraftList.length) {
-                            nAdsb = renderAircraftList(lastAircraftList.slice());
+                        } else {
+                            applyRateLimitBackoff();
+                            if (lastAircraftList.length) {
+                                nAdsb = renderAircraftList(lastAircraftList.slice(), {
+                                    forceStaleMarkers: true
+                                });
+                            }
                         }
                     }
                 }
@@ -1472,8 +1718,12 @@
                         lastOgnList = ognList;
                         nOgn = renderOgnList(ognList);
                     } else if (!ognRes.skipped) {
-                        lastOgnList = [];
-                        renderOgnList([]);
+                        if (lastOgnList.length && ognRes.error) {
+                            nOgn = renderOgnList(lastOgnList.slice());
+                        } else {
+                            lastOgnList = [];
+                            renderOgnList([]);
+                        }
                     }
                 }
 
@@ -1514,13 +1764,17 @@
                         ' NM · ' +
                         adsbProviderLabel(lastAdsbSource) +
                         (adsbTime !== '-' ? ' · data ' + escapeHtml(adsbTime) : '');
+                    if (lastAdsbCache === 'stale' && lastAdsbFetchedAt > 0) {
+                        const cacheAge = Math.round((Date.now() - lastAdsbFetchedAt) / 1000);
+                        detail += ' · cached ' + cacheAge + 's';
+                    }
                 }
                 if (wantAdsb && wantOgn && detail) detail += ' · ';
                 if (wantOgn && ognRes.ok) {
                     detail += 'OGN live';
                 }
                 if (detail) detail += ' · ';
-                detail += 'refresh ~' + Math.round(MIN_POLL_MS / 1000) + 's';
+                detail += 'refresh ~' + pollIntervalSec() + 's';
 
                 const summary = bits.length ? bits.join(' · ') + ' in view · ' + detail : detail;
 
@@ -1546,12 +1800,25 @@
                 if (adsbRateLimited) {
                     let extra = '';
                     if (lastAircraftList.length) {
-                        extra +=
-                            'Showing last known positions. ';
+                        extra += 'Showing last known positions. ';
                     }
                     setStatus(
                         extra +
-                            '<strong>Traffic API rate limit</strong>. Retrying with cached traffic shortly.',
+                            '<strong>Rate limited</strong> — retrying in ~' +
+                            pollIntervalSec() +
+                            's. Not for separation.',
+                        true
+                    );
+                } else if (lastAdsbCache === 'stale' && wantAdsb && adRes.ok) {
+                    const cacheAge =
+                        lastAdsbFetchedAt > 0
+                            ? Math.round((Date.now() - lastAdsbFetchedAt) / 1000)
+                            : null;
+                    setStatus(
+                        (summary ? summary + ' · ' : '') +
+                            '<strong>Cached traffic</strong>' +
+                            (cacheAge != null ? ' (' + cacheAge + 's old)' : '') +
+                            '. Not for separation.',
                         true
                     );
                 } else if (adsbNoProxy || ognNoProxy) {
@@ -1576,13 +1843,19 @@
             })
             .finally(function () {
                 isFetching = false;
+                if (pendingForceFetch) {
+                    pendingForceFetch = false;
+                    fetchTraffic(true);
+                }
             });
     }
 
     function scheduleFetch() {
         if (!trafficEnabled && !ognEnabled) return;
         clearTimeout(moveDebounce);
-        moveDebounce = setTimeout(fetchTraffic, MOVE_DEBOUNCE_MS);
+        moveDebounce = setTimeout(function () {
+            fetchTraffic(false, true);
+        }, MOVE_DEBOUNCE_MS);
     }
 
     function startPolling() {
@@ -1594,7 +1867,7 @@
             if (document.visibilityState !== 'visible') return;
             lastFetchAt = 0;
             fetchTraffic();
-        }, MIN_POLL_MS);
+        }, currentPollMs);
     }
 
     function stopPolling() {
@@ -1835,22 +2108,16 @@
                 if (!ognEnabled) {
                     clearOgnTraffic();
                     if (pinnedOgnId) {
-                        trafficPopupOpen = false;
-                        pinnedOgnId = null;
-                        pinnedHex = null;
-                        clearSelectedTrail();
+                        closeDetailSheet();
                     }
                 }
                 if (trafficEnabled || ognEnabled) {
                     startPolling();
                 } else {
                     stopPolling();
-                    trafficPopupOpen = false;
-                    pinnedHex = null;
-                    pinnedOgnId = null;
+                    closeDetailSheet();
                     clearTraffic();
                     clearOgnTraffic();
-                    clearSelectedTrail();
                     setStatus(
                         'ADS-B and OGN are off. Enable <strong>Show traffic</strong> and/or <strong>OGN</strong> to load data.',
                         false
@@ -1866,22 +2133,16 @@
                 if (!trafficEnabled) {
                     clearTraffic();
                     if (pinnedHex) {
-                        trafficPopupOpen = false;
-                        pinnedHex = null;
-                        pinnedOgnId = null;
-                        clearSelectedTrail();
+                        closeDetailSheet();
                     }
                 }
                 if (trafficEnabled || ognEnabled) {
                     startPolling();
                 } else {
                     stopPolling();
-                    trafficPopupOpen = false;
-                    pinnedHex = null;
-                    pinnedOgnId = null;
+                    closeDetailSheet();
                     clearTraffic();
                     clearOgnTraffic();
-                    clearSelectedTrail();
                     setStatus(
                         'ADS-B and OGN are off. Enable <strong>Show traffic</strong> and/or <strong>OGN</strong> to load data.',
                         false
@@ -1901,6 +2162,16 @@
             if (helpWrap) helpWrap.classList.add('airspace-help-open');
         }
 
+        function openHelpSources() {
+            openHelp();
+            const sourcesEl = document.getElementById('airspaceHelpSources');
+            if (sourcesEl) {
+                requestAnimationFrame(function () {
+                    sourcesEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                });
+            }
+        }
+
         function closeHelp() {
             if (helpWrap) helpWrap.classList.remove('airspace-help-open');
         }
@@ -1916,6 +2187,11 @@
             });
         }
 
+        const sourcesBtn = document.getElementById('airspaceSourcesBtn');
+        if (sourcesBtn) {
+            sourcesBtn.addEventListener('click', openHelpSources);
+        }
+
         if (helpClose) {
             helpClose.addEventListener('click', closeHelp);
         }
@@ -1924,6 +2200,7 @@
     function init() {
         initMap();
         wireUi();
+        wireDetailSheet();
         window.addEventListener('pagehide', saveAirspaceMapDraftNow);
         startPolling();
     }

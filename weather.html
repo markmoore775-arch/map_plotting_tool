@@ -266,14 +266,20 @@
                     </div>
                     <div class="weather-tab-panel" id="weatherTabAviation">
                         <div class="weather-aviation-intro">
-                            <p>METAR and TAF from aerodromes within 50 NM of the selected location.</p>
+                            <p>METAR and TAF from aerodromes within 50 NM of the selected location. Expand <strong>About flight categories</strong> below for how decoded labels relate to UK drone limits.</p>
                             <div class="weather-aviation-toggle">
                                 <button type="button" class="weather-aviation-toggle-btn active" data-view="decoded">Plain English</button>
                                 <button type="button" class="weather-aviation-toggle-btn" data-view="raw">Raw</button>
                             </div>
                         </div>
                         <div id="weatherAviationContent" class="weather-aviation-content"></div>
-                        <p class="weather-attribution" id="weatherAttributionAviation">METAR/TAF from <a href="https://aviationweather.gov/" target="_blank" rel="noopener">Aviation Weather Center</a></p>
+                        <div class="weather-aviation-footer">
+                            <p class="weather-attribution" id="weatherAttributionAviation">METAR/TAF from <a href="https://aviationweather.gov/" target="_blank" rel="noopener">Aviation Weather Center</a></p>
+                            <details class="weather-how-calculated" id="weatherAviationFlightCategories">
+                                <summary>About flight categories</summary>
+                                <div class="weather-how-calculated-body" id="weatherAviationFlightCategoriesBody"></div>
+                            </details>
+                        </div>
                     </div>
                     <div class="weather-tab-panel" id="weatherTabAirspace">
                         <div class="weather-airspace-intro">

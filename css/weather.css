@@ -1957,6 +1957,25 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     color: var(--sidebar-text, #e0e0e8);
 }
 
+.weather-how-calculated-body a {
+    color: var(--primary, #5b8def);
+    text-decoration: none;
+}
+
+.weather-how-calculated-body a:hover {
+    text-decoration: underline;
+}
+
+.weather-aviation-footer .weather-attribution {
+    margin-top: 16px;
+    margin-bottom: 0;
+}
+
+.weather-aviation-footer .weather-how-calculated {
+    margin-top: 12px;
+    margin-bottom: 0;
+}
+
 .weather-how-calculated-technical {
     margin: 0 0 10px;
     padding-bottom: 8px;

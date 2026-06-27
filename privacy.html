@@ -25,10 +25,10 @@
 
     <main class="legal-main" id="main">
         <h1>Privacy Policy</h1>
-        <p class="legal-updated">Last updated: 2 April 2026</p>
+        <p class="legal-updated">Last updated: 27 June 2026</p>
 
         <h2>Summary</h2>
-        <p>AirPlan runs mostly in your browser. Planning data, flight report drafts, checklist progress, and similar state are stored <strong>on your device</strong> unless you export or email them yourself. When you use maps, weather, or traffic features, <strong>third-party services</strong> may receive technical requests (for example map tiles or API calls) as described below.</p>
+        <p>AirPlan runs mostly in your browser. Planning maps, flight reports, checklists, weather briefings, airspace views, and flight-planning drafts are stored <strong>on your device</strong> unless you export or email them yourself. When you use maps, weather, geocoding, NOTAM or airspace lookups, or live traffic, <strong>third-party services</strong> (or our same-origin API proxy on <strong>airplan.uk</strong>) may receive technical requests as described below. We do not sell your personal information and we do not run advertising analytics on the site.</p>
 
         <h2>Who we are</h2>
         <p>AirPlan is provided by M Moore. For privacy questions, feedback, or data requests: <a href="mailto:support@airplan.uk">support@airplan.uk</a>.</p>
@@ -37,23 +37,48 @@
         <p>If you email <a href="mailto:support@airplan.uk">support@airplan.uk</a>, we receive your email address, message content, and message headers your provider includes. We use this only to respond and improve the service, and we do not sell your personal information.</p>
 
         <h2>Data stored on your device</h2>
-        <p>Features such as the planning map, flight report, checklist, and weather tools may save data in your browser (for example <strong>local storage</strong> or <strong>session storage</strong>) so your work persists between visits. This data stays on your machine until you clear it, use in-app clear actions, or remove site data in your browser settings. We do not receive that data automatically.</p>
+        <p>AirPlan saves work in your browser (for example <strong>local storage</strong> or <strong>session storage</strong>) so it persists between visits. This includes, depending on which pages you use:</p>
+        <ul>
+            <li>Planning map drafts, settings, sidebar state, and UK airspace layer preferences</li>
+            <li>Flight report drafts and NOTAM filter choices</li>
+            <li>Checklist tick progress</li>
+            <li>Weather briefing drafts and hand-offs to the flight report</li>
+            <li>Live airspace map preferences (for example Open Glider Network toggle) and map view state</li>
+            <li>Flight-planning drafts</li>
+            <li>Light/dark theme choice for standalone pages</li>
+            <li>Optional <strong>BGA Airspace Service</strong> username and password if you enter them in Settings (used only from your browser to fetch restricted-airspace tasking data)</li>
+        </ul>
+        <p>This data stays on your machine until you clear it, use in-app clear or reset actions, or remove site data in your browser settings. We do not receive it automatically.</p>
 
         <h2>API keys and configuration</h2>
-        <p>Optional services (for example Mapbox, What3Words, or NATS-related airspace credentials) may ask you to enter keys or passwords in Settings or in <code>js/config.js</code>. Those values are used from your browser to call the relevant providers; treat them as sensitive and do not share them.</p>
+        <p>The published site may include built-in keys for some map or conversion services (for example Ordnance Survey, Mapbox, or What3Words) in <code>js/config.js</code>. Those keys are used from your browser to call the relevant providers and are subject to each provider&rsquo;s terms.</p>
+        <p>You can also enter optional credentials in Settings (for example a <strong>BGA Airspace Service</strong> username and password). Those values are stored locally and sent only when you use features that need them. Treat them as sensitive and do not share them.</p>
+
+        <h2>Geolocation</h2>
+        <p>If you choose <strong>locate me</strong> (or similar) on a map, your browser may ask permission to use GPS or other location sources. Coordinates are used in the page to centre the map or fetch nearby data. They are not uploaded to us unless you trigger a feature that sends coordinates to a third party (for example a weather or traffic API) or pass them through our proxy as described below.</p>
+
+        <h2>Requests via airplan.uk</h2>
+        <p>On the live site at <strong>airplan.uk</strong>, some features call same-origin API routes (for example <code>/api/adsb</code>, <code>/api/ogn</code>, <code>/api/aviation</code>) implemented on <strong>Cloudflare Workers</strong>. These proxies forward your browser&rsquo;s request to upstream aviation data providers and may cache responses briefly at the edge.</p>
+        <p>Depending on the feature, query parameters can include map coordinates (rounded), search radius, aircraft hex codes, map bounding boxes, or airport ICAO codes for METAR/TAF lookups. We use this only to return the data you asked for; we do not build advertising profiles from it. Cloudflare and upstream providers may log standard HTTP metadata (IP address, URL, timestamps) under their own policies.</p>
+        <p>If you run AirPlan locally without these routes, traffic and aviation-weather features may call third parties directly from your browser or use public CORS proxies instead.</p>
 
         <h2>Third-party services</h2>
         <p>Depending on which tools you use, your browser may load resources or send requests to third parties, including but not limited to:</p>
         <ul>
-            <li><strong>Maps and location:</strong> OpenStreetMap and other tile providers; optional Mapbox or Ordnance Survey when configured; Leaflet and related libraries (often via CDNs such as unpkg or jsDelivr).</li>
-            <li><strong>Weather and aviation data:</strong> Open-Meteo and other forecast sources; official or third-party airspace and NOTAM-related endpoints where the app is configured to use them.</li>
-            <li><strong>Traffic awareness:</strong> ADS-B and glider-network style feeds (for example ADSB.lol, Open Glider Network) when you open Airspace-related views.</li>
-            <li><strong>Fonts and assets:</strong> Google Fonts or similar CDNs when linked from pages.</li>
+            <li><strong>Maps and imagery:</strong> OpenStreetMap; Esri world imagery; optional Mapbox or Ordnance Survey when configured; Leaflet and related libraries (often via CDNs such as unpkg, jsDelivr, or cdnjs).</li>
+            <li><strong>Geocoding and UK postcodes:</strong> Nominatim (OpenStreetMap) for place search or reverse geocoding; <code>postcodes.io</code> for UK postcode lookup; What3Words when configured.</li>
+            <li><strong>Weather and aviation weather:</strong> Open-Meteo for forecasts; US <strong>Aviation Weather Center</strong> (METAR/TAF) directly or via our <code>/api/aviation</code> proxy.</li>
+            <li><strong>NOTAMs and UK airspace:</strong> bundled GeoJSON served from AirPlan; UK NOTAM archive mirror for PIB data; official NATS/CAA publications are the authoritative source for flight-critical decisions.</li>
+            <li><strong>Traffic awareness:</strong> airplanes.live and ADSB.lol (ADS-B); Open Glider Network (gliders/FLARM); optional embedded views such as ADS-B Exchange when you open those pages.</li>
+            <li><strong>Restricted airspace tasking:</strong> BGA Airspace Service (<code>airspace.bgaladder.net</code>) when you supply credentials and enable related layers.</li>
+            <li><strong>CORS helpers:</strong> public proxies such as corsproxy.io, r.jina.ai, or api.codetabs.com may be used when a browser cannot call an upstream API directly.</li>
+            <li><strong>Fonts and export libraries:</strong> Google Fonts; client-side PDF/PowerPoint libraries loaded from CDNs when you export.</li>
+            <li><strong>Hosting:</strong> Cloudflare (Pages/Workers) serves the site and the API routes above.</li>
         </ul>
-        <p>Each provider has its own privacy policy governing how they process requests and logs. Use of those features is optional and under your control.</p>
+        <p>Each provider has its own privacy policy governing how they process requests and logs. Use of optional features is under your control. Export and <strong>send by email</strong> actions open your own mail app; message content is not sent through our servers.</p>
 
         <h2>Cookies</h2>
-        <p>AirPlan does not use tracking cookies for advertising. Your browser may still store small amounts of data for essential site behaviour (for example install prompts or preferences). Third-party embeds may set their own cookies according to their policies.</p>
+        <p>AirPlan does not use tracking cookies for advertising. Your browser may still store small amounts of data for essential site behaviour (for example install prompts, theme preference, or saved drafts in local storage). Third-party embeds, CDNs, and map providers may set their own cookies or similar storage according to their policies.</p>
 
         <h2>Analytics</h2>
         <p>This policy covers the AirPlan site as published. If first-party or third-party analytics are added later, this page will be updated to name the provider and what is collected.</p>

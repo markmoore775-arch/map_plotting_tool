@@ -3,7 +3,7 @@
    Full-screen map, toolbar, status, help panel
    ============================================ */
 
-/* Popups above fixed toolbar (z-index 1000) and attribution */
+/* Popups above fixed toolbar (z-index 1000) */
 body.airspace-mode .leaflet-popup-pane {
     z-index: 1100;
 }
@@ -365,6 +365,18 @@ a.airspace-btn.airspace-view-switch {
     }
 }
 
+.airspace-btn--sources {
+    color: var(--sidebar-muted, #a8a8b8);
+    background: transparent;
+    border-color: transparent;
+}
+
+.airspace-btn--sources:hover {
+    color: var(--sidebar-text, #e0e0e8);
+    background: var(--sidebar-surface, #2a2a3d);
+    border-color: var(--sidebar-border, #3a3a50);
+}
+
 .airspace-toolbar-label {
     display: flex;
     align-items: center;
@@ -476,6 +488,32 @@ a.airspace-btn.airspace-view-switch {
     margin-bottom: 6px;
 }
 
+.airspace-help-sources {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--sidebar-border, #3a3a50);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--sidebar-muted, #a8a8b8);
+}
+
+.airspace-help-sources p {
+    margin: 0 0 8px;
+}
+
+.airspace-help-sources p:last-child {
+    margin-bottom: 0;
+}
+
+.airspace-help-sources-title {
+    margin-bottom: 6px !important;
+    color: var(--sidebar-text, #e0e0e8);
+}
+
+.airspace-help-sources a {
+    color: #8eb4f5;
+}
+
 /* Leaflet info control (class must match JS or rules never apply) */
 .leaflet-control-airspace-info {
     margin-top: 5px;
@@ -499,33 +537,10 @@ a.airspace-btn.airspace-view-switch {
     flex-shrink: 0;
 }
 
-/* Bottom attribution strip - above floating toolbar (taller when status is on a second row) */
-.airspace-attribution {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 118px;
-    z-index: 999;
-    padding: 6px 10px max(6px, env(safe-area-inset-bottom, 6px));
-    padding-left: max(10px, env(safe-area-inset-left, 10px));
-    padding-right: max(10px, env(safe-area-inset-right, 10px));
-    font-size: 10px;
-    line-height: 1.35;
-    color: rgba(255, 255, 255, 0.85);
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
-    pointer-events: none;
-    text-align: center;
-}
-
-.airspace-attribution a {
-    color: #8eb4f5;
-    pointer-events: auto;
-}
-
-/* Logo corner - above attribution + toolbar */
+/* Logo corner - above floating toolbar */
 .airspace-logo {
     position: fixed;
-    bottom: max(158px, calc(158px + env(safe-area-inset-bottom, 0px)));
+    bottom: max(108px, calc(108px + env(safe-area-inset-bottom, 0px)));
     left: max(12px, env(safe-area-inset-left, 12px));
     z-index: 998;
     opacity: 0.35;
@@ -614,15 +629,8 @@ a.airspace-btn.airspace-view-switch {
         height: 15px;
     }
 
-    /* Sit above compact toolbar (+ optional AGL hint line); scales with home-indicator inset */
-    .airspace-attribution {
-        font-size: 9px;
-        bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 92px);
-        padding-bottom: 0;
-    }
-
     .airspace-logo {
-        bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 128px);
+        bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 88px);
     }
 
     .airspace-marker-alt {
@@ -638,13 +646,13 @@ body.ap-shell.fn-light-theme.airspace-mode .airspace-toolbar {
     box-shadow: var(--ap-chrome-shadow-light, 0 2px 12px rgba(0, 0, 0, 0.08));
 }
 
-body.ap-shell.fn-light-theme.airspace-mode .airspace-btn:not(.active) {
+body.ap-shell.fn-light-theme.airspace-mode .airspace-btn:not(.active):not(.airspace-btn--sources) {
     color: #1a1d26;
     background: #ffffff;
     border-color: #d0d4dc;
 }
 
-body.ap-shell.fn-light-theme.airspace-mode .airspace-btn:hover:not(:disabled):not(.active) {
+body.ap-shell.fn-light-theme.airspace-mode .airspace-btn:hover:not(:disabled):not(.active):not(.airspace-btn--sources) {
     background: #e8eaef;
     border-color: #c5c9d4;
 }
@@ -673,11 +681,237 @@ body.ap-shell.fn-light-theme.airspace-mode .airspace-side-panel-close:hover {
     color: #1a1d26;
 }
 
-body.ap-shell.fn-light-theme.airspace-mode .airspace-attribution {
-    color: rgba(26, 29, 38, 0.88);
-    background: linear-gradient(to top, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
+body.ap-shell.fn-light-theme.airspace-mode .airspace-help-sources {
+    border-top-color: #d0d4dc;
+    color: #5c6378;
 }
 
-body.ap-shell.fn-light-theme.airspace-mode .airspace-attribution a {
+body.ap-shell.fn-light-theme.airspace-mode .airspace-help-sources-title {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-help-sources a {
     color: var(--primary, #5b8def);
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-btn--sources {
+    color: #5c6378;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-btn--sources:hover {
+    color: #1a1d26;
+    background: #e8eaef;
+    border-color: #c5c9d4;
+}
+
+/* Detail bottom sheet / side panel */
+.airspace-detail-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    pointer-events: none;
+}
+
+.airspace-detail-sheet:not([hidden]) {
+    pointer-events: auto;
+}
+
+.airspace-detail-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 10, 18, 0.45);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.airspace-detail-sheet:not([hidden]) .airspace-detail-sheet-backdrop {
+    opacity: 1;
+}
+
+.airspace-detail-sheet-panel {
+    position: absolute;
+    background: #16161f;
+    color: #e8e8ef;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+}
+
+.airspace-detail-sheet-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #e8e8ef;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.airspace-detail-sheet-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.airspace-detail-sheet-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px 16px 20px;
+    padding-top: 44px;
+}
+
+.airspace-detail-sheet-body .airspace-popup {
+    min-width: 0;
+}
+
+.airspace-detail-meta {
+    font-size: 11px;
+    color: #9ca3af;
+    margin: 0 0 10px;
+    line-height: 1.45;
+}
+
+.airspace-detail-meta--stale {
+    color: #fbbf24;
+}
+
+.airspace-detail-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 0;
+}
+
+.airspace-detail-links a {
+    font-size: 11px;
+    color: #93c5fd;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(147, 197, 253, 0.25);
+    background: rgba(147, 197, 253, 0.08);
+}
+
+.airspace-detail-links a:hover {
+    background: rgba(147, 197, 253, 0.16);
+}
+
+.airspace-popup-table tr.airspace-squawk-emergency td {
+    color: #fca5a5;
+    font-weight: 700;
+}
+
+.airspace-popup-table tr.airspace-squawk-emergency th {
+    color: #f87171;
+}
+
+.airspace-marker-wrap.airspace-marker-stale {
+    opacity: 0.55;
+}
+
+.airspace-marker-wrap.airspace-marker-stale .airspace-marker-alt {
+    opacity: 0.85;
+}
+
+@media (min-width: 601px) {
+    .airspace-detail-sheet-panel {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(360px, 92vw);
+        border-radius: 12px 0 0 12px;
+        transform: translateX(100%);
+        transition: transform 0.22s ease;
+    }
+
+    .airspace-detail-sheet:not([hidden]) .airspace-detail-sheet-panel {
+        transform: translateX(0);
+    }
+}
+
+@media (max-width: 600px) {
+    .airspace-detail-sheet-panel {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        max-height: min(55vh, 480px);
+        border-radius: 16px 16px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.22s ease;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .airspace-detail-sheet:not([hidden]) .airspace-detail-sheet-panel {
+        transform: translateY(0);
+    }
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-detail-sheet-panel {
+    background: #f8f9fc;
+    color: #1a1d26;
+    border-color: #d0d4dc;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-detail-sheet-close {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-detail-meta {
+    color: #5c6378;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-detail-meta--stale {
+    color: #b45309;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup,
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-inner {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-title {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-sub,
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-muted {
+    color: #5c6378;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-muted strong {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-table th {
+    color: #5c6378;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-table td {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup strong {
+    color: #1a1d26;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-table tr.airspace-squawk-emergency td {
+    color: #b91c1c;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-popup-table tr.airspace-squawk-emergency th {
+    color: #dc2626;
+}
+
+body.ap-shell.fn-light-theme.airspace-mode .airspace-detail-links a {
+    color: var(--primary, #5b8def);
+    border-color: rgba(91, 141, 239, 0.3);
+    background: rgba(91, 141, 239, 0.08);
 }

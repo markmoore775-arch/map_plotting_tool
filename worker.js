@@ -33,6 +33,7 @@ function normalizePath(pathname) {
 }
 
 const ADSB_CACHE_SECONDS = 5;
+const OGN_CACHE_SECONDS = 10;
 const ADSB_LOL_BASE = 'https://api.adsb.lol/v2';
 const AIRPLANES_LIVE_BASE = 'https://api.airplanes.live/v2';
 const ADSB_UPSTREAM_HEADERS = {
@@ -217,6 +218,12 @@ async function handleOgnApi(request) {
     e: e.toFixed(6),
     z
   });
+  const cacheKey = 'ogn:' + qs.toString();
+  const cache = caches.default;
+  const cacheRequest = new Request(new URL('/ogn-cache/' + cacheKey, request.url).toString(), {
+    method: 'GET'
+  });
+  const cached = await cache.match(cacheRequest);
   const upstreamUrl = 'https://live.glidernet.org/lxml.php?' + qs.toString();
 
   const upstream = await fetch(upstreamUrl, {
@@ -224,6 +231,16 @@ async function handleOgnApi(request) {
   });
 
   if (!upstream.ok) {
+    if (cached) {
+      return new Response(await cached.text(), {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-AirPlan-Cache': 'stale'
+        }
+      });
+    }
     return jsonResponse(
       { error: `Upstream returned HTTP ${upstream.status}` },
       502
@@ -231,13 +248,15 @@ async function handleOgnApi(request) {
   }
 
   const body = await upstream.text();
-  return new Response(body, {
+  const response = new Response(body, {
     status: 200,
     headers: {
       'Content-Type': 'text/xml; charset=utf-8',
-      'Cache-Control': 'no-store'
+      'Cache-Control': `public, max-age=${OGN_CACHE_SECONDS}`
     }
   });
+  await cache.put(cacheRequest, response.clone());
+  return response;
 }
 
 async function handleAviationApi(request) {

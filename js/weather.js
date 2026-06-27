@@ -6,6 +6,18 @@
 (function () {
     'use strict';
 
+    const AVIATION_FLIGHT_CATEGORY_HELP_HTML =
+        '<p>Decoded <strong>flight category</strong> labels (VFR, MVFR, IFR, LIFR) come from the ' +
+        '<a href="https://aviationweather.gov/" target="_blank" rel="noopener">Aviation Weather Center</a> ' +
+        'METAR data. They are assigned from visibility and cloud ceiling in the observation using a standard METAR briefing convention, not UK CAA-specific thresholds.</p>' +
+        '<p>For UK drone operations, apply your <strong>CAA</strong> category limits and <strong>Operations Manual</strong> weather minima. ' +
+        'A METAR showing <strong>VFR</strong> does not by itself mean your Open Category flight is within limits. Check wind, visibility, cloud base, and site-specific rules. ' +
+        'See <a href="https://www.caa.co.uk/drones/getting-started-with-drones-and-model-aircraft/where-you-can-fly/" target="_blank" rel="noopener">CAA: where you can fly</a>.</p>';
+
+    const AVIATION_FLIGHT_CATEGORY_HELP_PLAIN =
+        'Flight categories (VFR, MVFR, IFR, LIFR) in decoded METAR come from Aviation Weather Center data, assigned from visibility and cloud ceiling using a standard METAR briefing convention, not UK CAA thresholds. ' +
+        'For UK drone ops, apply CAA category limits and Operations Manual weather minima; METAR VFR does not alone mean your Open Category flight is within limits.';
+
     const WEATHER_STATUS_HTML_DEFAULT = [
         '<div class="weather-help-doc">',
         '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlan v1.0) shows forecast and aviation data for one point on the map. The map <strong>info (ⓘ)</strong> control opens or closes this panel.</p>',
@@ -19,8 +31,14 @@
         '</section>',
         '<section class="weather-help-section" aria-labelledby="weather-help-report-title">',
         '<h3 class="weather-help-section-title" id="weather-help-report-title">Inside the report</h3>',
-        '<p class="weather-help-section-text"><strong>Summary</strong>: wind by altitude, visibility, clouds, precipitation, temperature. Expand <strong>How this is calculated</strong> on Summary for flight-suitability (Green / Amber / Red) rules. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong>. <strong>Airspace</strong>: set <strong>Search radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About this forecast model</strong> for model notes.</p>',
+        '<p class="weather-help-section-text"><strong>Summary</strong>: wind by altitude, visibility, clouds, precipitation, temperature. Expand <strong>How this is calculated</strong> on Summary for flight-suitability (Green / Amber / Red) rules. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong> (expand <strong>About flight categories</strong> for decoded labels and UK limits). <strong>Airspace</strong>: set <strong>Search radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About this forecast model</strong> for model notes.</p>',
         '</section>',
+        '<details class="weather-help-details">',
+        '<summary>METAR / TAF flight categories</summary>',
+        '<div class="weather-help-details-body">',
+        AVIATION_FLIGHT_CATEGORY_HELP_HTML,
+        '</div>',
+        '</details>',
         '<details class="weather-help-details">',
         '<summary>Export (PPTX &amp; PDF)</summary>',
         '<div class="weather-help-details-body">',
@@ -2031,6 +2049,30 @@
         return n + ' kt (' + kph + ' kph)';
     }
 
+    /** 1 NM = 1.852 km (exact). */
+    const NM_TO_KM = 1.852;
+
+    function nmWithKmBracket(nm) {
+        const n = Number(nm);
+        if (!Number.isFinite(n)) return String(nm) + ' NM';
+        const km = Math.round(n * NM_TO_KM * 10) / 10;
+        const kmStr = km % 1 === 0 ? String(Math.round(km)) : km.toFixed(1);
+        return n.toFixed(1) + ' NM (' + kmStr + ' km)';
+    }
+
+    function flightCategoryWithExplanation(cat) {
+        if (!cat) return '';
+        const code = String(cat).toUpperCase();
+        const labels = {
+            VFR: 'Visual Flight Rules',
+            MVFR: 'Marginal VFR',
+            IFR: 'Instrument Flight Rules',
+            LIFR: 'Low IFR'
+        };
+        const label = labels[code];
+        return label ? code + ' (' + label + ')' : code;
+    }
+
     function kmBracketFromMiles(mi) {
         const km = mi * MI_TO_KM;
         if (km < 1) {
@@ -2109,7 +2151,7 @@
             const inHg = (m.altim >= 900 && m.altim <= 1100) ? (m.altim * 0.02953).toFixed(2) : (m.altim / 100).toFixed(2);
             parts.push('Altimeter ' + inHg + ' inHg');
         }
-        if (m.fltCat) parts.push('Flight category: ' + m.fltCat);
+        if (m.fltCat) parts.push('Flight category: ' + flightCategoryWithExplanation(m.fltCat));
         return parts.join('. ');
     }
 
@@ -2188,7 +2230,7 @@
                 html += '<div class="weather-aviation-station">';
                 html += '<div class="weather-aviation-station-header">';
                 html += '<strong>' + (s.name || s.icao) + '</strong> <span class="weather-aviation-icao">' + s.icao + '</span>';
-                html += ' <span class="weather-aviation-dist">' + s.distNm.toFixed(1) + ' NM</span>';
+                html += ' <span class="weather-aviation-dist">' + nmWithKmBracket(s.distNm) + '</span>';
                 html += '</div>';
                 if (rawMetar) {
                     const decodedMetar = decodeMetar(metar);
@@ -2476,7 +2518,7 @@
                     slide.addText(
                         [
                             { text: (s.name || s.icao), options: { bold: true, fontSize: 12, color: C.textPrimary } },
-                            { text: '  ' + s.icao + '  (' + s.distNm.toFixed(1) + ' NM)', options: { fontSize: 10, color: C.accent } }
+                            { text: '  ' + s.icao + '  (' + nmWithKmBracket(s.distNm) + ')', options: { fontSize: 10, color: C.accent } }
                         ],
                         { x: 0.5, y: yPos, w: 12, h: 0.35, fontFace: 'Arial' }
                     );
@@ -2495,7 +2537,10 @@
                     yPos += 0.2;
                 });
 
-                slide.addText('Data from Aviation Weather Center (aviationweather.gov)', { x: 0.5, y: maxY + 0.1, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+                slide.addText(
+                    'Data from Aviation Weather Center (aviationweather.gov). ' + AVIATION_FLIGHT_CATEGORY_HELP_PLAIN,
+                    { x: 0.5, y: maxY + 0.1, w: 12, h: 0.55, fontSize: 8, color: C.textMuted, fontFace: 'Arial', lineSpacingMultiple: 1.2 }
+                );
             }
 
             // --- NOTAMs & Airspace: always use radius from input (not stale cache); minimap per item + overview map
@@ -3003,7 +3048,7 @@
                     }
 
                     var nameText = (s.name || s.icao);
-                    var icaoText = '  ' + s.icao + '  (' + s.distNm.toFixed(1) + ' NM)';
+                    var icaoText = '  ' + s.icao + '  (' + nmWithKmBracket(s.distNm) + ')';
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(10);
                     doc.setTextColor(c.text[0], c.text[1], c.text[2]);
@@ -3040,6 +3085,20 @@
                     }
                     yPos += 4;
                 });
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(6.5);
+                doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                var fcNoteLines = doc.splitTextToSize(
+                    'Source: Aviation Weather Center. ' + AVIATION_FLIGHT_CATEGORY_HELP_PLAIN,
+                    190
+                );
+                if (yPos + fcNoteLines.length * 3.2 > 195) {
+                    PdfTheme.newPage(doc);
+                    PdfTheme.addHeader(doc, 'METAR / TAF (continued)');
+                    yPos = 18;
+                }
+                doc.text(fcNoteLines, 10, yPos + 4);
             }
 
             // Page 5+: NOTAMs and Airspace (tables: NOTAM, FRZ, Restricted, etc., then map; matches PPTX)
@@ -3555,6 +3614,11 @@
         const weatherStatusEl = document.getElementById('weatherStatus');
         if (weatherStatusEl) {
             weatherStatusEl.innerHTML = WEATHER_STATUS_HTML_DEFAULT;
+        }
+
+        const aviationFcHelpEl = document.getElementById('weatherAviationFlightCategoriesBody');
+        if (aviationFcHelpEl) {
+            aviationFcHelpEl.innerHTML = AVIATION_FLIGHT_CATEGORY_HELP_HTML;
         }
 
         restoreWeatherDraftFromStorage();

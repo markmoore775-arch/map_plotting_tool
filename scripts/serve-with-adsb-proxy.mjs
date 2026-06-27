@@ -18,6 +18,84 @@ const START_PORT = Number(process.env.PORT) || 8081;
 /** Try up to this many consecutive ports if START_PORT is in use */
 const PORT_TRY_COUNT = 30;
 
+const ADSB_CACHE_MS = 5000;
+const ADSB_UPSTREAM_HEADERS = { Accept: 'application/json' };
+/** @type {Map<string, { body: string, storedAt: number, source: string }>} */
+const adsbResponseCache = new Map();
+
+function roundAdsbCoord(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function adsbCacheKeyFromQuery(query) {
+  if (query.hex) return 'hex:' + query.hex;
+  return 'area:' + query.latKey + ',' + query.lonKey + ',' + query.distKey;
+}
+
+function fetchAdsbUpstreamText(url) {
+  return new Promise(function (resolve, reject) {
+    https
+      .get(url, { headers: ADSB_UPSTREAM_HEADERS }, function (upstreamRes) {
+        const chunks = [];
+        upstreamRes.on('data', function (chunk) {
+          chunks.push(chunk);
+        });
+        upstreamRes.on('end', function () {
+          resolve({
+            status: upstreamRes.statusCode || 502,
+            body: Buffer.concat(chunks).toString('utf8')
+          });
+        });
+      })
+      .on('error', reject);
+  });
+}
+
+async function fetchAdsbWithFailover(query) {
+  let primaryUrl;
+  let fallbackUrl;
+  if (query.hex) {
+    primaryUrl = 'https://api.airplanes.live/v2/hex/' + query.hex;
+    fallbackUrl = 'https://api.adsb.lol/v2/hex/' + query.hex;
+  } else {
+    primaryUrl =
+      'https://api.airplanes.live/v2/point/' +
+      query.latKey +
+      '/' +
+      query.lonKey +
+      '/' +
+      query.distKey;
+    fallbackUrl =
+      'https://api.adsb.lol/v2/lat/' +
+      query.latKey +
+      '/lon/' +
+      query.lonKey +
+      '/dist/' +
+      query.distKey;
+  }
+
+  let primary = await fetchAdsbUpstreamText(primaryUrl);
+  if (primary.status === 429) {
+    await new Promise(function (resolve) {
+      setTimeout(resolve, 1500);
+    });
+    primary = await fetchAdsbUpstreamText(primaryUrl);
+  }
+  if (primary.status >= 200 && primary.status < 300) {
+    return { ok: true, body: primary.body, source: 'airplaneslive' };
+  }
+
+  const fallback = await fetchAdsbUpstreamText(fallbackUrl);
+  if (fallback.status >= 200 && fallback.status < 300) {
+    return { ok: true, body: fallback.body, source: 'adsblol' };
+  }
+
+  return {
+    ok: false,
+    status: primary.status === 429 || fallback.status === 429 ? 429 : 502
+  };
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
@@ -39,8 +117,8 @@ function safePath(rel) {
 function handleAdsbProxy(req, res) {
   const u = new URL(req.url, 'http://localhost');
   const hexParam = u.searchParams.get('hex');
-  let primary;
-  let fallback;
+  let query;
+
   if (hexParam != null && hexParam !== '') {
     const hex = String(hexParam)
       .toLowerCase()
@@ -50,8 +128,7 @@ function handleAdsbProxy(req, res) {
       res.end(JSON.stringify({ error: 'Invalid hex' }));
       return;
     }
-    primary = `https://api.airplanes.live/v2/hex/${hex}`;
-    fallback = `https://api.adsb.lol/v2/hex/${hex}`;
+    query = { hex };
   } else {
     const lat = Number(u.searchParams.get('lat'));
     const lon = Number(u.searchParams.get('lon'));
@@ -71,38 +148,76 @@ function handleAdsbProxy(req, res) {
       res.end(JSON.stringify({ error: 'Invalid dist' }));
       return;
     }
-    const latKey = Math.round(lat * 100) / 100;
-    const lonKey = Math.round(lon * 100) / 100;
+    const latKey = roundAdsbCoord(lat);
+    const lonKey = roundAdsbCoord(lon);
     const distKey = Math.round(dist);
-    primary = `https://api.airplanes.live/v2/point/${latKey}/${lonKey}/${distKey}`;
-    fallback = `https://api.adsb.lol/v2/lat/${latKey}/lon/${lonKey}/dist/${distKey}`;
+    query = { latKey, lonKey, distKey, hex: null };
   }
 
-  function pipeUpstream(upstreamUrl, source, onFail) {
-    https
-      .get(upstreamUrl, { headers: { Accept: 'application/json' } }, (upstreamRes) => {
-        const code = upstreamRes.statusCode || 502;
-        if (code >= 200 && code < 300) {
-          res.writeHead(200, {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Cache-Control': 'no-store',
-            'X-AirPlan-Source': source
-          });
-          upstreamRes.pipe(res);
-          return;
-        }
-        upstreamRes.resume();
-        onFail(code);
-      })
-      .on('error', onFail);
+  const cacheKey = adsbCacheKeyFromQuery(query);
+  const cached = adsbResponseCache.get(cacheKey);
+  const now = Date.now();
+
+  if (cached && now - cached.storedAt < ADSB_CACHE_MS) {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'public, max-age=5',
+      'X-AirPlan-Source': cached.source
+    });
+    res.end(cached.body);
+    return;
   }
 
-  pipeUpstream(primary, 'airplaneslive', function () {
-    pipeUpstream(fallback, 'adsblol', function () {
+  fetchAdsbWithFailover(query)
+    .then(function (result) {
+      if (result.ok) {
+        adsbResponseCache.set(cacheKey, {
+          body: result.body,
+          storedAt: now,
+          source: result.source
+        });
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=5',
+          'X-AirPlan-Source': result.source
+        });
+        res.end(result.body);
+        return;
+      }
+
+      if (cached) {
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=5',
+          'X-AirPlan-Cache': 'stale',
+          'X-AirPlan-Source': 'stale'
+        });
+        res.end(cached.body);
+        return;
+      }
+
+      const status = result.status === 429 ? 429 : 502;
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Upstream fetch failed' }));
+    })
+    .catch(function () {
+      if (cached) {
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=5',
+          'X-AirPlan-Cache': 'stale',
+          'X-AirPlan-Source': 'stale'
+        });
+        res.end(cached.body);
+        return;
+      }
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Upstream fetch failed' }));
     });
-  });
+
+  if (cached && now - cached.storedAt > ADSB_CACHE_MS * 4) {
+    adsbResponseCache.delete(cacheKey);
+  }
 }
 
 function handleOgnProxy(req, res) {
