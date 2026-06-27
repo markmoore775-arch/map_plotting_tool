@@ -129,6 +129,7 @@
                 if (config.droneRelevantOnly && NP && !NP.notamPassesDroneFocusFilter(notam)) return false;
                 if (config.hideAerodromeGround && notam.uasCategory === 'aerodrome_ground') return false;
                 if (config.hideAboveDroneCeiling && NP && !NP.notamOverlapsDroneCeilingFt(notam, config.droneCeilingFt)) return false;
+                if (NP && !NP.notamIsActiveAt(notam, Date.now())) return false;
                 if (notam.radiusNm > effectiveMaxRadius) return false;
                 if (bounds && !circleIntersectsBounds(c, bounds)) return false;
                 return true;

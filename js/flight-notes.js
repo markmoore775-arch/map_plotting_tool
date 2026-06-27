@@ -509,7 +509,7 @@
         if (typeof AirspaceNearby === 'undefined') {
             throw new Error('Airspace module not loaded');
         }
-        var notams = await AirspaceNearby.fetchNearbyNotams(lat, lng, r, fnNotamFetchOptions());
+        var notams = await AirspaceNearby.fetchNearbyNotams(lat, lng, r, fnNotamFetchOptionsWithTime());
         var air = await AirspaceNearby.fetchNearbyAirspace(lat, lng, r);
         return { notams: notams, airspace: air };
     }
@@ -593,6 +593,12 @@
             hideAboveDroneCeiling: on('fnNotamHideCeiling'),
             prioritiseUas: on('fnNotamPrioritise')
         };
+    }
+
+    function fnNotamFetchOptionsWithTime() {
+        return Object.assign({}, fnNotamFetchOptions(), {
+            referenceAtMs: getTargetTimeMsFromForm() ?? Date.now()
+        });
     }
 
     function fnNotamCatClass(cat) {
@@ -1521,23 +1527,8 @@
     var OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
     var HOURLY_PARAMS =
         'wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_120m,wind_direction_120m,visibility,cloud_cover,cloud_cover_low,precipitation,precipitation_probability,temperature_2m';
-    var GUST_120M_MULTIPLIER = 1.3;
-
-    /** Keep in sync with weather.js deriveSuitability thresholds. */
-    var SUIT_SUSTAINED_AMBER_KMH = 26;
-    var SUIT_SUSTAINED_RED_KMH = 38;
-    var SUIT_GUST_AMBER_KMH = 34;
-    var SUIT_GUST_RED_KMH = 47;
-    var SUIT_VIS_AMBER_M = 5500;
-    var SUIT_VIS_RED_M = 4000;
-    var SUIT_PRECIP_AMBER_MM = 0.5;
-    var SUIT_PRECIP_RED_MM = 1.5;
-
-    function suitFormatPrecipMmFn(p) {
-        if (p == null || p <= 0) return '0';
-        var r = Math.round(p * 10) / 10;
-        return r % 1 === 0 ? String(Math.round(r)) : String(r);
-    }
+    var FS = FlightSuitability;
+    var GUST_120M_MULTIPLIER = FS.GUST_120M_MULTIPLIER;
     var WX_MODEL_LABELS = {
         auto: 'Best match',
         ecmwf_ifs: 'ECMWF IFS (EU)',
@@ -1622,9 +1613,7 @@
     }
 
     function formatVisibility(m) {
-        if (m == null || isNaN(m)) return '-';
-        if (m >= 10000) return (m / 1000).toFixed(1) + ' km';
-        return Math.round(m) + ' m';
+        return FS.formatVisibility(m);
     }
 
     function formatWindRow(speed, dir) {
@@ -1632,219 +1621,8 @@
         return Math.round(speed) + ' km/h ' + directionToCardinal(dir);
     }
 
-    /**
-     * RAG suitability for heavier enterprise multi-rotor ops (~12 m/s wind class), thermal + optical payloads.
-     * Uses max(10 m, 120 m) sustained wind and max(10 m gusts, estimated 120 m gusts) so higher-level conditions count.
-     * Open-Meteo wind values are km/h.
-     */
     function deriveSuitability(data) {
-        var w10 = data.wind_speed_10m != null ? data.wind_speed_10m : 0;
-        var w120 = data.wind_speed_120m != null ? data.wind_speed_120m : w10;
-        var sustained = Math.max(w10, w120);
-        var g10 = data.wind_gusts_10m != null ? data.wind_gusts_10m : sustained;
-        var g120Est = data.wind_speed_120m != null ? data.wind_speed_120m * GUST_120M_MULTIPLIER : g10;
-        var gusts = Math.max(g10, g120Est);
-        var vis = data.visibility != null ? data.visibility : 10000;
-        var precip = data.precipitation != null ? data.precipitation : 0;
-
-        var tailPoor =
-            'Conditions exceed safe margins for typical enterprise-class multi-rotor wind limits and visibility; postpone or re-plan.';
-        var tailCaution =
-            'Marginal for heavier multi-rotor thermal and optical work; keep flights shorter, allow extra height margin, watch for stronger gusts higher up, and keep battery in reserve.';
-        var tailGood =
-            'Within usual operating margins for DJI enterprise-class aircraft; still check wind and visibility on site before take-off.';
-
-        var redHits = [];
-        if (sustained > SUIT_SUSTAINED_RED_KMH) {
-            redHits.push(
-                'sustained wind ~' +
-                    Math.round(sustained) +
-                    ' km/h (red above ' +
-                    SUIT_SUSTAINED_RED_KMH +
-                    ' km/h; max of 10 m and 120 m)'
-            );
-        }
-        if (gusts > SUIT_GUST_RED_KMH) {
-            redHits.push(
-                'gusts ~' +
-                    Math.round(gusts) +
-                    ' km/h (red above ' +
-                    SUIT_GUST_RED_KMH +
-                    ' km/h; includes 120 m estimate where available)'
-            );
-        }
-        if (vis < SUIT_VIS_RED_M) {
-            redHits.push(
-                'visibility ' + formatVisibility(vis) + ' (red below ~' + SUIT_VIS_RED_M / 1000 + ' km)'
-            );
-        }
-        if (precip > SUIT_PRECIP_RED_MM) {
-            redHits.push(
-                'forecast rain ~' +
-                    suitFormatPrecipMmFn(precip) +
-                    ' mm in the hour (red above ' +
-                    SUIT_PRECIP_RED_MM +
-                    ' mm)'
-            );
-        }
-
-        var isRed =
-            sustained > SUIT_SUSTAINED_RED_KMH ||
-            gusts > SUIT_GUST_RED_KMH ||
-            vis < SUIT_VIS_RED_M ||
-            precip > SUIT_PRECIP_RED_MM;
-
-        if (isRed) {
-            var technicalR = redHits.length ? 'Red because: ' + redHits.join('; ') + '.' : '';
-            var explainerR = (technicalR ? technicalR + ' ' : '') + tailPoor;
-            return {
-                level: 'poor',
-                label: 'Red',
-                brief: tailPoor,
-                technical: technicalR,
-                explainer: explainerR,
-                text: 'Red: ' + explainerR
-            };
-        }
-
-        var amberHits = [];
-        if (sustained > SUIT_SUSTAINED_AMBER_KMH) {
-            amberHits.push(
-                'sustained wind ~' +
-                    Math.round(sustained) +
-                    ' km/h (amber above ' +
-                    SUIT_SUSTAINED_AMBER_KMH +
-                    ' km/h)'
-            );
-        }
-        if (gusts > SUIT_GUST_AMBER_KMH) {
-            amberHits.push(
-                'gusts ~' +
-                    Math.round(gusts) +
-                    ' km/h (amber above ' +
-                    SUIT_GUST_AMBER_KMH +
-                    ' km/h)'
-            );
-        }
-        if (vis < SUIT_VIS_AMBER_M) {
-            amberHits.push(
-                'visibility ' + formatVisibility(vis) + ' (amber below ~' + SUIT_VIS_AMBER_M / 1000 + ' km)'
-            );
-        }
-        if (precip > SUIT_PRECIP_AMBER_MM) {
-            amberHits.push(
-                'forecast rain ~' +
-                    suitFormatPrecipMmFn(precip) +
-                    ' mm in the hour (amber above ' +
-                    SUIT_PRECIP_AMBER_MM +
-                    ' mm; trace drizzle up to that stays green)'
-            );
-        }
-
-        var isAmber =
-            sustained > SUIT_SUSTAINED_AMBER_KMH ||
-            gusts > SUIT_GUST_AMBER_KMH ||
-            vis < SUIT_VIS_AMBER_M ||
-            precip > SUIT_PRECIP_AMBER_MM;
-
-        if (isAmber) {
-            var technicalA = amberHits.length ? 'Amber because: ' + amberHits.join('; ') + '.' : '';
-            var explainerA = (technicalA ? technicalA + ' ' : '') + tailCaution;
-            return {
-                level: 'caution',
-                label: 'Amber',
-                brief: tailCaution,
-                technical: technicalA,
-                explainer: explainerA,
-                text: 'Amber: ' + explainerA
-            };
-        }
-
-        var precipPhrase =
-            precip <= 0
-                ? 'no meaningful rain in the forecast hour'
-                : '~' + suitFormatPrecipMmFn(precip) + ' mm rain in the hour (green at ≤ ' + SUIT_PRECIP_AMBER_MM + ' mm)';
-        var technicalG =
-            'Green band: ~' +
-            Math.round(sustained) +
-            ' km/h sustained and ~' +
-            Math.round(gusts) +
-            ' km/h gusts, visibility ' +
-            formatVisibility(vis) +
-            ', ' +
-            precipPhrase +
-            '. Amber would be wind or gusts above ~' +
-            SUIT_SUSTAINED_AMBER_KMH +
-            ' / ~' +
-            SUIT_GUST_AMBER_KMH +
-            ' km/h, visibility below ~' +
-            SUIT_VIS_AMBER_M / 1000 +
-            ' km, or rain above ~' +
-            SUIT_PRECIP_AMBER_MM +
-            ' mm.';
-        var explainerG = technicalG + ' ' + tailGood;
-        return {
-            level: 'good',
-            label: 'Green',
-            brief: tailGood,
-            technical: technicalG,
-            explainer: explainerG,
-            text: 'Green: ' + explainerG
-        };
-    }
-
-    /** Plain methodology lines; keep in sync with js/weather.js buildWeatherRagMethodologyPlainLines. */
-    function buildWeatherRagMethodologyPlainLinesFn(usedTargetTime) {
-        var lines = [];
-        lines.push('Forecast hour selection:');
-        if (usedTargetTime) {
-            lines.push(
-                '- With Date and Time set above, the nearest Open-Meteo hourly bin to that instant is used.'
-            );
-        } else {
-            lines.push('- When Date or Time is not set, the latest hourly bin at or before the current moment is used.');
-        }
-        lines.push('');
-        lines.push('Wind and gusts (summary hour):');
-        lines.push('- Sustained wind uses the higher of 10 m and 120 m.');
-        lines.push(
-            '- Gusts use the higher of 10 m gusts and an estimate at 120 m from sustained 120 m wind (factor ' +
-                GUST_120M_MULTIPLIER +
-                ') when 120 m data exists.'
-        );
-        lines.push('');
-        lines.push('Flight suitability thresholds (model units; km/h, m, mm in the hour):');
-        lines.push(
-            '- Sustained wind: amber above ~' +
-                SUIT_SUSTAINED_AMBER_KMH +
-                ' km/h, red above ~' +
-                SUIT_SUSTAINED_RED_KMH +
-                ' km/h (uses the higher of 10 m and 120 m).'
-        );
-        lines.push(
-            '- Gusts: amber above ~' +
-                SUIT_GUST_AMBER_KMH +
-                ' km/h, red above ~' +
-                SUIT_GUST_RED_KMH +
-                ' km/h (includes 120 m estimate where available).'
-        );
-        lines.push(
-            '- Visibility: amber below ~' +
-                SUIT_VIS_AMBER_M / 1000 +
-                ' km, red below ~' +
-                SUIT_VIS_RED_M / 1000 +
-                ' km.'
-        );
-        lines.push(
-            '- Rain in the hour: trace/drizzle up to ~' +
-                SUIT_PRECIP_AMBER_MM +
-                ' mm/h stays in the green band; above ~' +
-                SUIT_PRECIP_AMBER_MM +
-                ' mm/h trends amber; above ~' +
-                SUIT_PRECIP_RED_MM +
-                ' mm/h trends red.'
-        );
-        return lines;
+        return FS.deriveSuitability(data);
     }
 
     function deriveSummaryText(hourlySlice, suitability) {
@@ -2028,7 +1806,7 @@
         lines.push('--- How this is calculated ---');
         if (suitability.technical) lines.push(suitability.technical);
         lines.push('');
-        buildWeatherRagMethodologyPlainLinesFn(usedTargetTime).forEach(function (ln) {
+        FS.buildWeatherRagMethodologyPlainLines(usedTargetTime, 'flightReport').forEach(function (ln) {
             lines.push(ln);
         });
         lines.push('');

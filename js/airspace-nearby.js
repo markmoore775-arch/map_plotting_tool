@@ -100,6 +100,7 @@ var AirspaceNearby = (function () {
      * @param {boolean} [options.hideAboveDroneCeiling] - drop NOTAMs whose Q-line band lies entirely above droneCeilingFt
      * @param {number} [options.droneCeilingFt] - default NP.DEFAULT_DRONE_CEILING_FT (600)
      * @param {boolean} [options.prioritiseUas] - sort UAS-relevant categories first
+     * @param {number} [options.referenceAtMs] - instant for validity filter (default Date.now())
      */
     async function fetchNearbyNotams(lat, lng, radiusKm, options) {
         options = options || {};
@@ -108,6 +109,10 @@ var AirspaceNearby = (function () {
                 console.warn('NotamPib not loaded; NOTAM list unavailable');
                 return [];
             }
+            var referenceAtMs =
+                options.referenceAtMs != null && isFinite(options.referenceAtMs)
+                    ? options.referenceAtMs
+                    : Date.now();
             var ceilingFt =
                 options.droneCeilingFt != null
                     ? options.droneCeilingFt
@@ -121,6 +126,9 @@ var AirspaceNearby = (function () {
                 var dist = haversineKm(lat, lng, n.lat, n.lng);
                 var notamRadiusKm = n.radiusNm > 0 && n.radiusNm < 999 ? n.radiusNm * 1.852 : 0;
                 return dist - notamRadiusKm <= radiusKm;
+            });
+            filtered = filtered.filter(function (n) {
+                return NP.notamIsActiveAt(n, referenceAtMs);
             });
             if (options.droneRelevantOnly) {
                 filtered = filtered.filter(function (n) {

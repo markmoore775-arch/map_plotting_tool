@@ -61,6 +61,50 @@
         return fmt(d);
     }
 
+    /**
+     * Parse PIB StartValidity / EndValidity to UTC epoch ms.
+     * ISO YYYY-MM-DDTHH:MM or ICAO 10-digit YYMMDDHHMM. Returns null for empty, PERM, UFN, or unparseable.
+     */
+    function parseNotamValidityMs(str) {
+        if (str == null || str === '') return null;
+        var raw = String(str).trim();
+        var upper = raw.toUpperCase();
+        if (upper === 'PERM' || upper === 'UFN') return null;
+        var m = raw.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+        if (m) {
+            var iso = Date.UTC(+m[1], parseInt(m[2], 10) - 1, +m[3], +m[4], +m[5]);
+            return isNaN(iso) ? null : iso;
+        }
+        m = raw.match(/\d{10}/);
+        if (!m) return null;
+        var s = m[0];
+        var yy = parseInt(s.slice(0, 2), 10);
+        var mm = parseInt(s.slice(2, 4), 10) - 1;
+        var dd = parseInt(s.slice(4, 6), 10);
+        var hh = parseInt(s.slice(6, 8), 10);
+        var min = parseInt(s.slice(8, 10), 10);
+        var year = yy >= 50 ? 1900 + yy : 2000 + yy;
+        if (mm < 0 || mm > 11 || dd < 1 || dd > 31) return null;
+        var icao = Date.UTC(year, mm, dd, hh, min);
+        return isNaN(icao) ? null : icao;
+    }
+
+    /**
+     * True if NOTAM is active at atMs. Unparseable start/end are kept (conservative).
+     */
+    function notamIsActiveAt(notam, atMs) {
+        if (!notam) return false;
+        if (atMs == null || !isFinite(atMs)) return true;
+        var startMs = parseNotamValidityMs(notam.startValidity);
+        if (startMs != null && atMs < startMs) return false;
+        var endRaw = (notam.endValidity || '').trim();
+        var endUpper = endRaw.toUpperCase();
+        if (!endRaw || endUpper === 'PERM' || endUpper === 'UFN') return true;
+        var endMs = parseNotamValidityMs(endRaw);
+        if (endMs != null && atMs >= endMs) return false;
+        return true;
+    }
+
     function parseCoord(coordStr) {
         if (!coordStr || coordStr.length < 9) return null;
         var m = coordStr.match(/^(\d{4})([NS])(\d{5})([EW])$/);
@@ -273,6 +317,8 @@
         parsePibNotamsFromDoc: parsePibNotamsFromDoc,
         extractPibValidity: extractPibValidity,
         formatNotamDate: formatNotamDate,
+        parseNotamValidityMs: parseNotamValidityMs,
+        notamIsActiveAt: notamIsActiveAt,
         parseCoord: parseCoord,
         isDroneKeywordRelevant: isDroneKeywordRelevant,
         notamPassesDroneFocusFilter: notamPassesDroneFocusFilter,

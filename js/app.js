@@ -709,7 +709,7 @@
             return;
         }
         let maxId = 0;
-        for (const p of snapshotPoints) {
+        for (const p of ProjectIO.filterValidPoints(snapshotPoints)) {
             const point = { ...p };
             points.push(point);
             addMarkerToMap(point);

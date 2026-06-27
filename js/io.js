@@ -4,6 +4,13 @@
 
 const ProjectIO = (() => {
 
+    function filterValidPoints(points) {
+        return (points || []).filter(p =>
+            p.lat != null && p.lng != null &&
+            !isNaN(p.lat) && !isNaN(p.lng)
+        );
+    }
+
     /**
      * Save project to a JSON file. Uses native Save As dialog when available
      * (File System Access API), otherwise falls back to download.
@@ -54,11 +61,7 @@ const ProjectIO = (() => {
                     const project = JSON.parse(e.target.result);
 
                     // Support both v1 (no shapes) and v2 (with shapes)
-                    const points = project.points || [];
-                    const validPoints = points.filter(p =>
-                        p.lat != null && p.lng != null &&
-                        !isNaN(p.lat) && !isNaN(p.lng)
-                    );
+                    const validPoints = filterValidPoints(project.points);
 
                     resolve({
                         points: validPoints,
@@ -77,7 +80,8 @@ const ProjectIO = (() => {
 
     return {
         saveProject,
-        loadProject
+        loadProject,
+        filterValidPoints
     };
 
 })();
