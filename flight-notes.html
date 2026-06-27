@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/flight-notes.css?v=33">
+    <link rel="stylesheet" href="css/flight-notes.css?v=35">
     <!-- Leaflet (mini map for GPS location) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -48,23 +48,44 @@
         <header class="fn-header">
             <div class="fn-header-title-row">
                 <h1 class="fn-title">Flight Report</h1>
-                <button type="button" class="fn-top-clear-btn" id="fnClearNotesTopBtn" title="Clear all entered flight report fields" aria-label="Clear all entered flight report fields">
-                    <span class="fn-clear-btn-label fn-clear-btn-label--long" aria-hidden="true">Clear Report</span>
-                    <span class="fn-clear-btn-label fn-clear-btn-label--short" aria-hidden="true">Clear</span>
-                </button>
             </div>
-            <details class="fn-privacy-details" id="fnPrivacyDetails">
-                <summary class="fn-privacy-summary"><span class="fn-privacy-summary-icon" aria-hidden="true">ℹ️</span> Privacy info</summary>
-                <div class="fn-disclaimer-body" role="note">
-                    <p>
-                        <strong>Privacy:</strong> AirPlan does not save your flight report on our servers. What you enter stays in this browser on this device and is not uploaded to us.
-                        Your draft is saved locally so you can leave this page and return later; use <strong>Clear Report</strong> next to the page title or at the bottom to wipe it from this browser.
-                        For a portable copy, use <strong>export to PDF</strong> or <strong>send by email</strong>.
-                        Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch Weather Report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed report text is not sent to those services.
-                    </p>
+            <div class="fn-report-panel" id="fnReportBar">
+                <div class="fn-report-switcher">
+                    <label class="fn-report-bar-label" for="fnReportSelect">Active Report</label>
+                    <select id="fnReportSelect" class="fn-report-select fn-input" aria-label="Switch Active Report"></select>
                 </div>
-            </details>
-            <p class="fn-lead">Record key details from your flight. The <strong>sun/moon button</strong> (top right) toggles this page only. At the bottom, <strong>PDF appearance</strong> next to Export PDF chooses light or dark for the <em>exported</em> PDF only (default Light). Either <strong>Clear Report</strong> control (beside the title or at the bottom) wipes the draft after confirmation. Use <strong>Fetch Weather Report</strong> and <strong>Clear Weather Report</strong> (Conditions) and the <strong>Airspace</strong> section (NOTAMs and UK zones with small maps) when you have a location. Export to PDF or send by email. The header <strong>tool strip</strong> switches to Checklist, Planner, Weather, or the live Airspace map in this tab without returning to the welcome screen.</p>
+                <div class="fn-report-toolbar">
+                    <button type="button" id="fnNewReportBtn" class="fn-btn fn-btn-secondary fn-report-toolbar-btn">New Report</button>
+                    <div class="fn-report-toolbar-sep" aria-hidden="true"></div>
+                    <div class="fn-report-toolbar-group">
+                        <button type="button" class="fn-btn fn-btn-secondary fn-report-toolbar-btn" id="fnClearNotesTopBtn" title="Empty all fields in the active report; the report stays in your list" aria-label="Clear Fields in the active report">Clear Fields</button>
+                        <button type="button" id="fnDeleteReportBtn" class="fn-btn fn-btn-danger fn-report-toolbar-btn" title="Remove the active report from your saved list entirely" aria-label="Delete Report from saved list">Delete Report</button>
+                    </div>
+                </div>
+                <div class="fn-report-panel-footer">
+                    <p class="fn-report-active-hint" id="fnReportActiveHint" aria-live="polite"></p>
+                    <p class="fn-report-storage-status" id="fnReportStorageStatus" aria-live="polite"></p>
+                    <div class="fn-report-help-links">
+                        <details class="fn-privacy-details" id="fnPrivacyDetails">
+                            <summary class="fn-privacy-summary"><span class="fn-privacy-summary-icon" aria-hidden="true">ℹ️</span> Privacy Info</summary>
+                            <div class="fn-disclaimer-body" role="note">
+                                <p>
+                                    <strong>Privacy:</strong> AirPlan does not save your flight report on our servers. What you enter stays in this browser on this device and is not uploaded to us.
+                                    Your drafts are saved locally so you can leave this page and return later, or switch between several in-progress reports using the menu above. <strong>Clear Fields</strong> empties the active report after confirmation (it stays in your list). <strong>Delete Report</strong> removes it from your saved list entirely.
+                                    For a portable copy, use <strong>Export To PDF</strong> or <strong>Send By Email</strong>.
+                                    Third-party services are contacted <strong>only</strong> when you use an optional feature that needs them to fetch information for your location (for example forecast data for <strong>Fetch Weather Report</strong>, map tiles for the preview map, or coordinates from <strong>Search location</strong> / postcode lookup). Your typed report text is not sent to those services.
+                                </p>
+                            </div>
+                        </details>
+                        <details class="fn-privacy-details fn-page-guide-details" id="fnPageGuideDetails">
+                            <summary class="fn-privacy-summary"><span class="fn-privacy-summary-icon" aria-hidden="true">ℹ️</span> Using This Page</summary>
+                            <div class="fn-page-guide-body" role="note">
+                                <p class="fn-lead">Record key details from your flight. Use <strong>Active Report</strong> to switch drafts, or <strong>New Report</strong> to start another while keeping the current one saved. The <strong>Sun/Moon Button</strong> (top right) toggles this page only. At the bottom, <strong>PDF Appearance</strong> next to Export PDF chooses light or dark for the <em>exported</em> PDF only (default Light). <strong>Clear Fields</strong> empties the active report; <strong>Delete Report</strong> removes it from your list. Use <strong>Fetch Weather Report</strong> and <strong>Clear Weather Report</strong> (Conditions) and the <strong>Airspace</strong> section when you have a location. Export To PDF or Send By Email applies to whichever report is active. The header <strong>Tool Strip</strong> switches to Checklist, Planner, Weather, or the live Airspace map in this tab without returning to the welcome screen.</p>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <form id="flightReportForm" class="fn-form" autocomplete="on">
@@ -108,7 +129,7 @@
                     </button>
                 </div>
                 <details class="fn-date-manual-fallback">
-                    <summary class="fn-date-manual-summary">Enter date manually (if the calendar is awkward on your device)</summary>
+                    <summary class="fn-date-manual-summary">Enter Date Manually (If The Calendar Is Awkward On Your Device)</summary>
                     <div class="fn-date-manual-inner">
                         <p id="fnDateManualHint" class="fn-date-manual-hint hidden" role="status"></p>
                         <div class="fn-date-manual-selects">
@@ -133,11 +154,11 @@
                 <h2 id="fn-loc-heading" class="fn-section-title">Location</h2>
                 <div class="fn-location-primary-fields">
                     <div class="fn-field-grow">
-                        <label class="fn-label" for="fnLocationLabel">Label (optional)</label>
+                        <label class="fn-label" for="fnLocationLabel">Label (Optional)</label>
                         <input type="text" id="fnLocationLabel" name="fnLocationLabel" class="fn-input" placeholder="e.g. Primary TOLA, North sector" autocomplete="off">
                     </div>
                     <div class="fn-field-grow">
-                        <label class="fn-label" for="fnLocation">Address or coordinates</label>
+                        <label class="fn-label" for="fnLocation">Address &amp; Coordinates</label>
                         <input type="text" id="fnLocation" name="fnLocation" class="fn-input" placeholder="Postcode, address, place name, or coordinates" autocomplete="street-address">
                     </div>
                 </div>
@@ -145,10 +166,10 @@
                     <div class="fn-gps-wrap">
                         <button type="button" class="fn-btn fn-btn-secondary" id="fnSearchLocationBtn"
                             title="Look up coordinates from what you typed (postcode, address, or place) using OpenStreetMap search. Use when GPS is unavailable.">
-                            Search location
+                            Search Location
                         </button>
                         <button type="button" class="fn-btn fn-btn-now" id="fnGpsBtn" title="Fill location from device GPS (HTTPS). On iPad, use Safari or allow location in Settings → Safari; home-screen shortcuts sometimes cannot use GPS; use Search location instead.">
-                            Use current GPS
+                            Use Current GPS
                         </button>
                         <span id="fnGpsStatus" class="fn-gps-status" role="status" aria-live="polite"></span>
                     </div>
@@ -162,13 +183,13 @@
                 </div>
                 <datalist id="fnBatterySiteDatalist"></datalist>
                 <div class="fn-extra-locations" id="fnExtraLocationsBlock">
-                    <h3 class="fn-extra-locations-heading">Additional operational locations</h3>
-                    <p class="fn-extra-locations-lead">Add further sites for the same mission (e.g. after relocating). Each entry can have its own map. Suggestions appear in <strong>Site or coordinates</strong> on each battery. Pick one or type your own text.</p>
+                    <h3 class="fn-extra-locations-heading">Additional Operational Locations</h3>
+                    <p class="fn-extra-locations-lead">Add further sites for the same mission (e.g. after relocating). Each entry can have its own map. Suggestions appear in <strong>Site &amp; Coordinates</strong> on each battery. Pick one or type your own text.</p>
                     <div id="fnExtraLocationsList" class="fn-extra-locations-list" aria-live="polite"></div>
                     <div class="fn-extra-locations-actions">
                         <button type="button" class="fn-btn fn-btn-secondary" id="fnAddExtraLocationBtn"
                             title="Add another resolved site with its own mini map (for reference in battery Site fields)">
-                            Add operational location
+                            Add Operational Location
                         </button>
                         <span id="fnExtraLocGlobalStatus" class="fn-gps-status fn-extra-loc-global-status" role="status" aria-live="polite"></span>
                     </div>
@@ -177,20 +198,20 @@
 
             <section class="fn-section" aria-labelledby="fn-batt-heading">
                 <h2 id="fn-batt-heading" class="fn-section-title">Batteries</h2>
-                <p class="fn-battery-lead">Use <strong>Site or coordinates</strong> on each battery when that flight was away from the main <strong>Location</strong> (exports and email include it). If you added <strong>Additional operational locations</strong> above, use the field&rsquo;s suggestions to paste a consistent label and coordinates. <strong>Weather</strong> and <strong>Airspace</strong> each let you choose which resolved mission site to use when you have more than one. The <strong>primary mini map</strong> still follows the main Location. <strong>Export PDF</strong> appends NOTAM and zone appendices for every location with resolved coordinates.</p>
+                <p class="fn-battery-lead">Use <strong>Site &amp; Coordinates</strong> on each battery when that flight was away from the main <strong>Location</strong> (exports and email include it). If you added <strong>Additional Operational Locations</strong> above, use the field&rsquo;s suggestions to paste a consistent label and coordinates. <strong>Weather</strong> and <strong>Airspace</strong> each let you choose which resolved mission site to use when you have more than one. The <strong>Primary Mini Map</strong> still follows the main Location. <strong>Export PDF</strong> appends NOTAM and zone appendices for every location with resolved coordinates.</p>
                 <details class="fn-alos-help">
-                    <summary class="fn-alos-help-summary">ALoS model (help)</summary>
+                    <summary class="fn-alos-help-summary">ALoS Model (Help)</summary>
                     <div class="fn-alos-help-body">
-                        <p class="fn-alos-help-lead"><strong>What to record:</strong> Enter minutes in <strong>Amber</strong> and <strong>Red</strong> in each battery&rsquo;s fields below. Use <strong>ALoS comments</strong> for narrative: ground risk, air risk (including live traffic / ADS-B-style monitoring), mitigations, and how traffic checks influenced decisions.</p>
+                        <p class="fn-alos-help-lead"><strong>What to record:</strong> Enter minutes in <strong>Amber</strong> and <strong>Red</strong> in each battery&rsquo;s fields below. Use <strong>ALoS Comments</strong> for narrative: ground risk, air risk (including live traffic / ADS-B-style monitoring), mitigations, and how traffic checks influenced decisions.</p>
                         <p class="fn-alos-help-note" role="note">This summary is for prompting only. Follow your organisation&rsquo;s authorised operations material; AirPlan does not replace unit-specific SOPs. Many UAS flight log templates also expect <strong>occurrences</strong>, <strong>observations</strong>, and <strong>issues</strong> as a minimum.</p>
-                        <h3 class="fn-alos-help-sub">Air / distance and height (typical envelope)</h3>
+                        <h3 class="fn-alos-help-sub">Air / Distance And Height (Typical Envelope)</h3>
                         <ul class="fn-alos-help-list">
                             <li><strong>Green-style VLOS band</strong>: horizontal distance up to about <strong>500&nbsp;m</strong> and height up to about <strong>400&nbsp;ft</strong>.</li>
                             <li><strong>Amber-relevant</strong> areas often include: height about <strong>400&ndash;600&nbsp;ft</strong> while still within about <strong>500&nbsp;m</strong> horizontally (increased-height VLOS); and horizontal distance about <strong>500&nbsp;m&ndash;1.5&nbsp;km</strong> at up to about <strong>400&nbsp;ft</strong> (short-range tactical BVLOS, with a common split around <strong>1&nbsp;km</strong> between congested and uncongested where your procedures distinguish them).</li>
                             <li><strong>Red / outside envelope</strong> (for documentation): time above about <strong>600&nbsp;ft</strong> and/or beyond about <strong>1.5&nbsp;km</strong>, and any ground-risk <strong>Red</strong> underfoot (describe in comments).</li>
                         </ul>
-                        <h3 class="fn-alos-help-sub">Extended envelope: key justification principles</h3>
-                        <p class="fn-alos-help-p">If you operated beyond about <strong>500&nbsp;m</strong> horizontally (up to about <strong>1.5&nbsp;km</strong>) or above about <strong>400&nbsp;ft</strong> (up to about <strong>600&nbsp;ft</strong>) within your authorised ALoS / Amber parameters, record a proportionate narrative in <strong>ALoS comments</strong> (or <strong>Notes</strong>). Sound justifications often cover:</p>
+                        <h3 class="fn-alos-help-sub">Extended Envelope: Key Justification Principles</h3>
+                        <p class="fn-alos-help-p">If you operated beyond about <strong>500&nbsp;m</strong> horizontally (up to about <strong>1.5&nbsp;km</strong>) or above about <strong>400&nbsp;ft</strong> (up to about <strong>600&nbsp;ft</strong>) within your authorised ALoS / Amber parameters, record a proportionate narrative in <strong>ALoS Comments</strong> (or <strong>Notes</strong>). Sound justifications often cover:</p>
                         <ul class="fn-alos-help-list">
                             <li><strong>Operational necessity</strong> &mdash; the objective could not be achieved within standard parameters.</li>
                             <li><strong>New TOLA comparison</strong> &mdash; why finding a closer take-off / landing area was impractical or introduced greater risk (unfamiliar ground, crowd proximity, crew position, operational compromise, time pressure).</li>
@@ -200,17 +221,17 @@
                             <li><strong>Proportionality</strong> &mdash; state the extension was the minimum necessary distance or height to achieve the objective.</li>
                             <li><strong>FRZ / NOTAM awareness</strong> &mdash; confirm no restricted airspace was entered; known restrictions (e.g. an FRZ south of or near the area) were actively avoided.</li>
                         </ul>
-                        <h3 class="fn-alos-help-sub">Ground risk (prompts for comments)</h3>
+                        <h3 class="fn-alos-help-sub">Ground Risk (Prompts For Comments)</h3>
                         <ul class="fn-alos-help-list">
                             <li>Uninvolved persons, assemblies, separations (e.g. 10&nbsp;m / 30&nbsp;m where your procedures apply).</li>
                             <li>Roads, schools, sensitive sites, changing foot traffic; dynamic underfoot assessment (e.g. GREZ / density-style red-amber-green).</li>
                         </ul>
-                        <h3 class="fn-alos-help-sub">Air risk (prompts for comments)</h3>
+                        <h3 class="fn-alos-help-sub">Air Risk (Prompts For Comments)</h3>
                         <ul class="fn-alos-help-list">
                             <li>FRZ proximity, NOTAMs, and other airspace factors (see the <strong>Airspace</strong> section on this form when you have coordinates).</li>
                             <li>Live traffic awareness: actively use a suitable tool, especially in <strong>amber</strong> or extended-distance phases; record what you saw and what you did, not only &ldquo;ADS-B monitored.&rdquo;</li>
                         </ul>
-                        <h3 class="fn-alos-help-sub">ADS-B / traffic monitoring (what to record)</h3>
+                        <h3 class="fn-alos-help-sub">ADS-B / Traffic Monitoring (What To Record)</h3>
                         <p class="fn-alos-help-p">&ldquo;ADS-B monitored&rdquo; should mean you used a <strong>live</strong> airspace or traffic tool (e.g. Drone Assist, Altitude Angel, AirNav RadarBox, a dedicated ADS-B receiver app, or traffic layers in DJI Fly or Garmin Pilot where applicable) to detect manned aircraft through the flight or at defined phases. It is an air-risk mitigation: document <strong>what</strong> you checked, <strong>when</strong>, <strong>what it showed</strong>, and <strong>how that affected</strong> your plan.</p>
                         <ul class="fn-alos-help-list">
                             <li><strong>Tool or app</strong> used (name it).</li>
@@ -221,19 +242,19 @@
                         </ul>
                         <p class="fn-alos-help-p">Long pre-flight narratives (tool check, NOTAM reference, FRZ intent) can also go in <strong>Notes</strong> or other mission fields if they do not fit one battery&rsquo;s ALoS box.</p>
                         <details class="fn-alos-help-nested">
-                            <summary class="fn-alos-help-nested-summary">Example phrasing: traffic checks, distance/height templates, principles checklist, RAG Stage 3 (tap to expand)</summary>
+                            <summary class="fn-alos-help-nested-summary">Example Phrasing: Traffic Checks, Distance/Height Templates, Principles Checklist, RAG Stage 3 (Tap To Expand)</summary>
                             <div class="fn-alos-help-nested-body">
                                 <p class="fn-alos-help-example"><strong>Pre-flight (example):</strong> Pre-flight airspace check using [app]; no manned traffic identified in operational area; monitoring active on [device]; NOTAM [ref] noted; FRZ to south; intend to remain clear.</p>
                                 <p class="fn-alos-help-example"><strong>During flight (example):</strong> Traffic tool maintained through all phases; nil traffic; or: one aircraft transiting [direction] at [altitude]; assessed no conflict; reduced UAS height as precaution; continued.</p>
                                 <p class="fn-alos-help-example"><strong>Standard (example):</strong> Monitoring active via [tool] throughout; nil traffic; air risk assessed low for sector duration.</p>
                                 <p class="fn-alos-help-example"><strong>Before extending distance (example):</strong> Prior to extending beyond 500&nbsp;m, traffic check; nil conflict; monitoring continued through extended phase; air risk unchanged from pre-flight.</p>
-                                <h3 class="fn-alos-help-sub">Justifying distance beyond 500&nbsp;m (up to 1.5&nbsp;km)</h3>
+                                <h3 class="fn-alos-help-sub">Justifying Distance Beyond 500&nbsp;m (Up To 1.5&nbsp;km)</h3>
                                 <p class="fn-alos-help-p">These are template-style examples you can adapt directly into a flight report:</p>
                                 <p class="fn-alos-help-example"><strong>Example 1 &mdash; Operational necessity, objective unachievable within 500&nbsp;m:</strong> During the operation, the primary objective could not be achieved within the standard 500&nbsp;m VLOS envelope. The subject/target area was located at approximately 700&nbsp;m from the established take-off/landing point. Repositioning the drone to a closer TOLA would have required identification of a new take-off location, introduction of separate and unassessed ground risks, disruption to the operational team&rsquo;s position, and potential compromise of the operation. An extension to 700&nbsp;m within the Amber Elevated Risk parameters was assessed as the safer and more proportionate option. A dynamic risk assessment was conducted prior to and throughout the extension. Air risk was managed via continuous ADS-B monitoring. The UAS remained within tactical BVLOS short-range parameters (under 1&nbsp;km, congested area). The extension was deemed necessary, proportionate, and the lowest-risk means of achieving the operational objective.</p>
                                 <p class="fn-alos-help-example"><strong>Example 2 &mdash; Dynamic reposition during active operation:</strong> During active flight, the subject moved beyond the initial 500&nbsp;m operational boundary to approximately 650&nbsp;m. Terminating the flight and repositioning to a new TOLA was assessed as impractical due to time constraints and would have introduced new and unassessed ground risks at an unfamiliar launch point. The area beyond 500&nbsp;m was already known and assessed as part of pre-flight planning (Amber Elevated Risk corridor up to 1&nbsp;km). A dynamic risk assessment confirmed no change to air risk profile. ADS-B traffic monitoring was maintained throughout. Extension beyond 500&nbsp;m was brief, controlled, and directly necessary to fulfil the operational objective.</p>
-                                <h3 class="fn-alos-help-sub">Justifying height above 400&nbsp;ft (up to 600&nbsp;ft)</h3>
+                                <h3 class="fn-alos-help-sub">Justifying Height Above 400&nbsp;ft (Up To 600&nbsp;ft)</h3>
                                 <p class="fn-alos-help-example"><strong>Example 3 &mdash; Increased height for operational overview:</strong> An increase in altitude above 400&nbsp;ft (to approximately 520&nbsp;ft) was required to achieve an effective overview of the operational area. At 400&nbsp;ft, terrain features/structures obscured the required field of view. The ALoS model applicable to this operation permits increased height within VLOS-only parameters up to 600&nbsp;ft. The elevated position reduced horizontal separation requirements and allowed the pilot to maintain VLOS throughout. No controlled airspace conflicts were identified. The height increase was the minimum necessary to achieve the objective and was assessed as proportionate to the operational requirement.</p>
-                                <h3 class="fn-alos-help-sub">Key justification principles to always include</h3>
+                                <h3 class="fn-alos-help-sub">Key Justification Principles To Always Include</h3>
                                 <p class="fn-alos-help-p">These elements underpin a sound justification; use them as a checklist:</p>
                                 <ul class="fn-alos-help-list">
                                     <li><strong>Operational necessity</strong> &mdash; the objective could not be achieved within standard parameters.</li>
@@ -244,7 +265,7 @@
                                     <li><strong>Proportionality</strong> &mdash; state the extension was the minimum necessary distance or height to achieve the objective.</li>
                                     <li><strong>FRZ / NOTAM awareness</strong> &mdash; confirm no restricted airspace was entered and any known restrictions (e.g. the FRZ south of the area) were actively avoided.</li>
                                 </ul>
-                                <h3 class="fn-alos-help-sub">Wording for the RAG Stage 3 dynamic assessment</h3>
+                                <h3 class="fn-alos-help-sub">Wording For The RAG Stage 3 Dynamic Assessment</h3>
                                 <p class="fn-alos-help-p">Referencing the three-stage RAG model in your documents, you can add:</p>
                                 <p class="fn-alos-help-example"><strong>RAG Stage 3 (example):</strong> Stage 3 ongoing dynamic RAG assessment was maintained throughout. The GREZ disc beneath the drone was assessed continuously as it transitioned from the green VLOS zone into the amber extended envelope. The pilot articulated and recorded the transition verbally to the crew. At no point did the dynamic assessment identify a change requiring immediate termination of the extended phase.</p>
                             </div>
@@ -252,38 +273,38 @@
                     </div>
                 </details>
                 <div class="fn-battery-grid">
-                    <div class="fn-battery-card">
+                    <div id="fnBatteryCard1" class="fn-battery-card">
                         <h3 class="fn-battery-title">Battery 1</h3>
                         <label class="fn-label" for="fnBattery1Uas">UAS Name</label>
                         <input type="text" id="fnBattery1Uas" name="fnBattery1Uas" class="fn-input" autocomplete="off">
                         <label class="fn-label" for="fnBattery1Name">Battery Name</label>
                         <input type="text" id="fnBattery1Name" name="fnBattery1Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery1Site">Site or coordinates</label>
+                        <label class="fn-label" for="fnBattery1Site">Site &amp; Coordinates</label>
                         <div class="fn-battery-site-field">
                             <input type="text" id="fnBattery1Site" name="fnBattery1Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
                             <p id="fnBattery1SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
                         </div>
                         <label class="fn-label" for="fnBattery1Voltage">Voltage</label>
                         <input type="text" id="fnBattery1Voltage" name="fnBattery1Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery1MaxAltFt">Max altitude (ft)</label>
+                        <label class="fn-label" for="fnBattery1MaxAltFt">Max Altitude (ft)</label>
                         <input type="number" id="fnBattery1MaxAltFt" name="fnBattery1MaxAltFt" class="fn-input" value="400" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery1MaxDistM">Max distance (m)</label>
+                        <label class="fn-label" for="fnBattery1MaxDistM">Max Distance (m)</label>
                         <input type="number" id="fnBattery1MaxDistM" name="fnBattery1MaxDistM" class="fn-input" value="500" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery1Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery1Rp1" name="fnBattery1Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery1Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery1Rp2" name="fnBattery1Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery1Launch">Launch time</label>
+                        <label class="fn-label" for="fnBattery1Launch">Launch Time</label>
                         <div class="fn-battery-time-row">
                             <input type="time" id="fnBattery1Launch" name="fnBattery1Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery1Launch" title="Set launch time to now (local)">Launch now</button>
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery1Launch" title="Set launch time to now (local)">Launch Now</button>
                         </div>
-                        <label class="fn-label" for="fnBattery1Land">Landing time</label>
+                        <label class="fn-label" for="fnBattery1Land">Landing Time</label>
                         <div class="fn-battery-time-row">
                             <input type="time" id="fnBattery1Land" name="fnBattery1Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery1Land" title="Set landing time to now (local)">Land now</button>
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery1Land" title="Set landing time to now (local)">Land Now</button>
                         </div>
-                        <label class="fn-label" for="fnBattery1FlightTime">Flight time</label>
+                        <label class="fn-label" for="fnBattery1FlightTime">Flight Time</label>
                         <input type="text" id="fnBattery1FlightTime" name="fnBattery1FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing (if landing is earlier than launch, same-day wrap assumes next calendar day)" aria-live="polite">
                         <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
                             <div class="fn-alos-minute-field">
@@ -295,7 +316,7 @@
                                 <input type="number" id="fnBattery1RedMin" name="fnBattery1RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
                             </div>
                         </div>
-                        <label class="fn-label" for="fnBattery1Alos">ALoS comments</label>
+                        <label class="fn-label" for="fnBattery1Alos">ALoS Comments</label>
                         <textarea id="fnBattery1Alos" name="fnBattery1Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
                     </div>
                     <div id="fnBatteryCard2" class="fn-battery-card fn-battery-card--extra" hidden>
@@ -304,32 +325,32 @@
                         <input type="text" id="fnBattery2Uas" name="fnBattery2Uas" class="fn-input" autocomplete="off">
                         <label class="fn-label" for="fnBattery2Name">Battery Name</label>
                         <input type="text" id="fnBattery2Name" name="fnBattery2Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery2Site">Site or coordinates</label>
+                        <label class="fn-label" for="fnBattery2Site">Site &amp; Coordinates</label>
                         <div class="fn-battery-site-field">
                             <input type="text" id="fnBattery2Site" name="fnBattery2Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
                             <p id="fnBattery2SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
                         </div>
                         <label class="fn-label" for="fnBattery2Voltage">Voltage</label>
                         <input type="text" id="fnBattery2Voltage" name="fnBattery2Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery2MaxAltFt">Max altitude (ft)</label>
+                        <label class="fn-label" for="fnBattery2MaxAltFt">Max Altitude (ft)</label>
                         <input type="number" id="fnBattery2MaxAltFt" name="fnBattery2MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery2MaxDistM">Max distance (m)</label>
+                        <label class="fn-label" for="fnBattery2MaxDistM">Max Distance (m)</label>
                         <input type="number" id="fnBattery2MaxDistM" name="fnBattery2MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
                         <label class="fn-label" for="fnBattery2Rp1">Remote Pilot 1</label>
                         <input type="text" id="fnBattery2Rp1" name="fnBattery2Rp1" class="fn-input">
                         <label class="fn-label" for="fnBattery2Rp2">Remote Pilot 2</label>
                         <input type="text" id="fnBattery2Rp2" name="fnBattery2Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery2Launch">Launch time</label>
+                        <label class="fn-label" for="fnBattery2Launch">Launch Time</label>
                         <div class="fn-battery-time-row">
                             <input type="time" id="fnBattery2Launch" name="fnBattery2Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery2Launch" title="Set launch time to now (local)">Launch now</button>
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery2Launch" title="Set launch time to now (local)">Launch Now</button>
                         </div>
-                        <label class="fn-label" for="fnBattery2Land">Landing time</label>
+                        <label class="fn-label" for="fnBattery2Land">Landing Time</label>
                         <div class="fn-battery-time-row">
                             <input type="time" id="fnBattery2Land" name="fnBattery2Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery2Land" title="Set landing time to now (local)">Land now</button>
+                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery2Land" title="Set landing time to now (local)">Land Now</button>
                         </div>
-                        <label class="fn-label" for="fnBattery2FlightTime">Flight time</label>
+                        <label class="fn-label" for="fnBattery2FlightTime">Flight Time</label>
                         <input type="text" id="fnBattery2FlightTime" name="fnBattery2FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
                         <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
                             <div class="fn-alos-minute-field">
@@ -341,392 +362,28 @@
                                 <input type="number" id="fnBattery2RedMin" name="fnBattery2RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
                             </div>
                         </div>
-                        <label class="fn-label" for="fnBattery2Alos">ALoS comments</label>
+                        <label class="fn-label" for="fnBattery2Alos">ALoS Comments</label>
                         <textarea id="fnBattery2Alos" name="fnBattery2Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
                     </div>
-                    <div id="fnBatteryCard3" class="fn-battery-card fn-battery-card--extra" hidden>
-                        <h3 class="fn-battery-title">Battery 3</h3>
-                        <label class="fn-label" for="fnBattery3Uas">UAS Name</label>
-                        <input type="text" id="fnBattery3Uas" name="fnBattery3Uas" class="fn-input" autocomplete="off">
-                        <label class="fn-label" for="fnBattery3Name">Battery Name</label>
-                        <input type="text" id="fnBattery3Name" name="fnBattery3Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery3Site">Site or coordinates</label>
-                        <div class="fn-battery-site-field">
-                            <input type="text" id="fnBattery3Site" name="fnBattery3Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
-                            <p id="fnBattery3SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
-                        </div>
-                        <label class="fn-label" for="fnBattery3Voltage">Voltage</label>
-                        <input type="text" id="fnBattery3Voltage" name="fnBattery3Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery3MaxAltFt">Max altitude (ft)</label>
-                        <input type="number" id="fnBattery3MaxAltFt" name="fnBattery3MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery3MaxDistM">Max distance (m)</label>
-                        <input type="number" id="fnBattery3MaxDistM" name="fnBattery3MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery3Rp1">Remote Pilot 1</label>
-                        <input type="text" id="fnBattery3Rp1" name="fnBattery3Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery3Rp2">Remote Pilot 2</label>
-                        <input type="text" id="fnBattery3Rp2" name="fnBattery3Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery3Launch">Launch time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery3Launch" name="fnBattery3Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery3Launch" title="Set launch time to now (local)">Launch now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery3Land">Landing time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery3Land" name="fnBattery3Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery3Land" title="Set landing time to now (local)">Land now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery3FlightTime">Flight time</label>
-                        <input type="text" id="fnBattery3FlightTime" name="fnBattery3FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
-                        <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery3AmberMin">Amber (min)</label>
-                                <input type="number" id="fnBattery3AmberMin" name="fnBattery3AmberMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery3RedMin">Red (min)</label>
-                                <input type="number" id="fnBattery3RedMin" name="fnBattery3RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                        </div>
-                        <label class="fn-label" for="fnBattery3Alos">ALoS comments</label>
-                        <textarea id="fnBattery3Alos" name="fnBattery3Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
-                    </div>
-                    <div id="fnBatteryCard4" class="fn-battery-card fn-battery-card--extra" hidden>
-                        <h3 class="fn-battery-title">Battery 4</h3>
-                        <label class="fn-label" for="fnBattery4Uas">UAS Name</label>
-                        <input type="text" id="fnBattery4Uas" name="fnBattery4Uas" class="fn-input" autocomplete="off">
-                        <label class="fn-label" for="fnBattery4Name">Battery Name</label>
-                        <input type="text" id="fnBattery4Name" name="fnBattery4Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery4Site">Site or coordinates</label>
-                        <div class="fn-battery-site-field">
-                            <input type="text" id="fnBattery4Site" name="fnBattery4Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
-                            <p id="fnBattery4SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
-                        </div>
-                        <label class="fn-label" for="fnBattery4Voltage">Voltage</label>
-                        <input type="text" id="fnBattery4Voltage" name="fnBattery4Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery4MaxAltFt">Max altitude (ft)</label>
-                        <input type="number" id="fnBattery4MaxAltFt" name="fnBattery4MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery4MaxDistM">Max distance (m)</label>
-                        <input type="number" id="fnBattery4MaxDistM" name="fnBattery4MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery4Rp1">Remote Pilot 1</label>
-                        <input type="text" id="fnBattery4Rp1" name="fnBattery4Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery4Rp2">Remote Pilot 2</label>
-                        <input type="text" id="fnBattery4Rp2" name="fnBattery4Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery4Launch">Launch time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery4Launch" name="fnBattery4Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery4Launch" title="Set launch time to now (local)">Launch now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery4Land">Landing time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery4Land" name="fnBattery4Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery4Land" title="Set landing time to now (local)">Land now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery4FlightTime">Flight time</label>
-                        <input type="text" id="fnBattery4FlightTime" name="fnBattery4FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
-                        <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery4AmberMin">Amber (min)</label>
-                                <input type="number" id="fnBattery4AmberMin" name="fnBattery4AmberMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery4RedMin">Red (min)</label>
-                                <input type="number" id="fnBattery4RedMin" name="fnBattery4RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                        </div>
-                        <label class="fn-label" for="fnBattery4Alos">ALoS comments</label>
-                        <textarea id="fnBattery4Alos" name="fnBattery4Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
-                    </div>
-                    <div id="fnBatteryCard5" class="fn-battery-card fn-battery-card--extra" hidden>
-                        <h3 class="fn-battery-title">Battery 5</h3>
-                        <label class="fn-label" for="fnBattery5Uas">UAS Name</label>
-                        <input type="text" id="fnBattery5Uas" name="fnBattery5Uas" class="fn-input" autocomplete="off">
-                        <label class="fn-label" for="fnBattery5Name">Battery Name</label>
-                        <input type="text" id="fnBattery5Name" name="fnBattery5Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery5Site">Site or coordinates</label>
-                        <div class="fn-battery-site-field">
-                            <input type="text" id="fnBattery5Site" name="fnBattery5Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
-                            <p id="fnBattery5SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
-                        </div>
-                        <label class="fn-label" for="fnBattery5Voltage">Voltage</label>
-                        <input type="text" id="fnBattery5Voltage" name="fnBattery5Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery5MaxAltFt">Max altitude (ft)</label>
-                        <input type="number" id="fnBattery5MaxAltFt" name="fnBattery5MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery5MaxDistM">Max distance (m)</label>
-                        <input type="number" id="fnBattery5MaxDistM" name="fnBattery5MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery5Rp1">Remote Pilot 1</label>
-                        <input type="text" id="fnBattery5Rp1" name="fnBattery5Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery5Rp2">Remote Pilot 2</label>
-                        <input type="text" id="fnBattery5Rp2" name="fnBattery5Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery5Launch">Launch time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery5Launch" name="fnBattery5Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery5Launch" title="Set launch time to now (local)">Launch now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery5Land">Landing time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery5Land" name="fnBattery5Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery5Land" title="Set landing time to now (local)">Land now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery5FlightTime">Flight time</label>
-                        <input type="text" id="fnBattery5FlightTime" name="fnBattery5FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
-                        <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery5AmberMin">Amber (min)</label>
-                                <input type="number" id="fnBattery5AmberMin" name="fnBattery5AmberMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery5RedMin">Red (min)</label>
-                                <input type="number" id="fnBattery5RedMin" name="fnBattery5RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                        </div>
-                        <label class="fn-label" for="fnBattery5Alos">ALoS comments</label>
-                        <textarea id="fnBattery5Alos" name="fnBattery5Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
-                    </div>
-                    <div id="fnBatteryCard6" class="fn-battery-card fn-battery-card--extra" hidden>
-                        <h3 class="fn-battery-title">Battery 6</h3>
-                        <label class="fn-label" for="fnBattery6Uas">UAS Name</label>
-                        <input type="text" id="fnBattery6Uas" name="fnBattery6Uas" class="fn-input" autocomplete="off">
-                        <label class="fn-label" for="fnBattery6Name">Battery Name</label>
-                        <input type="text" id="fnBattery6Name" name="fnBattery6Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery6Site">Site or coordinates</label>
-                        <div class="fn-battery-site-field">
-                            <input type="text" id="fnBattery6Site" name="fnBattery6Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
-                            <p id="fnBattery6SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
-                        </div>
-                        <label class="fn-label" for="fnBattery6Voltage">Voltage</label>
-                        <input type="text" id="fnBattery6Voltage" name="fnBattery6Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery6MaxAltFt">Max altitude (ft)</label>
-                        <input type="number" id="fnBattery6MaxAltFt" name="fnBattery6MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery6MaxDistM">Max distance (m)</label>
-                        <input type="number" id="fnBattery6MaxDistM" name="fnBattery6MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery6Rp1">Remote Pilot 1</label>
-                        <input type="text" id="fnBattery6Rp1" name="fnBattery6Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery6Rp2">Remote Pilot 2</label>
-                        <input type="text" id="fnBattery6Rp2" name="fnBattery6Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery6Launch">Launch time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery6Launch" name="fnBattery6Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery6Launch" title="Set launch time to now (local)">Launch now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery6Land">Landing time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery6Land" name="fnBattery6Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery6Land" title="Set landing time to now (local)">Land now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery6FlightTime">Flight time</label>
-                        <input type="text" id="fnBattery6FlightTime" name="fnBattery6FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
-                        <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery6AmberMin">Amber (min)</label>
-                                <input type="number" id="fnBattery6AmberMin" name="fnBattery6AmberMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery6RedMin">Red (min)</label>
-                                <input type="number" id="fnBattery6RedMin" name="fnBattery6RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                        </div>
-                        <label class="fn-label" for="fnBattery6Alos">ALoS comments</label>
-                        <textarea id="fnBattery6Alos" name="fnBattery6Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
-                    </div>
-                    <div id="fnBatteryCard7" class="fn-battery-card fn-battery-card--extra" hidden>
-                        <h3 class="fn-battery-title">Battery 7</h3>
-                        <label class="fn-label" for="fnBattery7Uas">UAS Name</label>
-                        <input type="text" id="fnBattery7Uas" name="fnBattery7Uas" class="fn-input" autocomplete="off">
-                        <label class="fn-label" for="fnBattery7Name">Battery Name</label>
-                        <input type="text" id="fnBattery7Name" name="fnBattery7Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery7Site">Site or coordinates</label>
-                        <div class="fn-battery-site-field">
-                            <input type="text" id="fnBattery7Site" name="fnBattery7Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
-                            <p id="fnBattery7SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
-                        </div>
-                        <label class="fn-label" for="fnBattery7Voltage">Voltage</label>
-                        <input type="text" id="fnBattery7Voltage" name="fnBattery7Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery7MaxAltFt">Max altitude (ft)</label>
-                        <input type="number" id="fnBattery7MaxAltFt" name="fnBattery7MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery7MaxDistM">Max distance (m)</label>
-                        <input type="number" id="fnBattery7MaxDistM" name="fnBattery7MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery7Rp1">Remote Pilot 1</label>
-                        <input type="text" id="fnBattery7Rp1" name="fnBattery7Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery7Rp2">Remote Pilot 2</label>
-                        <input type="text" id="fnBattery7Rp2" name="fnBattery7Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery7Launch">Launch time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery7Launch" name="fnBattery7Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery7Launch" title="Set launch time to now (local)">Launch now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery7Land">Landing time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery7Land" name="fnBattery7Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery7Land" title="Set landing time to now (local)">Land now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery7FlightTime">Flight time</label>
-                        <input type="text" id="fnBattery7FlightTime" name="fnBattery7FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
-                        <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery7AmberMin">Amber (min)</label>
-                                <input type="number" id="fnBattery7AmberMin" name="fnBattery7AmberMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery7RedMin">Red (min)</label>
-                                <input type="number" id="fnBattery7RedMin" name="fnBattery7RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                        </div>
-                        <label class="fn-label" for="fnBattery7Alos">ALoS comments</label>
-                        <textarea id="fnBattery7Alos" name="fnBattery7Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
-                    </div>
-                    <div id="fnBatteryCard8" class="fn-battery-card fn-battery-card--extra" hidden>
-                        <h3 class="fn-battery-title">Battery 8</h3>
-                        <label class="fn-label" for="fnBattery8Uas">UAS Name</label>
-                        <input type="text" id="fnBattery8Uas" name="fnBattery8Uas" class="fn-input" autocomplete="off">
-                        <label class="fn-label" for="fnBattery8Name">Battery Name</label>
-                        <input type="text" id="fnBattery8Name" name="fnBattery8Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery8Site">Site or coordinates</label>
-                        <div class="fn-battery-site-field">
-                            <input type="text" id="fnBattery8Site" name="fnBattery8Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
-                            <p id="fnBattery8SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
-                        </div>
-                        <label class="fn-label" for="fnBattery8Voltage">Voltage</label>
-                        <input type="text" id="fnBattery8Voltage" name="fnBattery8Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery8MaxAltFt">Max altitude (ft)</label>
-                        <input type="number" id="fnBattery8MaxAltFt" name="fnBattery8MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery8MaxDistM">Max distance (m)</label>
-                        <input type="number" id="fnBattery8MaxDistM" name="fnBattery8MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery8Rp1">Remote Pilot 1</label>
-                        <input type="text" id="fnBattery8Rp1" name="fnBattery8Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery8Rp2">Remote Pilot 2</label>
-                        <input type="text" id="fnBattery8Rp2" name="fnBattery8Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery8Launch">Launch time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery8Launch" name="fnBattery8Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery8Launch" title="Set launch time to now (local)">Launch now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery8Land">Landing time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery8Land" name="fnBattery8Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery8Land" title="Set landing time to now (local)">Land now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery8FlightTime">Flight time</label>
-                        <input type="text" id="fnBattery8FlightTime" name="fnBattery8FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
-                        <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery8AmberMin">Amber (min)</label>
-                                <input type="number" id="fnBattery8AmberMin" name="fnBattery8AmberMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery8RedMin">Red (min)</label>
-                                <input type="number" id="fnBattery8RedMin" name="fnBattery8RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                        </div>
-                        <label class="fn-label" for="fnBattery8Alos">ALoS comments</label>
-                        <textarea id="fnBattery8Alos" name="fnBattery8Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
-                    </div>
-                    <div id="fnBatteryCard9" class="fn-battery-card fn-battery-card--extra" hidden>
-                        <h3 class="fn-battery-title">Battery 9</h3>
-                        <label class="fn-label" for="fnBattery9Uas">UAS Name</label>
-                        <input type="text" id="fnBattery9Uas" name="fnBattery9Uas" class="fn-input" autocomplete="off">
-                        <label class="fn-label" for="fnBattery9Name">Battery Name</label>
-                        <input type="text" id="fnBattery9Name" name="fnBattery9Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery9Site">Site or coordinates</label>
-                        <div class="fn-battery-site-field">
-                            <input type="text" id="fnBattery9Site" name="fnBattery9Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
-                            <p id="fnBattery9SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
-                        </div>
-                        <label class="fn-label" for="fnBattery9Voltage">Voltage</label>
-                        <input type="text" id="fnBattery9Voltage" name="fnBattery9Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery9MaxAltFt">Max altitude (ft)</label>
-                        <input type="number" id="fnBattery9MaxAltFt" name="fnBattery9MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery9MaxDistM">Max distance (m)</label>
-                        <input type="number" id="fnBattery9MaxDistM" name="fnBattery9MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery9Rp1">Remote Pilot 1</label>
-                        <input type="text" id="fnBattery9Rp1" name="fnBattery9Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery9Rp2">Remote Pilot 2</label>
-                        <input type="text" id="fnBattery9Rp2" name="fnBattery9Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery9Launch">Launch time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery9Launch" name="fnBattery9Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery9Launch" title="Set launch time to now (local)">Launch now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery9Land">Landing time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery9Land" name="fnBattery9Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery9Land" title="Set landing time to now (local)">Land now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery9FlightTime">Flight time</label>
-                        <input type="text" id="fnBattery9FlightTime" name="fnBattery9FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
-                        <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery9AmberMin">Amber (min)</label>
-                                <input type="number" id="fnBattery9AmberMin" name="fnBattery9AmberMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery9RedMin">Red (min)</label>
-                                <input type="number" id="fnBattery9RedMin" name="fnBattery9RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                        </div>
-                        <label class="fn-label" for="fnBattery9Alos">ALoS comments</label>
-                        <textarea id="fnBattery9Alos" name="fnBattery9Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
-                    </div>
-                    <div id="fnBatteryCard10" class="fn-battery-card fn-battery-card--extra" hidden>
-                        <h3 class="fn-battery-title">Battery 10</h3>
-                        <label class="fn-label" for="fnBattery10Uas">UAS Name</label>
-                        <input type="text" id="fnBattery10Uas" name="fnBattery10Uas" class="fn-input" autocomplete="off">
-                        <label class="fn-label" for="fnBattery10Name">Battery Name</label>
-                        <input type="text" id="fnBattery10Name" name="fnBattery10Name" class="fn-input">
-                        <label class="fn-label" for="fnBattery10Site">Site or coordinates</label>
-                        <div class="fn-battery-site-field">
-                            <input type="text" id="fnBattery10Site" name="fnBattery10Site" class="fn-input" list="fnBatterySiteDatalist" placeholder="Type, or pick a saved mission site" autocomplete="off">
-                            <p id="fnBattery10SiteHint" class="fn-battery-site-hint hidden" role="note">Several mission locations are set above. <strong>Click this field</strong> or use the arrow <strong>inside</strong> the box to open the list, then pick a saved site &mdash; or type your own.</p>
-                        </div>
-                        <label class="fn-label" for="fnBattery10Voltage">Voltage</label>
-                        <input type="text" id="fnBattery10Voltage" name="fnBattery10Voltage" class="fn-input">
-                        <label class="fn-label" for="fnBattery10MaxAltFt">Max altitude (ft)</label>
-                        <input type="number" id="fnBattery10MaxAltFt" name="fnBattery10MaxAltFt" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery10MaxDistM">Max distance (m)</label>
-                        <input type="number" id="fnBattery10MaxDistM" name="fnBattery10MaxDistM" class="fn-input" min="0" step="1" inputmode="numeric">
-                        <label class="fn-label" for="fnBattery10Rp1">Remote Pilot 1</label>
-                        <input type="text" id="fnBattery10Rp1" name="fnBattery10Rp1" class="fn-input">
-                        <label class="fn-label" for="fnBattery10Rp2">Remote Pilot 2</label>
-                        <input type="text" id="fnBattery10Rp2" name="fnBattery10Rp2" class="fn-input">
-                        <label class="fn-label" for="fnBattery10Launch">Launch time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery10Launch" name="fnBattery10Launch" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-launch-now" data-launch-for="fnBattery10Launch" title="Set launch time to now (local)">Launch now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery10Land">Landing time</label>
-                        <div class="fn-battery-time-row">
-                            <input type="time" id="fnBattery10Land" name="fnBattery10Land" class="fn-input fn-battery-time-input">
-                            <button type="button" class="fn-btn-battery-time-now fn-btn-battery-land-now" data-land-for="fnBattery10Land" title="Set landing time to now (local)">Land now</button>
-                        </div>
-                        <label class="fn-label" for="fnBattery10FlightTime">Flight time</label>
-                        <input type="text" id="fnBattery10FlightTime" name="fnBattery10FlightTime" class="fn-input fn-battery-flight-readonly" readonly tabindex="-1" title="Computed from launch and landing" aria-live="polite">
-                        <div class="fn-alos-minutes-row" role="group" aria-label="ALoS minutes for this battery">
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery10AmberMin">Amber (min)</label>
-                                <input type="number" id="fnBattery10AmberMin" name="fnBattery10AmberMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                            <div class="fn-alos-minute-field">
-                                <label class="fn-label" for="fnBattery10RedMin">Red (min)</label>
-                                <input type="number" id="fnBattery10RedMin" name="fnBattery10RedMin" class="fn-input fn-input-alos-min" min="0" step="1" inputmode="numeric">
-                            </div>
-                        </div>
-                        <label class="fn-label" for="fnBattery10Alos">ALoS comments</label>
-                        <textarea id="fnBattery10Alos" name="fnBattery10Alos" class="fn-input fn-textarea fn-textarea-battery-alos" rows="2" placeholder="Tool + who monitored + nil or traffic seen + any action. Ground/air (UP, FRZ, NOTAM). Minutes in Amber/Red above."></textarea>
-                    </div>
+                </div>
+                <div id="fnBatteryBulkActions" class="fn-battery-bulk-actions" hidden>
+                    <button type="button" class="fn-btn fn-btn-secondary" id="fnCollapseAllBatteriesBtn">Collapse All</button>
+                    <button type="button" class="fn-btn fn-btn-secondary" id="fnExpandAllBatteriesBtn">Expand All</button>
                 </div>
                 <div class="fn-add-battery-wrap">
                     <button type="button" class="fn-btn fn-btn-secondary fn-remove-last-battery-btn" id="fnRemoveLastBatteryBtn"
-                        title="Remove the last battery slot" aria-label="Remove last battery" hidden>
+                        title="Remove the last battery slot" aria-label="Remove Last Battery" hidden>
                         Remove Battery 2
                     </button>
                     <button type="button" class="fn-btn fn-btn-secondary" id="fnAddBatteryBtn"
-                        title="Show fields for the next battery (up to 10)">Add Battery 2</button>
+                        title="Show fields for the next battery (up to 99)">Add Battery 2</button>
                 </div>
             </section>
 
             <section class="fn-section" aria-labelledby="fn-weather-heading">
                 <h2 id="fn-weather-heading" class="fn-section-title">Weather</h2>
                 <div id="fnWeatherSiteRow" class="fn-weather-site-row fn-airspace-site-row hidden" aria-hidden="true">
-                    <label class="fn-label" for="fnWeatherSiteSelect">Fetch weather for</label>
+                    <label class="fn-label" for="fnWeatherSiteSelect">Fetch Weather For</label>
                     <select id="fnWeatherSiteSelect" class="fn-input fn-airspace-site-select" title="Mission location for Open-Meteo forecast" aria-label="Mission location for weather fetch"></select>
                 </div>
                 <div class="fn-weather-actions">
@@ -740,12 +397,12 @@
                     </button>
                     <span id="fnWeatherFetchStatus" class="fn-weather-fetch-status" role="status" aria-live="polite"></span>
                 </div>
-                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Coordinates come from <strong>Location</strong> or an <strong>additional operational location</strong> with a resolved lat/lng. When you have more than one site, choose which to use above. Forecast values use your mission <strong>Date</strong> and <strong>Time</strong> when both are set.</p>
+                <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Coordinates come from <strong>Location</strong> or an <strong>Additional Operational Location</strong> with a resolved lat/lng. When you have more than one site, choose which to use above. Forecast values use your mission <strong>Date</strong> and <strong>Time</strong> when both are set.</p>
                 <details class="fn-weather-how">
-                    <summary class="fn-weather-how-summary">How this is calculated</summary>
+                    <summary class="fn-weather-how-summary">How This Is Calculated</summary>
                     <div class="fn-weather-how-body">
                         <p>When <strong>Date</strong> or <strong>Time</strong> is missing, the report uses the latest Open-Meteo hourly bin at or before the current moment (same idea as choosing <strong>Now</strong> on Flight Weather).</p>
-                        <p>Flight suitability (Green / Amber / Red) uses the same rules as Flight Weather: sustained wind (higher of 10 m and 120 m), gusts (higher of 10 m gusts and an estimate from 120 m sustained wind), visibility, and rain in the hour. Trace drizzle up to <strong>0.5</strong> mm/h stays in the green band; higher hourly totals trend amber or red. Expand <strong>How this is calculated</strong> on the Flight Weather Summary tab for the full threshold list.</p>
+                        <p>Flight suitability (Green / Amber / Red) uses the same rules as Flight Weather: sustained wind (higher of 10 m and 120 m), gusts (higher of 10 m gusts and an estimate from 120 m sustained wind), visibility, and rain in the hour. Trace drizzle up to <strong>0.5</strong> mm/h stays in the green band; higher hourly totals trend amber or red. Expand <strong>How This Is Calculated</strong> on the Flight Weather Summary tab for the full threshold list.</p>
                     </div>
                 </details>
                 <label class="fn-label" for="fnWeather">Conditions</label>
@@ -756,46 +413,46 @@
                 <h2 id="fn-airspace-heading" class="fn-section-title">Airspace</h2>
                 <p class="fn-airspace-intro fn-airspace-scope">
                     NOTAMs, FRZs, and restricted airspace within
-                    <strong id="fnAirspaceIntroKm">3</strong> km of the <strong>mission location you choose below</strong> (coordinates from <strong>Location</strong> or an <strong>additional operational location</strong> with a resolved lat/lng).
+                    <strong id="fnAirspaceIntroKm">3</strong> km of the <strong>Mission Location You Choose Below</strong> (coordinates from <strong>Location</strong> or an <strong>Additional Operational Location</strong> with a resolved lat/lng).
                 </p>
                 <div class="fn-airspace-panel fn-airspace-panel--controls" aria-label="Airspace search controls">
-                    <h3 class="fn-airspace-panel-title">Search &amp; filters</h3>
+                    <h3 class="fn-airspace-panel-title">Search &amp; Filters</h3>
                     <div class="fn-airspace-toolbar">
-                        <label class="fn-label fn-airspace-radius-label" for="fnAirspaceRadiusKm">Search radius (km)</label>
+                        <label class="fn-label fn-airspace-radius-label" for="fnAirspaceRadiusKm">Search Radius (km)</label>
                         <input type="number" class="fn-input fn-airspace-radius-input" id="fnAirspaceRadiusKm" name="fnAirspaceRadiusKm" min="1" max="100" step="1" value="3" inputmode="numeric" />
                         <button type="button" class="fn-btn fn-btn-now" id="fnAirspaceRefreshBtn" title="Load NOTAMs and UK airspace near your coordinates">
                             Refresh
                         </button>
                     </div>
                     <div class="fn-airspace-site-row">
-                        <label class="fn-label" for="fnAirspaceSiteSelect">Show airspace for</label>
+                        <label class="fn-label" for="fnAirspaceSiteSelect">Show Airspace For</label>
                         <select id="fnAirspaceSiteSelect" class="fn-input fn-airspace-site-select" title="Preview NOTAMs and UK zones around this mission point" aria-label="Mission location for airspace preview"></select>
                     </div>
                     <div class="fn-airspace-notam-filters" role="group" aria-label="NOTAM filters">
                         <label class="fn-airspace-filter-label">
                             <input type="checkbox" id="fnNotamDroneOnly" name="fnNotamDroneOnly" checked />
-                            Drone-focused (UAS / events)
+                            Drone-Focused (UAS / Events)
                         </label>
                         <label class="fn-airspace-filter-label">
                             <input type="checkbox" id="fnNotamHideAd" name="fnNotamHideAd" checked />
-                            Hide airfield ops
+                            Hide Airfield Ops
                         </label>
                         <label class="fn-airspace-filter-label">
                             <input type="checkbox" id="fnNotamHideCeiling" name="fnNotamHideCeiling" checked />
-                            Hide above 600 ft (Q-line)
+                            Hide Above 600 Ft (Q-Line)
                         </label>
                         <label class="fn-airspace-filter-label">
                             <input type="checkbox" id="fnNotamPrioritise" name="fnNotamPrioritise" />
-                            Prioritise for UAS
+                            Prioritise For UAS
                         </label>
                     </div>
                 </div>
                 <div class="fn-airspace-panel fn-airspace-panel--caveats" role="note">
-                    <h3 class="fn-airspace-panel-title">Source notes</h3>
+                    <h3 class="fn-airspace-panel-title">Source Notes</h3>
                     <p class="fn-airspace-vertical-hint">600 ft band uses PIB Q-line FL units (not AGL); unknown Q-lines are kept. Not a substitute for an official NATS briefing.</p>
                 </div>
                 <div class="fn-airspace-panel fn-airspace-panel--results" aria-label="Airspace and NOTAM results">
-                    <h3 class="fn-airspace-panel-title">NOTAMs &amp; zones</h3>
+                    <h3 class="fn-airspace-panel-title">NOTAMs &amp; Zones</h3>
                     <div id="fnAirspaceLoading" class="fn-airspace-loading hidden" role="status" aria-live="polite">
                         <p>Loading airspace data…</p>
                     </div>
@@ -809,20 +466,20 @@
 
             <section class="fn-section" aria-labelledby="fn-notes-heading">
                 <h2 id="fn-notes-heading" class="fn-section-title">Notes</h2>
-                <label class="fn-label" for="fnNotes">Free text</label>
+                <label class="fn-label" for="fnNotes">Free Text</label>
                 <textarea id="fnNotes" name="fnNotes" class="fn-input fn-textarea" rows="8" placeholder="Additional observations…"></textarea>
             </section>
 
             <div class="fn-actions">
                 <div class="fn-actions-inner">
                     <button type="button" class="fn-btn fn-btn-secondary fn-actions-email" id="fnEmailBtn">
-                        Send by email
+                        Send By Email
                     </button>
                     <button type="button" class="fn-btn fn-btn-primary fn-actions-export" id="fnPdfBtn">
                         Export PDF
                     </button>
                     <div class="fn-export-theme-box" role="radiogroup" aria-labelledby="fnExportThemeLabel" title="Light or dark styling for the exported PDF only (not this page)">
-                        <span id="fnExportThemeLabel" class="fn-export-theme-label">PDF export</span>
+                        <span id="fnExportThemeLabel" class="fn-export-theme-label">PDF Export</span>
                         <div class="fn-export-theme-segments">
                             <label class="fn-export-theme-segment-opt">
                                 <input type="radio" name="fnExportTheme" value="dark">
@@ -834,8 +491,8 @@
                             </label>
                         </div>
                     </div>
-                    <button type="button" class="fn-btn fn-btn-danger fn-actions-clear" id="fnClearFormBtn" title="Clear all entered flight report fields" aria-label="Clear all entered flight report fields">
-                        Clear Report
+                    <button type="button" class="fn-btn fn-btn-secondary fn-actions-clear" id="fnClearFormBtn" title="Empty all fields in the active report; the report stays in your list" aria-label="Clear Fields in the active report">
+                        Clear Fields
                     </button>
                 </div>
             </div>
@@ -846,15 +503,32 @@
         <div class="modal-backdrop" id="fnClearModalBackdrop" aria-hidden="true"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="fnClearModalTitle">Clear Report?</h2>
+                <h2 id="fnClearModalTitle">Clear Fields?</h2>
                 <button type="button" class="modal-close" id="fnClearModalClose" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <p>This will remove everything you have entered in Flight Report. This cannot be undone.</p>
+                <p>This removes everything you have entered in the <strong>active</strong> report. The report stays in your list, but empty. This cannot be undone.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="fnClearModalCancel">Cancel</button>
-                <button type="button" class="btn btn-danger" id="fnClearModalConfirm">Clear Report</button>
+                <button type="button" class="btn btn-danger" id="fnClearModalConfirm">Clear Fields</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fnDeleteReportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="fnDeleteReportModalTitle">
+        <div class="modal-backdrop" id="fnDeleteReportModalBackdrop" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="fnDeleteReportModalTitle">Delete Report?</h2>
+                <button type="button" class="modal-close" id="fnDeleteReportModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="fnDeleteReportModalBody">Delete this report from your saved drafts? This cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="fnDeleteReportModalCancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="fnDeleteReportModalConfirm">Delete Report</button>
             </div>
         </div>
     </div>
@@ -863,7 +537,7 @@
         <div class="modal-backdrop" id="fnRemoveBatteryModalBackdrop" aria-hidden="true"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="fnRemoveBatteryModalTitle">Remove battery?</h2>
+                <h2 id="fnRemoveBatteryModalTitle">Remove Battery?</h2>
                 <button type="button" class="modal-close" id="fnRemoveBatteryModalClose" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
@@ -871,7 +545,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="fnRemoveBatteryModalCancel">Cancel</button>
-                <button type="button" class="btn btn-danger" id="fnRemoveBatteryModalConfirm">Remove battery</button>
+                <button type="button" class="btn btn-danger" id="fnRemoveBatteryModalConfirm">Remove Battery</button>
             </div>
         </div>
     </div>
@@ -880,7 +554,7 @@
         <div class="modal-backdrop" id="fnWeatherClearModalBackdrop" aria-hidden="true"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="fnWeatherClearModalTitle">Clear weather conditions?</h2>
+                <h2 id="fnWeatherClearModalTitle">Clear Weather Conditions?</h2>
                 <button type="button" class="modal-close" id="fnWeatherClearModalClose" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
@@ -906,6 +580,6 @@
     <script src="js/airspace-nearby.js?v=5"></script>
     <script src="js/geolocation-helpers.js?v=6"></script>
     <script src="js/ap-brand-logo.js?v=1"></script>
-    <script src="js/flight-notes.js?v=43"></script>
+    <script src="js/flight-notes.js?v=46"></script>
 </body>
 </html>

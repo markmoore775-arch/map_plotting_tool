@@ -213,12 +213,30 @@ body.checklist-mode.cl-light-theme .fn-top-clear-btn:hover {
     margin: 0;
 }
 
+.fn-page-guide-details {
+    margin-bottom: 0;
+}
+
+.fn-page-guide-body {
+    margin-top: 8px;
+    padding: 12px 14px;
+    color: var(--sidebar-text-muted, #9999aa);
+    background: rgba(91, 141, 239, 0.08);
+    border-radius: var(--radius, 6px);
+    border-left: 3px solid rgba(91, 141, 239, 0.35);
+}
+
+.fn-page-guide-body .fn-lead {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
 .fn-disclaimer-body strong {
     color: var(--sidebar-text, #e0e0e8);
 }
 
 .fn-header {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 .fn-header-title-row {
@@ -226,7 +244,7 @@ body.checklist-mode.cl-light-theme .fn-top-clear-btn:hover {
     align-items: center;
     justify-content: space-between;
     gap: 12px 16px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .fn-header-title-row .fn-title {
@@ -236,12 +254,166 @@ body.checklist-mode.cl-light-theme .fn-top-clear-btn:hover {
     line-height: 1.15;
 }
 
-.fn-header-title-row .fn-top-clear-btn {
+.fn-report-panel {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.12));
+    border-radius: var(--radius, 8px);
+    background: var(--sidebar-surface, rgba(255, 255, 255, 0.04));
+}
+
+.fn-report-panel-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.1));
+}
+
+.fn-report-panel-footer .fn-report-active-hint {
+    margin: 0 0 6px;
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.fn-report-panel-footer .fn-report-storage-status {
+    margin: 0 0 6px;
+    font-size: 0.75rem;
+}
+
+.fn-report-panel-footer .fn-report-storage-status:empty {
+    display: none;
+    margin: 0;
+}
+
+.fn-report-help-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 12px;
+}
+
+.fn-report-panel .fn-privacy-details {
+    margin: 0;
+}
+
+.fn-report-panel .fn-privacy-details[open] {
+    flex: 1 1 100%;
+}
+
+.fn-report-panel .fn-privacy-summary {
+    padding: 2px 0;
+    font-size: 0.75rem;
+}
+
+.fn-report-panel .fn-page-guide-details {
+    margin-bottom: 0;
+}
+
+.fn-report-switcher {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.fn-report-bar-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--sidebar-text-muted, #9999aa);
     flex-shrink: 0;
-    align-self: center;
-    min-height: 2.75rem;
+    min-width: 5.5rem;
+}
+
+.fn-report-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+}
+
+.fn-report-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.fn-report-toolbar-btn {
+    min-height: 38px;
     padding: 8px 14px;
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.fn-report-toolbar-sep {
+    display: none;
+    width: 1px;
+    align-self: stretch;
+    min-height: 38px;
+    margin: 0 2px;
+    background: var(--sidebar-border, rgba(255, 255, 255, 0.12));
+}
+
+.fn-report-toolbar-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+    flex: 1 1 100%;
+}
+
+.fn-report-toolbar > .fn-report-toolbar-btn {
+    flex: 1 1 100%;
+}
+
+.fn-report-toolbar-group .fn-report-toolbar-btn {
+    flex: 1 1 calc(50% - 4px);
+}
+
+@media (min-width: 520px) {
+    .fn-report-toolbar {
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    .fn-report-toolbar > .fn-report-toolbar-btn {
+        flex: 0 0 auto;
+    }
+
+    .fn-report-toolbar-sep {
+        display: block;
+    }
+
+    .fn-report-toolbar-group {
+        flex: 1 1 auto;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+    }
+
+    .fn-report-toolbar-group .fn-report-toolbar-btn {
+        flex: 0 0 auto;
+    }
+}
+
+.fn-report-active-hint {
+    margin: 0 0 8px;
+    font-size: 0.8125rem;
+    color: var(--sidebar-text-muted, #9999aa);
+    line-height: 1.4;
+}
+
+.fn-report-storage-status {
+    margin: 0 0 8px;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--sidebar-text-muted, #9999aa);
+}
+
+.fn-report-storage-status--error {
+    color: #f87171;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-report-storage-status--error {
+    color: #b91c1c;
 }
 
 .fn-title {
@@ -899,6 +1071,60 @@ body.flight-notes-mode.fn-light-theme .fn-extra-loc-card {
     gap: 14px;
 }
 
+.fn-battery-bulk-actions {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.fn-battery-bulk-actions[hidden] {
+    display: none !important;
+}
+
+.fn-battery-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.fn-battery-card-head-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.fn-battery-card--collapsed .fn-battery-card-head {
+    margin-bottom: 0;
+}
+
+.fn-battery-card--collapsed .fn-battery-card-body {
+    display: none;
+}
+
+.fn-battery-collapsed-summary {
+    display: none;
+    margin: 6px 0 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--sidebar-text-muted, #9999aa);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fn-battery-card--collapsed .fn-battery-collapsed-summary {
+    display: block;
+}
+
+.fn-battery-collapse-btn {
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+    padding: 6px 10px;
+    min-height: 32px;
+}
+
 /* ALoS help (Batteries section): collapsible reference under section title */
 .fn-alos-help {
     margin: 0 0 14px;
@@ -1042,15 +1268,15 @@ body.flight-notes-mode.fn-light-theme .fn-extra-loc-card {
 .fn-battery-title {
     font-size: 0.8rem;
     font-weight: 600;
-    margin: 0 0 10px;
+    margin: 0;
     color: var(--primary, #5b8def);
 }
 
-.fn-battery-card > .fn-label {
+.fn-battery-card-body > .fn-label {
     margin-top: 10px;
 }
 
-.fn-battery-card > .fn-battery-title + .fn-label {
+.fn-battery-card-body > .fn-battery-title + .fn-label {
     margin-top: 0;
 }
 
@@ -1545,6 +1771,20 @@ body.flight-notes-mode.fn-light-theme .fn-title {
     color: #1a1a1a;
 }
 
+body.flight-notes-mode.fn-light-theme .fn-report-panel {
+    background: #ffffff;
+    border-color: #d0d0d8;
+    box-shadow: var(--ap-chrome-shadow-light);
+}
+
+body.flight-notes-mode.fn-light-theme .fn-report-panel-footer {
+    border-top-color: #e4e4e8;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-report-toolbar-sep {
+    background: #d0d0d8;
+}
+
 body.flight-notes-mode.fn-light-theme .fn-lead {
     color: #555;
 }
@@ -1565,6 +1805,12 @@ body.flight-notes-mode.fn-light-theme .fn-disclaimer-body {
     color: #555;
     background: rgba(255, 152, 0, 0.12);
     border-left-color: rgba(200, 120, 0, 0.55);
+}
+
+body.flight-notes-mode.fn-light-theme .fn-page-guide-body {
+    color: #555;
+    background: rgba(91, 141, 239, 0.1);
+    border-left-color: rgba(91, 141, 239, 0.45);
 }
 
 body.flight-notes-mode.fn-light-theme .fn-disclaimer-body strong {
@@ -1635,6 +1881,10 @@ body.flight-notes-mode.fn-light-theme .fn-gps-status {
 body.flight-notes-mode.fn-light-theme .fn-battery-card {
     background: #f5f6f8;
     border-color: #d8d9dc;
+}
+
+body.flight-notes-mode.fn-light-theme .fn-battery-collapsed-summary {
+    color: #555;
 }
 
 body.flight-notes-mode.fn-light-theme .fn-battery-site-hint {

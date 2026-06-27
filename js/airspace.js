@@ -33,8 +33,8 @@
         '</ol>',
         '<p>Local dev: <code>npm run serve</code> for <code>/api/adsb</code> and <code>/api/ogn</code>. Open <a href="flight-notes.html">Flight Report</a> or the <a href="checklist.html">Checklist</a> from the welcome screen.</p>',
         '<div class="airspace-help-sources" id="airspaceHelpSources">',
-        '<p class="airspace-help-sources-title"><strong>Data sources</strong></p>',
-        '<p>Traffic: <a href="https://airplanes.live/api-guide/" target="_blank" rel="noopener">airplanes.live</a> (primary; coverage varies), with <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> fallback.</p>',
+        '<p class="airspace-help-sources-title"><strong>Data Sources</strong></p>',
+        '<p>Traffic: <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> (primary; coverage varies), with <a href="https://airplanes.live/api-guide/" target="_blank" rel="noopener">airplanes.live</a> fallback.</p>',
         '<p>Optional <a href="https://www.glidernet.org/" target="_blank" rel="noopener">Open Glider Network</a> (gliders / FLARM-class; coverage varies).</p>',
         '<p>Optional AGL: Mapbox Terrain-RGB. Map tiles: layer attribution in the map control.</p>',
         '</div>'
@@ -54,7 +54,7 @@
     let pendingForceFetch = false;
     let currentPollMs = MIN_POLL_MS;
     /** Last successful ADS-B provider from /api/adsb (adsblol | airplaneslive | stale). */
-    let lastAdsbSource = 'airplaneslive';
+    let lastAdsbSource = 'adsblol';
     /** fresh | stale from X-AirPlan-Cache */
     let lastAdsbCache = 'fresh';
     let lastAdsbFetchedAt = 0;
@@ -284,9 +284,9 @@
             encodeURIComponent(hexUp) +
             '" target="_blank" rel="noopener">ADS-B Exchange</a>';
         html +=
-            '<a href="https://globe.airplanes.live/?icao=' +
+            '<a href="https://adsb.lol/?icao=' +
             encodeURIComponent(hexUp) +
-            '" target="_blank" rel="noopener">airplanes.live</a>';
+            '" target="_blank" rel="noopener">ADSB.lol</a>';
         if (reg) {
             html +=
                 '<a href="https://www.google.com/search?q=' +
@@ -1011,7 +1011,7 @@
 
         trafficPopupOpen = true;
         showSelectedTrail(kind, key);
-        setStatus('<strong>Details open</strong> · auto-refresh paused until you close.', false);
+        setStatus('<strong>Details Open</strong> · auto-refresh paused until you close.', false);
 
         if (kind === 'adsb') {
             pinnedHex = key;
@@ -1110,6 +1110,7 @@
     }
 
     function adsbProviderLabel(source) {
+        if (source === 'adsblol') return 'ADSB.lol';
         if (source === 'airplaneslive') return 'airplanes.live';
         if (source === 'stale') return 'cached ADS-B';
         return 'ADSB.lol';
@@ -2006,7 +2007,7 @@
                 L.control.locate({
                     position: 'topleft',
                     strings: {
-                        title: 'Show my location',
+                        title: 'Show My Location',
                         popup: 'You are within {distance} from this point',
                         outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
                     },
@@ -2021,7 +2022,7 @@
                 const link = L.DomUtil.create('a', '', div);
                 link.href = '#';
                 link.title = 'Instructions';
-                link.setAttribute('aria-label', 'Show instructions');
+                link.setAttribute('aria-label', 'Show Instructions');
                 link.id = 'airspaceHelpToggle';
                 link.innerHTML =
                     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1.25" fill="currentColor" stroke="none"/></svg>';
@@ -2119,7 +2120,7 @@
                     clearTraffic();
                     clearOgnTraffic();
                     setStatus(
-                        'ADS-B and OGN are off. Enable <strong>Show traffic</strong> and/or <strong>OGN</strong> to load data.',
+                        'ADS-B and OGN are off. Enable <strong>Show Traffic</strong> and/or <strong>OGN</strong> to load data.',
                         false
                     );
                 }
@@ -2144,7 +2145,7 @@
                     clearTraffic();
                     clearOgnTraffic();
                     setStatus(
-                        'ADS-B and OGN are off. Enable <strong>Show traffic</strong> and/or <strong>OGN</strong> to load data.',
+                        'ADS-B and OGN are off. Enable <strong>Show Traffic</strong> and/or <strong>OGN</strong> to load data.',
                         false
                     );
                 }

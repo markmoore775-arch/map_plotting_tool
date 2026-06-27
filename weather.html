@@ -56,7 +56,7 @@
     <!-- Bottom dock: matches top ap-tool-nav pill (one card, status + controls + note) -->
     <div class="weather-bottom-chrome" id="weatherBottomChrome">
         <div class="weather-map-dock" role="region" aria-label="Weather map controls">
-            <p class="weather-map-hint weather-map-dock__status" id="weatherMapHint" role="status" aria-live="polite">Click the map to set your location. Or tap Select Location, then tap the map.</p>
+            <p class="weather-map-hint weather-map-dock__status" id="weatherMapHint" role="status" aria-live="polite">Click the Map to Set Your Location. Or Tap Select Location, Then Tap the Map.</p>
             <div class="weather-map-dock__body">
                 <div class="weather-toolbar-group weather-toolbar-group--select">
                     <button type="button" class="weather-btn" id="weatherSelectBtn" title="Click map to select location">
@@ -70,7 +70,7 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg>
                     </button>
                     <select id="weatherModel" class="weather-model-select" title="Weather model / source">
-                        <option value="auto">Best match</option>
+                        <option value="auto">Best Match</option>
                         <option value="ecmwf_ifs">ECMWF IFS</option>
                         <option value="gfs_seamless">GFS (NOAA)</option>
                         <option value="ukmo_seamless">UK Met Office</option>
@@ -89,10 +89,10 @@
                     <input type="datetime-local" id="weatherDateTime" class="weather-datetime hidden" min="" max="">
                 </div>
                 <div class="weather-toolbar-group weather-toolbar-group--fetch">
-                    <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Get weather for selected location" aria-label="Get weather">
+                    <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Get Weather for selected location" aria-label="Get Weather">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
                         <span class="weather-fetch-label--full" aria-hidden="true">Get Weather</span>
-                        <span class="weather-fetch-label--short" aria-hidden="true">Get weather</span>
+                        <span class="weather-fetch-label--short" aria-hidden="true">Get Weather</span>
                     </button>
                 </div>
             </div>
@@ -120,8 +120,8 @@
                 <button type="button" class="weather-report-close" id="weatherReportClose" aria-label="Close">&times;</button>
             </div>
             <div class="weather-report-header__toolbar" role="toolbar" aria-label="Export and report actions">
-                <button type="button" class="weather-btn weather-btn-flight-report hidden" id="weatherUseInFlightReportBtn" title="Append this forecast to Flight Report Conditions and open the report page" aria-label="Append to Flight Report">
-                    <span>Append to Flight Report</span>
+                <button type="button" class="weather-btn weather-btn-flight-report hidden" id="weatherUseInFlightReportBtn" title="Append This Forecast to Flight Report Conditions and Open the Report Page" aria-label="Append To Flight Report">
+                    <span>Append To Flight Report</span>
                     <span class="weather-flight-report-arrow" aria-hidden="true">→</span>
                 </button>
                 <button type="button" class="weather-btn weather-btn-export" id="weatherExportPptxBtn" title="Export report as PowerPoint">
@@ -156,7 +156,7 @@
             <div id="weatherReportContent" class="weather-report-content hidden">
                 <div class="weather-report-tabs">
                     <button type="button" class="weather-tab active" data-tab="summary">Summary</button>
-                    <button type="button" class="weather-tab" data-tab="hourly">12-hour forecast</button>
+                    <button type="button" class="weather-tab" data-tab="hourly">12-Hour Forecast</button>
                     <button type="button" class="weather-tab" data-tab="aviation">METAR / TAF</button>
                     <button type="button" class="weather-tab" data-tab="airspace">Airspace</button>
                 </div>
@@ -165,11 +165,11 @@
                         <div class="weather-summary" id="weatherSummary"></div>
                         <div class="weather-summary-text" id="weatherSummaryText"></div>
                         <details class="weather-how-calculated" id="weatherHowCalculated">
-                            <summary>How this is calculated</summary>
+                            <summary>How This Is Calculated</summary>
                             <div class="weather-how-calculated-body" id="weatherHowCalculatedBody"></div>
                         </details>
                         <div class="weather-alt-section">
-                            <h3 class="weather-alt-heading">Wind by altitude</h3>
+                            <h3 class="weather-alt-heading">Wind By Altitude</h3>
                             <p class="weather-alt-note">Gusts are only measured at 10 m by the weather model. Gusts at 120 m are estimated (≈1.3× sustained).</p>
                             <div class="weather-alt-grid">
                                 <div class="weather-alt-block">
@@ -202,7 +202,7 @@
                                 <span class="weather-detail-value" id="weatherVisibility">-</span>
                             </div>
                             <div class="weather-detail-row">
-                                <span class="weather-detail-label">Cloud cover</span>
+                                <span class="weather-detail-label">Cloud Cover</span>
                                 <span class="weather-detail-value" id="weatherClouds">-</span>
                             </div>
                             <div class="weather-detail-row">
@@ -216,7 +216,7 @@
                         </div>
                         <p class="weather-attribution" id="weatherAttribution">Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
                         <details class="weather-model-explainer" id="weatherModelExplainer">
-                            <summary>About this forecast model</summary>
+                            <summary>About This Forecast Model</summary>
                             <div class="weather-model-explainer-body" id="weatherModelExplainerBody"></div>
                         </details>
                     </div>
@@ -224,19 +224,19 @@
                         <div id="weatherHourlySection" class="weather-hourly-section">
                             <div class="weather-hourly-table-wrap">
                                 <div class="weather-hourly-rag-key" role="group" aria-labelledby="weatherHourlyRagKeyTitle">
-                                    <span id="weatherHourlyRagKeyTitle" class="weather-hourly-rag-key-title">Cell colours</span>
+                                    <span id="weatherHourlyRagKeyTitle" class="weather-hourly-rag-key-title">Cell Colours</span>
                                     <ul class="weather-hourly-rag-key-list">
                                         <li>
                                             <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--good" aria-hidden="true"></span>
-                                            <span class="weather-hourly-rag-key-label"><strong>Green</strong> - favourable</span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Green</strong> — Favourable</span>
                                         </li>
                                         <li>
                                             <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--caution" aria-hidden="true"></span>
-                                            <span class="weather-hourly-rag-key-label"><strong>Amber</strong> - marginal (caution band)</span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Amber</strong> — Marginal (Caution Band)</span>
                                         </li>
                                         <li>
                                             <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--poor" aria-hidden="true"></span>
-                                            <span class="weather-hourly-rag-key-label"><strong>Red</strong> - postpone</span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Red</strong> — Postpone</span>
                                         </li>
                                     </ul>
                                 </div>
@@ -256,17 +256,17 @@
                                     </thead>
                                     <tbody id="weatherHourlyBody"></tbody>
                                 </table>
-                                <p class="weather-hourly-rag-legend">Cell colours match Summary flight suitability (Green / Amber / Red). Hover a row for the full per-hour wording. For wind, gust, visibility, and rain rules, open the Summary tab and expand <strong>How this is calculated</strong>.</p>
+                                <p class="weather-hourly-rag-legend">Cell Colours match Summary flight suitability (Green / Amber / Red). Hover a row for the full per-hour wording. For wind, gust, visibility, and rain rules, open the Summary tab and expand <strong>How This Is Calculated</strong>.</p>
                             </div>
                         </div>
                         <div id="weatherHourlyEmpty" class="weather-hourly-empty hidden">
-                            <p>12-hour forecast is only available when <strong>Now</strong> is selected.</p>
+                            <p>12-Hour Forecast is only available when <strong>Now</strong> is selected.</p>
                         </div>
                         <p class="weather-attribution" id="weatherAttributionHourly">Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>
                     </div>
                     <div class="weather-tab-panel" id="weatherTabAviation">
                         <div class="weather-aviation-intro">
-                            <p>METAR and TAF from aerodromes within 50 NM of the selected location. Expand <strong>About flight categories</strong> below for how decoded labels relate to UK drone limits.</p>
+                            <p>METAR and TAF from aerodromes within 50 NM of the selected location. Expand <strong>About Flight Categories</strong> below for how decoded labels relate to UK drone limits.</p>
                             <div class="weather-aviation-toggle">
                                 <button type="button" class="weather-aviation-toggle-btn active" data-view="decoded">Plain English</button>
                                 <button type="button" class="weather-aviation-toggle-btn" data-view="raw">Raw</button>
@@ -276,7 +276,7 @@
                         <div class="weather-aviation-footer">
                             <p class="weather-attribution" id="weatherAttributionAviation">METAR/TAF from <a href="https://aviationweather.gov/" target="_blank" rel="noopener">Aviation Weather Center</a></p>
                             <details class="weather-how-calculated" id="weatherAviationFlightCategories">
-                                <summary>About flight categories</summary>
+                                <summary>About Flight Categories</summary>
                                 <div class="weather-how-calculated-body" id="weatherAviationFlightCategoriesBody"></div>
                             </details>
                         </div>
@@ -286,15 +286,15 @@
                             <p id="weatherAirspaceIntroText">NOTAMs, FRZs, and restricted airspace within <strong id="weatherAirspaceIntroKm">5</strong> km of the selected location.</p>
                         </div>
                         <div class="weather-airspace-toolbar">
-                            <label class="weather-airspace-radius-label" for="weatherAirspaceRadiusKm">Search radius (km)</label>
+                            <label class="weather-airspace-radius-label" for="weatherAirspaceRadiusKm">Search Radius (km)</label>
                             <input type="number" class="weather-airspace-radius-input" id="weatherAirspaceRadiusKm" min="1" max="100" step="1" value="5" inputmode="numeric">
                             <button type="button" class="btn btn-secondary weather-airspace-refresh-btn" id="weatherAirspaceRefreshBtn">Refresh</button>
                         </div>
                         <div class="weather-airspace-notam-filters" role="group" aria-label="NOTAM filters">
-                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamDroneOnly" checked> Drone-focused (UAS / events)</label>
-                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamHideAd" checked> Hide airfield ops</label>
-                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamHideCeiling" checked> Hide above 600 ft (Q-line)</label>
-                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamPrioritise"> Prioritise for UAS</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamDroneOnly" checked> Drone-Focused (UAS / Events)</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamHideAd" checked> Hide Airfield Ops</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamHideCeiling" checked> Hide Above 600 Ft (Q-Line)</label>
+                            <label class="weather-airspace-filter-label"><input type="checkbox" id="weatherNotamPrioritise"> Prioritise For UAS</label>
                         </div>
                         <p class="weather-airspace-vertical-hint">600 ft band uses PIB Q-line FL units (not AGL); unknown Q-lines are kept. Not a substitute for an official NATS briefing.</p>
                         <div id="weatherAirspaceLoading" class="weather-airspace-loading hidden">
@@ -345,6 +345,6 @@
     <script src="js/flight-suitability.js?v=1"></script>
     <script src="js/notam-pib.js?v=3"></script>
     <script src="js/airspace-nearby.js?v=5"></script>
-    <script src="js/weather.js?v=27"></script>
+    <script src="js/weather.js?v=30"></script>
 </body>
 </html>

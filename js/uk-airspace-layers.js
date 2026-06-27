@@ -859,7 +859,7 @@
                     const outlineCb = L.DomUtil.create('input', '', outlineLabel);
                     outlineCb.type = 'checkbox';
                     outlineCb.checked = prefs.outlineMode;
-                    outlineLabel.appendChild(document.createTextNode(' Outline only'));
+                    outlineLabel.appendChild(document.createTextNode(' Outline Only'));
                     L.DomEvent.on(outlineCb, 'change', function () {
                         prefs.outlineMode = outlineCb.checked;
                         savePrefs(prefs);
@@ -869,7 +869,7 @@
 
                     const lodRow = L.DomUtil.create('div', 'airspace-display-row airspace-display-row-select', displaySection);
                     const lodLab = L.DomUtil.create('span', 'airspace-display-label', lodRow);
-                    lodLab.textContent = 'Zoom detail';
+                    lodLab.textContent = 'Zoom Detail';
                     const lodSelect = L.DomUtil.create('select', 'airspace-lod-select', lodRow);
                     [
                         { v: 'essential', l: 'Essential when zoomed out' },
@@ -936,7 +936,7 @@
 
                     const opacityToggle = L.DomUtil.create('button', 'airspace-opacity-toggle', body);
                     opacityToggle.type = 'button';
-                    opacityToggle.textContent = 'Fill opacity per layer \u25BC';
+                    opacityToggle.textContent = 'Fill Opacity per Layer \u25BC';
                     const opacityWrap = L.DomUtil.create('div', 'airspace-opacity-section', body);
                     opacityWrap.style.display = 'none';
                     const opacityRanges = {};
@@ -964,7 +964,7 @@
                     });
                     const resetOpacityBtn = L.DomUtil.create('button', 'airspace-opacity-reset', opacityWrap);
                     resetOpacityBtn.type = 'button';
-                    resetOpacityBtn.textContent = 'Reset to defaults';
+                    resetOpacityBtn.textContent = 'Reset To Defaults';
                     L.DomEvent.on(resetOpacityBtn, 'click', function () {
                         typeKeys.forEach(function (key) {
                             prefs.opacity[key] = null;
@@ -979,7 +979,7 @@
                         L.DomEvent.stop(e);
                         const open = opacityWrap.style.display !== 'none';
                         opacityWrap.style.display = open ? 'none' : 'block';
-                        opacityToggle.textContent = open ? 'Fill opacity per layer \u25BC' : 'Fill opacity per layer \u25B2';
+                        opacityToggle.textContent = open ? 'Fill Opacity per Layer \u25BC' : 'Fill Opacity per Layer \u25B2';
                     });
 
                     const list = L.DomUtil.create('ul', 'airspace-legend-list', body);
@@ -993,7 +993,7 @@
                     selectAllCb.dataset.type = 'select-all';
                     selectAllCb.title = 'Show UK airspace restrictions (NATS UAS / UK AIP ENR 5.1)';
                     const selectAllLbl = L.DomUtil.create('span', 'airspace-legend-label', selectAllLabel);
-                    selectAllLbl.textContent = 'Select all';
+                    selectAllLbl.textContent = 'Select All';
                     function updateSelectAllState() {
                         const itemCbs = container.querySelectorAll('.airspace-legend-item-cb:not(.airspace-select-all-cb)');
                         let allChecked = true;
@@ -1084,7 +1084,7 @@
                     readableBtn.title = 'Outline, essential zoom, viewport, lighter fills';
                     const fullBtn = L.DomUtil.create('button', 'airspace-preset-btn', presetRow);
                     fullBtn.type = 'button';
-                    fullBtn.textContent = 'Full regulatory';
+                    fullBtn.textContent = 'Full Regulatory';
                     fullBtn.title = 'All categories on, full zoom detail, stronger fills';
 
                     function applyReadablePreset() {
@@ -1207,7 +1207,7 @@
                         adCb.type = 'checkbox';
                         adCb.checked = !!prefs.notam.hideAerodromeGround;
                         adInline.title = 'Hide typical aerodrome ground-ops NOTAMs';
-                        adInline.appendChild(document.createTextNode(' Hide ops'));
+                        adInline.appendChild(document.createTextNode(' Hide Ops'));
                         const expandBtn = L.DomUtil.create('button', 'airspace-notam-expand', mainRow);
                         expandBtn.type = 'button';
                         expandBtn.title = 'More NOTAM options';
@@ -1273,7 +1273,7 @@
 
                         const maxRadiusRow = L.DomUtil.create('div', 'airspace-notam-option-row', optsWrap);
                         const maxRadiusLabel = L.DomUtil.create('label', 'airspace-notam-option-label', maxRadiusRow);
-                        maxRadiusLabel.textContent = 'Max radius';
+                        maxRadiusLabel.textContent = 'Max Radius';
                         const maxRadiusSelect = L.DomUtil.create('select', 'airspace-notam-select', maxRadiusRow);
                         [ { v: 5, l: '5 NM' }, { v: 10, l: '10 NM' }, { v: 12, l: '12 NM' }, { v: 20, l: '20 NM' }, { v: 50, l: '50 NM' }, { v: 999, l: 'All' } ].forEach(function (o) {
                             const opt = L.DomUtil.create('option', '', maxRadiusSelect);

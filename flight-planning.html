@@ -84,7 +84,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a5 5 0 0 1 5 5v2"/><path d="M3 10l4-4M3 10l4 4"/></svg>
                 <span>Undo</span>
             </button>
-            <button type="button" class="fp-btn" id="fpClearBtn" title="Clear all">
+            <button type="button" class="fp-btn" id="fpClearBtn" title="Clear All">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                 <span>Clear</span>
             </button>
@@ -146,7 +146,7 @@
                 <p>For overlay flight with a POI and exclusion fence (no automated route). Tap <strong>Add Target</strong> and click the map to place the point of interest. Adjust <strong>Radius (m)</strong> for the circular exclusion zone. <strong>Export Recce KMZ</strong> saves <code>Recce_Mission.kmz</code> for import as an overlay in DJI Pilot 2. Fly manually; the aircraft brakes at the fence.</p>
                 <h3>Waypoint Mission</h3>
                 <p>Tap <strong>Waypoint</strong> and click the map to add waypoints in order. Use <strong>Rectangle</strong>, <strong>Circle</strong>, or <strong>Polygon</strong> to draw exclusion zones (no-fly areas). <strong>Export KMZ</strong> produces a WPML mission file for automated flight. <strong>Undo</strong> reverts the last change; <strong>Clear</strong> removes everything.</p>
-                <h3>Exports &amp; reports</h3>
+                <h3>Exports &amp; Reports</h3>
                 <p><strong>Export KMZ</strong> / <strong>Export Recce KMZ</strong>: mission files for the controller. <strong>PPTX</strong> and <strong>PDF</strong>: branded mission reports with a map capture. The <strong>SD card</strong> (?) button opens detailed import steps for DJI Pilot 2.</p>
                 <h3>SD card &amp; DJI Pilot 2</h3>
                 <p>Use the <strong>SD card</strong> (?) button for step-by-step import: copy the KMZ to the card, insert into the controller, <strong>Flight Route</strong> → <strong>Import Route (KMZ/KML)</strong>. FAT32 is recommended if the card is not read reliably.</p>
@@ -164,13 +164,13 @@
         <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Transfer mission to SD card</h2>
+                <h2 class="modal-title">Transfer Mission to SD Card</h2>
                 <button class="modal-close" type="button" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <p>Copy your exported KMZ file onto an SD card and import it in DJI Pilot 2.</p>
                 <div id="fpRecceWorkflow" class="fp-recce-workflow">
-                    <h3>Manual Recce workflow</h3>
+                    <h3>Manual Recce Workflow</h3>
                     <ol class="fp-sd-steps">
                         <li>Click <strong>Export Recce KMZ</strong> and save <code>Recce_Mission.kmz</code> to your computer.</li>
                         <li>Copy the <code>.kmz</code> file onto an SD card (root or a folder such as <code>DJI_Missions</code>).</li>
@@ -181,7 +181,7 @@
                     </ol>
                 </div>
                 <div id="fpWaypointWorkflow" class="fp-waypoint-workflow hidden">
-                    <h3>Waypoint mission workflow</h3>
+                    <h3>Waypoint Mission Workflow</h3>
                     <ol class="fp-sd-steps">
                         <li>Click <strong>Export KMZ</strong> and save the file to your computer.</li>
                         <li>Copy the <code>.kmz</code> file onto an SD card (root or a folder such as <code>DJI_Missions</code>).</li>
@@ -242,6 +242,6 @@
     <script src="js/confirm-modal.js"></script>
     <script src="js/notam-pib.js?v=3"></script>
     <script src="js/notam.js?v=3"></script>
-    <script src="js/flight-planning.js?v=12"></script>
+    <script src="js/flight-planning.js?v=13"></script>
 </body>
 </html>

@@ -85,20 +85,20 @@ function buildAirplanesLiveUrl(query) {
 }
 
 async function fetchAdsbWithFailover(query) {
-  const primaryUrl = buildAirplanesLiveUrl(query);
+  const primaryUrl = buildAdsbLolUrl(query);
   let primary = await fetchAdsbUpstream(primaryUrl);
   if (!primary.ok && primary.status === 429) {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     primary = await fetchAdsbUpstream(primaryUrl);
   }
   if (primary.ok) {
-    return { response: primary, source: 'airplaneslive' };
+    return { response: primary, source: 'adsblol' };
   }
 
-  const fallbackUrl = buildAdsbLolUrl(query);
+  const fallbackUrl = buildAirplanesLiveUrl(query);
   const fallback = await fetchAdsbUpstream(fallbackUrl);
   if (fallback.ok) {
-    return { response: fallback, source: 'adsblol' };
+    return { response: fallback, source: 'airplaneslive' };
   }
 
   return {
@@ -175,7 +175,7 @@ async function handleAdsbApi(request) {
 
   const body = await upstream.text();
   const response = adsbJsonResponse(body, {
-    'X-AirPlan-Source': result.source || 'airplaneslive'
+    'X-AirPlan-Source': result.source || 'adsblol'
   });
   await cache.put(cacheRequest, response.clone());
   return response;

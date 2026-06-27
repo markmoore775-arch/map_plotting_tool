@@ -1,177 +1,33 @@
 /**
  * Flight Report: form serialization, GPS (HTTPS only), mailto + clipboard fallback, PDF via PdfTheme.
- * Page Theme toggle + PDF theme (Dark/Light) radios; two Clear Report buttons (title row + actions) share one confirmation modal.
+ * Multi-draft reports (localStorage index), report switcher, page theme, PDF theme radios.
+ * Clear Report empties the active report; Delete removes the active draft from the list.
  */
 (function () {
     'use strict';
 
     /** Max battery slots on the Flight Report form (cards 2–this many can be revealed). */
-    var FN_BATTERY_MAX = 10;
+    var FN_BATTERY_MAX = 99;
 
     /** Default max altitude / distance per sortie (editable); used when fields are blank. */
     var FN_BATTERY_DEFAULT_MAX_ALT_FT = '400';
     var FN_BATTERY_DEFAULT_MAX_DIST_M = '500';
 
-    /** Draft form fields: local only, same origin; cleared when user clears the form. */
+    /** Legacy single-draft key; migrated once into FN_REPORTS_STORAGE_KEY. */
     var FN_DRAFT_STORAGE_KEY = 'airplotFlightNotesDraft_v1';
+    /** Multi-report index: activeId + reports[id].draft payloads. */
+    var FN_REPORTS_STORAGE_KEY = 'airplotFlightNotesReports_v1';
+    var FN_REPORTS_MAX = 8;
     /** NOTAM filter checkboxes (Airspace tab); defaults favour drone-focused triage. */
     var FN_NOTAM_FILTER_STORAGE_KEY = 'airplotFlightNotesNotamFilters_v1';
-    var FN_DRAFT_FIELD_IDS = [
+    var FN_DRAFT_BASE_FIELD_IDS = [
         'fnDate',
         'fnTime',
         'fnLocationLabel',
         'fnLocation',
         'fnReference',
-        'fnDeconflictions',
-        'fnBattery1Uas',
-        'fnBattery1Name',
-        'fnBattery1Site',
-        'fnBattery1Voltage',
-        'fnBattery1MaxAltFt',
-        'fnBattery1MaxDistM',
-        'fnBattery1Rp1',
-        'fnBattery1Rp2',
-        'fnBattery1Launch',
-        'fnBattery1Land',
-        'fnBattery1FlightTime',
-        'fnBattery1AmberMin',
-        'fnBattery1RedMin',
-        'fnBattery1Alos',
-        'fnBattery2Uas',
-        'fnBattery2Name',
-        'fnBattery2Site',
-        'fnBattery2Voltage',
-        'fnBattery2MaxAltFt',
-        'fnBattery2MaxDistM',
-        'fnBattery2Rp1',
-        'fnBattery2Rp2',
-        'fnBattery2Launch',
-        'fnBattery2Land',
-        'fnBattery2FlightTime',
-        'fnBattery2AmberMin',
-        'fnBattery2RedMin',
-        'fnBattery2Alos',
-        'fnBattery3Uas',
-        'fnBattery3Name',
-        'fnBattery3Site',
-        'fnBattery3Voltage',
-        'fnBattery3MaxAltFt',
-        'fnBattery3MaxDistM',
-        'fnBattery3Rp1',
-        'fnBattery3Rp2',
-        'fnBattery3Launch',
-        'fnBattery3Land',
-        'fnBattery3FlightTime',
-        'fnBattery3AmberMin',
-        'fnBattery3RedMin',
-        'fnBattery3Alos',
-        'fnBattery4Uas',
-        'fnBattery4Name',
-        'fnBattery4Site',
-        'fnBattery4Voltage',
-        'fnBattery4MaxAltFt',
-        'fnBattery4MaxDistM',
-        'fnBattery4Rp1',
-        'fnBattery4Rp2',
-        'fnBattery4Launch',
-        'fnBattery4Land',
-        'fnBattery4FlightTime',
-        'fnBattery4AmberMin',
-        'fnBattery4RedMin',
-        'fnBattery4Alos',
-        'fnBattery5Uas',
-        'fnBattery5Name',
-        'fnBattery5Site',
-        'fnBattery5Voltage',
-        'fnBattery5MaxAltFt',
-        'fnBattery5MaxDistM',
-        'fnBattery5Rp1',
-        'fnBattery5Rp2',
-        'fnBattery5Launch',
-        'fnBattery5Land',
-        'fnBattery5FlightTime',
-        'fnBattery5AmberMin',
-        'fnBattery5RedMin',
-        'fnBattery5Alos',
-        'fnBattery6Uas',
-        'fnBattery6Name',
-        'fnBattery6Site',
-        'fnBattery6Voltage',
-        'fnBattery6MaxAltFt',
-        'fnBattery6MaxDistM',
-        'fnBattery6Rp1',
-        'fnBattery6Rp2',
-        'fnBattery6Launch',
-        'fnBattery6Land',
-        'fnBattery6FlightTime',
-        'fnBattery6AmberMin',
-        'fnBattery6RedMin',
-        'fnBattery6Alos',
-        'fnBattery7Uas',
-        'fnBattery7Name',
-        'fnBattery7Site',
-        'fnBattery7Voltage',
-        'fnBattery7MaxAltFt',
-        'fnBattery7MaxDistM',
-        'fnBattery7Rp1',
-        'fnBattery7Rp2',
-        'fnBattery7Launch',
-        'fnBattery7Land',
-        'fnBattery7FlightTime',
-        'fnBattery7AmberMin',
-        'fnBattery7RedMin',
-        'fnBattery7Alos',
-        'fnBattery8Uas',
-        'fnBattery8Name',
-        'fnBattery8Site',
-        'fnBattery8Voltage',
-        'fnBattery8MaxAltFt',
-        'fnBattery8MaxDistM',
-        'fnBattery8Rp1',
-        'fnBattery8Rp2',
-        'fnBattery8Launch',
-        'fnBattery8Land',
-        'fnBattery8FlightTime',
-        'fnBattery8AmberMin',
-        'fnBattery8RedMin',
-        'fnBattery8Alos',
-        'fnBattery9Uas',
-        'fnBattery9Name',
-        'fnBattery9Site',
-        'fnBattery9Voltage',
-        'fnBattery9MaxAltFt',
-        'fnBattery9MaxDistM',
-        'fnBattery9Rp1',
-        'fnBattery9Rp2',
-        'fnBattery9Launch',
-        'fnBattery9Land',
-        'fnBattery9FlightTime',
-        'fnBattery9AmberMin',
-        'fnBattery9RedMin',
-        'fnBattery9Alos',
-        'fnBattery10Uas',
-        'fnBattery10Name',
-        'fnBattery10Site',
-        'fnBattery10Voltage',
-        'fnBattery10MaxAltFt',
-        'fnBattery10MaxDistM',
-        'fnBattery10Rp1',
-        'fnBattery10Rp2',
-        'fnBattery10Launch',
-        'fnBattery10Land',
-        'fnBattery10FlightTime',
-        'fnBattery10AmberMin',
-        'fnBattery10RedMin',
-        'fnBattery10Alos',
-        'fnWeather',
-        'fnAirspaceRadiusKm',
-        'fnNotes'
+        'fnDeconflictions'
     ];
-
-    var fnDraftSaveTimer = null;
-
-    /** How many battery cards (1–FN_BATTERY_MAX) are shown; exported to email/PDF and saved in draft (v2). */
-    var fnVisibleBatteryCount = 1;
 
     var BATTERY_N_FIELD_SUFFIXES = [
         'Uas',
@@ -189,6 +45,32 @@
         'RedMin',
         'Alos'
     ];
+
+    function buildFnDraftFieldIds() {
+        var ids = FN_DRAFT_BASE_FIELD_IDS.slice();
+        var n;
+        var i;
+        for (n = 1; n <= FN_BATTERY_MAX; n++) {
+            for (i = 0; i < BATTERY_N_FIELD_SUFFIXES.length; i++) {
+                ids.push('fnBattery' + n + BATTERY_N_FIELD_SUFFIXES[i]);
+            }
+        }
+        ids.push('fnWeather', 'fnAirspaceRadiusKm', 'fnNotes');
+        return ids;
+    }
+
+    var FN_DRAFT_FIELD_IDS = buildFnDraftFieldIds();
+
+    var fnDraftSaveTimer = null;
+    var fnActiveReportId = null;
+    var fnReportsIndex = null;
+    var fnSwitchingReport = false;
+
+    /** How many battery cards (1–FN_BATTERY_MAX) are shown; exported to email/PDF and saved in draft (v2). */
+    var fnVisibleBatteryCount = 1;
+
+    /** Per-battery collapse state (keyed by battery index string). */
+    var fnBatteryCollapsed = {};
 
     function getVisibleBatteryCount() {
         return fnVisibleBatteryCount;
@@ -214,6 +96,309 @@
             if (batteryNHasAnyValue(n)) max = n;
         }
         return max;
+    }
+
+    function wrapBatteryCardCollapseStructure(card, n) {
+        if (!card || card.querySelector('.fn-battery-card-head')) return;
+        if (!card.id) card.id = 'fnBatteryCard' + n;
+
+        var title = card.querySelector('.fn-battery-title');
+        if (!title) return;
+
+        var body = document.createElement('div');
+        body.className = 'fn-battery-card-body';
+        body.id = 'fnBatteryCard' + n + 'Body';
+
+        var children = Array.prototype.slice.call(card.children);
+        children.forEach(function (child) {
+            if (child === title) return;
+            body.appendChild(child);
+        });
+
+        var head = document.createElement('div');
+        head.className = 'fn-battery-card-head';
+
+        var headMain = document.createElement('div');
+        headMain.className = 'fn-battery-card-head-main';
+
+        var summary = document.createElement('p');
+        summary.className = 'fn-battery-collapsed-summary';
+        summary.id = 'fnBattery' + n + 'CollapsedSummary';
+        summary.setAttribute('aria-hidden', 'true');
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'fn-btn fn-btn-secondary fn-battery-collapse-btn';
+        btn.setAttribute('data-battery-collapse', String(n));
+        btn.setAttribute('aria-expanded', 'true');
+        btn.setAttribute('aria-label', 'Collapse Battery ' + n);
+        btn.title = 'Collapse this battery record';
+        btn.textContent = 'Collapse';
+
+        headMain.appendChild(title);
+        headMain.appendChild(summary);
+        head.appendChild(headMain);
+        head.appendChild(btn);
+        card.insertBefore(head, card.firstChild);
+        card.appendChild(body);
+    }
+
+    function renumberBatteryCardRefs(root, fromN, toN) {
+        var from = 'fnBattery' + fromN;
+        var to = 'fnBattery' + toN;
+        var re = new RegExp(from, 'g');
+
+        function fixAttr(el, attr) {
+            var v = el.getAttribute(attr);
+            if (v && v.indexOf(from) !== -1) el.setAttribute(attr, v.replace(re, to));
+        }
+
+        if (root.id && root.id.indexOf(from) !== -1) root.id = root.id.replace(re, to);
+
+        var all = root.querySelectorAll('*');
+        var i;
+        for (i = 0; i < all.length; i++) {
+            var el = all[i];
+            if (el.id && el.id.indexOf(from) !== -1) el.id = el.id.replace(re, to);
+            if (el.name && el.name.indexOf(from) !== -1) el.name = el.name.replace(re, to);
+            ['for', 'data-launch-for', 'data-land-for', 'aria-describedby'].forEach(function (attr) {
+                fixAttr(el, attr);
+            });
+        }
+
+        var collapseBtn = root.querySelector('.fn-battery-collapse-btn');
+        if (collapseBtn) {
+            collapseBtn.setAttribute('data-battery-collapse', String(toN));
+            collapseBtn.setAttribute('aria-label', 'Collapse Battery ' + toN);
+        }
+
+        var title = root.querySelector('.fn-battery-title');
+        if (title) title.textContent = 'Battery ' + toN;
+
+        var body = root.querySelector('.fn-battery-card-body');
+        if (body) body.id = 'fnBatteryCard' + toN + 'Body';
+
+        var sum = root.querySelector('.fn-battery-collapsed-summary');
+        if (sum) sum.id = 'fnBattery' + toN + 'CollapsedSummary';
+    }
+
+    function clearBatteryCardInputValues(card) {
+        if (!card) return;
+        card.querySelectorAll('input, textarea').forEach(function (el) {
+            if (el.id && el.id.indexOf('FlightTime') !== -1) {
+                el.value = '';
+                return;
+            }
+            if (el.id && el.id.indexOf('MaxAltFt') !== -1) {
+                el.value = FN_BATTERY_DEFAULT_MAX_ALT_FT;
+                return;
+            }
+            if (el.id && el.id.indexOf('MaxDistM') !== -1) {
+                el.value = FN_BATTERY_DEFAULT_MAX_DIST_M;
+                return;
+            }
+            el.value = '';
+        });
+    }
+
+    function ensureBatteryCards() {
+        var grid = document.querySelector('.fn-battery-grid');
+        if (!grid) return;
+
+        var card1 = document.getElementById('fnBatteryCard1') || grid.querySelector('.fn-battery-card');
+        var card2 = document.getElementById('fnBatteryCard2');
+        if (!card1 || !card2) return;
+
+        if (!card1.id) card1.id = 'fnBatteryCard1';
+        wrapBatteryCardCollapseStructure(card1, 1);
+        wrapBatteryCardCollapseStructure(card2, 2);
+
+        var n;
+        for (n = 3; n <= FN_BATTERY_MAX; n++) {
+            if (document.getElementById('fnBatteryCard' + n)) continue;
+            var clone = card2.cloneNode(true);
+            clone.id = 'fnBatteryCard' + n;
+            clone.classList.add('fn-battery-card--extra');
+            clone.hidden = true;
+            clone.classList.remove('fn-battery-card--collapsed');
+            renumberBatteryCardRefs(clone, 2, n);
+            clearBatteryCardInputValues(clone);
+            grid.appendChild(clone);
+        }
+    }
+
+    function isBatteryCollapsed(n) {
+        return !!fnBatteryCollapsed[String(n)];
+    }
+
+    function updateBatteryCollapsedSummary(n) {
+        var sum = document.getElementById('fnBattery' + n + 'CollapsedSummary');
+        if (!sum) return;
+        var parts = [];
+        var uas = trimVal('fnBattery' + n + 'Uas');
+        var name = trimVal('fnBattery' + n + 'Name');
+        var launch = trimVal('fnBattery' + n + 'Launch');
+        var land = trimVal('fnBattery' + n + 'Land');
+        var ft = trimVal('fnBattery' + n + 'FlightTime');
+        if (uas) parts.push(uas);
+        if (name) parts.push(name);
+        if (launch || land) {
+            var timePart = (launch || '—') + '–' + (land || '—');
+            if (ft) timePart += ' (' + ft + ')';
+            parts.push(timePart);
+        } else if (ft) {
+            parts.push(ft);
+        }
+        sum.textContent = parts.length ? parts.join(' · ') : 'No details entered';
+    }
+
+    function setBatteryCollapsed(n, collapsed) {
+        var card = document.getElementById('fnBatteryCard' + n);
+        var btn = card && card.querySelector('[data-battery-collapse="' + n + '"]');
+        var summary = document.getElementById('fnBattery' + n + 'CollapsedSummary');
+        if (!card) return;
+
+        if (collapsed) {
+            fnBatteryCollapsed[String(n)] = true;
+            card.classList.add('fn-battery-card--collapsed');
+            if (btn) {
+                btn.textContent = 'Expand';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.setAttribute('aria-label', 'Expand Battery ' + n);
+                btn.title = 'Expand this battery record';
+            }
+            if (summary) {
+                updateBatteryCollapsedSummary(n);
+                summary.setAttribute('aria-hidden', 'false');
+            }
+        } else {
+            delete fnBatteryCollapsed[String(n)];
+            card.classList.remove('fn-battery-card--collapsed');
+            if (btn) {
+                btn.textContent = 'Collapse';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', 'Collapse Battery ' + n);
+                btn.title = 'Collapse this battery record';
+            }
+            if (summary) summary.setAttribute('aria-hidden', 'true');
+        }
+        syncBatteryBulkActionButtons();
+    }
+
+    function expandAllVisibleBatteries() {
+        var n;
+        for (n = 1; n <= fnVisibleBatteryCount; n++) {
+            setBatteryCollapsed(n, false);
+        }
+        scheduleFlightNotesDraftSave();
+    }
+
+    function collapseAllVisibleBatteries() {
+        var n;
+        for (n = 1; n <= fnVisibleBatteryCount; n++) {
+            setBatteryCollapsed(n, true);
+        }
+        scheduleFlightNotesDraftSave();
+    }
+
+    function syncBatteryBulkActionButtons() {
+        var wrap = document.getElementById('fnBatteryBulkActions');
+        if (!wrap) return;
+        wrap.hidden = fnVisibleBatteryCount < 2;
+    }
+
+    function applyCollapsedBatteriesFromDraft(collapsedMap) {
+        if (!collapsedMap || typeof collapsedMap !== 'object') return;
+        var key;
+        for (key in collapsedMap) {
+            if (!Object.prototype.hasOwnProperty.call(collapsedMap, key)) continue;
+            if (!collapsedMap[key]) continue;
+            var n = parseInt(key, 10);
+            if (n >= 1 && n <= FN_BATTERY_MAX) setBatteryCollapsed(n, true);
+        }
+    }
+
+    function collectCollapsedBatteriesForDraft() {
+        var collapsed = {};
+        var n;
+        for (n = 1; n <= fnVisibleBatteryCount; n++) {
+            if (fnBatteryCollapsed[String(n)]) collapsed[String(n)] = true;
+        }
+        return collapsed;
+    }
+
+    function resetAllBatteryCollapseState() {
+        fnBatteryCollapsed = {};
+        var n;
+        for (n = 1; n <= FN_BATTERY_MAX; n++) {
+            var card = document.getElementById('fnBatteryCard' + n);
+            if (!card) continue;
+            card.classList.remove('fn-battery-card--collapsed');
+            var btn = card.querySelector('[data-battery-collapse="' + n + '"]');
+            var summary = document.getElementById('fnBattery' + n + 'CollapsedSummary');
+            if (btn) {
+                btn.textContent = 'Collapse';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', 'Collapse Battery ' + n);
+                btn.title = 'Collapse this battery record';
+            }
+            if (summary) summary.setAttribute('aria-hidden', 'true');
+        }
+        syncBatteryBulkActionButtons();
+    }
+
+    function bindBatteryCardInteractions() {
+        var grid = document.querySelector('.fn-battery-grid');
+        if (!grid || grid.dataset.fnBatteryBound === '1') return;
+        grid.dataset.fnBatteryBound = '1';
+
+        grid.addEventListener('click', function (e) {
+            var collapseBtn = e.target.closest('[data-battery-collapse]');
+            if (collapseBtn) {
+                var cn = parseInt(collapseBtn.getAttribute('data-battery-collapse'), 10);
+                if (cn >= 1 && cn <= FN_BATTERY_MAX) {
+                    setBatteryCollapsed(cn, !isBatteryCollapsed(cn));
+                    scheduleFlightNotesDraftSave();
+                }
+                return;
+            }
+            var launchBtn = e.target.closest('[data-launch-for]');
+            if (launchBtn) {
+                var launchId = launchBtn.getAttribute('data-launch-for');
+                if (launchId) setTimeInputNow(launchId);
+                return;
+            }
+            var landBtn = e.target.closest('[data-land-for]');
+            if (landBtn) {
+                var landId = landBtn.getAttribute('data-land-for');
+                if (landId) setTimeInputNow(landId);
+            }
+        });
+
+        grid.addEventListener('input', function (e) {
+            var el = e.target;
+            if (!el.id || el.id.indexOf('fnBattery') !== 0) return;
+            var m = el.id.match(/^fnBattery(\d+)/);
+            if (!m) return;
+            var bn = parseInt(m[1], 10);
+            if (isBatteryCollapsed(bn)) updateBatteryCollapsedSummary(bn);
+            if (el.id.indexOf('Launch') !== -1 || el.id.indexOf('Land') !== -1) {
+                updateBatteryFlightTimeForIndex(bn);
+            }
+        });
+
+        grid.addEventListener('change', function (e) {
+            var el = e.target;
+            if (!el.id || el.id.indexOf('fnBattery') !== 0) return;
+            var m = el.id.match(/^fnBattery(\d+)/);
+            if (!m) return;
+            var bn = parseInt(m[1], 10);
+            if (isBatteryCollapsed(bn)) updateBatteryCollapsedSummary(bn);
+            if (el.id.indexOf('Launch') !== -1 || el.id.indexOf('Land') !== -1) {
+                updateBatteryFlightTimeForIndex(bn);
+                scheduleFlightNotesDraftSave();
+            }
+        });
     }
 
     function ensureBatteryLimitDefaults(n) {
@@ -244,6 +429,7 @@
             } else {
                 btn.hidden = false;
                 btn.textContent = 'Add Battery ' + (fnVisibleBatteryCount + 1);
+                btn.title = 'Show fields for the next battery (up to ' + FN_BATTERY_MAX + ')';
             }
         }
         var rmBtn = document.getElementById('fnRemoveLastBatteryBtn');
@@ -258,6 +444,7 @@
                 rmBtn.setAttribute('aria-label', 'Remove Battery ' + bn);
             }
         }
+        syncBatteryBulkActionButtons();
     }
 
     function clearBatteryNFields(n) {
@@ -290,28 +477,293 @@
         saveFlightNotesDraft();
     }
 
+    function generateReportId() {
+        return 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    }
+
+    function buildEmptyDraftPayload() {
+        var fields = {};
+        var i;
+        for (i = 0; i < FN_DRAFT_FIELD_IDS.length; i++) {
+            fields[FN_DRAFT_FIELD_IDS[i]] = '';
+        }
+        return { v: 2, fields: fields, visibleBatteryCount: 1 };
+    }
+
+    function buildDraftPayloadFromForm() {
+        var fields = {};
+        for (var i = 0; i < FN_DRAFT_FIELD_IDS.length; i++) {
+            var id = FN_DRAFT_FIELD_IDS[i];
+            var el = document.getElementById(id);
+            if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+                fields[id] = el.value || '';
+            }
+        }
+        var draftPayload = {
+            v: 2,
+            fields: fields,
+            visibleBatteryCount: fnVisibleBatteryCount
+        };
+        var extras = serializeExtraLocations();
+        if (extras.length) draftPayload.extraLocations = extras;
+        var airSiteSel = document.getElementById('fnAirspaceSiteSelect');
+        if (airSiteSel && airSiteSel.value && !airSiteSel.disabled) {
+            draftPayload.airspaceSiteId = airSiteSel.value;
+        }
+        var collapsedBatteries = collectCollapsedBatteriesForDraft();
+        if (Object.keys(collapsedBatteries).length) {
+            draftPayload.collapsedBatteries = collapsedBatteries;
+        }
+        return draftPayload;
+    }
+
+    /**
+     * Restores field values from a draft payload. Returns suggested visible battery count (1–FN_BATTERY_MAX).
+     */
+    function applyDraftPayloadToForm(data) {
+        var visibleHint = 1;
+        if (!data || !data.fields) return visibleHint;
+        if (data.v !== 1 && data.v !== 2) return visibleHint;
+        var id;
+        for (id in data.fields) {
+            if (!Object.prototype.hasOwnProperty.call(data.fields, id)) continue;
+            var el = document.getElementById(id);
+            if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+                el.value = data.fields[id];
+            }
+        }
+        var bnLegacy;
+        for (bnLegacy = 1; bnLegacy <= FN_BATTERY_MAX; bnLegacy++) {
+            var legacyKey = 'fnBattery' + bnLegacy;
+            if (!Object.prototype.hasOwnProperty.call(data.fields, legacyKey)) continue;
+            var legacyVal = data.fields[legacyKey];
+            if (legacyVal == null || !String(legacyVal).trim()) continue;
+            var nameLegacyEl = document.getElementById('fnBattery' + bnLegacy + 'Name');
+            if (nameLegacyEl && !String(nameLegacyEl.value || '').trim()) {
+                nameLegacyEl.value = String(legacyVal);
+            }
+        }
+        if (data.v === 2 && typeof data.visibleBatteryCount === 'number') {
+            visibleHint = Math.min(FN_BATTERY_MAX, Math.max(1, Math.round(data.visibleBatteryCount)));
+        } else {
+            visibleHint = deriveVisibleBatteryCountFromFields();
+        }
+        deserializeExtraLocations(data.extraLocations);
+        syncFnAirspaceSiteSelectOptions(data.airspaceSiteId);
+        return visibleHint;
+    }
+
+    function loadReportsIndexFromStorage() {
+        try {
+            var raw = localStorage.getItem(FN_REPORTS_STORAGE_KEY);
+            if (!raw) return null;
+            var data = JSON.parse(raw);
+            if (!data || data.v !== 1 || !data.reports || typeof data.reports !== 'object') return null;
+            if (!data.activeId || !data.reports[data.activeId]) return null;
+            return data;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function saveReportsIndex(index) {
+        try {
+            localStorage.setItem(FN_REPORTS_STORAGE_KEY, JSON.stringify(index));
+            fnReportsIndex = index;
+            setReportStorageStatus('');
+            return true;
+        } catch (e) {
+            var msg =
+                e && e.name === 'QuotaExceededError'
+                    ? 'Could not save reports: browser storage is full. Export or delete old reports.'
+                    : 'Could not save reports locally.';
+            setReportStorageStatus(msg, 'error');
+            return false;
+        }
+    }
+
+    function setReportStorageStatus(message, kind) {
+        var el = document.getElementById('fnReportStorageStatus');
+        if (!el) return;
+        el.textContent = message || '';
+        el.className = 'fn-report-storage-status' + (kind === 'error' ? ' fn-report-storage-status--error' : '');
+    }
+
+    function migrateLegacySingleDraft() {
+        try {
+            if (localStorage.getItem(FN_REPORTS_STORAGE_KEY)) return;
+            var raw = localStorage.getItem(FN_DRAFT_STORAGE_KEY);
+            if (!raw) return;
+            var legacyDraft = JSON.parse(raw);
+            if (!legacyDraft || !legacyDraft.fields) {
+                localStorage.removeItem(FN_DRAFT_STORAGE_KEY);
+                return;
+            }
+            var now = Date.now();
+            var id = 'r_migrated';
+            var index = {
+                v: 1,
+                activeId: id,
+                reports: {}
+            };
+            index.reports[id] = {
+                id: id,
+                createdAt: now,
+                updatedAt: now,
+                draft: legacyDraft
+            };
+            saveReportsIndex(index);
+            localStorage.removeItem(FN_DRAFT_STORAGE_KEY);
+        } catch (e) {
+            /* ignore migration errors */
+        }
+    }
+
+    function ensureReportsIndex() {
+        if (
+            fnReportsIndex &&
+            fnReportsIndex.reports &&
+            fnReportsIndex.activeId &&
+            fnReportsIndex.reports[fnReportsIndex.activeId]
+        ) {
+            fnActiveReportId = fnReportsIndex.activeId;
+            return fnReportsIndex;
+        }
+        migrateLegacySingleDraft();
+        var index = loadReportsIndexFromStorage();
+        if (index) {
+            fnReportsIndex = index;
+            fnActiveReportId = index.activeId;
+            return index;
+        }
+        var now = Date.now();
+        var id = generateReportId();
+        index = {
+            v: 1,
+            activeId: id,
+            reports: {}
+        };
+        index.reports[id] = {
+            id: id,
+            createdAt: now,
+            updatedAt: now,
+            draft: buildEmptyDraftPayload()
+        };
+        fnReportsIndex = index;
+        fnActiveReportId = id;
+        saveReportsIndex(index);
+        return index;
+    }
+
+    function getActiveReportEntry() {
+        var index = ensureReportsIndex();
+        return index.reports[fnActiveReportId] || null;
+    }
+
+    function deriveReportBaseTitle(draft) {
+        if (!draft || !draft.fields) return 'Untitled report';
+        var ref = String(draft.fields.fnReference || '').trim();
+        if (ref) return ref;
+        var loc = String(draft.fields.fnLocationLabel || '').trim();
+        if (loc) return loc;
+        var dateVal = String(draft.fields.fnDate || '').trim();
+        if (dateVal) return dateVal;
+        return 'Untitled report';
+    }
+
+    function formatReportShortDate(ts) {
+        try {
+            return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function buildReportTitleMap(index) {
+        var titles = {};
+        var baseCounts = {};
+        var id;
+        for (id in index.reports) {
+            if (!Object.prototype.hasOwnProperty.call(index.reports, id)) continue;
+            var base = deriveReportBaseTitle(index.reports[id].draft);
+            baseCounts[base] = (baseCounts[base] || 0) + 1;
+            titles[id] = base;
+        }
+        for (id in titles) {
+            if (!Object.prototype.hasOwnProperty.call(titles, id)) continue;
+            if (baseCounts[titles[id]] > 1) {
+                var entry = index.reports[id];
+                var suffix = formatReportShortDate(entry && entry.updatedAt ? entry.updatedAt : Date.now());
+                if (suffix) titles[id] = titles[id] + ' · ' + suffix;
+            }
+        }
+        return titles;
+    }
+
+    function syncReportActiveHint() {
+        var hint = document.getElementById('fnReportActiveHint');
+        if (!hint) return;
+        var index = ensureReportsIndex();
+        var titles = buildReportTitleMap(index);
+        var label = titles[fnActiveReportId] || 'Untitled report';
+        hint.textContent = 'PDF and email use the active report: ' + label + '.';
+    }
+
+    function syncNewReportButtonState() {
+        var btn = document.getElementById('fnNewReportBtn');
+        if (!btn) return;
+        var index = ensureReportsIndex();
+        var count = Object.keys(index.reports).length;
+        var atCap = count >= FN_REPORTS_MAX;
+        btn.disabled = atCap;
+        btn.title = atCap
+            ? 'Maximum ' + FN_REPORTS_MAX + ' reports. Delete one to create another.'
+            : 'Start a new blank report (current report stays saved)';
+    }
+
+    function renderReportPicker() {
+        var sel = document.getElementById('fnReportSelect');
+        if (!sel) return;
+        var index = ensureReportsIndex();
+        var titles = buildReportTitleMap(index);
+        var ids = Object.keys(index.reports);
+        ids.sort(function (a, b) {
+            return (index.reports[b].updatedAt || 0) - (index.reports[a].updatedAt || 0);
+        });
+        fnSwitchingReport = true;
+        sel.innerHTML = '';
+        var i;
+        for (i = 0; i < ids.length; i++) {
+            var rid = ids[i];
+            var opt = document.createElement('option');
+            opt.value = rid;
+            opt.textContent = titles[rid] || 'Untitled report';
+            if (rid === fnActiveReportId) opt.selected = true;
+            sel.appendChild(opt);
+        }
+        fnSwitchingReport = false;
+        syncReportActiveHint();
+        syncNewReportButtonState();
+    }
+
+    function flushFlightNotesDraftSave() {
+        if (fnDraftSaveTimer) {
+            clearTimeout(fnDraftSaveTimer);
+            fnDraftSaveTimer = null;
+        }
+        saveFlightNotesDraft();
+    }
+
     function saveFlightNotesDraft() {
         try {
-            var fields = {};
-            for (var i = 0; i < FN_DRAFT_FIELD_IDS.length; i++) {
-                var id = FN_DRAFT_FIELD_IDS[i];
-                var el = document.getElementById(id);
-                if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
-                    fields[id] = el.value || '';
-                }
-            }
-            var draftPayload = {
-                v: 2,
-                fields: fields,
-                visibleBatteryCount: fnVisibleBatteryCount
-            };
-            var extras = serializeExtraLocations();
-            if (extras.length) draftPayload.extraLocations = extras;
-            var airSiteSel = document.getElementById('fnAirspaceSiteSelect');
-            if (airSiteSel && airSiteSel.value && !airSiteSel.disabled) {
-                draftPayload.airspaceSiteId = airSiteSel.value;
-            }
-            localStorage.setItem(FN_DRAFT_STORAGE_KEY, JSON.stringify(draftPayload));
+            var index = ensureReportsIndex();
+            if (!fnActiveReportId || !index.reports[fnActiveReportId]) return;
+            var draftPayload = buildDraftPayloadFromForm();
+            var entry = index.reports[fnActiveReportId];
+            entry.draft = draftPayload;
+            entry.updatedAt = Date.now();
+            saveReportsIndex(index);
+            renderReportPicker();
         } catch (e) {}
     }
 
@@ -321,6 +773,162 @@
             fnDraftSaveTimer = null;
             saveFlightNotesDraft();
         }, 250);
+    }
+
+    function resetTransientReportUi() {
+        if (fnLocationPreviewTimer) {
+            clearTimeout(fnLocationPreviewTimer);
+            fnLocationPreviewTimer = null;
+        }
+        destroyFnAirspaceMaps();
+        fnLastNotams = null;
+        fnLastAirspace = null;
+        fnAirspaceDataLoaded = false;
+        var ac = document.getElementById('fnAirspaceContent');
+        if (ac) ac.innerHTML = '';
+        var al = document.getElementById('fnAirspaceLoading');
+        if (al) al.classList.add('hidden');
+        clearAllExtraLocationRows();
+        setExtraLocGlobalStatus('', '');
+        hideLocationResult();
+        setGpsStatus('', '');
+        clearWeatherFetchStatus();
+        var hintClear = document.getElementById('fnDateManualHint');
+        if (hintClear) {
+            hintClear.textContent = '';
+            hintClear.classList.add('hidden');
+        }
+        resetAllBatteryCollapseState();
+    }
+
+    function refreshFormAfterDraftLoad(visibleHint, collapsedMap) {
+        setVisibleBatteryCount(visibleHint);
+        resetAllBatteryCollapseState();
+        applyCollapsedBatteriesFromDraft(collapsedMap);
+        updateAllBatteryFlightTimes();
+        applyBatteryLimitDefaultsForVisible();
+        syncFnAirspaceIntroKm();
+        syncManualSelectsFromDateInput();
+        syncLocationPreviewFromField();
+        syncAllMissionSiteSelects();
+        autoResizeConditionsTextarea();
+        updateBatterySiteDatalist();
+        renderReportPicker();
+        syncReportActiveHint();
+    }
+
+    function createNewReport() {
+        var index = ensureReportsIndex();
+        if (Object.keys(index.reports).length >= FN_REPORTS_MAX) {
+            setReportStorageStatus(
+                'Maximum ' + FN_REPORTS_MAX + ' reports. Delete one to create another.',
+                'error'
+            );
+            return;
+        }
+        flushFlightNotesDraftSave();
+        var now = Date.now();
+        var id = generateReportId();
+        index.reports[id] = {
+            id: id,
+            createdAt: now,
+            updatedAt: now,
+            draft: buildEmptyDraftPayload()
+        };
+        fnActiveReportId = id;
+        index.activeId = id;
+        resetTransientReportUi();
+        var form = document.getElementById('flightReportForm');
+        if (form) form.reset();
+        initFnManualDateSelects();
+        applyDraftPayloadToForm(buildEmptyDraftPayload());
+        refreshFormAfterDraftLoad(1, null);
+        saveReportsIndex(index);
+    }
+
+    function switchToReport(id) {
+        if (!id || id === fnActiveReportId) return;
+        var index = ensureReportsIndex();
+        if (!index.reports[id]) return;
+        flushFlightNotesDraftSave();
+        fnActiveReportId = id;
+        index.activeId = id;
+        resetTransientReportUi();
+        var visibleHint = applyDraftPayloadToForm(index.reports[id].draft);
+        refreshFormAfterDraftLoad(visibleHint, index.reports[id].draft.collapsedBatteries);
+        saveReportsIndex(index);
+    }
+
+    function deleteReport(id) {
+        if (!id) return;
+        flushFlightNotesDraftSave();
+        var index = ensureReportsIndex();
+        if (!index.reports[id]) return;
+        var wasActive = id === fnActiveReportId;
+        delete index.reports[id];
+        var remaining = Object.keys(index.reports);
+        if (!remaining.length) {
+            fnReportsIndex = null;
+            fnActiveReportId = null;
+            try {
+                localStorage.removeItem(FN_REPORTS_STORAGE_KEY);
+            } catch (e) {}
+            createNewReport();
+            return;
+        }
+        if (wasActive) {
+            remaining.sort(function (a, b) {
+                return (index.reports[b].updatedAt || 0) - (index.reports[a].updatedAt || 0);
+            });
+            fnActiveReportId = remaining[0];
+            index.activeId = fnActiveReportId;
+            saveReportsIndex(index);
+            resetTransientReportUi();
+            var visibleHint = applyDraftPayloadToForm(index.reports[fnActiveReportId].draft);
+            refreshFormAfterDraftLoad(
+                visibleHint,
+                index.reports[fnActiveReportId].draft.collapsedBatteries
+            );
+        } else {
+            saveReportsIndex(index);
+            renderReportPicker();
+        }
+    }
+
+    function saveEmptyDraftForActiveReport() {
+        var index = ensureReportsIndex();
+        if (!fnActiveReportId || !index.reports[fnActiveReportId]) return;
+        index.reports[fnActiveReportId].draft = buildDraftPayloadFromForm();
+        index.reports[fnActiveReportId].updatedAt = Date.now();
+        saveReportsIndex(index);
+        renderReportPicker();
+    }
+
+    /**
+     * Restores active report from localStorage. Returns suggested visible battery count (1–FN_BATTERY_MAX).
+     */
+    function loadFlightNotesDraft() {
+        var visibleHint = 1;
+        try {
+            ensureReportsIndex();
+            var entry = getActiveReportEntry();
+            if (!entry || !entry.draft) return visibleHint;
+            visibleHint = applyDraftPayloadToForm(entry.draft);
+            return visibleHint;
+        } catch (e) {
+            return visibleHint;
+        }
+    }
+
+    function getActiveDraftCollapsedBatteries() {
+        var entry = getActiveReportEntry();
+        return entry && entry.draft && entry.draft.collapsedBatteries
+            ? entry.draft.collapsedBatteries
+            : null;
+    }
+
+    function clearFlightNotesDraftStorage() {
+        saveEmptyDraftForActiveReport();
     }
 
     function applyFnNotamFiltersFromStorage() {
@@ -356,55 +964,6 @@
                 })
             );
         } catch (e) { /* ignore */ }
-    }
-
-    /**
-     * Restores field values from localStorage. Returns suggested visible battery count (1–FN_BATTERY_MAX).
-     */
-    function loadFlightNotesDraft() {
-        var visibleHint = 1;
-        try {
-            var raw = localStorage.getItem(FN_DRAFT_STORAGE_KEY);
-            if (!raw) return visibleHint;
-            var data = JSON.parse(raw);
-            if (!data || !data.fields) return visibleHint;
-            if (data.v !== 1 && data.v !== 2) return visibleHint;
-            var id;
-            for (id in data.fields) {
-                if (!Object.prototype.hasOwnProperty.call(data.fields, id)) continue;
-                var el = document.getElementById(id);
-                if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
-                    el.value = data.fields[id];
-                }
-            }
-            var bnLegacy;
-            for (bnLegacy = 1; bnLegacy <= FN_BATTERY_MAX; bnLegacy++) {
-                var legacyKey = 'fnBattery' + bnLegacy;
-                if (!Object.prototype.hasOwnProperty.call(data.fields, legacyKey)) continue;
-                var legacyVal = data.fields[legacyKey];
-                if (legacyVal == null || !String(legacyVal).trim()) continue;
-                var nameLegacyEl = document.getElementById('fnBattery' + bnLegacy + 'Name');
-                if (nameLegacyEl && !String(nameLegacyEl.value || '').trim()) {
-                    nameLegacyEl.value = String(legacyVal);
-                }
-            }
-            if (data.v === 2 && typeof data.visibleBatteryCount === 'number') {
-                visibleHint = Math.min(FN_BATTERY_MAX, Math.max(1, Math.round(data.visibleBatteryCount)));
-            } else {
-                visibleHint = deriveVisibleBatteryCountFromFields();
-            }
-            deserializeExtraLocations(data.extraLocations);
-            syncFnAirspaceSiteSelectOptions(data.airspaceSiteId);
-            return visibleHint;
-        } catch (e) {
-            return visibleHint;
-        }
-    }
-
-    function clearFlightNotesDraftStorage() {
-        try {
-            localStorage.removeItem(FN_DRAFT_STORAGE_KEY);
-        } catch (e) {}
     }
 
     var MAILTO_BODY_MAX = 1800;
@@ -2270,6 +2829,7 @@
         var d = b - a;
         if (d < 0) d += 24 * 60;
         out.value = formatFlightDurationMins(d);
+        if (isBatteryCollapsed(n)) updateBatteryCollapsedSummary(n);
     }
 
     function updateAllBatteryFlightTimes() {
@@ -2284,8 +2844,11 @@
         var hh = String(now.getHours()).padStart(2, '0');
         var mm = String(now.getMinutes()).padStart(2, '0');
         el.value = hh + ':' + mm;
-        var bm = String(inputId).match(/^fnBattery(10|[1-9])(Launch|Land)$/);
-        if (bm) updateBatteryFlightTimeForIndex(parseInt(bm[1], 10));
+        var bm = String(inputId).match(/^fnBattery(\d+)(Launch|Land)$/);
+        if (bm) {
+            var idx = parseInt(bm[1], 10);
+            if (idx >= 1 && idx <= FN_BATTERY_MAX) updateBatteryFlightTimeForIndex(idx);
+        }
         saveFlightNotesDraft();
     }
 
@@ -2588,7 +3151,7 @@
         var i;
         for (i = 0; i < fnExtraLocationRows.length; i++) {
             if (fnExtraLocationRows[i].titleEl) {
-                fnExtraLocationRows[i].titleEl.textContent = 'Additional location ' + (i + 1);
+                fnExtraLocationRows[i].titleEl.textContent = 'Additional Location ' + (i + 1);
             }
         }
     }
@@ -2717,7 +3280,7 @@
 
         var titleEl = document.createElement('h4');
         titleEl.className = 'fn-extra-loc-title';
-        titleEl.textContent = 'Additional location ' + (fnExtraLocationRows.length + 1);
+        titleEl.textContent = 'Additional Location ' + (fnExtraLocationRows.length + 1);
 
         var head = document.createElement('div');
         head.className = 'fn-extra-loc-card-head';
@@ -2726,7 +3289,7 @@
         labelWrap.className = 'fn-field-grow';
         var labelLbl = document.createElement('label');
         labelLbl.className = 'fn-label';
-        labelLbl.textContent = 'Label (optional)';
+        labelLbl.textContent = 'Label (Optional)';
         var labelInput = document.createElement('input');
         labelInput.type = 'text';
         labelInput.className = 'fn-input';
@@ -2739,7 +3302,7 @@
         textWrap.className = 'fn-field-grow';
         var textLbl = document.createElement('label');
         textLbl.className = 'fn-label';
-        textLbl.textContent = 'Address or coordinates';
+        textLbl.textContent = 'Address & Coordinates';
         var textInput = document.createElement('input');
         textInput.type = 'text';
         textInput.className = 'fn-input';
@@ -2757,11 +3320,11 @@
         var searchBtn = document.createElement('button');
         searchBtn.type = 'button';
         searchBtn.className = 'fn-btn fn-btn-secondary';
-        searchBtn.textContent = 'Search location';
+        searchBtn.textContent = 'Search Location';
         var gpsBtn = document.createElement('button');
         gpsBtn.type = 'button';
         gpsBtn.className = 'fn-btn fn-btn-now';
-        gpsBtn.textContent = 'Use current GPS';
+        gpsBtn.textContent = 'Use Current GPS';
         var removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.className = 'fn-btn fn-btn-secondary';
@@ -3372,6 +3935,36 @@
         document.body.style.overflow = '';
     }
 
+    function openDeleteReportModal() {
+        var m = document.getElementById('fnDeleteReportModal');
+        if (!m) return;
+        var index = ensureReportsIndex();
+        var titles = buildReportTitleMap(index);
+        var label = titles[fnActiveReportId] || 'this report';
+        var body = document.getElementById('fnDeleteReportModalBody');
+        if (body) {
+            body.textContent =
+                'Delete "' +
+                label +
+                '" from this browser? This removes the saved draft entirely and cannot be undone.';
+        }
+        m.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        var confirmBtn = document.getElementById('fnDeleteReportModalConfirm');
+        if (confirmBtn) confirmBtn.focus();
+    }
+
+    function closeDeleteReportModal() {
+        var m = document.getElementById('fnDeleteReportModal');
+        if (m) m.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function confirmDeleteReportFromModal() {
+        closeDeleteReportModal();
+        deleteReport(fnActiveReportId);
+    }
+
     function openWeatherClearModal() {
         var m = document.getElementById('fnWeatherClearModal');
         if (!m) return;
@@ -3440,24 +4033,12 @@
     }
 
     function clearEntireForm() {
-        if (fnLocationPreviewTimer) {
-            clearTimeout(fnLocationPreviewTimer);
-            fnLocationPreviewTimer = null;
-        }
-        destroyFnAirspaceMaps();
-        fnLastNotams = null;
-        fnLastAirspace = null;
-        fnAirspaceDataLoaded = false;
-        var ac = document.getElementById('fnAirspaceContent');
-        if (ac) ac.innerHTML = '';
-        var al = document.getElementById('fnAirspaceLoading');
-        if (al) al.classList.add('hidden');
-        clearAllExtraLocationRows();
-        setExtraLocGlobalStatus('', '');
+        resetTransientReportUi();
         var form = document.getElementById('flightReportForm');
         if (form) form.reset();
         initFnManualDateSelects();
         setVisibleBatteryCount(1);
+        resetAllBatteryCollapseState();
         updateAllBatteryFlightTimes();
         syncFnAirspaceIntroKm();
         var ta = document.getElementById('fnWeather');
@@ -3465,20 +4046,13 @@
             ta.style.height = '';
             ta.style.overflowY = '';
         }
-        hideLocationResult();
         syncManualSelectsFromDateInput();
-        var hintClear = document.getElementById('fnDateManualHint');
-        if (hintClear) {
-            hintClear.textContent = '';
-            hintClear.classList.add('hidden');
-        }
-        setGpsStatus('', '');
-        clearWeatherFetchStatus();
-        clearFlightNotesDraftStorage();
+        saveEmptyDraftForActiveReport();
         closeClearModal();
         closeRemoveBatteryModal();
         autoResizeConditionsTextarea();
         updateBatterySiteDatalist();
+        syncReportActiveHint();
     }
 
     function init() {
@@ -3526,14 +4100,33 @@
         }
 
         initFnManualDateSelects();
+        ensureBatteryCards();
+        bindBatteryCardInteractions();
+        ensureReportsIndex();
         var initialBatterySlots = loadFlightNotesDraft();
         consumePendingWeatherFromFlightWeather();
-        setVisibleBatteryCount(initialBatterySlots);
-        updateAllBatteryFlightTimes();
-        applyBatteryLimitDefaultsForVisible();
-        syncFnAirspaceIntroKm();
-        syncManualSelectsFromDateInput();
-        syncLocationPreviewFromField();
+        refreshFormAfterDraftLoad(initialBatterySlots, getActiveDraftCollapsedBatteries());
+
+        var fnReportSelect = document.getElementById('fnReportSelect');
+        var fnNewReportBtn = document.getElementById('fnNewReportBtn');
+        var fnDeleteReportBtn = document.getElementById('fnDeleteReportBtn');
+        var deleteReportModal = document.getElementById('fnDeleteReportModal');
+        var deleteReportBackdrop = document.getElementById('fnDeleteReportModalBackdrop');
+        var deleteReportCancel = document.getElementById('fnDeleteReportModalCancel');
+        var deleteReportClose = document.getElementById('fnDeleteReportModalClose');
+        var deleteReportConfirm = document.getElementById('fnDeleteReportModalConfirm');
+        if (fnReportSelect) {
+            fnReportSelect.addEventListener('change', function () {
+                if (fnSwitchingReport) return;
+                switchToReport(fnReportSelect.value);
+            });
+        }
+        if (fnNewReportBtn) fnNewReportBtn.addEventListener('click', createNewReport);
+        if (fnDeleteReportBtn) fnDeleteReportBtn.addEventListener('click', openDeleteReportModal);
+        if (deleteReportCancel) deleteReportCancel.addEventListener('click', closeDeleteReportModal);
+        if (deleteReportClose) deleteReportClose.addEventListener('click', closeDeleteReportModal);
+        if (deleteReportBackdrop) deleteReportBackdrop.addEventListener('click', closeDeleteReportModal);
+        if (deleteReportConfirm) deleteReportConfirm.addEventListener('click', confirmDeleteReportFromModal);
 
         var fnAirspaceRefresh = document.getElementById('fnAirspaceRefreshBtn');
         var fnAirspaceRadius = document.getElementById('fnAirspaceRadiusKm');
@@ -3640,39 +4233,20 @@
         if (addBatteryBtn) {
             addBatteryBtn.addEventListener('click', function () {
                 if (fnVisibleBatteryCount >= FN_BATTERY_MAX) return;
+                var prev = fnVisibleBatteryCount;
                 setVisibleBatteryCount(fnVisibleBatteryCount + 1);
+                if (prev >= 1) setBatteryCollapsed(prev, true);
                 ensureBatteryLimitDefaults(fnVisibleBatteryCount);
                 scheduleFlightNotesDraftSave();
             });
         }
-        document.querySelectorAll('[data-launch-for]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var id = btn.getAttribute('data-launch-for');
-                if (id) setTimeInputNow(id);
-            });
-        });
-        document.querySelectorAll('[data-land-for]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var id = btn.getAttribute('data-land-for');
-                if (id) setTimeInputNow(id);
-            });
-        });
-        var bi;
-        for (bi = 1; bi <= FN_BATTERY_MAX; bi++) {
-            (function (n) {
-                ['Launch', 'Land'].forEach(function (suffix) {
-                    var tel = document.getElementById('fnBattery' + n + suffix);
-                    if (!tel) return;
-                    tel.addEventListener('change', function () {
-                        updateBatteryFlightTimeForIndex(n);
-                        scheduleFlightNotesDraftSave();
-                    });
-                    tel.addEventListener('input', function () {
-                        updateBatteryFlightTimeForIndex(n);
-                        scheduleFlightNotesDraftSave();
-                    });
-                });
-            })(bi);
+        var collapseAllBatteriesBtn = document.getElementById('fnCollapseAllBatteriesBtn');
+        if (collapseAllBatteriesBtn) {
+            collapseAllBatteriesBtn.addEventListener('click', collapseAllVisibleBatteries);
+        }
+        var expandAllBatteriesBtn = document.getElementById('fnExpandAllBatteriesBtn');
+        if (expandAllBatteriesBtn) {
+            expandAllBatteriesBtn.addEventListener('click', expandAllVisibleBatteries);
         }
         if (removeLastBatteryBtn) removeLastBatteryBtn.addEventListener('click', onRemoveLastBatteryClick);
         if (removeBatteryCancel) removeBatteryCancel.addEventListener('click', closeRemoveBatteryModal);
@@ -3717,6 +4291,10 @@
             }
             if (weatherClearModal && !weatherClearModal.classList.contains('hidden')) {
                 closeWeatherClearModal();
+                return;
+            }
+            if (deleteReportModal && !deleteReportModal.classList.contains('hidden')) {
+                closeDeleteReportModal();
                 return;
             }
             if (clearModal && !clearModal.classList.contains('hidden')) {

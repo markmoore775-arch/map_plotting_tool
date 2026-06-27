@@ -203,7 +203,7 @@
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="pointAlwaysDisplayElevation">
-                                Always display elevation on map
+                                Always Display Elevation on Map
                             </label>
                         </div>
 
@@ -219,9 +219,9 @@
                         <input type="text" id="pointSearch" class="point-search" placeholder="Search points...">
                         <label class="points-sort-label" for="pointSortSelect">Sort</label>
                         <select id="pointSortSelect" class="point-sort-select" title="Sort points list">
-                            <option value="default">Order added</option>
+                            <option value="default">Order Added</option>
                             <option value="name">Name</option>
-                            <option value="type">Icon type</option>
+                            <option value="type">Icon Type</option>
                         </select>
                     </div>
                     <div class="points-actions-row">
@@ -329,25 +329,25 @@
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="showLabels" checked>
-                                Show point labels on map
+                                Show Point Labels on Map
                             </label>
                         </div>
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="showMeasurements" checked>
-                                Show shape measurements on map
+                                Show Shape Measurements on Map
                             </label>
                         </div>
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="showShapeLabels" checked>
-                                Show shape labels on map
+                                Show Shape Labels on Map
                             </label>
                         </div>
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="showFlightPathDistance">
-                                Show flight path distance on map
+                                Show Flight Path Distance on Map
                             </label>
                         </div>
                         <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
@@ -379,7 +379,7 @@
         <div class="fn-top-bar-actions">
             <div class="map-top-actions">
                 <div id="helpPanel" class="help-panel">
-                    <button type="button" id="helpBtn" class="help-panel-btn" title="Open help" aria-label="Open help">Help</button>
+                    <button type="button" id="helpBtn" class="help-panel-btn" title="Open Help" aria-label="Open Help">Help</button>
                 </div>
             </div>
             <button type="button" class="fn-theme-toggle" id="fnThemeToggle" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
@@ -389,7 +389,7 @@
         </div>
     </header>
 
-    <button type="button" id="sidebarOpen" class="sidebar-open sidebar-open--planner-map" title="Open sidebar" aria-label="Open planning sidebar">&raquo;</button>
+    <button type="button" id="sidebarOpen" class="sidebar-open sidebar-open--planner-map" title="Open Sidebar" aria-label="Open planning sidebar">&raquo;</button>
 
     <!-- Map logo (always visible when using the app) -->
     <div class="map-logo" aria-hidden="true">
@@ -412,11 +412,11 @@
 
     <!-- Mobile: quick actions (sidebar has Plan / Draw / Project / Settings) -->
     <div id="mobileMapActions" class="mobile-map-actions">
-        <button type="button" id="mobileAddPointBtn" class="mobile-map-action-btn" title="Add point" aria-label="Add point">
+        <button type="button" id="mobileAddPointBtn" class="mobile-map-action-btn" title="Add Point" aria-label="Add Point">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
         </button>
         <button type="button" id="mobileHelpBtn" class="mobile-map-action-btn ap-mobile-help-btn" title="Help" aria-label="Help">Help</button>
-        <button type="button" id="mobileLocateBtn" class="mobile-map-action-btn hidden" title="Show my location" aria-label="Show my location">
+        <button type="button" id="mobileLocateBtn" class="mobile-map-action-btn hidden" title="Show My Location" aria-label="Show My Location">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h3"/><path d="M19 12h3"/><path d="M12 2v3"/><path d="M12 19v3"/><circle cx="12" cy="12" r="7"/></svg>
         </button>
     </div>
@@ -432,16 +432,16 @@
             <div class="modal-body">
                 <input type="hidden" id="editShapeId">
                 <div class="form-group hidden" id="editShapeTextGroup">
-                    <label for="editShapeText">Text on map</label>
+                    <label for="editShapeText">Text on Map</label>
                     <textarea id="editShapeText" rows="2" placeholder="Text displayed on the map..."></textarea>
                 </div>
                 <div class="form-group" id="editShapeLabelGroup">
                     <label for="editShapeLabel">Label</label>
                     <input type="text" id="editShapeLabel" placeholder="e.g. Max Flight Radius, No-Fly Zone...">
-                    <span class="form-hint" id="editShapeLabelHint">Shown in sidebar list</span>
+                    <span class="form-hint" id="editShapeLabelHint">Shown in Sidebar List</span>
                 </div>
                 <div class="form-group hidden" id="editShapeTextStyleGroup">
-                    <label for="editShapeTextPreset">Text style</label>
+                    <label for="editShapeTextPreset">Text Style</label>
                     <select id="editShapeTextPreset">
                         <option value="label">Label (dark pill, white text)</option>
                         <option value="highlight">Highlight (coloured text, no background)</option>
@@ -491,7 +491,7 @@
                 <div class="form-group hidden" id="editShapeFlightPathDistanceGroup">
                     <label>
                         <input type="checkbox" id="editShapeFlightPathShowDistance">
-                        Show distance on map
+                        Show Distance on Map
                     </label>
                 </div>
             </div>
@@ -587,7 +587,7 @@
                     <div class="form-group">
                         <label>
                             <input type="checkbox" id="hasHeaderRow" checked>
-                            First row is a header
+                            First Row Is a Header
                         </label>
                     </div>
                 </div>
@@ -622,7 +622,7 @@
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="gridOverlayVisible" checked>
-                        Show grid
+                        Show Grid
                     </label>
                 </div>
             </div>
@@ -700,7 +700,7 @@
         <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Live aircraft traffic</h2>
+                <h2>Live Aircraft Traffic</h2>
                 <button type="button" class="modal-close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
@@ -734,24 +734,24 @@
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p class="help-overview-lead"><strong>AirPlan</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail. The <strong>tool strip</strong> at the top (Planner, Weather, Airspace, Checklist, Flight Report) switches between those pages in one tap; tap <strong>AirPlan</strong> (logo and name, top-left) when you want the full home screen (training, knowledge, DJI planner, airspace chooser, etc.). <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
+                    <p class="help-overview-lead"><strong>AirPlan</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail. The <strong>Tool Strip</strong> at the top (Planner, Weather, Airspace, Checklist, Flight Report) switches between those pages in one tap; tap <strong>AirPlan</strong> (logo and name, top-left) when you want the full home screen (training, knowledge, DJI planner, airspace chooser, etc.). <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
                     <p class="help-overview-support">Questions, feedback, or bug reports: <a href="mailto:support@airplan.uk">support@airplan.uk</a></p>
                     <p class="help-overview-legal"><a href="privacy.html">Privacy Policy</a> · <a href="robots.txt">robots.txt</a> · <a href="sitemap.xml">Sitemap</a></p>
                     <div class="help-tool-grid">
                         <button type="button" class="help-tool-card" data-help-tab="points">
                             <span class="help-tool-card-title">Planning</span>
                             <span class="help-tool-card-desc">Points, shapes, UK airspace layers, import/export, and saved projects on the full-screen map.</span>
-                            <span class="help-tool-card-action">Open map help</span>
+                            <span class="help-tool-card-action">Open Map Help</span>
                         </button>
                         <button type="button" class="help-tool-card" data-help-tab="import">
-                            <span class="help-tool-card-title">Import &amp; export</span>
+                            <span class="help-tool-card-title">Import &amp; Export</span>
                             <span class="help-tool-card-desc">CSV, KML, screenshots, PowerPoint/PDF reports, project JSON, undo/redo.</span>
-                            <span class="help-tool-card-action">Open tab</span>
+                            <span class="help-tool-card-action">Open Tab</span>
                         </button>
                         <button type="button" class="help-tool-card" data-help-tab="map">
-                            <span class="help-tool-card-title">Map &amp; settings</span>
+                            <span class="help-tool-card-title">Map &amp; Settings</span>
                             <span class="help-tool-card-desc">Toolbar, layers, UK airspace key, sidebar, API keys, shortcuts.</span>
-                            <span class="help-tool-card-action">Open tab</span>
+                            <span class="help-tool-card-action">Open Tab</span>
                         </button>
                         <a href="weather.html" class="help-tool-card help-tool-card--link">
                             <span class="help-tool-card-title">Weather</span>
@@ -774,12 +774,12 @@
                             <span class="help-tool-card-action">Help: Report &amp; checklist</span>
                         </button>
                         <a href="checklist.html" class="help-tool-card help-tool-card--link">
-                            <span class="help-tool-card-title">Open checklist page</span>
+                            <span class="help-tool-card-title">Open Checklist Page</span>
                             <span class="help-tool-card-desc">Jump straight to the live checklist (same tab).</span>
                             <span class="help-tool-card-action">checklist.html →</span>
                         </a>
                         <a href="flight-notes.html" class="help-tool-card help-tool-card--link">
-                            <span class="help-tool-card-title">Open flight report page</span>
+                            <span class="help-tool-card-title">Open Flight Report Page</span>
                             <span class="help-tool-card-desc">Jump straight to the flight report form (same tab).</span>
                             <span class="help-tool-card-action">flight-notes.html →</span>
                         </a>
@@ -801,13 +801,13 @@
                     </div>
                     <p class="help-overview-hint">Install from the browser (&ldquo;Add to Home Screen&rdquo; or install app) for a standalone experience. On small screens, swipe the tab row if not all tabs fit; scroll the content below.</p>
                     <details class="help-overview-more">
-                        <summary>Save files, full tool summaries</summary>
+                        <summary>Save Files, Full Tool Summaries</summary>
                         <div class="help-overview-more-body">
                             <p><strong>Planning:</strong> Draw and edit on an interactive map: points (types, colours, icons, per-point notes), shapes (circle, rectangle, polygon, line, arrow, flight path, text, grid overlay), UK airspace (prohibited, restricted, danger, FRZ, NOTAM, RA(T)), layer switcher (e.g. OSM, topo, satellite, optional Mapbox or Ordnance Survey), geolocation, search, bulk import (CSV / paste), export (CSV, KML, map screenshot, branded PowerPoint and PDF), save/load project (JSON), undo and redo, Flight Overview and distance on flight paths, and optional elevation (Mapbox token).</p>
                             <p><strong>Weather:</strong> Tap the map to select a location, pick a forecast model (for example ECMWF IFS, GFS, UK Met Office, GEM Canada), and fetch for &ldquo;now&rdquo; or a chosen time. Reports include summary, 12-hour forecast, wind at 10&nbsp;m and 120&nbsp;m AGL, METAR/TAF (decoded or raw), an <strong>Airspace</strong> tab (NOTAMs and UK zones for a <strong>search radius</strong> you set, with small maps per item), and export to <strong>PowerPoint</strong> or <strong>PDF</strong> with a <strong>Dark</strong> or <strong>Light</strong> export theme (default Light). Exports use that radius for NOTAM and airspace content; PowerPoint includes a small map per NOTAM and per zone plus an overview; PDF adds the same per-item maps in a map-and-details table plus an overview map.</p>
                             <p><strong>Airspace:</strong> From the welcome screen, <strong>Airspace</strong> can open a chooser: <a href="airspace.html">AirPlan Airspace</a> (full-screen map, <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a> live JSON; <strong>red</strong> aircraft icons by altitude band; <strong>altitude (ft)</strong> beside tracks; optional <strong>OGN</strong> (FLARM-class) traffic in <strong>cyan</strong> from the Open Glider Network; optional <strong>approx. AGL</strong> with a Mapbox token in <code>js/config.js</code>; session trails; tap for detail; auto-refresh pauses while details are open) or <a href="airspace-adsbx.html">ADS-B Exchange</a> (embedded third-party globe for testing). Not for separation or compliance: situational awareness only.</p>
-                            <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send by email</strong>. Your draft is saved in this browser until you use <strong>Clear Report</strong> (beside the page title or at the bottom; both ask for confirmation), or clear site data. Use the header <strong>tool strip</strong> to open Weather, Airspace, Checklist, or Planner without returning to the welcome screen.</p>
-                            <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send by email</strong>, <strong>Export to PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. The header <strong>tool strip</strong> switches to Flight Report, Planner, Weather, or Airspace without going home.</p>
+                            <p><strong>Flight Report:</strong> Capture when and where (address or coordinates, <strong>Use Current GPS</strong> on HTTPS with optional mini-map and postcode), mission details (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> into the form (Open-Meteo), an <strong>Airspace</strong> section (NOTAMs and UK zones near your coordinates with small maps), free-text notes, <strong>Theme</strong> (Dark / Light) for the page, <strong>PDF Theme</strong> (Dark / Light, default Light) for exported PDFs, <strong>Export PDF</strong>, and <strong>Send By Email</strong>. Several in-progress reports can be saved in this browser via the <strong>Reports</strong> menu; <strong>Clear Fields</strong> empties the current one. Use the header <strong>Tool Strip</strong> to open Weather, Airspace, Checklist, or Planner without returning to the welcome screen.</p>
+                            <p><strong>Checklist:</strong> The <strong>M4T / TD</strong> page runs a multi-section checklist (pre-flight, take-off, landing, post-flight) with checkboxes, per-section progress, optional note fields for key settings, <strong>Reset All</strong> (with confirmation), <strong>Send By Email</strong>, <strong>Export To PDF</strong> (print), and an exported timestamp. State is stored locally in your browser so you can switch to Flight Report or other tools and come back. The header <strong>Tool Strip</strong> switches to Flight Report, Planner, Weather, or Airspace without going home.</p>
                             <p><strong>Save files:</strong> Planning <strong>Save Project</strong> / <strong>Load Project</strong> JSON uses the same format as v2; older project files still load.</p>
                         </div>
                     </details>
@@ -837,7 +837,7 @@
                     </section>
                     <section class="help-section" id="help-points-elevation">
                         <h3>Elevation</h3>
-                        <p>Points can display elevation (metres AMSL) when a Mapbox token is configured. Use the <strong>Always display elevation on map</strong> checkbox when adding or editing a point to show elevation in the quick-edit popup and point list.</p>
+                        <p>Points can display elevation (metres AMSL) when a Mapbox token is configured. Use the <strong>Always Display Elevation on Map</strong> checkbox when adding or editing a point to show elevation in the quick-edit popup and point list.</p>
                     </section>
                 </div>
                 <div class="tab-panel" id="help-tab-shapes">
@@ -848,7 +848,7 @@
                         <a href="#help-shapes-block-flight">Flight paths</a>
                     </nav>
                     <details class="help-subsection" id="help-shapes-block-draw" open>
-                        <summary>Drawing shapes &amp; text</summary>
+                        <summary>Drawing Shapes &amp; Text</summary>
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-shapes-draw">
                                 <h3>Drawing Shapes</h3>
@@ -865,12 +865,12 @@
                             </section>
                             <section class="help-section" id="help-shapes-text">
                                 <h3>Text on the map</h3>
-                                <p>For text shapes, the edit modal has <strong>Text on map</strong> (what is drawn), an optional <strong>Label</strong> for the sidebar list, and <strong>Text style</strong>: <em>Label</em> (dark pill, white text), <em>Highlight</em> (coloured text, no background), or <em>Custom</em> with your own text and background colours. You can set <strong>font size</strong> (px) for readability.</p>
+                                <p>For text shapes, the edit modal has <strong>Text on Map</strong> (what is drawn), an optional <strong>Label</strong> for the sidebar list, and <strong>Text Style</strong>: <em>Label</em> (dark pill, white text), <em>Highlight</em> (coloured text, no background), or <em>Custom</em> with your own text and background colours. You can set <strong>font size</strong> (px) for readability.</p>
                             </section>
                         </div>
                     </details>
                     <details class="help-subsection" id="help-shapes-block-edit" open>
-                        <summary>Editing &amp; copy / paste</summary>
+                        <summary>Editing &amp; Copy / Paste</summary>
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-shapes-editing">
                                 <h3>Editing Shapes</h3>
@@ -883,7 +883,7 @@
                         </div>
                     </details>
                     <details class="help-subsection" id="help-shapes-block-grid" open>
-                        <summary>Grid overlay &amp; drawing style</summary>
+                        <summary>Grid Overlay &amp; Drawing Style</summary>
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-shapes-grid">
                                 <h3>Grid Overlay</h3>
@@ -896,15 +896,15 @@
                         </div>
                     </details>
                     <details class="help-subsection" id="help-shapes-block-flight" open>
-                        <summary>Flight overview &amp; distance</summary>
+                        <summary>Flight Overview &amp; Distance</summary>
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-shapes-overview">
                                 <h3>Flight Overview</h3>
-                                <p>For flight paths and lines, use <strong>Flight Overview</strong> to see altitude statistics. Click the altitude icon (▲) in the sidebar next to a flight path or line, or use the <strong>Flight Overview</strong> button when editing a shape. You can also right-click the path and choose Flight Overview, or tap the path and use <strong>Delete route</strong> in the popup. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. Use <strong>Delete route</strong> in the modal footer to remove the path (with confirmation). For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>. On touch devices, long-press on a shape opens the same context menu as right-click, including <strong>Delete Shape</strong>.</p>
+                                <p>For flight paths and lines, use <strong>Flight Overview</strong> to see altitude statistics. Click the altitude icon (▲) in the sidebar next to a flight path or line, or use the <strong>Flight Overview</strong> button when editing a shape. You can also right-click the path and choose Flight Overview, or tap the path and use <strong>Delete Route</strong> in the popup. A modal shows start and end altitude, highest and lowest points, total variation, net change, total gain and loss, and average change per segment. A waypoint table lists each point with its coordinates, altitude (metres AMSL), and change from the previous point. Use <strong>Delete Route</strong> in the modal footer to remove the path (with confirmation). For lines, start and end points are used. Elevation data requires a Mapbox token in <code>js/config.js</code>. On touch devices, long-press on a shape opens the same context menu as right-click, including <strong>Delete Shape</strong>.</p>
                             </section>
                             <section class="help-section" id="help-shapes-distance">
                                 <h3>Flight Path Distance</h3>
-                                <p>Flight paths can show total distance on the map. Use the <strong>Show distance on map</strong> checkbox when editing a flight path, or enable <strong>Show flight path distance on map</strong> in Settings to apply to all flight paths by default.</p>
+                                <p>Flight paths can show total distance on the map. Use the <strong>Show Distance on Map</strong> checkbox when editing a flight path, or enable <strong>Show Flight Path Distance on Map</strong> in Settings to apply to all flight paths by default.</p>
                             </section>
                         </div>
                     </details>
@@ -923,7 +923,7 @@
                         <p>Save your entire project (points, shapes, settings) as a JSON file. Load it later to restore your work.</p>
                     </section>
                     <section class="help-section" id="help-import-undo">
-                        <h3>Undo &amp; redo</h3>
+                        <h3>Undo &amp; Redo</h3>
                         <p>Use <strong>Undo</strong> in the sidebar or map toolbar, or <strong>Ctrl+Z</strong> (Cmd+Z on Mac), to revert the last change. Use <strong>Redo</strong>, or <strong>Ctrl+Y</strong>, <strong>Ctrl+Shift+Z</strong> (Cmd+Shift+Z on Mac), to reapply a change you undid. Starting a new edit clears the redo history.</p>
                     </section>
                 </div>
@@ -935,7 +935,7 @@
                         <a href="#help-map-block-settings">Settings &amp; keys</a>
                     </nav>
                     <details class="help-subsection" id="help-map-block-toolbar" open>
-                        <summary>Toolbar, search &amp; geolocation</summary>
+                        <summary>Toolbar, Search &amp; Geolocation</summary>
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-toolbar">
                                 <h3>Map Toolbar</h3>
@@ -952,7 +952,7 @@
                         </div>
                     </details>
                     <details class="help-subsection" id="help-map-block-layers" open>
-                        <summary>Map layers &amp; UK airspace</summary>
+                        <summary>Map Layers &amp; UK Airspace</summary>
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-layers">
                                 <h3>Map Layers</h3>
@@ -960,7 +960,7 @@
                             </section>
                             <section class="help-section" id="help-map-airspace">
                                 <h3>UK Airspace</h3>
-                                <p>The airspace key (bottom-right) shows all restriction types. Use <strong>Select all</strong> to show or hide all types, or tick individual types. Click the collapse button (▼) to minimise the panel.</p>
+                                <p>The airspace key (bottom-right) shows all restriction types. Use <strong>Select All</strong> to show or hide all types, or tick individual types. Click the collapse button (▼) to minimise the panel.</p>
                                 <ul>
                                     <li><strong>Prohibited</strong> - No flying permitted</li>
                                     <li><strong>Restricted</strong> - Flying limited under certain conditions</li>
@@ -975,7 +975,7 @@
                         </div>
                     </details>
                     <details class="help-subsection" id="help-map-block-ui" open>
-                        <summary>Sidebar, footer &amp; small screens</summary>
+                        <summary>Sidebar, Footer &amp; Small Screens</summary>
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-sidebar">
                                 <h3>Sidebar &amp; footer</h3>
@@ -983,12 +983,12 @@
                             </section>
                             <section class="help-section" id="help-map-mobile">
                                 <h3>Small screens</h3>
-                                <p>On narrow viewports the sidebar opens as a sheet; use <strong>»</strong> below the top bar (left of the map) to open it again after you collapse it. <strong>AirPlan</strong> (logo and name in the top bar - same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>tool strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
+                                <p>On narrow viewports the sidebar opens as a sheet; use <strong>»</strong> below the top bar (left of the map) to open it again after you collapse it. <strong>AirPlan</strong> (logo and name in the top bar - same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>Tool Strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
                             </section>
                         </div>
                     </details>
                     <details class="help-subsection" id="help-map-block-settings" open>
-                        <summary>Settings &amp; keyboard shortcuts</summary>
+                        <summary>Settings &amp; Keyboard Shortcuts</summary>
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-settings">
                                 <h3>Settings</h3>
@@ -1004,20 +1004,20 @@
                 <div class="tab-panel" id="help-tab-report-checklist">
                     <section class="help-section" id="help-rc-report">
                         <h3>Flight Report</h3>
-                        <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use current GPS</strong> on HTTPS), mission fields (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send by email</strong>.</p>
-                        <p><strong>Local draft:</strong> What you type is saved in this browser until you use <strong>Clear Report</strong> (beside the page title or at the bottom; both ask for confirmation), or clear site data. Nothing is sent to AirPlan servers.</p>
-                        <p><strong>Switch tools:</strong> On Flight Report, the header <strong>tool strip</strong> opens Planner, Weather, Airspace, Checklist, or stays on Flight Report in the same tab without returning to the welcome screen.</p>
+                        <p>Open <strong>Flight Report</strong> from the welcome screen or via <a href="flight-notes.html">flight-notes.html</a>. Record date and time, location (search with postcode or address, or <strong>Use Current GPS</strong> on HTTPS), mission fields (reference, deconflictions, remote pilots, UAS), up to four battery entries, optional <strong>Fetch Weather Report</strong> (Open-Meteo) into the Conditions field, NOTAMs and UK zones near your coordinates (<strong>Airspace</strong> section with small maps), and free-text notes. <strong>Theme</strong> (top bar) sets Dark or Light for the page; <strong>PDF Theme</strong> next to <strong>Export PDF</strong> sets Dark or Light for the PDF only (default Light). Export with <strong>Export PDF</strong> or <strong>Send By Email</strong>.</p>
+                        <p><strong>Local drafts:</strong> What you type is saved in this browser. Use the <strong>Reports</strong> menu to keep several in-progress reports and switch between them. <strong>Clear Fields</strong> empties the current report; <strong>Delete Report</strong> removes it from your saved list. Nothing is sent to AirPlan servers.</p>
+                        <p><strong>Switch tools:</strong> On Flight Report, the header <strong>Tool Strip</strong> opens Planner, Weather, Airspace, Checklist, or stays on Flight Report in the same tab without returning to the welcome screen.</p>
                     </section>
                     <section class="help-section" id="help-rc-checklist">
                         <h3>Checklist (M4T / TD)</h3>
-                        <p>Open <strong>Checklist</strong> from the welcome screen or via <a href="checklist.html">checklist.html</a>. The page lists pre-flight, take-off, landing, and post-flight sections with checkboxes, overall and per-section progress, <strong>Mark all complete</strong> per section, and optional short notes beside selected items (e.g. max altitude and max flight distance). Use <strong>Reset All</strong> to clear everything; confirmation uses the same modal style as elsewhere in AirPlan.</p>
-                        <p><strong>Exports:</strong> <strong>Send by email</strong> builds a plain-text summary (mailto opens your mail app; long text may copy to the clipboard first). <strong>Export to PDF</strong> uses the browser print dialog (save as PDF). Both include an <strong>exported</strong> date and time. A duplicate progress and action bar appears at the bottom of the page so you do not need to scroll back to the top to reset or export.</p>
+                        <p>Open <strong>Checklist</strong> from the welcome screen or via <a href="checklist.html">checklist.html</a>. The page lists pre-flight, take-off, landing, and post-flight sections with checkboxes, overall and per-section progress, <strong>Mark All Complete</strong> per section, and optional short notes beside selected items (e.g. max altitude and max flight distance). Use <strong>Reset All</strong> to clear everything; confirmation uses the same modal style as elsewhere in AirPlan.</p>
+                        <p><strong>Exports:</strong> <strong>Send By Email</strong> builds a plain-text summary (mailto opens your mail app; long text may copy to the clipboard first). <strong>Export To PDF</strong> uses the browser print dialog (save as PDF). Both include an <strong>exported</strong> date and time. A duplicate progress and action bar appears at the bottom of the page so you do not need to scroll back to the top to reset or export.</p>
                         <p><strong>Local state:</strong> Checklist progress and notes are stored in this browser (not on our servers) until you reset or clear site data.</p>
-                        <p><strong>Switch tools:</strong> On the checklist page, the header <strong>tool strip</strong> opens Flight Report, Planner, Weather, or Airspace without going home.</p>
+                        <p><strong>Switch tools:</strong> On the checklist page, the header <strong>Tool Strip</strong> opens Flight Report, Planner, Weather, or Airspace without going home.</p>
                     </section>
                     <section class="help-section" id="help-rc-welcome">
                         <h3>Welcome screen</h3>
-                        <p>From any tool, <strong>AirPlan</strong> (logo and name, top-left) returns to the AirPlan welcome screen for the full launcher (including training, knowledge, DJI planner, and the airspace chooser). Use the <strong>tool strip</strong> when you only need to hop between the five main tools.</p>
+                        <p>From any tool, <strong>AirPlan</strong> (logo and name, top-left) returns to the AirPlan welcome screen for the full launcher (including training, knowledge, DJI planner, and the airspace chooser). Use the <strong>Tool Strip</strong> when you only need to hop between the five main tools.</p>
                     </section>
                 </div>
                 <div class="tab-panel" id="help-tab-references">
@@ -1035,7 +1035,7 @@
                                 <li><strong>UK NOTAM</strong> - <a href="https://jonty.github.io/uk-notam-archive/" target="_blank" rel="noopener">UK NOTAM Archive</a> (NATS AIS Contingency PIB, hourly updated)</li>
                                 <li><strong>RA(T) Airspace</strong> - <a href="https://airspace.bgaladder.net/" target="_blank" rel="noopener">BGA Airspace Service</a> (requires username/password)</li>
                                 <li><strong>Open-Meteo</strong> - <a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a> (forecast data for the <a href="weather.html">Weather</a> page and optional fetch in Flight Report)</li>
-                                <li><strong>ADSB.lol</strong> - <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">api.adsb.lol</a> (live ADS-B JSON for the <a href="airspace.html">Airspace</a> page)</li>
+                                <li><strong>ADSB.lol</strong> - <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">api.adsb.lol</a> (live ADS-B JSON for the <a href="airspace.html">Airspace</a> page; <a href="https://airplanes.live/api-guide/" target="_blank" rel="noopener">airplanes.live</a> fallback)</li>
                                 <li><strong>Open Glider Network (OGN)</strong> - <a href="https://www.glidernet.org/" target="_blank" rel="noopener">glidernet.org</a> (optional FLARM-class live feed on the <a href="airspace.html">Airspace</a> page)</li>
                             </ul>
                         </section>
@@ -1138,7 +1138,7 @@
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="editPointAlwaysDisplayElevation">
-                        Always display elevation on map
+                        Always Display Elevation on Map
                     </label>
                 </div>
             </div>
@@ -1191,7 +1191,7 @@
 
     <!-- Map Point Type Picker (shown after Drop Point from context menu) -->
     <div id="mapPointTypePicker" class="shape-context-menu map-point-type-picker hidden">
-        <div class="ctx-picker-title">Choose point type</div>
+        <div class="ctx-picker-title">Choose Point Type</div>
         <div id="mapPointTypePickerOptions" class="ctx-picker-options"></div>
     </div>
 
@@ -1246,7 +1246,7 @@
             <div class="modal-header">
                 <h2>Flight Overview</h2>
                 <div class="fo-header-actions">
-                    <label class="fo-theme-toggle" title="Light theme (better for copy/paste)">
+                    <label class="fo-theme-toggle" title="Light Theme (better for copy/paste)">
                         <input type="checkbox" id="foLightThemeToggle">
                         <span class="fo-theme-toggle-label">&#9788; Light</span>
                     </label>
@@ -1273,7 +1273,7 @@
                         </div>
                         <div class="fo-agl-controls">
                             <div class="fo-agl-field">
-                                <label for="foSampleInterval">Sample interval (m)</label>
+                                <label for="foSampleInterval">Sample Interval (m)</label>
                                 <input type="number" id="foSampleInterval" value="20" min="5" max="500" step="5">
                             </div>
                             <div class="fo-agl-field">
@@ -1283,23 +1283,23 @@
                             <button class="btn btn-secondary btn-sm" id="foRefreshChart">Refresh</button>
                         </div>
                         <div class="fo-legend">
-                            <span class="fo-legend-item"><span class="fo-legend-swatch fo-swatch-terrain"></span>Ground elevation</span>
-                            <span class="fo-legend-item"><span class="fo-legend-swatch fo-swatch-ceiling"></span>AGL ceiling</span>
+                            <span class="fo-legend-item"><span class="fo-legend-swatch fo-swatch-terrain"></span>Ground Elevation</span>
+                            <span class="fo-legend-item"><span class="fo-legend-swatch fo-swatch-ceiling"></span>AGL Ceiling</span>
                         </div>
                     </div>
                     <div class="flight-overview-summary">
                         <h3>Summary</h3>
                         <div class="flight-overview-stats">
                             <div class="flight-stat">
-                                <span class="flight-stat-label">Flight length</span>
+                                <span class="flight-stat-label">Flight Length</span>
                                 <span class="flight-stat-value" id="foFlightLength">-</span>
                             </div>
                             <div class="flight-stat">
-                                <span class="flight-stat-label">Start altitude</span>
+                                <span class="flight-stat-label">Start Altitude</span>
                                 <span class="flight-stat-value" id="foStartAlt">-</span>
                             </div>
                             <div class="flight-stat">
-                                <span class="flight-stat-label">End altitude</span>
+                                <span class="flight-stat-label">End Altitude</span>
                                 <span class="flight-stat-value" id="foEndAlt">-</span>
                             </div>
                             <div class="flight-stat">
@@ -1311,23 +1311,23 @@
                                 <span class="flight-stat-value" id="foLowest">-</span>
                             </div>
                             <div class="flight-stat">
-                                <span class="flight-stat-label">Total variation</span>
+                                <span class="flight-stat-label">Total Variation</span>
                                 <span class="flight-stat-value" id="foVariation">-</span>
                             </div>
                             <div class="flight-stat">
-                                <span class="flight-stat-label">Net change</span>
+                                <span class="flight-stat-label">Net Change</span>
                                 <span class="flight-stat-value" id="foNetChange">-</span>
                             </div>
                             <div class="flight-stat">
-                                <span class="flight-stat-label">Total gain</span>
+                                <span class="flight-stat-label">Total Gain</span>
                                 <span class="flight-stat-value" id="foTotalGain">-</span>
                             </div>
                             <div class="flight-stat">
-                                <span class="flight-stat-label">Total loss</span>
+                                <span class="flight-stat-label">Total Loss</span>
                                 <span class="flight-stat-value" id="foTotalLoss">-</span>
                             </div>
                             <div class="flight-stat">
-                                <span class="flight-stat-label">Avg change per segment</span>
+                                <span class="flight-stat-label">Avg Change per Segment</span>
                                 <span class="flight-stat-value" id="foAvgChange">-</span>
                             </div>
                         </div>
@@ -1353,7 +1353,7 @@
                 </div>
             </div>
             <div class="modal-footer flight-overview-footer">
-                <button type="button" class="btn btn-danger" id="foDeleteFlightBtn">Delete route</button>
+                <button type="button" class="btn btn-danger" id="foDeleteFlightBtn">Delete Route</button>
                 <button class="btn btn-primary" id="foCopyBtn">&#128203; Copy to Clipboard</button>
                 <button class="btn btn-secondary modal-cancel">Close</button>
             </div>
@@ -1418,18 +1418,18 @@
     <script src="js/config.js"></script>
     <script src="js/confirm-modal.js"></script>
     <script src="js/grid.js"></script>
-    <script src="js/uk-airspace-layers.js?v=6"></script>
+    <script src="js/uk-airspace-layers.js?v=8"></script>
     <script src="js/notam-pib.js?v=3"></script>
     <script src="js/notam.js?v=3"></script>
     <script src="js/rat.js"></script>
     <script src="js/undo.js"></script>
     <script src="js/elevation.js"></script>
     <script src="js/converters.js"></script>
-    <script src="js/drawings.js"></script>
+    <script src="js/drawings.js?v=2"></script>
     <script src="js/pptx-theme.js?v=11"></script>
     <script src="js/pdf-theme.js?v=7"></script>
     <script src="js/exporters.js?v=9"></script>
     <script src="js/io.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/app.js?v=2"></script>
 </body>
 </html>

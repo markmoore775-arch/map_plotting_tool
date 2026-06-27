@@ -22,7 +22,7 @@
         '<div class="weather-help-doc">',
         '<p class="weather-help-lead"><strong>Flight Weather</strong> (AirPlan v1.0) shows forecast and aviation data for one point on the map. The map <strong>info (ⓘ)</strong> control opens or closes this panel.</p>',
         '<section class="weather-help-section" aria-labelledby="weather-help-steps-title">',
-        '<h3 class="weather-help-section-title" id="weather-help-steps-title">Quick steps</h3>',
+        '<h3 class="weather-help-section-title" id="weather-help-steps-title">Quick Steps</h3>',
         '<ol class="weather-help-list">',
         '<li>Choose a <strong>Model</strong> (e.g. Best match, ECMWF, GFS) and time: <strong>Now</strong> or <strong>Date &amp; Time</strong>.</li>',
         '<li>Set a location: tap <strong>Select Location</strong> then tap the map, or <strong>right-click</strong> (or <strong>long-press</strong> on touch) and choose <strong>Get Weather</strong>.</li>',
@@ -30,11 +30,11 @@
         '</ol>',
         '</section>',
         '<section class="weather-help-section" aria-labelledby="weather-help-report-title">',
-        '<h3 class="weather-help-section-title" id="weather-help-report-title">Inside the report</h3>',
-        '<p class="weather-help-section-text"><strong>Summary</strong>: wind by altitude, visibility, clouds, precipitation, temperature. Expand <strong>How this is calculated</strong> on Summary for flight-suitability (Green / Amber / Red) rules. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong> (expand <strong>About flight categories</strong> for decoded labels and UK limits). <strong>Airspace</strong>: set <strong>Search radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About this forecast model</strong> for model notes.</p>',
+        '<h3 class="weather-help-section-title" id="weather-help-report-title">Inside the Report</h3>',
+        '<p class="weather-help-section-text"><strong>Summary</strong>: wind by altitude, visibility, clouds, precipitation, temperature. Expand <strong>How This Is Calculated</strong> on Summary for flight-suitability (Green / Amber / Red) rules. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong> (expand <strong>About Flight Categories</strong> for decoded labels and UK limits). <strong>Airspace</strong>: set <strong>Search Radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About This Forecast Model</strong> for model notes.</p>',
         '</section>',
         '<details class="weather-help-details">',
-        '<summary>METAR / TAF flight categories</summary>',
+        '<summary>METAR / TAF Flight Categories</summary>',
         '<div class="weather-help-details-body">',
         AVIATION_FLIGHT_CATEGORY_HELP_HTML,
         '</div>',
@@ -48,13 +48,13 @@
         '</details>',
         '<section class="weather-help-section" aria-labelledby="weather-help-related-title">',
         '<h3 class="weather-help-section-title" id="weather-help-related-title">Elsewhere in AirPlan</h3>',
-        '<p class="weather-help-section-text weather-help-section-text--muted">Attribution and data sources appear in the report. <strong>AirPlan</strong> (logo and name, top-left) returns to the full home screen; the <strong>tool strip</strong> beside it switches to Planner, Weather, Airspace, Checklist, or Flight Report in one tap.</p>',
+        '<p class="weather-help-section-text weather-help-section-text--muted">Attribution and data sources appear in the report. <strong>AirPlan</strong> (logo and name, top-left) returns to the full home screen; the <strong>Tool Strip</strong> beside it switches to Planner, Weather, Airspace, Checklist, or Flight Report in one tap.</p>',
         '<div class="weather-help-links">',
         '<a href="index.html" class="weather-help-link-chip">Home</a>',
         '<a href="flight-notes.html" class="weather-help-link-chip">Flight Report</a>',
         '<a href="checklist.html" class="weather-help-link-chip">Checklist</a>',
         '</div>',
-        '<p class="weather-help-footnote">The header tool strip matches other AirPlan pages so you can move between those tools without going home.</p>',
+        '<p class="weather-help-footnote">The header Tool Strip matches other AirPlan pages so you can move between those tools without going home.</p>',
         '</section>',
         '</div>'
     ].join('');
@@ -556,7 +556,7 @@
                 L.control.locate({
                     position: 'topleft',
                     strings: {
-                        title: 'Show my location',
+                        title: 'Show My Location',
                         popup: 'You are within {distance} from this point',
                         outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
                     },
@@ -571,7 +571,7 @@
                 const link = L.DomUtil.create('a', '', div);
                 link.href = '#';
                 link.title = 'Instructions';
-                link.setAttribute('aria-label', 'Show instructions');
+                link.setAttribute('aria-label', 'Show Instructions');
                 link.id = 'weatherHelpToggle';
                 link.innerHTML =
                     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1.25" fill="currentColor" stroke="none"/></svg>';
@@ -1090,9 +1090,9 @@
         if (!el) return;
         if (!selectedPoint) {
             el.textContent =
-                'Click the map to set your location. Or tap Select Location, then tap the map.';
+                'Click the Map to Set Your Location. Or Tap Select Location, Then Tap the Map.';
         } else {
-            el.textContent = 'Location set: tap Get Weather.';
+            el.textContent = 'Location Set: Tap Get Weather.';
         }
     }
 

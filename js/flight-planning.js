@@ -167,7 +167,7 @@
         if (exportRecceBtn) exportRecceBtn.disabled = !recceTarget;
         if (recceInfo) {
             recceInfo.classList.toggle('hidden', !recceMode || !recceTarget);
-            recceInfo.textContent = recceTarget ? '1 target' : '';
+            recceInfo.textContent = recceTarget ? '1 Target' : '';
         }
         if (recceMode) {
             if (waypointCount) waypointCount.classList.add('hidden');
@@ -289,7 +289,7 @@
                         : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
                 L.control.locate({
                     position: 'topleft',
-                    strings: { title: 'Show my location' },
+                    strings: { title: 'Show My Location' },
                     locateOptions: locateOptsFp
                 }).addTo(map);
             }
@@ -348,7 +348,7 @@
                     });
                     const maxRow = L.DomUtil.create('div', 'fp-notam-opt-row', optsEl);
                     const maxLbl = L.DomUtil.create('span', 'fp-notam-opt-lbl', maxRow);
-                    maxLbl.textContent = 'Max radius ';
+                    maxLbl.textContent = 'Max Radius ';
                     const maxSel = L.DomUtil.create('select', 'fp-notam-select', maxRow);
                     [
                         [5, '5 NM'],
@@ -372,7 +372,7 @@
                     droneCb.type = 'checkbox';
                     droneCb.checked = true;
                     droneLbl.title = 'Drone-focused: UAS/hazard keywords, UAS check, and event/restriction triage';
-                    droneLbl.appendChild(document.createTextNode(' Drone-focused'));
+                    droneLbl.appendChild(document.createTextNode(' Drone-Focused'));
                     L.DomEvent.on(droneCb, 'change', function () {
                         fpNotamModule.setOptions({ droneRelevantOnly: droneCb.checked });
                     });
@@ -381,7 +381,7 @@
                     const adCb = L.DomUtil.create('input', '', adLbl);
                     adCb.type = 'checkbox';
                     adCb.checked = true;
-                    adLbl.appendChild(document.createTextNode(' Hide airfield ops'));
+                    adLbl.appendChild(document.createTextNode(' Hide Airfield Ops'));
                     L.DomEvent.on(adCb, 'change', function () {
                         fpNotamModule.setOptions({ hideAerodromeGround: adCb.checked });
                     });
@@ -392,7 +392,7 @@
                     ceilCb.checked = true;
                     ceilLbl.title =
                         'Hide NOTAMs whose Q-line lower limit is entirely above 600 ft (SFC–600 ft band). Unknown Q-line: kept.';
-                    ceilLbl.appendChild(document.createTextNode(' Hide above 600 ft (Q-line)'));
+                    ceilLbl.appendChild(document.createTextNode(' Hide Above 600 Ft (Q-Line)'));
                     L.DomEvent.on(ceilCb, 'change', function () {
                         fpNotamModule.setOptions({ hideAboveDroneCeiling: ceilCb.checked });
                     });
@@ -936,7 +936,7 @@
         const hasRecce = recceTarget !== null;
         const hasWaypoint = waypoints.length > 0 || exclusions.length > 0;
         if (!hasRecce && !hasWaypoint) return;
-        const title = recceMode && hasRecce ? 'Clear recce target?' : 'Clear waypoint mission?';
+        const title = recceMode && hasRecce ? 'Clear Recce Target?' : 'Clear Waypoint Mission?';
         const message = recceMode && hasRecce
             ? 'Clear the recce target and exclusion zone? This cannot be undone.'
             : 'Clear all waypoints and exclusion zones? This cannot be undone.';

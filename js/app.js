@@ -238,7 +238,7 @@
                 plannerLocateControl = L.control.locate({
                     position: 'topleft',
                     strings: {
-                        title: 'Show my location',
+                        title: 'Show My Location',
                         popup: 'You are within {distance} from this point',
                         outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
                     },
@@ -422,7 +422,7 @@
         const searchBtn = document.createElement('a');
         searchBtn.className = 'leaflet-control-search leaflet-buttons-control-button';
         searchBtn.href = '#';
-        searchBtn.title = 'Search location (postcode, lat/long, w3w...)';
+        searchBtn.title = 'Search Location (postcode, lat/long, w3w...)';
         searchBtn.innerHTML = '<span class="control-icon lucide-search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>';
         toolbar.insertBefore(searchBtn, toolbar.firstChild);
 
@@ -443,7 +443,7 @@
         const handBtn = document.createElement('a');
         handBtn.className = 'leaflet-control-hand-tool leaflet-buttons-control-button';
         handBtn.href = '#';
-        handBtn.title = 'Pan / Move map (drag to pan)';
+        handBtn.title = 'Pan / Move Map (drag to pan)';
         handBtn.innerHTML = '<span class="control-icon lucide-hand-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hand"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span>';
         handBtn.classList.add('active');
         toolbar.insertBefore(handBtn, searchBtn.nextSibling);
@@ -486,7 +486,7 @@
         // Create icon strip (positioned to the side of the button)
         const strip = document.createElement('div');
         strip.className = 'drop-icon-strip leaflet-control hidden';
-        strip.innerHTML = '<div class="drop-icon-strip-title">Select a point type</div>';
+        strip.innerHTML = '<div class="drop-icon-strip-title">Select a Point Type</div>';
         dropPointWrapper.appendChild(strip);
 
         toolbar.insertBefore(dropPointWrapper, handBtn.nextSibling);
@@ -919,7 +919,7 @@
         html += '</div>';
         html += '<div class="quick-edit-elevation">Elevation: <span class="elevation-value">-</span></div>';
         html += '<div class="quick-edit-actions">';
-        html += `<a href="#" class="quick-edit-details" data-point-id="${point.id}">View details</a>`;
+        html += `<a href="#" class="quick-edit-details" data-point-id="${point.id}">View Details</a>`;
         html += `<a href="#" class="quick-edit-more" data-point-id="${point.id}">Edit...</a>`;
         html += '</div>';
         html += '</div>';
@@ -1253,7 +1253,7 @@
             const badgeTextColor = getContrastingTextColor(badgeColor);
             const badgeSymbol = getPointSymbol(p);
             const onMap = p.visibleOnMap !== false;
-            const visTitle = onMap ? 'Hide on map' : 'Show on map';
+            const visTitle = onMap ? 'Hide on Map' : 'Show on Map';
             const visGlyph = onMap ? '&#9675;' : '&#9711;';
 
             li.innerHTML = `
@@ -1313,7 +1313,7 @@
                     openEditModal(p.id);
                 } else if (e.target.closest('.btn-delete')) {
                     showConfirmModal({
-                        title: 'Delete point?',
+                        title: 'Delete Point?',
                         message: `Delete "${p.name || 'Unnamed'}"? This cannot be undone.`,
                         confirmLabel: 'Delete'
                     }).then(ok => {
@@ -1715,9 +1715,9 @@
     document.getElementById('clearAllBtn').addEventListener('click', () => {
         if (points.length === 0) return;
         showConfirmModal({
-            title: 'Clear all points?',
+            title: 'Clear All Points?',
             message: `This will remove all ${points.length} points from the map. This cannot be undone.`,
-            confirmLabel: 'Clear all'
+            confirmLabel: 'Clear All'
         }).then(ok => {
             if (ok) clearAllPoints();
         });
@@ -2273,7 +2273,7 @@
                 const shape = shapes.find(s => s.id === id);
                 const typeName = shape && shape.type === 'polyline' ? 'line' : 'flight path';
                 showConfirmModal({
-                    title: 'Delete route?',
+                    title: 'Delete Route?',
                     message: `Delete this ${typeName}? This cannot be undone.`,
                     confirmLabel: 'Delete'
                 }).then(ok => {
@@ -3398,11 +3398,11 @@ ${summaryRows}
         if (!el) return;
         let text = '';
         if (typeof Drawings !== 'undefined' && Drawings.getSelectedShapeId && Drawings.getSelectedShapeId()) {
-            text = 'Drag to move - Double-click for properties - Esc to deselect';
+            text = 'Drag to Move — Double-Click for Properties — Esc to Deselect';
         } else if (typeof Drawings !== 'undefined' && Drawings.isDrawingActive && Drawings.isDrawingActive()) {
-            text = 'Finish on the map - Adjust style in the Draw tab';
+            text = 'Finish on the Map — Adjust Style in the Draw Tab';
         } else if (dropPointMode || dropPointPickerOpen) {
-            text = 'Click the map to place a point';
+            text = 'Click the Map to Place a Point';
         }
         if (!text) {
             el.textContent = '';
@@ -3531,7 +3531,7 @@ ${summaryRows}
             const shape = Drawings.getShapes().find(s => s.id === id);
             const label = shape ? (shape.label || Drawings.getShapeTypeLabel(shape.type)) : 'shape';
             showConfirmModal({
-                title: 'Delete shape?',
+                title: 'Delete Shape?',
                 message: `Delete this ${label}? This cannot be undone.`,
                 confirmLabel: 'Delete'
             }).then(ok => {
@@ -3574,9 +3574,9 @@ ${summaryRows}
             const count = Drawings.getShapes().length;
             if (count === 0) return;
             showConfirmModal({
-                title: 'Clear all shapes?',
+                title: 'Clear All Shapes?',
                 message: `This will remove all ${count} shapes from the map. This cannot be undone.`,
-                confirmLabel: 'Clear all'
+                confirmLabel: 'Clear All'
             }).then(ok => {
                 if (!ok) return;
                 pushUndoSnapshot();
@@ -3892,7 +3892,7 @@ ${summaryRows}
                     const point = points.find(p => p.id === pointId);
                     if (point) {
                         showConfirmModal({
-                            title: 'Delete point?',
+                            title: 'Delete Point?',
                             message: `Delete "${point.name || 'Unnamed'}"? This cannot be undone.`,
                             confirmLabel: 'Delete'
                         }).then(ok => {
@@ -3921,7 +3921,7 @@ ${summaryRows}
                     const shape = Drawings.getShapes().find(s => s.id === shapeId);
                     const label = shape ? (shape.label || Drawings.getShapeTypeLabel(shape.type)) : 'shape';
                     showConfirmModal({
-                        title: 'Delete shape?',
+                        title: 'Delete Shape?',
                         message: `Delete this ${label}? This cannot be undone.`,
                         confirmLabel: 'Delete'
                     }).then(ok => {

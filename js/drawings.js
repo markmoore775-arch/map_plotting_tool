@@ -2941,7 +2941,7 @@ const Drawings = (() => {
                 ? `<button type="button" class="btn-icon btn-flight-overview" title="Flight Overview">&#9650;</button>`
                 : '';
             const shapeOnMap = !s.hiddenOnMap;
-            const visBtn = `<button type="button" class="btn-icon btn-shape-visibility" title="${shapeOnMap ? 'Hide on map' : 'Show on map'}" aria-label="${shapeOnMap ? 'Hide on map' : 'Show on map'}">${shapeOnMap ? '&#9675;' : '&#9711;'}</button>`;
+            const visBtn = `<button type="button" class="btn-icon btn-shape-visibility" title="${shapeOnMap ? 'Hide on Map' : 'Show on Map'}" aria-label="${shapeOnMap ? 'Hide on Map' : 'Show on Map'}">${shapeOnMap ? '&#9675;' : '&#9711;'}</button>`;
 
             li.innerHTML = `
                 ${colorDot}
@@ -2951,7 +2951,7 @@ const Drawings = (() => {
                 </div>
                 <div class="point-item-actions">
                     ${visBtn}
-                    <button type="button" class="btn-icon btn-edit" title="Edit properties">&#9998;</button>
+                    <button type="button" class="btn-icon btn-edit" title="Edit Properties">&#9998;</button>
                     ${verticesBtn}
                     ${flightOverviewBtn}
                     <button type="button" class="btn-icon btn-delete" title="Delete">&times;</button>

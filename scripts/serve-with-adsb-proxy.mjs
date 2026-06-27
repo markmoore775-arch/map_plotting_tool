@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Serves the project root on PORT (default 8081, or next free if busy) and proxies:
- * - GET /api/adsb → ADSB.lol
+ * - GET /api/adsb → ADSB.lol (primary), airplanes.live fallback
  * - GET /api/ogn → Open Glider Network live feed (lxml.php; CORS proxy for Airspace)
  * - GET /api/aviation → aviationweather.gov (METAR/TAF JSON; same contract as worker.js)
  * Browsers cannot call those APIs directly (CORS); use this instead of python -m http.server.
@@ -55,22 +55,22 @@ async function fetchAdsbWithFailover(query) {
   let primaryUrl;
   let fallbackUrl;
   if (query.hex) {
-    primaryUrl = 'https://api.airplanes.live/v2/hex/' + query.hex;
-    fallbackUrl = 'https://api.adsb.lol/v2/hex/' + query.hex;
+    primaryUrl = 'https://api.adsb.lol/v2/hex/' + query.hex;
+    fallbackUrl = 'https://api.airplanes.live/v2/hex/' + query.hex;
   } else {
     primaryUrl =
-      'https://api.airplanes.live/v2/point/' +
-      query.latKey +
-      '/' +
-      query.lonKey +
-      '/' +
-      query.distKey;
-    fallbackUrl =
       'https://api.adsb.lol/v2/lat/' +
       query.latKey +
       '/lon/' +
       query.lonKey +
       '/dist/' +
+      query.distKey;
+    fallbackUrl =
+      'https://api.airplanes.live/v2/point/' +
+      query.latKey +
+      '/' +
+      query.lonKey +
+      '/' +
       query.distKey;
   }
 
@@ -82,12 +82,12 @@ async function fetchAdsbWithFailover(query) {
     primary = await fetchAdsbUpstreamText(primaryUrl);
   }
   if (primary.status >= 200 && primary.status < 300) {
-    return { ok: true, body: primary.body, source: 'airplaneslive' };
+    return { ok: true, body: primary.body, source: 'adsblol' };
   }
 
   const fallback = await fetchAdsbUpstreamText(fallbackUrl);
   if (fallback.status >= 200 && fallback.status < 300) {
-    return { ok: true, body: fallback.body, source: 'adsblol' };
+    return { ok: true, body: fallback.body, source: 'airplaneslive' };
   }
 
   return {
@@ -410,7 +410,7 @@ function listenFrom(port) {
   });
   server.listen(port, function () {
     console.log('AirPlan dev: http://localhost:' + port + '/');
-    console.log('  /api/adsb → airplanes.live, then ADSB.lol fallback (CORS proxy for Airspace)');
+    console.log('  /api/adsb → ADSB.lol, then airplanes.live fallback (CORS proxy for Airspace)');
     console.log('  /api/ogn → https://live.glidernet.org (OGN lxml; CORS proxy for Airspace)');
     console.log('  /api/aviation → aviationweather.gov METAR/TAF (CORS proxy for Flight Weather)');
   });
