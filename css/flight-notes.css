@@ -2003,6 +2003,7 @@ body.flight-notes-mode.fn-light-theme ::-webkit-scrollbar-track {
  * Flight Overview light modals (light panel, dark text).
  */
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-content,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-content,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-content,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-content {
     background: #ffffff;
@@ -2011,6 +2012,7 @@ body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-content {
 }
 
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-header,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-header,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-header,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-header {
     background: #f5f6f8;
@@ -2018,18 +2020,21 @@ body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-header {
 }
 
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-header h2,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-header h2,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-header h2,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-header h2 {
     color: #1a1a1a;
 }
 
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-close,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-close,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-close,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-close {
     color: #666;
 }
 
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-close:hover,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-close:hover,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-close:hover,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-close:hover {
     color: #1a1a1a;
@@ -2037,6 +2042,7 @@ body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-close:hover {
 }
 
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-body,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-body,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-body,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-body {
     background: #ffffff;
@@ -2044,18 +2050,21 @@ body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-body {
 }
 
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-body p,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-body p,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-body p,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-body p {
     color: #1a1a1a;
 }
 
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-body strong,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-body strong,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-body strong,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-body strong {
     color: #1a1a1a;
 }
 
 body.flight-notes-mode.fn-light-theme #fnClearModal .modal-footer,
+body.flight-notes-mode.fn-light-theme #fnDeleteReportModal .modal-footer,
 body.flight-notes-mode.fn-light-theme #fnRemoveBatteryModal .modal-footer,
 body.flight-notes-mode.fn-light-theme #fnWeatherClearModal .modal-footer {
     background: #f5f6f8;
