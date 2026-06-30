@@ -8,7 +8,7 @@ const path = require('path');
 const sharp = require('sharp');
 
 const ASSETS_DIR = path.join(__dirname, '..', 'assets');
-const LOGO_WHITE_PNG = path.join(ASSETS_DIR, 'airplanlogowhite.png');
+const LOGO_WHITE_PNG = path.join(ASSETS_DIR, 'airplanlogowhite-notext.png');
 const ICON_BACKGROUND = { r: 10, g: 10, b: 10 }; // #0a0a0a, matches manifest background_color
 
 async function rasterizeIcon(size, outPath, paddingPercent = 0.08) {
