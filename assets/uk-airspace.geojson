@@ -1,8 +1,8 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "effectiveFrom": "2026-06-11",
-    "effectiveTo": "2026-07-09",
+    "effectiveFrom": "2026-07-09",
+    "effectiveTo": "2026-08-06",
     "source": "NATS UAS ENR 5.1"
   },
   "features": [
@@ -12923,7 +12923,7 @@
       "properties": {
         "designator": "EGD213",
         "name": "EGD213 KINETON",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"1000\" txt_name=\"KINETON\"><tr><td>A circle, 700 M radius, centred at 520902N 0012656W <br/>Upper limit: 2400 FT ALT<br/>Lower limit: SFC  <br/>Class: </td><td>Activity: Ordnance, Munitions and Explosives.<br/><br/>Service: SUAAIS: London Information on 124.600 MHz.<br/><br/>Contact: Pre-flight information / Booking: Range TSO, Tel: 01869-257489.<br/><br/>SUA Authority: DAATM (HQ Land).</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"1000\" txt_name=\"KINETON\"><tr><td>A circle, 700 M radius, centred at 520902N 0012656W <br/>Upper limit: 2400 FT ALT<br/>Lower limit: SFC  <br/>Class: </td><td>Activity: Ordnance, Munitions and Explosives.<br/><br/>Service: SUAAIS: London Information on 124.600 MHz.<br/><br/>Contact: Pre-flight information / Booking: Range TSO, Tel: 01869-257489.<br/><br/>SUA Authority: DAATM (DE&S).</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -47486,7 +47486,7 @@
       "properties": {
         "designator": "EGD703",
         "name": "EGD703 TAIN",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"1653\" txt_name=\"TAIN\"><tr><td>575224N 0033030W -<br/>575054N 0034630W -<br/>574500N 0035500W following the line of latitude to -<br/>574500N 0040254W -<br/>575136N 0040812W -<br/>580324N 0034436W -<br/>580700N 0033700W -<br/>580300N 0033000W -<br/>575224N 0033000W following the line of latitude to -<br/>575224N 0033030W <br/>Upper limit: 22000 FT ALT<br/>Lower limit: SFC  <br/>Class: </td><td>Vertical Limit 15,000 FT ALT.<br/><br/>Vertical Limit OCNL notified to altitudes up to 22,000 FT ALT by NOTAM.<br/><br/>Activity: Ordnance, Munitions and Explosives / Unmanned Aircraft System (UAS) / High Energy Manoeuvres / Para Dropping / Electronic/Optical Hazards.<br/><br/>Service: SUACS: Tain Range on 122.755 when open. SUAAIS: Tain Range on 122.755 when open; at other times Scottish Information on 134.850 MHz.<br/><br/>Contact: Pre-flight information / Booking: Range ATC, Tel: 01862-892185 Ext 4945.<br/><br/>Aircraft wishing to use Dornoch or Easter Aerodromes during range opening hours are to contact Tain Range on 122.755 prior to entering the range. Associated aircraft operations outside area boundary. SI 1940/684. <br/><br/>SUA Authority: DAATM (DIO).</td></tr></table>",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"1653\" txt_name=\"TAIN\"><tr><td>575224N 0033030W -<br/>575054N 0034630W -<br/>574500N 0035500W following the line of latitude to -<br/>574500N 0040254W -<br/>575136N 0040812W -<br/>580324N 0034436W -<br/>580700N 0033700W -<br/>580300N 0033000W -<br/>575224N 0033000W following the line of latitude to -<br/>575224N 0033030W <br/>Upper limit: 22000 FT ALT<br/>Lower limit: SFC  <br/>Class: </td><td>AMC - Manageable.<br/><br/>Vertical Limit 15,000 FT ALT.<br/><br/>Vertical Limit OCNL notified to altitudes up to 22,000 FT ALT by NOTAM.<br/><br/>Activity: Ordnance, Munitions and Explosives / Unmanned Aircraft System (UAS) / High Energy Manoeuvres / Para Dropping / Electronic/Optical Hazards.<br/><br/>Service: SUACS: Tain Range on 122.755 when open. SUAAIS: Tain Range on 122.755 when open; at other times Scottish Information on 134.850 MHz.<br/><br/>Contact: Pre-flight information / Booking: Range ATC, Tel: 01862-892185 Ext 4945.<br/><br/>Aircraft wishing to use Dornoch or Easter Aerodromes during range opening hours are to contact Tain Range on 122.755 prior to entering the range. Associated aircraft operations outside area boundary. SI 1940/684. <br/><br/>SUA Authority: DAATM (DIO).</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {

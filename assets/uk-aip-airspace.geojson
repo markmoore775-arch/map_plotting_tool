@@ -1,8 +1,8 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "effectiveFrom": "2026-06-10",
-    "effectiveTo": "2026-07-08",
+    "effectiveFrom": "2026-07-08",
+    "effectiveTo": "2026-08-05",
     "source": "NATS UK ICAO AIP Dataset"
   },
   "features": [
