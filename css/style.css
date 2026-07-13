@@ -1042,6 +1042,8 @@ body.ap-shell {
     --ap-top-header-height: calc(max(8px, env(safe-area-inset-top, 0px)) + 8px + var(--ap-chrome-height) + 1px);
     /* Planner: clear Leaflet top-left zoom / first control + default margin + gap */
     --ap-planner-sidebar-open-left-offset: 56px;
+    --ap-map-logo-control-column: 34px;
+    --ap-map-logo-left-gap: 10px;
 }
 
 body.ap-shell .fn-top-bar {
@@ -1267,11 +1269,22 @@ body.ap-shell:not(.flight-planning-mode) .leaflet-top.leaflet-left {
 }
 
 body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .map-logo {
-    top: calc(var(--ap-top-header-height) + 8px);
+    top: calc(var(--ap-top-header-height) + 12px + 10px);
+    left: calc(
+        var(--sidebar-width)
+        + max(12px, env(safe-area-inset-left, 0px))
+        + var(--ap-map-logo-control-column)
+        + var(--ap-map-logo-left-gap)
+    );
 }
 
 body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode).sidebar-collapsed .map-logo {
-    left: 52px;
+    left: calc(
+        max(12px, env(safe-area-inset-left, 0px))
+        + var(--ap-planner-sidebar-open-left-offset)
+        + var(--ap-chrome-height)
+        + var(--ap-map-logo-left-gap)
+    );
 }
 
 /* Narrow screens: compact header padding (tool nav sizing uses 768px two-tier rules above) */
@@ -1447,6 +1460,10 @@ body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-
     color: #0a0a0a;
 }
 
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-clear-project-btn:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--danger);
+}
 
 body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-toggle:hover {
     color: #0f172a;
@@ -1590,11 +1607,51 @@ body.sidebar-collapsed .sidebar {
     flex-shrink: 0;
 }
 
+.sidebar-header-start {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
 .sidebar-logo {
     height: 28px;
     width: auto;
     flex-shrink: 0;
-    margin-right: 10px;
+}
+
+.sidebar-clear-project-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    margin-left: 2px;
+    padding: 4px 8px 4px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--sidebar-text-muted);
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+    white-space: nowrap;
+}
+
+.sidebar-clear-project-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--danger);
+}
+
+.sidebar-clear-project-btn:focus-visible {
+    outline: 2px solid var(--accent, #3b82f6);
+    outline-offset: 2px;
+}
+
+.sidebar-clear-project-btn svg {
+    flex-shrink: 0;
 }
 
 .sidebar-title {
@@ -2009,7 +2066,7 @@ body.sidebar-collapsed .map-context-hint {
         left: 0 !important;
     }
 
-    body:not(.weather-mode):not(.flight-planning-mode) .map-logo {
+    body:not(.ap-shell):not(.weather-mode):not(.flight-planning-mode) .map-logo {
         left: 12px !important;
     }
 }
@@ -3421,7 +3478,7 @@ a.airspace-choice-btn {
         pointer-events: none;
     }
 
-    /* Map logo - below welcome pill when sidebar collapsed */
+    /* Map logo - legacy pages only; ap-shell uses rules beside left controls */
     .map-logo {
         left: 8px;
         top: calc(52px + env(safe-area-inset-top, 0px));
@@ -3434,6 +3491,17 @@ a.airspace-choice-btn {
 
     body:not(.sidebar-collapsed) .map-logo {
         visibility: hidden;
+    }
+
+    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode).sidebar-collapsed .map-logo {
+        visibility: visible;
+        top: calc(var(--ap-top-header-height) + 12px + 10px);
+        left: calc(
+            max(12px, env(safe-area-inset-left, 0px))
+            + var(--ap-planner-sidebar-open-left-offset)
+            + var(--ap-chrome-height)
+            + var(--ap-map-logo-left-gap)
+        );
     }
 
     /* Intro screen - width only; height comes from flex + max-height: 100% on .intro-content */
@@ -3464,10 +3532,6 @@ a.airspace-choice-btn {
 
     body.ap-shell:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-left {
         top: 12px;
-    }
-
-    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .map-logo {
-        top: calc(var(--ap-top-header-height) + 8px);
     }
 
     /* Collapsible tool strip: first control is 44px - keep » clear of it */

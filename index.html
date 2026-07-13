@@ -125,7 +125,13 @@
     <aside id="sidebar" class="sidebar" aria-label="Planning tools">
         <div id="sidebarSheetHandle" class="sidebar-sheet-handle" role="presentation" aria-hidden="true"></div>
         <div class="sidebar-header">
-            <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo sidebar-logo" aria-hidden="true">
+            <div class="sidebar-header-start">
+                <img src="assets/airplanlogowhite.png" alt="" class="ap-brand-logo sidebar-logo" aria-hidden="true">
+                <button type="button" id="clearProjectBtn" class="sidebar-clear-project-btn" title="Clear all points, shapes, and drawings from the map" aria-label="Clear project">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                    <span>Clear Project</span>
+                </button>
+            </div>
             <h1 class="sidebar-title">AirPlan</h1>
             <button id="sidebarToggle" class="sidebar-toggle" title="Collapse sidebar">&laquo;</button>
         </div>
@@ -979,7 +985,7 @@
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-map-sidebar">
                                 <h3>Sidebar &amp; footer</h3>
-                                <p>Collapse the sidebar (‹ button) for more map space. When collapsed, reopen it with the <strong>»</strong> control on the map (below the top bar, left edge). Use <strong>Fit All</strong> to zoom the map to include all points. <strong>Clear All</strong> removes every point (with confirmation); <strong>Clear Shapes</strong> removes all drawn shapes. The app footer includes <strong>Support</strong> (<a href="mailto:support@airplan.uk">support@airplan.uk</a>), <strong>Privacy</strong> (<a href="privacy.html">policy</a>), and <strong>Disclaimer</strong> (same content as the Disclaimer tab).</p>
+                                <p>Collapse the sidebar (‹ button) for more map space. When collapsed, reopen it with the <strong>»</strong> control on the map (below the top bar, left edge). Use <strong>Fit All</strong> to zoom the map to include all points. The <strong>Clear Project</strong> button beside the logo (above the tabs) removes all points, shapes, and the grid overlay after a double confirmation; <strong>Undo</strong> can restore the cleared content. <strong>Clear All</strong> removes every point only; <strong>Clear Shapes</strong> removes all drawn shapes only. The app footer includes <strong>Support</strong> (<a href="mailto:support@airplan.uk">support@airplan.uk</a>), <strong>Privacy</strong> (<a href="privacy.html">policy</a>), and <strong>Disclaimer</strong> (same content as the Disclaimer tab).</p>
                             </section>
                             <section class="help-section" id="help-map-mobile">
                                 <h3>Small screens</h3>

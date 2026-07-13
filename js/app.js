@@ -687,14 +687,71 @@
         refreshPointsList();
     }
 
-    function clearAllPoints() {
-        pushUndoSnapshot();
+    function removeAllPointsFromMap() {
         for (const id of Object.keys(markerLayers)) {
             removeMarkerFromMap(parseInt(id));
         }
         points = [];
         nextId = 1;
         refreshPointsList();
+    }
+
+    function clearAllPoints() {
+        pushUndoSnapshot();
+        removeAllPointsFromMap();
+    }
+
+    function getProjectContentSummary() {
+        const pointCount = points.length;
+        const shapeCount = typeof Drawings !== 'undefined' && Drawings.getShapes ? Drawings.getShapes().length : 0;
+        const hasGrid = typeof GridOverlay !== 'undefined' && GridOverlay.hasGrid && GridOverlay.hasGrid();
+        return {
+            pointCount,
+            shapeCount,
+            hasGrid,
+            isEmpty: pointCount === 0 && shapeCount === 0 && !hasGrid
+        };
+    }
+
+    function clearEntireProject() {
+        pushUndoSnapshot();
+        removeAllPointsFromMap();
+        if (typeof Drawings !== 'undefined' && Drawings.clearAllShapes) {
+            Drawings.clearAllShapes();
+        }
+        if (typeof GridOverlay !== 'undefined' && GridOverlay.clear) {
+            GridOverlay.clear();
+        }
+        try {
+            localStorage.removeItem(MAP_DRAFT_STORAGE_KEY);
+        } catch (_) { /* quota / private mode */ }
+        if (typeof UndoHistory !== 'undefined') UndoHistory.updateUndoButtonState();
+    }
+
+    function promptClearProject() {
+        const { pointCount, shapeCount, hasGrid, isEmpty } = getProjectContentSummary();
+        if (isEmpty) return;
+
+        const parts = [];
+        if (pointCount) parts.push(`${pointCount} point${pointCount !== 1 ? 's' : ''}`);
+        if (shapeCount) parts.push(`${shapeCount} shape${shapeCount !== 1 ? 's' : ''}`);
+        if (hasGrid) parts.push('grid overlay');
+        const summary = parts.join(', ');
+
+        showConfirmModal({
+            title: 'Clear Project?',
+            message: `This will remove ${summary} from the map. This cannot be undone.`,
+            confirmLabel: 'Continue'
+        }).then(ok => {
+            if (!ok) return;
+            showConfirmModal({
+                title: 'Are you absolutely sure?',
+                message: 'All points and drawings will be permanently deleted. Save your project first if you need a backup.',
+                confirmLabel: 'Clear Project'
+            }).then(ok2 => {
+                if (ok2) clearEntireProject();
+            });
+        });
     }
 
     function restorePointsFromSnapshot(snapshotPoints) {
@@ -1710,7 +1767,12 @@
 
     // Sidebar starts collapsed via HTML class; no layout shift before map init.
 
-    // ---- Clear All / Fit All ----
+    // ---- Clear All / Fit All / Clear Project ----
+
+    const clearProjectBtn = document.getElementById('clearProjectBtn');
+    if (clearProjectBtn) {
+        clearProjectBtn.addEventListener('click', promptClearProject);
+    }
 
     document.getElementById('clearAllBtn').addEventListener('click', () => {
         if (points.length === 0) return;
