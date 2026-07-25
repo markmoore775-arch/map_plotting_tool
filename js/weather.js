@@ -3639,6 +3639,8 @@
         WeatherWindOverlay.setStatusCallback(function (status, detail) {
             var btn = document.getElementById('weatherWindToggle');
             if (!btn) return;
+            btn.classList.toggle('weather-wind-error', status === 'error');
+            btn.classList.toggle('weather-wind-loading', status === 'loading');
             if (status === 'loading') {
                 btn.title = 'Loading wind overlay…';
             } else if (status === 'ready') {

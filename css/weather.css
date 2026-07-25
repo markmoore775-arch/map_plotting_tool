@@ -168,6 +168,15 @@ body.ap-shell.fn-light-theme.weather-mode .weather-toolbar-expectation.weather-m
     cursor: pointer;
 }
 
+.weather-wind-group .weather-btn.weather-wind-loading {
+    opacity: 0.75;
+}
+
+.weather-wind-group .weather-btn.weather-wind-error {
+    border-color: #e57373;
+    box-shadow: 0 0 0 1px rgba(229, 115, 115, 0.35);
+}
+
 body.ap-shell.fn-light-theme.weather-mode .weather-wind-alt-select {
     color: var(--sidebar-text, #1e1e2e);
     background: #fff;

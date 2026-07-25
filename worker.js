@@ -15,6 +15,10 @@ export default {
       return handleOgnApi(request);
     }
 
+    if (path === '/api/open-meteo') {
+      return handleOpenMeteoApi(request);
+    }
+
     // Backwards compatibility: old launch links may still target /app.
     if (path === '/app') {
       const targetUrl = new URL(request.url);
@@ -34,6 +38,8 @@ function normalizePath(pathname) {
 
 const ADSB_CACHE_SECONDS = 5;
 const OGN_CACHE_SECONDS = 10;
+const OPEN_METEO_CACHE_SECONDS = 300;
+const OPEN_METEO_MAX_LOCATIONS = 100;
 const ADSB_LOL_BASE = 'https://api.adsb.lol/v2';
 const AIRPLANES_LIVE_BASE = 'https://api.airplanes.live/v2';
 const ADSB_UPSTREAM_HEADERS = {
@@ -253,6 +259,100 @@ async function handleOgnApi(request) {
     headers: {
       'Content-Type': 'text/xml; charset=utf-8',
       'Cache-Control': `public, max-age=${OGN_CACHE_SECONDS}`
+    }
+  });
+  await cache.put(cacheRequest, response.clone());
+  return response;
+}
+
+function countCsvValues(value) {
+  return String(value || '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .length;
+}
+
+async function handleOpenMeteoApi(request) {
+  if (request.method.toUpperCase() !== 'GET') {
+    return jsonResponse({ error: 'Method not allowed' }, 405);
+  }
+
+  const url = new URL(request.url);
+  const latitude = url.searchParams.get('latitude');
+  const longitude = url.searchParams.get('longitude');
+  if (!latitude || !longitude) {
+    return jsonResponse({ error: 'Missing latitude or longitude' }, 400);
+  }
+
+  const latCount = countCsvValues(latitude);
+  const lonCount = countCsvValues(longitude);
+  if (latCount === 0 || latCount !== lonCount) {
+    return jsonResponse({ error: 'latitude and longitude must have the same number of values' }, 400);
+  }
+  if (latCount > OPEN_METEO_MAX_LOCATIONS) {
+    return jsonResponse({ error: `Too many locations (max ${OPEN_METEO_MAX_LOCATIONS})` }, 400);
+  }
+
+  const forecastDays = Number(url.searchParams.get('forecast_days') || '1');
+  if (!Number.isFinite(forecastDays) || forecastDays < 1 || forecastDays > 16) {
+    return jsonResponse({ error: 'Invalid forecast_days (1–16)' }, 400);
+  }
+
+  const upstreamParams = new URLSearchParams(url.searchParams);
+  upstreamParams.delete('cache_bust');
+  const upstreamUrl = 'https://api.open-meteo.com/v1/forecast?' + upstreamParams.toString();
+  const cache = caches.default;
+  const cacheRequest = new Request(
+    new URL('/open-meteo-cache/' + encodeURIComponent(upstreamParams.toString()), request.url).toString(),
+    { method: 'GET' }
+  );
+  const cached = await cache.match(cacheRequest);
+  if (cached) {
+    return new Response(cached.body, {
+      status: cached.status,
+      headers: {
+        ...Object.fromEntries(cached.headers.entries()),
+        'X-AirPlan-Cache': 'hit'
+      }
+    });
+  }
+
+  let upstream = await fetch(upstreamUrl, {
+    headers: { Accept: 'application/json' }
+  });
+  if (!upstream.ok && upstream.status === 429) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    upstream = await fetch(upstreamUrl, {
+      headers: { Accept: 'application/json' }
+    });
+  }
+
+  if (!upstream.ok) {
+    if (cached) {
+      return new Response(await cached.text(), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-AirPlan-Cache': 'stale'
+        }
+      });
+    }
+    const status = upstream.status === 429 ? 429 : 502;
+    return jsonResponse(
+      { error: `Open-Meteo returned HTTP ${upstream.status}` },
+      status
+    );
+  }
+
+  const body = await upstream.text();
+  const response = new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': `public, max-age=${OPEN_METEO_CACHE_SECONDS}`,
+      'X-AirPlan-Source': 'open-meteo'
     }
   });
   await cache.put(cacheRequest, response.clone());

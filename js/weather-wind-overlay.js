@@ -7,8 +7,8 @@
 (function () {
     'use strict';
 
-    const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
-    const GRID_SIZE = 13;
+    const OPEN_METEO_BASE = '/api/open-meteo';
+    const GRID_SIZE = 9;
     const CHUNK_SIZE = 90;
     const REFRESH_DEBOUNCE_MS = 650;
 
@@ -483,10 +483,37 @@
         return {};
     }
 
+    function computeForecastDays(targetTimeMs) {
+        if (targetTimeMs == null) return 1;
+        var daysAhead = Math.ceil((targetTimeMs - Date.now()) / 86400000);
+        return Math.max(1, Math.min(16, daysAhead + 1));
+    }
+
+    async function fetchOpenMeteo(params) {
+        var url = OPEN_METEO_BASE + '?' + params.toString();
+        var attempts = 0;
+        while (attempts < 3) {
+            attempts += 1;
+            var resp = await fetch(url);
+            if (resp.ok) {
+                return resp.json();
+            }
+            if (resp.status === 429 && attempts < 3) {
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, attempts * 1500);
+                });
+                continue;
+            }
+            throw new Error('Wind overlay unavailable (HTTP ' + resp.status + ')');
+        }
+        throw new Error('Wind overlay unavailable');
+    }
+
     async function fetchWindGrid(grid) {
         var opts = getOptions();
         var model = opts.model || 'auto';
         var targetTimeMs = opts.targetTimeMs;
+        var forecastDays = computeForecastDays(targetTimeMs);
         var speedKey = altitude === '120m' ? 'wind_speed_120m' : 'wind_speed_10m';
         var dirKey = altitude === '120m' ? 'wind_direction_120m' : 'wind_direction_10m';
         var hourly = speedKey + ',' + dirKey;
@@ -500,7 +527,7 @@
                 latitude: chunkLats.map(function (l) { return l.toFixed(4); }).join(','),
                 longitude: chunkLons.map(function (l) { return l.toFixed(4); }).join(','),
                 hourly: hourly,
-                forecast_days: '16',
+                forecast_days: String(forecastDays),
                 timezone: 'auto',
                 wind_speed_unit: 'kmh'
             });
@@ -508,11 +535,7 @@
                 params.set('models', model);
             }
 
-            var resp = await fetch(OPEN_METEO_BASE + '?' + params.toString());
-            if (!resp.ok) {
-                throw new Error('Wind overlay unavailable (HTTP ' + resp.status + ')');
-            }
-            var json = await resp.json();
+            var json = await fetchOpenMeteo(params);
             var entries = Array.isArray(json) ? json : [json];
 
             for (var e = 0; e < entries.length; e++) {
