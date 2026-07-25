@@ -21,7 +21,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/weather.css?v=41">
+    <link rel="stylesheet" href="css/weather.css?v=44">
 </head>
 <body class="weather-mode ap-shell">
     <script>
@@ -64,6 +64,17 @@
                         <span>Select Location</span>
                     </button>
                 </div>
+                <div class="weather-toolbar-group weather-wind-group">
+                    <button type="button" class="weather-btn" id="weatherWindToggle" aria-pressed="false" title="Show animated wind overlay on the map">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+                        <span>Wind Map</span>
+                    </button>
+                    <label for="weatherWindAltitude" class="weather-wind-alt-label">Alt</label>
+                    <select id="weatherWindAltitude" class="weather-wind-alt-select" title="Wind altitude for map overlay">
+                        <option value="10m">10 m</option>
+                        <option value="120m" selected>120 m</option>
+                    </select>
+                </div>
                 <div class="weather-toolbar-group weather-model-group">
                     <label for="weatherModel" class="weather-model-label">Model</label>
                     <button type="button" class="weather-model-info-btn" id="weatherModelInfoBtn" aria-label="Weather model help" title="">
@@ -96,7 +107,7 @@
                     </button>
                 </div>
             </div>
-            <p class="weather-toolbar-expectation weather-map-dock__note">Shows wind, gusts, visibility, precipitation, and a Green / Amber / Red flight-suitability summary for your chosen point.</p>
+            <p class="weather-toolbar-expectation weather-map-dock__note">Tap <strong>Wind Map</strong> for an animated overlay (10 m or 120 m). Point forecast: wind, gusts, visibility, precipitation, and Green / Amber / Red suitability.</p>
         </div>
     </div>
 
@@ -345,6 +356,7 @@
     <script src="js/flight-suitability.js?v=1"></script>
     <script src="js/notam-pib.js?v=3"></script>
     <script src="js/airspace-nearby.js?v=5"></script>
-    <script src="js/weather.js?v=30"></script>
+    <script src="js/weather-wind-overlay.js?v=12"></script>
+    <script src="js/weather.js?v=31"></script>
 </body>
 </html>

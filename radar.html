@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Radar | AirPlan</title>
+    <link rel="icon" href="assets/airplan-icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-180.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/radar.css?v=1">
+</head>
+<body class="radar-mode ap-shell">
+    <div class="radar-shell">
+        <header class="fn-top-bar" id="mapTopChrome">
+            <div class="fn-top-bar-start">
+                <nav class="fp-welcome-bar" aria-label="AirPlan home">
+                    <a href="index.html" class="fp-welcome-home-link" title="Return to AirPlan welcome screen" aria-label="AirPlan home, return to welcome screen">
+                        <img src="assets/airplanlogowhite-notext.png" alt="" class="ap-brand-logo fp-welcome-logo" />
+                        <span class="fp-welcome-title">AirPlan</span>
+                    </a>
+                </nav>
+                <nav class="ap-tool-nav" aria-label="AirPlan tools">
+                    <a href="index.html?autostart=1" class="ap-tool-nav__link" title="Planning map" aria-label="Planner"><span class="ap-tool-nav__icon ap-tool-nav__icon--planner" aria-hidden="true"></span><span class="ap-tool-nav__label">Planner</span></a>
+                    <a href="weather.html" class="ap-tool-nav__link" title="Flight weather" aria-label="Weather"><span class="ap-tool-nav__icon ap-tool-nav__icon--weather" aria-hidden="true"></span><span class="ap-tool-nav__label">Weather</span></a>
+                    <a href="airspace.html" class="ap-tool-nav__link ap-tool-nav__link--current" aria-current="page" title="Live airspace / radar" aria-label="Airspace"><span class="ap-tool-nav__icon ap-tool-nav__icon--airspace" aria-hidden="true"></span><span class="ap-tool-nav__label">Airspace</span></a>
+                    <a href="checklist.html" class="ap-tool-nav__link" title="M4T / TD checklist" aria-label="Checklist"><span class="ap-tool-nav__icon ap-tool-nav__icon--checklist" aria-hidden="true"></span><span class="ap-tool-nav__label">Checklist</span></a>
+                    <a href="flight-notes.html" class="ap-tool-nav__link" title="Flight report" aria-label="Flight Report"><span class="ap-tool-nav__icon ap-tool-nav__icon--flight-report" aria-hidden="true"></span><span class="ap-tool-nav__label"><span class="ap-tool-nav__label--long">Flight </span>Report</span></a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="radar-main">
+            <div class="radar-toolbar" role="toolbar" aria-label="Radar controls">
+                <div class="radar-toolbar-group">
+                    <span class="radar-toolbar-label" id="radarRangeLabel">Range</span>
+                    <div class="radar-range-group" role="group" aria-labelledby="radarRangeLabel">
+                        <button type="button" class="radar-btn" data-radar-range="5" aria-pressed="true">5</button>
+                        <button type="button" class="radar-btn" data-radar-range="10" aria-pressed="false">10</button>
+                        <button type="button" class="radar-btn" data-radar-range="25" aria-pressed="false">25</button>
+                        <button type="button" class="radar-btn" data-radar-range="50" aria-pressed="false">50</button>
+                    </div>
+                    <span class="radar-toolbar-label" aria-hidden="true">NM</span>
+                </div>
+                <div class="radar-toolbar-group">
+                    <button type="button" class="radar-btn" id="radarLocateBtn" title="Centre on my location">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                        </svg>
+                        Locate
+                    </button>
+                    <button type="button" class="radar-btn" id="radarRefreshBtn" title="Refresh traffic now">Refresh</button>
+                </div>
+                <div class="radar-toolbar-group">
+                    <label class="radar-check" for="radarHideGround">
+                        <input type="checkbox" id="radarHideGround" checked />
+                        Hide ground
+                    </label>
+                    <label class="radar-check" for="radarShowLabels">
+                        <input type="checkbox" id="radarShowLabels" checked />
+                        Labels
+                    </label>
+                </div>
+                <div class="radar-toolbar-group">
+                    <a href="airspace.html" class="radar-btn" title="Switch to AirPlan Airspace map">Map view</a>
+                </div>
+                <div class="radar-status" id="radarStatus" aria-live="polite"></div>
+            </div>
+
+            <div class="radar-scope-wrap" id="radarScopeWrap">
+                <canvas id="radarCanvas" aria-label="Live ADS-B radar scope"></canvas>
+            </div>
+
+            <p class="radar-disclaimer">
+                Situational awareness only — not for separation or navigation.
+                Live traffic via <a href="https://api.adsb.lol/docs" target="_blank" rel="noopener">ADSB.lol</a>
+                (with airplanes.live fallback). Coverage varies.
+            </p>
+        </main>
+    </div>
+
+    <div id="radarDetailSheet" class="radar-detail-sheet" hidden aria-hidden="true">
+        <div class="radar-detail-sheet-backdrop" id="radarDetailBackdrop"></div>
+        <div class="radar-detail-sheet-panel" role="dialog" aria-labelledby="radarDetailTitle">
+            <button type="button" class="radar-detail-sheet-close" id="radarDetailClose" aria-label="Close">&times;</button>
+            <div id="radarDetailBody"></div>
+        </div>
+    </div>
+
+    <script src="js/ap-brand-logo.js?v=1"></script>
+    <script src="js/geolocation-helpers.js?v=6"></script>
+    <script src="js/radar-scope.js?v=9"></script>
+</body>
+</html>

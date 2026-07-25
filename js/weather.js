@@ -31,7 +31,7 @@
         '</section>',
         '<section class="weather-help-section" aria-labelledby="weather-help-report-title">',
         '<h3 class="weather-help-section-title" id="weather-help-report-title">Inside the Report</h3>',
-        '<p class="weather-help-section-text"><strong>Summary</strong>: wind by altitude, visibility, clouds, precipitation, temperature. Expand <strong>How This Is Calculated</strong> on Summary for flight-suitability (Green / Amber / Red) rules. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong> (expand <strong>About Flight Categories</strong> for decoded labels and UK limits). <strong>Airspace</strong>: set <strong>Search Radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About This Forecast Model</strong> for model notes.</p>',
+        '<p class="weather-help-section-text"><strong>Summary</strong>: wind by altitude, visibility, clouds, precipitation, temperature. Expand <strong>How This Is Calculated</strong> on Summary for flight-suitability (Green / Amber / Red) rules. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong> (expand <strong>About Flight Categories</strong> for decoded labels and UK limits). <strong>Airspace</strong>: set <strong>Search Radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About This Forecast Model</strong> for model notes. Use <strong>Wind Map</strong> on the map dock for an animated wind overlay (10 m or 120 m).</p>',
         '</section>',
         '<details class="weather-help-details">',
         '<summary>METAR / TAF Flight Categories</summary>',
@@ -241,6 +241,8 @@
             var hideAd = document.getElementById('weatherNotamHideAd');
             var hideCeil = document.getElementById('weatherNotamHideCeiling');
             var priUas = document.getElementById('weatherNotamPrioritise');
+            var windToggle = document.getElementById('weatherWindToggle');
+            var windAlt = document.getElementById('weatherWindAltitude');
             var payload = {
                 v: 1,
                 mapLat: c.lat,
@@ -256,7 +258,9 @@
                 notamHideAd: !!(hideAd && hideAd.checked),
                 notamHideCeiling: !!(hideCeil && hideCeil.checked),
                 notamPrioritise: !!(priUas && priUas.checked),
-                exportTheme: exportTheme ? exportTheme.value : 'light'
+                exportTheme: exportTheme ? exportTheme.value : 'light',
+                windOverlay: !!(windToggle && windToggle.classList.contains('active')),
+                windAltitude: windAlt ? windAlt.value : '120m'
             };
             localStorage.setItem(WEATHER_DRAFT_STORAGE_KEY, JSON.stringify(payload));
         } catch (e) { /* ignore */ }
@@ -348,6 +352,8 @@
             if (d.selectedLat != null && d.selectedLng != null && isFinite(d.selectedLat) && isFinite(d.selectedLng)) {
                 setSelectedPoint(d.selectedLat, d.selectedLng);
             }
+
+            applyWeatherWindOverlayDraft(d);
 
             try {
                 sessionStorage.removeItem(AIRSPACE_RADIUS_STORAGE_KEY);
@@ -3588,11 +3594,85 @@
             }
         }
         scheduleWeatherDraftSave();
+        notifyWeatherWindOverlayOptionsChanged();
+    }
+
+    function notifyWeatherWindOverlayOptionsChanged() {
+        if (typeof WeatherWindOverlay !== 'undefined') {
+            WeatherWindOverlay.onOptionsChanged();
+        }
+    }
+
+    function syncWeatherWindToggleUi(on) {
+        var btn = document.getElementById('weatherWindToggle');
+        if (!btn) return;
+        btn.classList.toggle('active', !!on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+
+    function applyWeatherWindOverlayDraft(draft) {
+        var altEl = document.getElementById('weatherWindAltitude');
+        if (altEl && draft && draft.windAltitude) {
+            altEl.value = draft.windAltitude === '10m' ? '10m' : '120m';
+        }
+        if (typeof WeatherWindOverlay === 'undefined') {
+            syncWeatherWindToggleUi(!!(draft && draft.windOverlay));
+            return;
+        }
+        if (draft && draft.windAltitude) {
+            WeatherWindOverlay.setAltitude(draft.windAltitude === '10m' ? '10m' : '120m');
+        }
+        WeatherWindOverlay.setEnabled(!!(draft && draft.windOverlay));
+        syncWeatherWindToggleUi(WeatherWindOverlay.isEnabled());
+    }
+
+    function initWeatherWindOverlay() {
+        if (typeof WeatherWindOverlay === 'undefined' || !map) return;
+
+        WeatherWindOverlay.init(map);
+        WeatherWindOverlay.setOptionsProvider(function () {
+            return {
+                model: (document.getElementById('weatherModel') || {}).value || 'auto',
+                targetTimeMs: getTargetTimestamp()
+            };
+        });
+        WeatherWindOverlay.setStatusCallback(function (status, detail) {
+            var btn = document.getElementById('weatherWindToggle');
+            if (!btn) return;
+            if (status === 'loading') {
+                btn.title = 'Loading wind overlay…';
+            } else if (status === 'ready') {
+                btn.title = 'Animated wind overlay (' + (detail || 'active') + '). Tap to hide.';
+            } else if (status === 'error') {
+                btn.title = detail || 'Wind overlay error';
+            } else {
+                btn.title = 'Show animated wind overlay on the map';
+            }
+        });
+
+        var windToggle = document.getElementById('weatherWindToggle');
+        if (windToggle) {
+            windToggle.addEventListener('click', function () {
+                var next = !WeatherWindOverlay.isEnabled();
+                WeatherWindOverlay.setEnabled(next);
+                syncWeatherWindToggleUi(next);
+                scheduleWeatherDraftSave();
+            });
+        }
+
+        var windAlt = document.getElementById('weatherWindAltitude');
+        if (windAlt) {
+            windAlt.addEventListener('change', function () {
+                WeatherWindOverlay.setAltitude(windAlt.value);
+                scheduleWeatherDraftSave();
+            });
+        }
     }
 
     // ---- Init ----
     function init() {
         initMap();
+        initWeatherWindOverlay();
         setupDateTimeLimits();
 
         document.getElementById('weatherSelectBtn').addEventListener('click', toggleSelectMode);
@@ -3631,12 +3711,19 @@
             weatherModelEl.addEventListener('change', function () {
                 syncWeatherModelSelectTitle();
                 scheduleWeatherDraftSave();
+                notifyWeatherWindOverlayOptionsChanged();
             });
         }
         var weatherDateTimeEl = document.getElementById('weatherDateTime');
         if (weatherDateTimeEl) {
-            weatherDateTimeEl.addEventListener('change', scheduleWeatherDraftSave);
-            weatherDateTimeEl.addEventListener('input', scheduleWeatherDraftSave);
+            weatherDateTimeEl.addEventListener('change', function () {
+                scheduleWeatherDraftSave();
+                notifyWeatherWindOverlayOptionsChanged();
+            });
+            weatherDateTimeEl.addEventListener('input', function () {
+                scheduleWeatherDraftSave();
+                notifyWeatherWindOverlayOptionsChanged();
+            });
         }
         ['weatherNotamDroneOnly', 'weatherNotamHideAd', 'weatherNotamHideCeiling', 'weatherNotamPrioritise'].forEach(function (id) {
             var el = document.getElementById(id);
