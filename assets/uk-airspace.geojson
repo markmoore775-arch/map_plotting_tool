@@ -1,8 +1,8 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "effectiveFrom": "2026-07-09",
-    "effectiveTo": "2026-08-06",
+    "effectiveFrom": "2026-08-06",
+    "effectiveTo": "2026-09-03",
     "source": "NATS UAS ENR 5.1"
   },
   "features": [
@@ -63164,8 +63164,8 @@
       },
       "properties": {
         "designator": "EGR1U009B",
-        "name": "EGR1U009B GLOUCESTERSHIRE RWY 04",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7686\" txt_name=\"GLOUCESTERSHIRE RWY 04\"><tr><td>515057N 0021212W -<br/>515115N 0021255W -<br/>515204N 0021200W thence anti-clockwise by the arc of a circle radius 2 NM centred on 515339N 0021002W to<br/>515148N 0021115W -<br/>515057N 0021212W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "name": "EGR1U009B GLOUCESTERSHIRE RWY 03",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7686\" txt_name=\"GLOUCESTERSHIRE RWY 03\"><tr><td>515057N 0021212W -<br/>515115N 0021255W -<br/>515204N 0021200W thence anti-clockwise by the arc of a circle radius 2 NM centred on 515339N 0021002W to<br/>515148N 0021115W -<br/>515057N 0021212W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -63224,8 +63224,8 @@
       },
       "properties": {
         "designator": "EGR1U009C",
-        "name": "EGR1U009C GLOUCESTERSHIRE RWY 22",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"8180\" txt_name=\"GLOUCESTERSHIRE RWY 22\"><tr><td>515605N 0020732W -<br/>515547N 0020648W -<br/>515501N 0020740W thence anti-clockwise by the arc of a circle radius 2 NM centred on 515339N 0021002W to<br/>515521N 0020821W -<br/>515605N 0020732W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "name": "EGR1U009C GLOUCESTERSHIRE RWY 21",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"8180\" txt_name=\"GLOUCESTERSHIRE RWY 21\"><tr><td>515605N 0020732W -<br/>515547N 0020648W -<br/>515501N 0020740W thence anti-clockwise by the arc of a circle radius 2 NM centred on 515339N 0021002W to<br/>515521N 0020821W -<br/>515605N 0020732W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -63284,8 +63284,8 @@
       },
       "properties": {
         "designator": "EGR1U009F",
-        "name": "EGR1U009F GLOUCESTERSHIRE RWY 09",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7935\" txt_name=\"GLOUCESTERSHIRE RWY 09\"><tr><td>515302N 0021455W -<br/>515335N 0021500W -<br/>515342N 0021316W thence anti-clockwise by the arc of a circle radius 2 NM centred on 515339N 0021002W to<br/>515310N 0021310W -<br/>515302N 0021455W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "name": "EGR1U009F GLOUCESTERSHIRE RWY 08",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7935\" txt_name=\"GLOUCESTERSHIRE RWY 08\"><tr><td>515302N 0021455W -<br/>515335N 0021500W -<br/>515342N 0021316W thence anti-clockwise by the arc of a circle radius 2 NM centred on 515339N 0021002W to<br/>515310N 0021310W -<br/>515302N 0021455W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {
@@ -63344,8 +63344,8 @@
       },
       "properties": {
         "designator": "EGR1U009G",
-        "name": "EGR1U009G GLOUCESTERSHIRE RWY 27",
-        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7999\" txt_name=\"GLOUCESTERSHIRE RWY 27\"><tr><td>515414N 0020522W -<br/>515342N 0020517W -<br/>515335N 0020648W thence anti-clockwise by the arc of a circle radius 2 NM centred on 515339N 0021002W to<br/>515408N 0020654W -<br/>515414N 0020522W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
+        "name": "EGR1U009G GLOUCESTERSHIRE RWY 26",
+        "description": "<table border=\"1\" cellpadding=\"1\" cellspacing=\"0\" row_id=\"7999\" txt_name=\"GLOUCESTERSHIRE RWY 26\"><tr><td>515414N 0020522W -<br/>515342N 0020517W -<br/>515335N 0020648W thence anti-clockwise by the arc of a circle radius 2 NM centred on 515339N 0021002W to<br/>515408N 0020654W -<br/>515414N 0020522W <br/>Upper limit: 2000 FT AGL<br/>Lower limit: SFC  <br/>Class: </td><td>FRZ Active H24. Unmanned aircraft flight not permitted unless permission has been granted by the relevant Air Traffic Service unit or aerodrome operator. For contact details see AIP, Part 3 - Aerodromes, Section AD 2.2</td></tr></table>",
         "styleUrl": "#rdpStyleMap",
         "styleHash": "-177dced8",
         "styleMapHash": {

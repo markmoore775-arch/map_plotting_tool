@@ -1,8 +1,8 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "effectiveFrom": "2026-07-08",
-    "effectiveTo": "2026-08-05",
+    "effectiveFrom": "2026-08-05",
+    "effectiveTo": "2026-09-02",
     "source": "NATS UK ICAO AIP Dataset"
   },
   "features": [
@@ -565,7 +565,7 @@
       },
       "properties": {
         "designator": "EGR1U009C",
-        "name": "GLOUCESTERSHIRE RWY 22",
+        "name": "GLOUCESTERSHIRE RWY 21",
         "type": "R",
         "lowerLimit": "0",
         "upperLimit": "2000",
@@ -50495,7 +50495,7 @@
       },
       "properties": {
         "designator": "EGR1U009F",
-        "name": "GLOUCESTERSHIRE RWY 09",
+        "name": "GLOUCESTERSHIRE RWY 08",
         "type": "R",
         "lowerLimit": "0",
         "upperLimit": "2000",
@@ -71021,7 +71021,7 @@
       },
       "properties": {
         "designator": "EGR1U009G",
-        "name": "GLOUCESTERSHIRE RWY 27",
+        "name": "GLOUCESTERSHIRE RWY 26",
         "type": "R",
         "lowerLimit": "0",
         "upperLimit": "2000",
@@ -80397,7 +80397,7 @@
       },
       "properties": {
         "designator": "EGR1U009B",
-        "name": "GLOUCESTERSHIRE RWY 04",
+        "name": "GLOUCESTERSHIRE RWY 03",
         "type": "R",
         "lowerLimit": "0",
         "upperLimit": "2000",
