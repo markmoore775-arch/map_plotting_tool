@@ -1,8 +1,8 @@
 /**
  * Shared geolocation helpers: secure-context checks, Safari/iOS-friendly options,
  * and high-accuracy → network/cached fallback for getCurrentPosition.
- * iOS home-screen (standalone) WebKit often breaks geolocation; we detect that
- * case and prompt with copy-link instructions (links from standalone often stay in-app).
+ * iOS home-screen (standalone) WebKit often breaks geolocation; we try GPS first
+ * and only then prompt with copy-link instructions (links from standalone often stay in-app).
  */
 (function (global) {
     'use strict';
@@ -75,22 +75,35 @@
         return false;
     }
 
+    function isIosHomeScreenDisplayMode() {
+        try {
+            if (typeof global.matchMedia !== 'function') return false;
+            return (
+                global.matchMedia('(display-mode: standalone)').matches ||
+                global.matchMedia('(display-mode: fullscreen)').matches ||
+                global.matchMedia('(display-mode: minimal-ui)').matches
+            );
+        } catch (e) {
+            return false;
+        }
+    }
+
     /**
-     * Add to Home Screen on iOS (navigator.standalone or display-mode: standalone).
+     * Add to Home Screen on iOS (navigator.standalone or display-mode standalone/fullscreen/minimal-ui).
      * Deliberately false on Android installed PWAs so we do not show this prompt there.
      */
     function isIosStandaloneWebApp() {
         if (!isIosLikeAppleDevice()) return false;
         var standaloneLegacy = typeof navigator.standalone === 'boolean' && navigator.standalone === true;
-        var standaloneDisplay = false;
-        try {
-            standaloneDisplay =
-                typeof global.matchMedia === 'function' &&
-                global.matchMedia('(display-mode: standalone)').matches;
-        } catch (e) {
-            standaloneDisplay = false;
-        }
-        return standaloneLegacy || standaloneDisplay;
+        return standaloneLegacy || isIosHomeScreenDisplayMode();
+    }
+
+    /**
+     * iOS WebKit often denies or hangs getCurrentPosition unless it follows a tap.
+     * Weather / Airspace / Radar must not auto-locate on load on these devices.
+     */
+    function shouldSkipAutomaticGeolocation() {
+        return isIosLikeAppleDevice();
     }
 
     /**
@@ -234,6 +247,17 @@
     }
 
     /**
+     * After a failed GPS attempt in a home-screen web app, offer the open-in-browser path.
+     * Permission denials stay as permission errors (user can still grant in Settings).
+     */
+    function maybePromptIosStandaloneOnFailure(err) {
+        if (!isIosStandaloneWebApp()) return false;
+        if (err && err.code === 1) return false;
+        showIosStandaloneOpenInBrowserPrompt();
+        return true;
+    }
+
+    /**
      * WebKit / iOS-style environments: avoid high-accuracy-first and rely on gentle getCurrentPosition.
      * iPad “desktop” UA is often Macintosh + touch (maxTouchPoints can be 1 - treat MacIntel + any touch as iPad-class).
      * All iOS store browsers use CriOS, FxiOS, EdgiOS, etc.; match those even when “iPad” is absent from UA.
@@ -249,17 +273,12 @@
     }
 
     /**
-     * Safari on iOS/iPad often never settles navigator.permissions.query({ name: 'geolocation' }),
-     * so awaiting it before getCurrentPosition means we never start the real request (Chrome iOS
-     * resolves the query - CriOS / FxiOS / EdgiOS). Skip the probe and call geolocation directly.
+     * Safari / iOS WebKit (including Chrome/Firefox/Edge on iOS) often never settles
+     * navigator.permissions.query({ name: 'geolocation' }), so awaiting it before
+     * getCurrentPosition means we never start the real request.
      */
     function skipPermissionsQueryBeforeGeolocation() {
-        var ua = navigator.userAgent || '';
-        if (/CriOS|FxiOS|EdgiOS/i.test(ua)) return false;
-        if (/iPad|iPhone|iPod|iPadOS/i.test(ua)) return true;
-        if (navigator.platform === 'iPad') return true;
-        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) return true;
-        return false;
+        return prefersGentleGeoOptions();
     }
 
     /**
@@ -286,8 +305,45 @@
         };
     }
 
+    function defaultLocateOnLocationError(err) {
+        if (err && err.handledByIosStandalonePrompt) return;
+        var msg = err && err.message ? String(err.message) : '';
+        msg = msg.replace(/^Geolocation error:\s*/i, '').replace(/\.\s*$/, '');
+        if (!msg) return;
+        alert(msg);
+    }
+
+    /**
+     * Merge plugin options for L.control.locate: iOS-safe locateOptions, keepCurrentZoomLevel
+     * (coarse cell fixes otherwise zoom the map out to a huge accuracy circle), and an
+     * onLocationError that does not alert when the standalone-browser modal is shown.
+     */
+    function mergeLeafletLocateControlOptions(userOpts) {
+        userOpts = userOpts || {};
+        var out = {};
+        var key;
+        for (key in userOpts) {
+            if (Object.prototype.hasOwnProperty.call(userOpts, key)) {
+                out[key] = userOpts[key];
+            }
+        }
+        if (!out.locateOptions) {
+            out.locateOptions = leafletLocateOptions();
+        }
+        if (prefersGentleGeoOptions()) {
+            if (out.keepCurrentZoomLevel == null) {
+                out.keepCurrentZoomLevel = true;
+            }
+        }
+        if (!out.onLocationError) {
+            out.onLocationError = defaultLocateOnLocationError;
+        }
+        return out;
+    }
+
     function geolocationErrorMessage(err) {
         if (!err) return 'Could not get location.';
+        if (err.handledByIosStandalonePrompt) return '';
         if (err.code === 1) {
             return 'Location permission denied. Allow access when prompted, or enable Location for Safari in Settings.';
         }
@@ -309,6 +365,8 @@
      * On WebKit / iOS / iPad (prefersGentleGeoOptions), skip the high-accuracy pass entirely:
      * the first getCurrentPosition with enableHighAccuracy true often never invokes success or
      * error, so callers like Flight Report’s “Use current GPS” appear to hang forever.
+     * Home-screen (standalone) apps try GPS first; the open-in-browser modal is shown only if
+     * the request hangs or fails for a non-permission reason.
      * @param {PositionCallback} onSuccess
      * @param {PositionErrorCallback} [onError]
      * @param {{ highTimeout?: number, lowTimeout?: number, lowMaximumAge?: number, watchdogMs?: number }} [opts]
@@ -329,14 +387,6 @@
             return;
         }
 
-        if (isIosStandaloneWebApp()) {
-            showIosStandaloneOpenInBrowserPrompt();
-            if (onError) {
-                onError({ code: 0, message: '', handledByIosStandalonePrompt: true });
-            }
-            return;
-        }
-
         var gentle = prefersGentleGeoOptions();
         var settled = false;
         var watchdogId = null;
@@ -346,6 +396,14 @@
                 clearTimeout(watchdogId);
                 watchdogId = null;
             }
+        }
+
+        function armWatchdog(ms) {
+            clearWatchdog();
+            watchdogId = setTimeout(function () {
+                watchdogId = null;
+                wrapErr({ code: 0, message: stallMessage() });
+            }, ms);
         }
 
         function wrapOk(pos) {
@@ -359,23 +417,21 @@
             if (settled) return;
             settled = true;
             clearWatchdog();
+            var out = err || { code: 0, message: 'Could not get location.' };
+            if (maybePromptIosStandaloneOnFailure(out)) {
+                out = {
+                    code: out.code || 0,
+                    message: out.message || '',
+                    handledByIosStandalonePrompt: true
+                };
+            }
             if (onError) {
-                onError(err);
+                onError(out);
             }
         }
 
         function stallMessage() {
-            var standaloneDisplay = false;
-            try {
-                standaloneDisplay =
-                    typeof global.matchMedia === 'function' &&
-                    global.matchMedia('(display-mode: standalone)').matches;
-            } catch (e) {
-                standaloneDisplay = false;
-            }
-            var fromHomeScreen =
-                typeof navigator !== 'undefined' &&
-                (navigator.standalone === true || standaloneDisplay);
+            var fromHomeScreen = isIosStandaloneWebApp();
             var base =
                 'Location did not respond (Safari on iPad sometimes never finishes the GPS request). ';
             var settings =
@@ -393,20 +449,9 @@
         }
 
         function startWatchdogAndRequests() {
-            var watchdogMs =
-                opts.watchdogMs != null
-                    ? opts.watchdogMs
-                    : gentle
-                      ? 52000
-                      : 42000;
-            watchdogId = setTimeout(function () {
-                if (settled) return;
-                settled = true;
-                watchdogId = null;
-                if (onError) {
-                    onError({ code: 0, message: stallMessage() });
-                }
-            }, watchdogMs);
+            var firstWatchdogMs =
+                opts.watchdogMs != null ? opts.watchdogMs : gentle ? 20000 : 18000;
+            armWatchdog(firstWatchdogMs);
 
             var lowAcc = {
                 enableHighAccuracy: false,
@@ -414,28 +459,29 @@
                 maximumAge: opts.lowMaximumAge != null ? opts.lowMaximumAge : 120000
             };
 
+            function retryLowAccuracy(err) {
+                if (err && (err.code === 2 || err.code === 3)) {
+                    armWatchdog(gentle ? 28000 : 30000);
+                    navigator.geolocation.getCurrentPosition(
+                        wrapOk,
+                        function (err2) {
+                            wrapErr(err2);
+                        },
+                        gentle
+                            ? {
+                                  enableHighAccuracy: false,
+                                  timeout: 25000,
+                                  maximumAge: 300000
+                              }
+                            : lowAcc
+                    );
+                    return;
+                }
+                wrapErr(err);
+            }
+
             if (gentle) {
-                navigator.geolocation.getCurrentPosition(
-                    wrapOk,
-                    function (err) {
-                        if (err && (err.code === 2 || err.code === 3)) {
-                            navigator.geolocation.getCurrentPosition(
-                                wrapOk,
-                                function (err2) {
-                                    wrapErr(err2);
-                                },
-                                {
-                                    enableHighAccuracy: false,
-                                    timeout: 25000,
-                                    maximumAge: 300000
-                                }
-                            );
-                        } else {
-                            wrapErr(err);
-                        }
-                    },
-                    lowAcc
-                );
+                navigator.geolocation.getCurrentPosition(wrapOk, retryLowAccuracy, lowAcc);
                 return;
             }
 
@@ -445,23 +491,7 @@
                 maximumAge: 0
             };
 
-            navigator.geolocation.getCurrentPosition(
-                wrapOk,
-                function (err) {
-                    if (err && (err.code === 2 || err.code === 3)) {
-                        navigator.geolocation.getCurrentPosition(
-                            wrapOk,
-                            function (err2) {
-                                wrapErr(err2);
-                            },
-                            lowAcc
-                        );
-                    } else {
-                        wrapErr(err);
-                    }
-                },
-                highAcc
-            );
+            navigator.geolocation.getCurrentPosition(wrapOk, retryLowAccuracy, highAcc);
         }
 
         if (
@@ -488,33 +518,81 @@
         }
     }
 
+    function leafletExtend(dest, src) {
+        var extendFn =
+            (typeof L !== 'undefined' && L.Util && L.Util.extend) ||
+            (typeof L !== 'undefined' && L.extend);
+        if (typeof extendFn === 'function') {
+            return extendFn(dest, src);
+        }
+        var key;
+        for (key in src) {
+            if (Object.prototype.hasOwnProperty.call(src, key)) {
+                dest[key] = src[key];
+            }
+        }
+        return dest;
+    }
+
+    function fireLeafletLocateError(map, err) {
+        var e = err || { code: 0, message: 'Could not get location.' };
+        var msg = geolocationErrorMessage(e);
+        var payload = {
+            code: e.code || 0,
+            message: msg ? 'Geolocation error: ' + msg + '.' : '',
+            handledByIosStandalonePrompt: !!e.handledByIosStandalonePrompt
+        };
+        if (typeof map.fire === 'function') {
+            map.fire('locationerror', payload);
+            return;
+        }
+        if (typeof map._handleGeolocationError === 'function') {
+            map._handleGeolocationError({ code: payload.code, message: msg || 'Could not get location.' });
+        }
+    }
+
+    /**
+     * Leaflet.Locate / map.locate() call navigator.geolocation directly, which hangs on iOS.
+     * Route one-shot locates through getCurrentPositionRobust (watch mode on non-iOS is unchanged).
+     */
+    function patchLeafletMapLocate() {
+        if (typeof L === 'undefined' || !L.Map || !L.Map.prototype.locate) return;
+        if (L.Map.prototype._airplotLocateOriginal) return;
+        L.Map.prototype._airplotLocateOriginal = L.Map.prototype.locate;
+        L.Map.prototype.locate = function (options) {
+            options = options || {};
+            this._locateOptions = leafletExtend({ timeout: 10000, watch: false }, options);
+            if (this._locateOptions.watch && !prefersGentleGeoOptions()) {
+                return this._airplotLocateOriginal.call(this, this._locateOptions);
+            }
+            var map = this;
+            getCurrentPositionRobust(
+                function (pos) {
+                    if (typeof map._handleGeolocationResponse === 'function') {
+                        map._handleGeolocationResponse(pos);
+                    }
+                },
+                function (err) {
+                    fireLeafletLocateError(map, err);
+                }
+            );
+            return this;
+        };
+    }
+
     global.GeoLocate = {
         secureContextBlockedMessage: secureContextBlockedMessage,
         isGeolocationEnvironmentOk: isGeolocationEnvironmentOk,
+        isIosLikeAppleDevice: isIosLikeAppleDevice,
         isIosStandaloneWebApp: isIosStandaloneWebApp,
+        shouldSkipAutomaticGeolocation: shouldSkipAutomaticGeolocation,
         showIosStandaloneOpenInBrowserPrompt: showIosStandaloneOpenInBrowserPrompt,
         prefersGentleGeoOptions: prefersGentleGeoOptions,
         leafletLocateOptions: leafletLocateOptions,
+        mergeLeafletLocateControlOptions: mergeLeafletLocateControlOptions,
         getCurrentPositionRobust: getCurrentPositionRobust,
         geolocationErrorMessage: geolocationErrorMessage
     };
 
-    /** Leaflet.Locate calls map.locate() directly; intercept on iOS standalone only. */
-    (function patchLeafletLocateForIosStandalone() {
-        if (typeof L === 'undefined' || !L.Control || !L.Control.Locate) return;
-        var proto = L.Control.Locate.prototype;
-        if (proto._airplotActivateOriginal) return;
-        proto._airplotActivateOriginal = proto._activate;
-        proto._activate = function () {
-            if (
-                typeof GeoLocate !== 'undefined' &&
-                GeoLocate.isIosStandaloneWebApp &&
-                GeoLocate.isIosStandaloneWebApp()
-            ) {
-                GeoLocate.showIosStandaloneOpenInBrowserPrompt();
-                return;
-            }
-            return proto._airplotActivateOriginal.call(this);
-        };
-    })();
+    patchLeafletMapLocate();
 })(typeof window !== 'undefined' ? window : this);

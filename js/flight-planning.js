@@ -283,15 +283,16 @@
         if (typeof L.control.locate === 'function') {
             var geoOkFp = typeof GeoLocate === 'undefined' || GeoLocate.isGeolocationEnvironmentOk();
             if (geoOkFp) {
-                var locateOptsFp =
-                    typeof GeoLocate !== 'undefined' && GeoLocate.leafletLocateOptions
-                        ? GeoLocate.leafletLocateOptions()
-                        : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
-                L.control.locate({
+                var locateControlOptsFp = {
                     position: 'topleft',
-                    strings: { title: 'Show My Location' },
-                    locateOptions: locateOptsFp
-                }).addTo(map);
+                    strings: { title: 'Show My Location' }
+                };
+                if (typeof GeoLocate !== 'undefined' && GeoLocate.mergeLeafletLocateControlOptions) {
+                    locateControlOptsFp = GeoLocate.mergeLeafletLocateControlOptions(locateControlOptsFp);
+                } else {
+                    locateControlOptsFp.locateOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+                }
+                L.control.locate(locateControlOptsFp).addTo(map);
             }
         }
 

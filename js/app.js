@@ -231,19 +231,20 @@
         if (typeof L.control.locate === 'function') {
             var geoOk = typeof GeoLocate === 'undefined' || GeoLocate.isGeolocationEnvironmentOk();
             if (geoOk) {
-                var locateOpts =
-                    typeof GeoLocate !== 'undefined' && GeoLocate.leafletLocateOptions
-                        ? GeoLocate.leafletLocateOptions()
-                        : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
-                plannerLocateControl = L.control.locate({
+                var locateControlOpts = {
                     position: 'topleft',
                     strings: {
                         title: 'Show My Location',
                         popup: 'You are within {distance} from this point',
                         outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
-                    },
-                    locateOptions: locateOpts
-                }).addTo(map);
+                    }
+                };
+                if (typeof GeoLocate !== 'undefined' && GeoLocate.mergeLeafletLocateControlOptions) {
+                    locateControlOpts = GeoLocate.mergeLeafletLocateControlOptions(locateControlOpts);
+                } else {
+                    locateControlOpts.locateOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+                }
+                plannerLocateControl = L.control.locate(locateControlOpts).addTo(map);
             }
         }
         const mobileLocateFabEl = document.getElementById('mobileLocateBtn');

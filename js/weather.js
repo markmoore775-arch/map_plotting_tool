@@ -502,6 +502,9 @@
 
     function tryInitialViewFromGeolocation() {
         if (!map) return;
+        if (typeof GeoLocate !== 'undefined' && GeoLocate.shouldSkipAutomaticGeolocation && GeoLocate.shouldSkipAutomaticGeolocation()) {
+            return;
+        }
         function applyPos(pos) {
             var lat = pos.coords.latitude;
             var lng = pos.coords.longitude;
@@ -555,19 +558,20 @@
         if (typeof L.control.locate === 'function') {
             var geoOkW = typeof GeoLocate === 'undefined' || GeoLocate.isGeolocationEnvironmentOk();
             if (geoOkW) {
-                var locateOptsW =
-                    typeof GeoLocate !== 'undefined' && GeoLocate.leafletLocateOptions
-                        ? GeoLocate.leafletLocateOptions()
-                        : { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
-                L.control.locate({
+                var locateControlOptsW = {
                     position: 'topleft',
                     strings: {
                         title: 'Show My Location',
                         popup: 'You are within {distance} from this point',
                         outsideMapBoundsMsg: 'You seem located outside the boundaries of the map'
-                    },
-                    locateOptions: locateOptsW
-                }).addTo(map);
+                    }
+                };
+                if (typeof GeoLocate !== 'undefined' && GeoLocate.mergeLeafletLocateControlOptions) {
+                    locateControlOptsW = GeoLocate.mergeLeafletLocateControlOptions(locateControlOptsW);
+                } else {
+                    locateControlOptsW.locateOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+                }
+                L.control.locate(locateControlOptsW).addTo(map);
             }
         }
 

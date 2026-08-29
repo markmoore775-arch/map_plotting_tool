@@ -1349,6 +1349,9 @@
     }
 
     function tryInitialGeolocation() {
+        if (typeof GeoLocate !== 'undefined' && GeoLocate.shouldSkipAutomaticGeolocation && GeoLocate.shouldSkipAutomaticGeolocation()) {
+            return;
+        }
         function apply(pos) {
             center = {
                 lat: pos.coords.latitude,
