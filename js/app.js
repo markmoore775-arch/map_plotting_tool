@@ -307,7 +307,7 @@
                 L.DomEvent.on(saveBtn, 'click', (e) => {
                     L.DomEvent.stop(e);
                     L.DomEvent.preventDefault(e);
-                    ProjectIO.saveProject(points, settings, Drawings.serializeShapes());
+                    ProjectIO.saveProject(points, settings, Drawings.serializeShapes(), getGridState());
                 });
                 L.DomEvent.on(loadBtn, 'click', (e) => {
                     L.DomEvent.stop(e);
@@ -741,18 +741,42 @@
 
         showConfirmModal({
             title: 'Clear Project?',
-            message: `This will remove ${summary} from the map. This cannot be undone.`,
+            message: `This will remove ${summary} from the map. You can undo this with Ctrl+Z.`,
             confirmLabel: 'Continue'
         }).then(ok => {
             if (!ok) return;
             showConfirmModal({
                 title: 'Are you absolutely sure?',
-                message: 'All points and drawings will be permanently deleted. Save your project first if you need a backup.',
+                message: 'All points and drawings will be removed and the autosaved draft cleared. You can undo immediately with Ctrl+Z, but save your project first if you need a backup.',
                 confirmLabel: 'Clear Project'
             }).then(ok2 => {
                 if (ok2) clearEntireProject();
             });
         });
+    }
+
+    function getGridState() {
+        if (typeof GridOverlay === 'undefined' || !GridOverlay.hasGrid || !GridOverlay.hasGrid()) return null;
+        const params = GridOverlay.getParams();
+        return {
+            bounds: GridOverlay.getBounds(),
+            rows: params.rows,
+            cols: params.cols,
+            visible: GridOverlay.isVisible()
+        };
+    }
+
+    function restoreGridState(grid) {
+        if (typeof GridOverlay === 'undefined') return;
+        if (!grid || !grid.bounds) {
+            GridOverlay.clear();
+            GridOverlay.render();
+            return;
+        }
+        GridOverlay.setBounds(grid.bounds);
+        GridOverlay.setParams(grid.rows || 3, grid.cols || 3);
+        GridOverlay.toggle(grid.visible !== false);
+        GridOverlay.render();
     }
 
     function restorePointsFromSnapshot(snapshotPoints) {
@@ -1087,7 +1111,13 @@
             labelInput.focus();
             labelInput.select();
 
+            let renameSnapshotPushed = false;
             labelInput.addEventListener('input', () => {
+                // One snapshot per rename session, taken before the first change is applied
+                if (!renameSnapshotPushed) {
+                    renameSnapshotPushed = true;
+                    pushUndoSnapshot();
+                }
                 point.name = labelInput.value.trim();
             });
             labelInput.addEventListener('keydown', (e) => {
@@ -1185,6 +1215,8 @@
             marker.closePopup();
         });
         marker.on('dragend', () => {
+            // Snapshot before mutating so the drag can be undone (point still holds the old position here)
+            pushUndoSnapshot();
             const pos = marker.getLatLng();
             point.lat = pos.lat;
             point.lng = pos.lng;
@@ -1301,6 +1333,18 @@
 
         pointsList.innerHTML = '';
 
+        if (points.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'list-empty-state';
+            empty.innerHTML = 'No points yet.<br>Use the <strong>Add Point</strong> form above, or the <strong>pin button</strong> on the map toolbar to drop one directly.';
+            pointsList.appendChild(empty);
+        } else if (searchTerm && ordered.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'list-empty-state';
+            empty.textContent = 'No points match your search.';
+            pointsList.appendChild(empty);
+        }
+
         function buildPointRow(p) {
             const li = document.createElement('li');
             li.className = 'point-item';
@@ -1372,7 +1416,7 @@
                 } else if (e.target.closest('.btn-delete')) {
                     showConfirmModal({
                         title: 'Delete Point?',
-                        message: `Delete "${p.name || 'Unnamed'}"? This cannot be undone.`,
+                        message: `Delete "${p.name || 'Unnamed'}"? You can undo this with Ctrl+Z.`,
                         confirmLabel: 'Delete'
                     }).then(ok => {
                         if (ok) deletePoint(p.id);
@@ -1628,7 +1672,7 @@
         try {
             const coords = await Converters.resolve(inputVal, getW3WApiKey());
             if (!coords) {
-                alert('Could not resolve location. Please check the format and try again.');
+                showToast('Could not resolve location. Please check the format and try again.', 'error');
                 return;
             }
 
@@ -1658,7 +1702,7 @@
             refreshPointIconControls();
             formatHint.textContent = '';
         } catch (err) {
-            alert('Error resolving location: ' + err.message);
+            showToast('Error resolving location: ' + err.message, 'error');
         } finally {
             addBtn.disabled = false;
             addBtn.textContent = 'Add Point';
@@ -1779,7 +1823,7 @@
         if (points.length === 0) return;
         showConfirmModal({
             title: 'Clear All Points?',
-            message: `This will remove all ${points.length} points from the map. This cannot be undone.`,
+            message: `This will remove all ${points.length} points from the map. You can undo this with Ctrl+Z.`,
             confirmLabel: 'Clear All'
         }).then(ok => {
             if (ok) clearAllPoints();
@@ -1840,16 +1884,22 @@
                 const cols = parseInt(document.getElementById('gridCols').value, 10) || 3;
                 const visible = document.getElementById('gridOverlayVisible').checked;
                 if (typeof GridOverlay !== 'undefined') {
+                    pushUndoSnapshot();
                     GridOverlay.setParams(rows, cols);
                     GridOverlay.toggle(visible);
                     GridOverlay.render();
+                    scheduleMapDraftSave();
                 }
                 closeModal('gridOverlayModal');
             });
         }
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                if (typeof GridOverlay !== 'undefined') GridOverlay.clear();
+                if (typeof GridOverlay !== 'undefined') {
+                    pushUndoSnapshot();
+                    GridOverlay.clear();
+                    scheduleMapDraftSave();
+                }
                 closeModal('gridOverlayModal');
             });
         }
@@ -2337,7 +2387,7 @@
                 const typeName = shape && shape.type === 'polyline' ? 'line' : 'flight path';
                 showConfirmModal({
                     title: 'Delete Route?',
-                    message: `Delete this ${typeName}? This cannot be undone.`,
+                    message: `Delete this ${typeName}? You can undo this with Ctrl+Z.`,
                     confirmLabel: 'Delete'
                 }).then(ok => {
                     if (!ok) return;
@@ -2649,43 +2699,109 @@ ${summaryRows}
         fetchAndRenderFlightOverview(shapeId);
     }
 
+    function initDrawToolButtons() {
+        const host = document.getElementById('drawToolButtons');
+        if (!host) return;
+        host.querySelectorAll('[data-draw-tool]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tool = btn.dataset.drawTool;
+                setDropPointMode(false);
+                setDropPointPickerOpen(false);
+                if (tool === 'Grid') {
+                    if (typeof GridOverlay === 'undefined') return;
+                    if (GridOverlay.hasGrid()) {
+                        openGridOverlayModal();
+                    } else {
+                        Drawings.exitAllDrawingModes();
+                        GridOverlay.startGridDrawMode();
+                        if (handToolbarButton) handToolbarButton.classList.remove('active');
+                        if (gridToolbarButton) gridToolbarButton.classList.add('active');
+                    }
+                } else {
+                    if (typeof GridOverlay !== 'undefined') GridOverlay.exitGridDrawMode();
+                    Drawings.enableDrawMode(tool);
+                }
+                refreshHandToolState();
+                // On small screens the sidebar covers the map, so close it to draw
+                if (window.innerWidth <= 600 && sidebarOpen) {
+                    document.body.classList.add('sidebar-collapsed');
+                    sidebarOpen.classList.remove('hidden');
+                    setTimeout(() => map && map.invalidateSize(), 300);
+                }
+            });
+        });
+    }
+
     function initSearchModal() {
         const searchGoBtn = document.getElementById('searchGoBtn');
+        const searchAddPointBtn = document.getElementById('searchAddPointBtn');
         const searchInput = document.getElementById('searchInput');
         const searchFormatHint = document.getElementById('searchFormatHint');
         const searchStatus = document.getElementById('searchStatus');
 
         if (!searchGoBtn || !searchInput) return;
 
-        searchGoBtn.addEventListener('click', async () => {
+        function showSearchError(message) {
+            searchStatus.textContent = message;
+            searchStatus.className = 'bulk-status error';
+            searchStatus.classList.remove('hidden');
+        }
+
+        async function resolveSearchInput(btn, busyLabel, idleLabel) {
             const input = searchInput.value.trim();
-            if (!input) return;
-
-            searchGoBtn.disabled = true;
-            searchGoBtn.textContent = 'Resolving...';
+            if (!input) return null;
+            btn.disabled = true;
+            btn.textContent = busyLabel;
             searchStatus.classList.add('hidden');
-
             try {
                 const coords = await Converters.resolve(input, getW3WApiKey());
-                if (coords) {
-                    map.setView([coords.lat, coords.lng], Math.max(map.getZoom(), 14));
-                    closeModal('searchModal');
-                    searchInput.value = '';
-                    searchFormatHint.textContent = '';
-                } else {
-                    searchStatus.textContent = 'Could not resolve location. Check format and try again.';
-                    searchStatus.className = 'bulk-status error';
-                    searchStatus.classList.remove('hidden');
+                if (!coords) {
+                    showSearchError('Could not resolve location. Check format and try again.');
+                    return null;
                 }
+                return { coords, input };
             } catch (err) {
-                searchStatus.textContent = 'Error: ' + (err.message || String(err));
-                searchStatus.className = 'bulk-status error';
-                searchStatus.classList.remove('hidden');
+                showSearchError('Error: ' + (err.message || String(err)));
+                return null;
             } finally {
-                searchGoBtn.disabled = false;
-                searchGoBtn.textContent = 'Go to Location';
+                btn.disabled = false;
+                btn.textContent = idleLabel;
             }
+        }
+
+        function closeSearchModal() {
+            closeModal('searchModal');
+            searchInput.value = '';
+            searchFormatHint.textContent = '';
+        }
+
+        searchGoBtn.addEventListener('click', async () => {
+            const result = await resolveSearchInput(searchGoBtn, 'Resolving...', 'Go to Location');
+            if (!result) return;
+            map.setView([result.coords.lat, result.coords.lng], Math.max(map.getZoom(), 14));
+            closeSearchModal();
         });
+
+        if (searchAddPointBtn) {
+            searchAddPointBtn.addEventListener('click', async () => {
+                const result = await resolveSearchInput(searchAddPointBtn, 'Resolving...', 'Add Point Here');
+                if (!result) return;
+                const { coords, input } = result;
+                // Prefer a short place name from the geocoder over the raw query
+                const name = coords.displayName
+                    ? coords.displayName.split(',').slice(0, 2).join(',').trim()
+                    : input;
+                const point = createPoint({
+                    name,
+                    lat: coords.lat,
+                    lng: coords.lng,
+                    originalInput: input
+                });
+                map.setView([coords.lat, coords.lng], Math.max(map.getZoom(), 14));
+                closeSearchModal();
+                openQuickEditPopup(point.id, true);
+            });
+        }
 
         searchInput.addEventListener('input', () => {
             const val = searchInput.value.trim();
@@ -2809,7 +2925,7 @@ ${summaryRows}
         const point = points.find(p => p.id === id);
         showConfirmModal({
             title: 'Delete point?',
-            message: `Delete "${point ? point.name || 'Unnamed' : ''}"? This cannot be undone.`,
+            message: `Delete "${point ? point.name || 'Unnamed' : ''}"? You can undo this with Ctrl+Z.`,
             confirmLabel: 'Delete'
         }).then(ok => {
             if (!ok) return;
@@ -3225,7 +3341,7 @@ ${summaryRows}
 
     document.getElementById('exportCSV').addEventListener('click', () => {
         if (points.length === 0) {
-            alert('No points to export.');
+            showToast('No points to export.', 'error');
             return;
         }
         Exporters.exportCSV(points);
@@ -3235,7 +3351,7 @@ ${summaryRows}
     document.getElementById('exportKML').addEventListener('click', () => {
         const shapesData = Drawings.serializeShapes();
         if (points.length === 0 && shapesData.length === 0) {
-            alert('No points or shapes to export.');
+            showToast('No points or shapes to export.', 'error');
             return;
         }
         Exporters.exportKML(points, shapesData);
@@ -3256,7 +3372,7 @@ ${summaryRows}
         closeModal('exportModal');
         const shapesData = Drawings.serializeShapes();
         if (points.length === 0 && shapesData.length === 0) {
-            alert('No points or shapes to export.');
+            showToast('No points or shapes to export.', 'error');
             return;
         }
         showLoading('Generating PowerPoint report...');
@@ -3264,7 +3380,7 @@ ${summaryRows}
             await Exporters.exportPptx(document.getElementById('map'), points, shapesData);
         } catch (err) {
             console.error('PPTX export failed:', err);
-            alert('Failed to export PowerPoint: ' + (err.message || 'Unknown error'));
+            showToast('Failed to export PowerPoint: ' + (err.message || 'Unknown error'), 'error');
         } finally {
             hideLoading();
         }
@@ -3274,7 +3390,7 @@ ${summaryRows}
         closeModal('exportModal');
         const shapesData = Drawings.serializeShapes();
         if (points.length === 0 && shapesData.length === 0) {
-            alert('No points or shapes to export.');
+            showToast('No points or shapes to export.', 'error');
             return;
         }
         showLoading('Generating PDF report...');
@@ -3282,7 +3398,7 @@ ${summaryRows}
             await Exporters.exportPdf(document.getElementById('map'), points, shapesData);
         } catch (err) {
             console.error('PDF export failed:', err);
-            alert('Failed to export PDF: ' + (err.message || 'Unknown error'));
+            showToast('Failed to export PDF: ' + (err.message || 'Unknown error'), 'error');
         } finally {
             hideLoading();
         }
@@ -3291,7 +3407,7 @@ ${summaryRows}
     // ---- Save / Load Project ----
 
     document.getElementById('saveProjectBtn').addEventListener('click', () => {
-        ProjectIO.saveProject(points, settings, Drawings.serializeShapes());
+        ProjectIO.saveProject(points, settings, Drawings.serializeShapes(), getGridState());
     });
 
     document.getElementById('loadProjectBtn').addEventListener('click', () => {
@@ -3345,11 +3461,14 @@ ${summaryRows}
                 Drawings.loadShapes(project.shapes);
             }
 
+            // Restore grid overlay (clears any existing grid if project has none)
+            restoreGridState(project.grid);
+
             if (points.length > 0) fitAllPoints();
 
-            setBulkStatus(`Loaded ${points.length} points.`, 'success');
+            showToast(`Project loaded: ${points.length} point${points.length !== 1 ? 's' : ''}.`, 'success');
         } catch (err) {
-            alert('Failed to load project: ' + err.message);
+            showToast('Failed to load project: ' + err.message, 'error');
         } finally {
             hideLoading();
             e.target.value = ''; // Reset file input
@@ -3399,6 +3518,27 @@ ${summaryRows}
         Drawings.toggleShapeLabels(settings.showShapeLabels);
         Drawings.toggleFlightPathDistance(settings.showFlightPathDistance === true);
     }
+
+    // ---- Toast Notifications ----
+
+    function showToast(message, type, durationMs) {
+        const existing = document.querySelector('.app-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'app-toast' + (type ? ' app-toast-' + type : '');
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        const duration = durationMs || (type === 'error' ? 5000 : 3500);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            toast.addEventListener('animationend', () => toast.remove());
+            setTimeout(() => toast.remove(), 800); // fallback if animation doesn't fire
+        }, duration);
+    }
+
+    window.airplotToast = showToast;
 
     // ---- Loading Overlay ----
 
@@ -3461,9 +3601,9 @@ ${summaryRows}
         if (!el) return;
         let text = '';
         if (typeof Drawings !== 'undefined' && Drawings.getSelectedShapeId && Drawings.getSelectedShapeId()) {
-            text = 'Drag to Move — Double-Click for Properties — Esc to Deselect';
+            text = 'Drag to Move - Double-Click for Properties - Esc to Deselect';
         } else if (typeof Drawings !== 'undefined' && Drawings.isDrawingActive && Drawings.isDrawingActive()) {
-            text = 'Finish on the Map — Adjust Style in the Draw Tab';
+            text = 'Finish on the Map - Adjust Style in the Draw Tab';
         } else if (dropPointMode || dropPointPickerOpen) {
             text = 'Click the Map to Place a Point';
         }
@@ -3495,6 +3635,7 @@ ${summaryRows}
                 v: 1,
                 points: points.map(p => ({ ...p })),
                 shapes: typeof Drawings !== 'undefined' && Drawings.serializeShapes ? Drawings.serializeShapes() : [],
+                grid: getGridState(),
                 mapView: { lat: c.lat, lng: c.lng, zoom: map.getZoom() }
             };
             localStorage.setItem(MAP_DRAFT_STORAGE_KEY, JSON.stringify(payload));
@@ -3517,12 +3658,13 @@ ${summaryRows}
             return;
         }
         if (!data || data.v !== 1 || !Array.isArray(data.points) || !Array.isArray(data.shapes)) return;
-        if (data.points.length === 0 && data.shapes.length === 0) return;
+        if (data.points.length === 0 && data.shapes.length === 0 && !data.grid) return;
 
         mapDraftLoadInProgress = true;
         try {
             restorePointsFromSnapshot(data.points);
             Drawings.loadShapes(data.shapes, { preserveIds: true });
+            restoreGridState(data.grid);
             if (data.mapView && data.mapView.lat != null && data.mapView.lng != null) {
                 const z = data.mapView.zoom != null ? data.mapView.zoom : map.getZoom();
                 map.setView([data.mapView.lat, data.mapView.lng], z, { animate: false });
@@ -3546,6 +3688,7 @@ ${summaryRows}
         map.on('grid:rectangleDrawn', () => {
             if (gridToolbarButton) gridToolbarButton.classList.remove('active');
             refreshHandToolState();
+            scheduleMapDraftSave();
             openGridOverlayModal();
         });
 
@@ -3567,6 +3710,7 @@ ${summaryRows}
                 getState: () => ({
                     points: points.map(p => ({ ...p })),
                     shapes: Drawings.serializeShapes(),
+                    grid: getGridState(),
                     nextId,
                     nextShapeId: Math.max(0, ...(Drawings.getShapes().map(s => s.id) || [0])) + 1
                 }),
@@ -3574,6 +3718,7 @@ ${summaryRows}
                     document.getElementById('shapeEditModal').classList.add('hidden');
                     restorePointsFromSnapshot(snapshot.points);
                     Drawings.loadShapes(snapshot.shapes || [], { preserveIds: true });
+                    restoreGridState(snapshot.grid);
                 }
             });
             UndoHistory.updateUndoButtonState();
@@ -3595,7 +3740,7 @@ ${summaryRows}
             const label = shape ? (shape.label || Drawings.getShapeTypeLabel(shape.type)) : 'shape';
             showConfirmModal({
                 title: 'Delete Shape?',
-                message: `Delete this ${label}? This cannot be undone.`,
+                message: `Delete this ${label}? You can undo this with Ctrl+Z.`,
                 confirmLabel: 'Delete'
             }).then(ok => {
                 if (ok) Drawings.deleteShapeFromModal();
@@ -3638,7 +3783,7 @@ ${summaryRows}
             if (count === 0) return;
             showConfirmModal({
                 title: 'Clear All Shapes?',
-                message: `This will remove all ${count} shapes from the map. This cannot be undone.`,
+                message: `This will remove all ${count} shapes from the map. You can undo this with Ctrl+Z.`,
                 confirmLabel: 'Clear All'
             }).then(ok => {
                 if (!ok) return;
@@ -3956,7 +4101,7 @@ ${summaryRows}
                     if (point) {
                         showConfirmModal({
                             title: 'Delete Point?',
-                            message: `Delete "${point.name || 'Unnamed'}"? This cannot be undone.`,
+                            message: `Delete "${point.name || 'Unnamed'}"? You can undo this with Ctrl+Z.`,
                             confirmLabel: 'Delete'
                         }).then(ok => {
                             if (ok) deletePoint(pointId);
@@ -3985,7 +4130,7 @@ ${summaryRows}
                     const label = shape ? (shape.label || Drawings.getShapeTypeLabel(shape.type)) : 'shape';
                     showConfirmModal({
                         title: 'Delete Shape?',
-                        message: `Delete this ${label}? This cannot be undone.`,
+                        message: `Delete this ${label}? You can undo this with Ctrl+Z.`,
                         confirmLabel: 'Delete'
                     }).then(ok => {
                         if (ok) Drawings.removeShape(shapeId);
@@ -4047,7 +4192,9 @@ ${summaryRows}
             case 'clear-grid':
                 hideMapContextMenu();
                 if (typeof GridOverlay !== 'undefined') {
+                    pushUndoSnapshot();
                     GridOverlay.clear();
+                    scheduleMapDraftSave();
                 }
                 break;
             case 'paste':
@@ -4103,6 +4250,9 @@ ${summaryRows}
                 initFlightOverviewControls();
                 initSearchModal();
                 initGridOverlayModal();
+                initDrawToolButtons();
+                refreshPointsList();
+                Drawings.refreshShapesList();
                 refreshHandToolState();
                 if (typeof UndoHistory !== 'undefined') UndoHistory.updateUndoButtonState();
             });
@@ -4141,14 +4291,6 @@ ${summaryRows}
             introAirspaceBtn.addEventListener('click', () => openModal('airspaceChoiceModal'));
         }
 
-        const introFlightPlanBtn = document.getElementById('introFlightPlanBtn');
-        if (introFlightPlanBtn) {
-            introFlightPlanBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const target = introFlightPlanBtn.getAttribute('href') || 'flight-planning.html';
-                window.location.assign(target);
-            }, true);
-        }
     });
 
 })();

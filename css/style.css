@@ -394,7 +394,7 @@ html.airplot-autostart-boot .intro-overlay {
     box-sizing: border-box;
 }
 
-/* Welcome launchpad: hero + 2×2 grid */
+/* Welcome launchpad: primary CTA + 2×2 grid */
 .intro-launchpad {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -470,25 +470,6 @@ html.airplot-autostart-boot .intro-overlay {
     .intro-cta.intro-cta--hero {
         grid-column: 1;
     }
-}
-
-/* DJI section (explanation + button) */
-.intro-dji-section {
-    margin-bottom: clamp(12px, 3.5dvh, 48px);
-    padding-top: clamp(10px, 2.5dvh, 36px);
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* Hide DJI welcome entry while in development; strip intro-dji-welcome-hidden from index.html to restore */
-.intro-dji-section.intro-dji-welcome-hidden {
-    display: none !important;
-}
-
-.intro-dji-description {
-    font-size: clamp(0.85rem, min(3.3vw, 3.5dvh), 1.35rem);
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.65);
-    margin-bottom: clamp(8px, 2dvh, 24px);
 }
 
 /* CTA button */
@@ -817,7 +798,7 @@ body.sidebar-collapsed .map-logo {
     pointer-events: none;
 }
 
-/* ---- Shared welcome pill (index map, flight-planning, weather) ---- */
+/* ---- Shared welcome pill (index map, weather) ---- */
 .fp-welcome-bar {
     position: fixed;
     top: max(12px, env(safe-area-inset-top, 12px));
@@ -1114,7 +1095,7 @@ body.ap-shell .fn-top-bar .fp-welcome-home-link {
 
 /* Open sidebar: on the map (not in fn-top-bar) so the header matches Weather / Airspace / Checklist */
 /* Top = map inset (12px, see .leaflet-top.leaflet-left) + Leaflet’s .leaflet-top .leaflet-control margin-top (10px) so » aligns with zoom + */
-body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map {
+body.ap-shell:not(.weather-mode):not(.airspace-mode) .sidebar-open--planner-map {
     position: fixed;
     top: calc(var(--ap-top-header-height) + 12px + 10px);
     left: calc(max(12px, env(safe-area-inset-left, 0px)) + var(--ap-planner-sidebar-open-left-offset));
@@ -1138,7 +1119,7 @@ body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) 
     transition: background var(--transition);
 }
 
-body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map:hover {
+body.ap-shell:not(.weather-mode):not(.airspace-mode) .sidebar-open--planner-map:hover {
     background: var(--sidebar-surface);
 }
 
@@ -1249,26 +1230,26 @@ body.ap-shell .fn-theme-toggle-icon {
 }
 
 /* Map + sidebar sit below fixed header */
-body.ap-shell:not(.flight-planning-mode) .sidebar {
+body.ap-shell .sidebar {
     top: var(--ap-top-header-height);
 }
 
-body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) #map {
+body.ap-shell:not(.weather-mode):not(.airspace-mode) #map {
     top: var(--ap-top-header-height);
 }
 
 /* Leaflet controls: small gap below top of map container */
-body.ap-shell:not(.flight-planning-mode) .leaflet-top.leaflet-left {
+body.ap-shell .leaflet-top.leaflet-left {
     top: 12px;
 }
 
 @media (max-width: 900px) {
-    body.ap-shell:not(.flight-planning-mode) .leaflet-top.leaflet-right {
+    body.ap-shell .leaflet-top.leaflet-right {
         top: 12px;
     }
 }
 
-body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .map-logo {
+body.ap-shell:not(.weather-mode):not(.airspace-mode) .map-logo {
     top: calc(var(--ap-top-header-height) + 12px + 10px);
     left: calc(
         var(--sidebar-width)
@@ -1278,7 +1259,7 @@ body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) 
     );
 }
 
-body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode).sidebar-collapsed .map-logo {
+body.ap-shell:not(.weather-mode):not(.airspace-mode).sidebar-collapsed .map-logo {
     left: calc(
         max(12px, env(safe-area-inset-left, 0px))
         + var(--ap-planner-sidebar-open-left-offset)
@@ -1306,7 +1287,7 @@ body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode).
         gap: 8px;
     }
 
-    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map {
+    body.ap-shell:not(.weather-mode):not(.airspace-mode) .sidebar-open--planner-map {
         padding: 0 8px;
         min-width: var(--ap-chrome-height);
         min-height: var(--ap-chrome-height);
@@ -1398,14 +1379,14 @@ body.ap-shell.fn-light-theme .fn-theme-toggle:hover {
     color: var(--ap-light-chrome-icon-emphasis, #0f172a);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .sidebar-open--planner-map {
     background: #ffffff;
     border-color: #c5c5d0;
     color: #1a1d26;
     box-shadow: var(--ap-chrome-shadow-light);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-open--planner-map:hover {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .sidebar-open--planner-map:hover {
     background: #f0f0f5;
     border-color: var(--primary);
     color: #0f172a;
@@ -1425,7 +1406,7 @@ body.ap-shell.fn-light-theme .fn-top-bar .help-panel .help-panel-btn {
  * Planning map (index): sidebar + UK airspace key use --sidebar-* from :root (dark).
  * Re-map tokens and a few hardcoded dark surfaces so they track the header theme toggle.
  */
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) {
     --sidebar-bg: #f0f1f4;
     --sidebar-surface: #ffffff;
     --sidebar-border: #d0d4dc;
@@ -1452,56 +1433,56 @@ body.ap-shell.fn-light-theme.airspace-mode {
     color: var(--sidebar-text);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .sidebar {
     box-shadow: 8px 0 24px rgba(0, 0, 0, 0.08);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-title {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .sidebar-title {
     color: #0a0a0a;
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-clear-project-btn:hover {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .sidebar-clear-project-btn:hover {
     background: rgba(0, 0, 0, 0.06);
     color: var(--danger);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-toggle:hover {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .sidebar-toggle:hover {
     color: #0f172a;
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-tabs {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .sidebar-tabs {
     background: rgba(0, 0, 0, 0.04);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .sidebar-tab.active {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .sidebar-tab.active {
     color: #0f172a;
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .point-notes-details {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .point-notes-details {
     background: rgba(0, 0, 0, 0.04);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .point-group-details {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .point-group-details {
     background: rgba(0, 0, 0, 0.03);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .cell-fields {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .cell-fields {
     background: rgba(0, 0, 0, 0.05);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .btn-icon:hover {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .btn-icon:hover {
     background: rgba(0, 0, 0, 0.06);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .airspace-legend {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .airspace-legend {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .airspace-legend-refresh:hover:not(:disabled) {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .airspace-legend-refresh:hover:not(:disabled) {
     background: rgba(0, 0, 0, 0.06);
 }
 
-body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .airspace-notam-options {
+body.ap-shell.fn-light-theme:not(.weather-mode):not(.airspace-mode) .airspace-notam-options {
     background: rgba(0, 0, 0, 0.05);
 }
 
@@ -1912,6 +1893,40 @@ input.icon-color-native[type="color"] {
     padding: 12px 16px;
 }
 
+/* ---- Draw tab tool buttons ---- */
+
+.draw-tool-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.draw-tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-family);
+    color: var(--sidebar-text);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.draw-tool-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent, #5b8def);
+}
+
+.draw-tool-btn svg {
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
 .project-shortcuts-hint {
     font-size: 11px;
     line-height: 1.5;
@@ -2045,7 +2060,7 @@ body.sidebar-collapsed .map-context-hint {
         border-radius: 16px 16px 0 0;
     }
 
-    body.ap-shell:not(.weather-mode):not(.flight-planning-mode) .sidebar {
+    body.ap-shell:not(.weather-mode) .sidebar {
         height: min(82vh, calc(100dvh - var(--ap-top-header-height) - 8px));
         max-height: calc(100dvh - var(--ap-top-header-height) - 8px);
     }
@@ -2058,15 +2073,15 @@ body.sidebar-collapsed .map-context-hint {
         bottom: max(28px, env(safe-area-inset-bottom, 0px));
     }
 
-    body:not(.weather-mode):not(.flight-planning-mode) #map {
+    body:not(.weather-mode) #map {
         left: 0 !important;
     }
 
-    body:not(.weather-mode):not(.flight-planning-mode) .app-footer {
+    body:not(.weather-mode) .app-footer {
         left: 0 !important;
     }
 
-    body:not(.ap-shell):not(.weather-mode):not(.flight-planning-mode) .map-logo {
+    body:not(.ap-shell):not(.weather-mode) .map-logo {
         left: 12px !important;
     }
 }
@@ -3493,7 +3508,7 @@ a.airspace-choice-btn {
         visibility: hidden;
     }
 
-    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode).sidebar-collapsed .map-logo {
+    body.ap-shell:not(.weather-mode):not(.airspace-mode).sidebar-collapsed .map-logo {
         visibility: visible;
         top: calc(var(--ap-top-header-height) + 12px + 10px);
         left: calc(
@@ -3525,17 +3540,17 @@ a.airspace-choice-btn {
     }
 
     /* Leaflet controls - below welcome pill (main map; flight/weather use page CSS) */
-    body:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-left {
+    body:not(.weather-mode) .leaflet-top.leaflet-left {
         top: calc(52px + env(safe-area-inset-top, 0px));
         pointer-events: auto;
     }
 
-    body.ap-shell:not(.weather-mode):not(.flight-planning-mode) .leaflet-top.leaflet-left {
+    body.ap-shell:not(.weather-mode) .leaflet-top.leaflet-left {
         top: 12px;
     }
 
     /* Collapsible tool strip: first control is 44px - keep » clear of it */
-    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) {
+    body.ap-shell:not(.weather-mode):not(.airspace-mode) {
         --ap-planner-sidebar-open-left-offset: 64px;
     }
 
@@ -3777,7 +3792,7 @@ a.airspace-choice-btn {
     }
 
     /* Planner: layers sit below top chrome (52px) - keep FABs below that stack */
-    body:not(.weather-mode):not(.flight-planning-mode) .mobile-map-actions {
+    body:not(.weather-mode) .mobile-map-actions {
         top: calc(env(safe-area-inset-top, 0px) + 52px + 10px + 44px + 20px);
     }
 
@@ -3826,7 +3841,7 @@ a.airspace-choice-btn {
     }
 
     /* Planner map: text Help chip instead of circular ? */
-    body.ap-shell:not(.weather-mode):not(.airspace-mode):not(.flight-planning-mode) .ap-mobile-help-btn.mobile-map-action-btn {
+    body.ap-shell:not(.weather-mode):not(.airspace-mode) .ap-mobile-help-btn.mobile-map-action-btn {
         width: auto;
         height: 36px;
         min-width: auto;
@@ -3919,6 +3934,64 @@ a.airspace-choice-btn {
         from { opacity: 1; transform: translateX(-50%) translateY(0); }
         to   { opacity: 0; transform: translateX(-50%) translateY(-10px); }
     }
+}
+
+/* ---- List empty states ---- */
+
+.list-empty-state {
+    padding: 18px 14px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--sidebar-text-muted);
+    text-align: center;
+    border: 1px dashed var(--sidebar-border);
+    border-radius: var(--radius-sm);
+    margin: 8px 0;
+    list-style: none;
+}
+
+/* ---- App-wide toast notifications ---- */
+
+.app-toast {
+    position: fixed;
+    top: max(16px, env(safe-area-inset-top, 16px));
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 30, 46, 0.94);
+    color: #fff;
+    font-family: var(--font-family);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    z-index: 4000;
+    pointer-events: none;
+    animation: appToastFadeIn 0.3s ease-out;
+    max-width: min(90vw, 480px);
+    text-align: center;
+}
+
+.app-toast-error {
+    background: rgba(160, 32, 32, 0.95);
+}
+
+.app-toast-success {
+    background: rgba(22, 101, 52, 0.95);
+}
+
+.app-toast.fade-out {
+    animation: appToastFadeOut 0.4s ease-in forwards;
+}
+
+@keyframes appToastFadeIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes appToastFadeOut {
+    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to   { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 }
 
 /* ---- Collapsible attribution ---- */
@@ -4023,7 +4096,7 @@ a.airspace-choice-btn {
     }
 
     /* App footer (© line) - just above Leaflet attribution row */
-    body:not(.weather-mode):not(.flight-planning-mode) .app-footer {
+    body:not(.weather-mode) .app-footer {
         bottom: calc(20px + max(8px, env(safe-area-inset-bottom, 0px)));
     }
 
@@ -4444,6 +4517,17 @@ a.airspace-choice-btn {
     line-height: 1.35;
     color: var(--sidebar-text-muted);
     background: rgba(0, 0, 0, 0.12);
+    border-radius: var(--radius-sm);
+}
+
+.airspace-legend-status {
+    margin: 0 0 8px 0;
+    padding: 6px 8px;
+    font-size: 10px;
+    line-height: 1.35;
+    color: #fca5a5;
+    background: rgba(220, 38, 38, 0.14);
+    border: 1px solid rgba(220, 38, 38, 0.35);
     border-radius: var(--radius-sm);
 }
 
@@ -5351,12 +5435,16 @@ a.airspace-choice-btn {
     padding-right: 0;
 }
 
+/* Sidebar panel drops horizontal padding so rows align with the section; restore it when the
+   editing outline is shown, otherwise labels sit flush against the border. */
 .sidebar .draw-style-panel.editing-shape {
     box-shadow: none;
     background: rgba(91, 141, 239, 0.07);
     border-radius: var(--radius);
     outline: 1px solid var(--primary);
     outline-offset: 0;
+    padding-left: 12px;
+    padding-right: 12px;
 }
 
 .sidebar .draw-style-panel.editing-shape .draw-style-header {

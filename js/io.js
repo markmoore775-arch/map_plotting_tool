@@ -12,19 +12,32 @@ const ProjectIO = (() => {
     }
 
     /**
+     * Remove credentials that should never leave the browser (shared project
+     * files would otherwise leak the user's BGA login).
+     */
+    function sanitizeSettingsForExport(settings) {
+        const safe = { ...(settings || {}) };
+        delete safe.bgaAirspaceUsername;
+        delete safe.bgaAirspacePassword;
+        return safe;
+    }
+
+    /**
      * Save project to a JSON file. Uses native Save As dialog when available
      * (File System Access API), otherwise falls back to download.
      * @param {Array} points - Array of point objects
      * @param {object} settings - Application settings
      * @param {Array} shapes - Array of shape objects (optional)
+     * @param {object|null} grid - Grid overlay state { bounds, rows, cols, visible } (optional)
      */
-    async function saveProject(points, settings, shapes) {
+    async function saveProject(points, settings, shapes, grid) {
         const project = {
-            version: 2,
+            version: 3,
             exportedAt: new Date().toISOString(),
-            settings: settings,
+            settings: sanitizeSettingsForExport(settings),
             points: points,
-            shapes: shapes || []
+            shapes: shapes || [],
+            grid: grid || null
         };
 
         const json = JSON.stringify(project, null, 2);
@@ -40,7 +53,11 @@ const ProjectIO = (() => {
                 await writable.close();
             } catch (err) {
                 if (err.name === 'AbortError') return; // User cancelled
-                alert('Failed to save: ' + err.message);
+                if (typeof window.airplotToast === 'function') {
+                    window.airplotToast('Failed to save: ' + err.message, 'error');
+                } else {
+                    alert('Failed to save: ' + err.message);
+                }
             }
         } else {
             Exporters.downloadFile(json, 'map_project.json', 'application/json');
@@ -60,13 +77,14 @@ const ProjectIO = (() => {
                 try {
                     const project = JSON.parse(e.target.result);
 
-                    // Support both v1 (no shapes) and v2 (with shapes)
+                    // Support v1 (no shapes), v2 (shapes), and v3 (shapes + grid)
                     const validPoints = filterValidPoints(project.points);
 
                     resolve({
                         points: validPoints,
                         settings: project.settings || {},
-                        shapes: project.shapes || []
+                        shapes: project.shapes || [],
+                        grid: project.grid || null
                     });
                 } catch (err) {
                     reject(new Error('Invalid JSON file: ' + err.message));

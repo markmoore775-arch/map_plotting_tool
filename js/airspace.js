@@ -1805,7 +1805,7 @@
                     }
                     setStatus(
                         extra +
-                            '<strong>Rate limited</strong> — retrying in ~' +
+                            '<strong>Rate limited</strong> - retrying in ~' +
                             pollIntervalSec() +
                             's. Not for separation.',
                         true

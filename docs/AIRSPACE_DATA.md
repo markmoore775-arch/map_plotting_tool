@@ -123,7 +123,7 @@ npm install @tmcw/togeojson @xmldom/xmldom adm-zip
 
 ## NOTAM (Temporary Restrictions)
 
-AirPlan fetches NOTAMs from the [UK NOTAM Archive](https://jonty.github.io/uk-notam-archive/) (NATS AIS Contingency, hourly updated). The PIB XML is parsed in one shared module ([`js/notam-pib.js`](../js/notam-pib.js)) so the main map, Flight Weather, Flight Report, and DJI Mission Planner stay consistent.
+AirPlan fetches NOTAMs from the [UK NOTAM Archive](https://jonty.github.io/uk-notam-archive/) (NATS AIS Contingency, hourly updated). The PIB XML is parsed in one shared module ([`js/notam-pib.js`](../js/notam-pib.js)) so the main map, Flight Weather, and Flight Report stay consistent.
 
 **Geometry:** the feed supplies a centre coordinate and a radius, which AirPlan draws as a circle. Complex boundaries described only in NOTAM text are not plotted.
 
@@ -149,10 +149,6 @@ The Airspace tab / section uses the same data. After setting **Search radius**, 
 - **Prioritise for UAS** - sort so UAS-relevant categories appear first.
 
 List rows use coloured **tags** (UAS / hazard, UAS check, Airfield ops, NOTAM). **Vertical (Q-line / text)** uses structured Q-line values when the PIB includes them, with a few simple text fallbacks; treat as advisory and cross-check NATS AIS if altitude matters.
-
-### DJI Mission Planner (`flight-planning.html`)
-
-The map includes a **NOTAM** control (bottom-left) with the same toggle, max radius, filters, and opacity as the main app, so temporary areas can be seen while building KMZ missions.
 
 ## RA(T) – Restricted Area Temporary
 

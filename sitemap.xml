@@ -16,11 +16,6 @@
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://airplan.uk/flight-planning.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
     <loc>https://airplan.uk/flight-notes.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

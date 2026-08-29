@@ -732,6 +732,7 @@
         }
 
         let lastValidity = null;
+        let lastLoadFailed = false;
         let validityUpdateCallback = null;
 
         function loadData(callback) {
@@ -747,6 +748,7 @@
             ]).then(function (results) {
                 const enrData = results[0];
                 const aipData = results[1];
+                lastLoadFailed = !(enrData && enrData.features) && !(aipData && aipData.features);
                 if (enrData && enrData.features) {
                     ingestCollection(enrData);
                     lastValidity = enrData.metadata || lastValidity;
@@ -759,6 +761,8 @@
                 if (validityUpdateCallback) validityUpdateCallback();
                 if (callback) callback();
             }).catch(function () {
+                lastLoadFailed = true;
+                if (validityUpdateCallback) validityUpdateCallback();
                 if (callback) callback();
             });
         }
@@ -838,6 +842,35 @@
                     validityEl.style.fontSize = '10px';
                     validityEl.style.color = '#9ca3af';
                     validityEl.style.marginBottom = '6px';
+
+                    // Data-source problems (airspace GeoJSON, NOTAM, RA(T)) surface here
+                    // instead of failing silently.
+                    const statusEl = L.DomUtil.create('div', 'airspace-legend-status', body);
+                    statusEl.style.display = 'none';
+                    const statusMessages = {};
+                    function setLegendStatus(source, message) {
+                        if (message) {
+                            statusMessages[source] = message;
+                        } else {
+                            delete statusMessages[source];
+                        }
+                        const msgs = Object.keys(statusMessages).map(function (k) { return statusMessages[k]; });
+                        statusEl.textContent = msgs.join(' ');
+                        statusEl.style.display = msgs.length ? '' : 'none';
+                    }
+
+                    function loadNotamsWithStatus() {
+                        if (!notamModule) return;
+                        setLegendStatus('notam', null);
+                        notamModule.loadNotams(function (res) {
+                            if (res && res.error) {
+                                setLegendStatus('notam', 'NOTAM data failed to load. Untick and retick NOTAM to retry.');
+                                return;
+                            }
+                            notamModule.addToMap();
+                        });
+                    }
+
                     function updateValidityDisplay() {
                         if (lastValidity && lastValidity.effectiveFrom && lastValidity.effectiveTo) {
                             validityEl.textContent = 'Data valid: ' + lastValidity.effectiveFrom + ' – ' + lastValidity.effectiveTo;
@@ -845,6 +878,9 @@
                         } else {
                             validityEl.style.display = 'none';
                         }
+                        setLegendStatus('airspace', lastLoadFailed
+                            ? 'Airspace data failed to load. Check your connection and press \u21BB to retry.'
+                            : null);
                     }
                     updateValidityDisplay();
                     setValidityUpdateCallback(updateValidityDisplay);
@@ -1014,11 +1050,10 @@
                                 cb.checked = selectAllCb.checked;
                                 prefs.notam.mapEnabled = selectAllCb.checked;
                                 if (selectAllCb.checked) {
-                                    notamModule.loadNotams(function () {
-                                        notamModule.addToMap();
-                                    });
+                                    loadNotamsWithStatus();
                                 } else {
                                     notamModule.removeFromMap();
+                                    setLegendStatus('notam', null);
                                 }
                                 return;
                             }
@@ -1245,11 +1280,10 @@
                             prefs.notam.mapEnabled = cb.checked;
                             savePrefs(prefs);
                             if (cb.checked) {
-                                notamModule.loadNotams(function () {
-                                    notamModule.addToMap();
-                                });
+                                loadNotamsWithStatus();
                             } else {
                                 notamModule.removeFromMap();
+                                setLegendStatus('notam', null);
                             }
                             updateSelectAllState();
                         });
@@ -1306,9 +1340,7 @@
                             notamModule.setOptions({ fillOpacity: val });
                         });
                         if (cb.checked) {
-                            notamModule.loadNotams(function () {
-                                notamModule.addToMap();
-                            });
+                            loadNotamsWithStatus();
                         }
                         updateSelectAllState();
                     }
@@ -1325,12 +1357,22 @@
                         lbl.textContent = 'RA(T)';
                         L.DomEvent.on(cb, 'change', function () {
                             if (cb.checked) {
+                                setLegendStatus('rat', null);
                                 const bounds = map.getBounds();
-                                ratModule.loadRAT(bounds, function () {
+                                ratModule.loadRAT(bounds, function (res) {
+                                    if (res && res.error) {
+                                        const msg = typeof res.error === 'string'
+                                            ? res.error
+                                            : 'RA(T) data failed to load. Check your BGA credentials in Settings.';
+                                        setLegendStatus('rat', msg);
+                                        cb.checked = false;
+                                        return;
+                                    }
                                     ratModule.addToMap();
                                 });
                             } else {
                                 ratModule.removeFromMap();
+                                setLegendStatus('rat', null);
                             }
                         });
                     }

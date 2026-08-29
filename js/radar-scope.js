@@ -555,7 +555,7 @@
                 if (err && err.message === 'rate_limited') {
                     applyRateLimitBackoff();
                     setStatus(
-                        'ADS-B rate limited — slowing refresh to ' +
+                        'ADS-B rate limited - slowing refresh to ' +
                             Math.round(currentPollMs / 1000) +
                             's. Showing last contacts.',
                         true
@@ -1232,14 +1232,14 @@
         const rows = [
             ['Callsign', t.callsign],
             ['ICAO', t.hex.toUpperCase()],
-            ['Registration', t.reg || '—'],
-            ['Type', t.type || '—'],
+            ['Registration', t.reg || '-'],
+            ['Type', t.type || '-'],
             ['Altitude', formatAlt(t.altFt) + (climbArrow(t.climb) ? ' ' + climbArrow(t.climb) : '')],
-            ['Ground speed', t.gs != null ? Math.round(t.gs) + ' kt' : '—'],
-            ['Track', t.track != null ? Math.round(t.track) + '°' : '—'],
+            ['Ground speed', t.gs != null ? Math.round(t.gs) + ' kt' : '-'],
+            ['Track', t.track != null ? Math.round(t.track) + '°' : '-'],
             ['Range / bearing', t.rangeNm.toFixed(1) + ' NM / ' + Math.round(t.bearingDeg) + '°'],
-            ['Squawk', t.squawk || '—'],
-            ['Position age', t.ageSec != null ? Math.round(t.ageSec) + 's' : '—']
+            ['Squawk', t.squawk || '-'],
+            ['Position age', t.ageSec != null ? Math.round(t.ageSec) + 's' : '-']
         ];
         let html =
             '<h2 class="radar-detail-title" id="radarDetailTitle">' +

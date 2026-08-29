@@ -75,7 +75,11 @@
             </div>
             <p class="intro-tagline">Mapping, weather, flight documentation, and checklists in one place.</p>
             <nav class="intro-launchpad" aria-label="Main tools">
-                <button type="button" class="intro-cta intro-cta--hero" id="introProceedBtn">
+                <a href="flight-notes.html" class="intro-cta intro-cta--hero" id="introFlightReportBtn">
+                    <span class="intro-cta-icon intro-cta-icon--flight-report" aria-hidden="true"></span>
+                    Log a Flight
+                </a>
+                <button type="button" class="intro-cta intro-cta-secondary intro-cta--op" id="introProceedBtn">
                     <span class="intro-cta-icon intro-cta-icon--planner" aria-hidden="true"></span>
                     Plan &amp; Map
                 </button>
@@ -91,10 +95,6 @@
                     <span class="intro-cta-icon intro-cta-icon--checklist" aria-hidden="true"></span>
                     Pre-flight Checklist
                 </a>
-                <a href="flight-notes.html" class="intro-cta intro-cta-secondary intro-cta--doc" id="introFlightReportBtn">
-                    <span class="intro-cta-icon intro-cta-icon--flight-report" aria-hidden="true"></span>
-                    Log a Flight
-                </a>
             </nav>
             <nav class="intro-ref-links" aria-label="Reference and help">
                 <a href="training.html" id="introTrainingBtn">Training Resources</a>
@@ -103,21 +103,12 @@
                 <span class="intro-ref-sep" aria-hidden="true">·</span>
                 <button type="button" class="intro-ref-link-btn" id="introHelpBtn">How to Use AirPlan</button>
             </nav>
-            <!-- DJI Mission Planner: remove class intro-dji-welcome-hidden to show on welcome again -->
-            <div class="intro-dji-section intro-dji-welcome-hidden">
-                <p class="intro-dji-description">
-                    For DJI drones, use the dedicated Mission Planner to create waypoint missions and exclusion zones that can be exported for use in DJI Pilot or Fly apps.
-                </p>
-                <a href="flight-planning.html" class="intro-cta intro-cta-secondary" id="introFlightPlanBtn">
-                    DJI Mission Planner
-                </a>
-            </div>
             <div class="intro-disclaimer">
                 <strong>Disclaimer:</strong> This app is in development. Do not base operational decisions solely on its outputs. Use at your own risk. No liability is accepted. See full disclaimer in How to Use AirPlan.
             </div>
             <p class="intro-support">Questions, feedback, or bugs: <a href="mailto:support@airplan.uk">support@airplan.uk</a></p>
             <p class="intro-privacy"><a href="privacy.html">Privacy Policy</a></p>
-            <p class="intro-copyright">v1.0 · &copy; M Moore</p>
+            <p class="intro-copyright">v1.1 · &copy; M Moore</p>
         </div>
     </div>
 
@@ -240,10 +231,45 @@
                 </section>
             </div>
 
-            <!-- Draw: style + shapes -->
+            <!-- Draw: tools + style + shapes -->
             <div class="sidebar-tab-panel" id="sidebarPanelDraw" role="tabpanel" aria-labelledby="sidebarTabDraw" data-tab="draw" hidden>
-                <section class="sidebar-section">
-                    <p id="drawIdleHint" class="draw-idle-hint">Pick a draw tool on the map toolbar, or select a shape in the list below to edit its style.</p>
+                <section class="sidebar-section sidebar-section-inset">
+                    <h2 class="section-title">Draw Tools</h2>
+                    <div id="drawToolButtons" class="draw-tool-grid">
+                        <button type="button" class="draw-tool-btn" data-draw-tool="Circle" title="Draw a circle">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+                            <span>Circle</span>
+                        </button>
+                        <button type="button" class="draw-tool-btn" data-draw-tool="Rectangle" title="Draw a rectangle">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+                            <span>Rectangle</span>
+                        </button>
+                        <button type="button" class="draw-tool-btn" data-draw-tool="Polygon" title="Draw a polygon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 6.5-3.5 10.5h-11L3 9.5z"/></svg>
+                            <span>Polygon</span>
+                        </button>
+                        <button type="button" class="draw-tool-btn" data-draw-tool="Line" title="Draw a line with distance measurement">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.5"/><circle cx="19" cy="5" r="1.5"/></svg>
+                            <span>Line</span>
+                        </button>
+                        <button type="button" class="draw-tool-btn" data-draw-tool="Arrow" title="Draw an arrow">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19L19 5"/><path d="M9 5h10v10"/></svg>
+                            <span>Arrow</span>
+                        </button>
+                        <button type="button" class="draw-tool-btn" data-draw-tool="FlightPath" title="Draw a flight path with direction arrows">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+                            <span>Flight Path</span>
+                        </button>
+                        <button type="button" class="draw-tool-btn" data-draw-tool="Text" title="Add a text annotation">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>
+                            <span>Text</span>
+                        </button>
+                        <button type="button" class="draw-tool-btn" data-draw-tool="Grid" title="Draw or edit the grid overlay">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18"/><path d="M3 12h18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                            <span>Grid</span>
+                        </button>
+                    </div>
+                    <p id="drawIdleHint" class="draw-idle-hint">Pick a tool here or on the map toolbar, then click the map to draw. Select a shape in the list below to edit its style.</p>
                 </section>
                 <section class="sidebar-section sidebar-section-draw-style hidden" id="drawStyleSection" aria-live="polite">
                     <div id="drawStylePanel" class="draw-style-panel">
@@ -688,14 +714,15 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="searchInput">Search by postcode, lat/long, OS Grid, DMS, What3Words...</label>
-                    <input type="text" id="searchInput" placeholder="e.g. SW1A 1AA, 51.5074 -0.1278, ///filled.count.soap" autocomplete="off">
+                    <label for="searchInput">Search by place name, postcode, lat/long, OS Grid, DMS, What3Words...</label>
+                    <input type="text" id="searchInput" placeholder="e.g. Tower Bridge, SW1A 1AA, 51.5074 -0.1278" autocomplete="off">
                     <span id="searchFormatHint" class="format-hint"></span>
                 </div>
                 <div id="searchStatus" class="bulk-status hidden"></div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-secondary" id="searchAddPointBtn" title="Resolve the location and add it as a point">Add Point Here</button>
                 <button class="btn btn-primary" id="searchGoBtn">Go to Location</button>
             </div>
         </div>
@@ -742,7 +769,7 @@
             </div>
             <div class="modal-body">
                 <div class="help-overview">
-                    <p class="help-overview-lead"><strong>AirPlan</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail. The <strong>Tool Strip</strong> at the top (Planner, Weather, Airspace, Checklist, Flight Report) switches between those pages in one tap; tap <strong>AirPlan</strong> (logo and name, top-left) when you want the full home screen (training, knowledge, DJI planner, airspace chooser, etc.). <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
+                    <p class="help-overview-lead"><strong>AirPlan</strong> is browser-based tooling for drone planning, weather, airspace awareness, reports, and checklists. The <strong>tabs below</strong> explain the Planning map in detail. The <strong>Tool Strip</strong> at the top (Planner, Weather, Airspace, Checklist, Flight Report) switches between those pages in one tap; tap <strong>AirPlan</strong> (logo and name, top-left) when you want the full home screen (training, knowledge, airspace chooser, etc.). <strong>Theme</strong> (top right) matches Flight Report light/dark for this window.</p>
                     <p class="help-overview-support">Questions, feedback, or bug reports: <a href="mailto:support@airplan.uk">support@airplan.uk</a></p>
                     <p class="help-overview-legal"><a href="privacy.html">Privacy Policy</a> · <a href="robots.txt">robots.txt</a> · <a href="sitemap.xml">Sitemap</a></p>
                     <div class="help-tool-grid">
@@ -763,7 +790,7 @@
                         </button>
                         <a href="weather.html" class="help-tool-card help-tool-card--link">
                             <span class="help-tool-card-title">Weather</span>
-                            <span class="help-tool-card-desc">Forecasts, METAR/TAF, wind by height, NOTAMs and zones in a set radius, PPTX/PDF export.</span>
+                            <span class="help-tool-card-desc">Forecasts, METAR/TAF, wind by height, NOTAMs and zones in a set radius, PowerPoint/PDF export.</span>
                             <span class="help-tool-card-action">Open Weather →</span>
                         </a>
                         <a href="airspace.html" class="help-tool-card help-tool-card--link">
@@ -801,11 +828,6 @@
                             <span class="help-tool-card-desc">UK pilot reference: CAA Drone Code, registration, airspace links (not legal advice).</span>
                             <span class="help-tool-card-action">knowledge.html →</span>
                         </a>
-                        <a href="flight-planning.html" class="help-tool-card help-tool-card--link">
-                            <span class="help-tool-card-title">DJI Mission Planner</span>
-                            <span class="help-tool-card-desc">Waypoints and manual recce for DJI Pilot 2 (KMZ, PPTX/PDF, SD card steps) - use its ? help there.</span>
-                            <span class="help-tool-card-action">flight-planning.html →</span>
-                        </a>
                     </div>
                     <p class="help-overview-hint">Install from the browser (&ldquo;Add to Home Screen&rdquo; or install app) for a standalone experience. On small screens, swipe the tab row if not all tabs fit; scroll the content below.</p>
                     <details class="help-overview-more">
@@ -833,7 +855,7 @@
                     <section class="help-section" id="help-points-adding">
                         <h3>Adding Points</h3>
                         <p>Add points via the sidebar form, or use the <strong>pin (Drop Point)</strong> control on the map toolbar: open it, pick a point type from the <strong>icon strip</strong>, then click the map once to place. Optional <strong>Notes</strong> are stored with each point and appear when you edit the point.</p>
-                        <p><strong>Location formats supported:</strong> UK postcode, decimal lat/lng, Ordnance Survey grid reference, degrees/minutes/seconds (DMS), and What3Words (requires API key in Settings).</p>
+                        <p><strong>Location formats supported:</strong> UK postcode, place name (via OpenStreetMap Nominatim), decimal lat/lng, Ordnance Survey grid reference, degrees/minutes/seconds (DMS), and What3Words (requires API key in Settings). Use <strong>Search Location</strong> on the map toolbar and <strong>Add Point Here</strong> to resolve a place and drop a point in one step.</p>
                     </section>
                     <section class="help-section" id="help-points-types">
                         <h3>Point Types &amp; Icons</h3>
@@ -895,11 +917,11 @@
                         <div class="help-subsection-body">
                             <section class="help-section" id="help-shapes-grid">
                                 <h3>Grid Overlay</h3>
-                                <p>Add a labelled grid over your map area for reference (e.g. search patterns, sector planning). Click the <strong>grid button</strong> on the map toolbar or choose <strong>Grid Overlay</strong> from the right-click context menu, then draw a rectangle to define the grid area. Set rows (1–50) and columns (1–26). Columns are labelled A–Z, rows 1–50. Right-click a grid cell to <strong>Edit Grid</strong> (change rows/columns or visibility) or <strong>Clear Grid</strong>.</p>
+                                <p>Add a labelled grid over your map area for reference (e.g. search patterns, sector planning). Click the <strong>Grid</strong> button in the sidebar <strong>Draw Tools</strong> panel, the <strong>grid button</strong> on the map toolbar, or choose <strong>Grid Overlay</strong> from the right-click context menu, then draw a rectangle to define the grid area. Set rows (1–50) and columns (1–26). Columns are labelled A–Z, rows 1–50. Right-click a grid cell to <strong>Edit Grid</strong> (change rows/columns or visibility) or <strong>Clear Grid</strong>.</p>
                             </section>
                             <section class="help-section" id="help-shapes-style">
                                 <h3>Drawing Style</h3>
-                                <p>Open the <strong>Draw</strong> tab in the sidebar. <strong>Drawing Style</strong> appears when a draw tool is active or a shape is selected; it sets colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. Values apply to new shapes; when a shape is selected, they apply to that shape. <strong>Undo</strong> and <strong>Redo</strong> are on the map toolbar (left).</p>
+                                <p>Open the <strong>Draw</strong> tab in the sidebar. The <strong>Draw Tools</strong> grid (circle, rectangle, polygon, line, arrow, flight path, text, grid) mirrors the map toolbar and is handy on small screens where the sidebar covers the map. <strong>Drawing Style</strong> appears when a draw tool is active or a shape is selected; it sets colour, fill opacity, stroke width, stroke style, and (for flight paths) arrow head size. Values apply to new shapes; when a shape is selected, they apply to that shape. <strong>Undo</strong> and <strong>Redo</strong> are on the map toolbar (left).</p>
                             </section>
                         </div>
                     </details>
@@ -951,7 +973,7 @@
                             </section>
                             <section class="help-section" id="help-map-search">
                                 <h3>Search Location</h3>
-                                <p>Click the search button on the map toolbar to open the Search Location modal. Enter a postcode, lat/long, OS Grid ref, DMS, or What3Words address. The map will pan and zoom to that location.</p>
+                                <p>Click the search button on the map toolbar to open the Search Location modal. Enter a place name, UK postcode, lat/long, OS Grid ref, DMS, or What3Words address. <strong>Go to Location</strong> pans and zooms the map; <strong>Add Point Here</strong> resolves the search, adds a named point, and opens quick edit.</p>
                             </section>
                             <section class="help-section" id="help-map-geo">
                                 <h3>Geolocation</h3>
@@ -991,7 +1013,7 @@
                             </section>
                             <section class="help-section" id="help-map-mobile">
                                 <h3>Small screens</h3>
-                                <p>On narrow viewports the sidebar opens as a sheet; use <strong>»</strong> below the top bar (left of the map) to open it again after you collapse it. <strong>AirPlan</strong> (logo and name in the top bar - same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>Tool Strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> is in the sidebar (between <strong>Actions</strong> and <strong>Points</strong>). A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
+                                <p>On narrow viewports the sidebar opens as a sheet; use <strong>»</strong> below the top bar (left of the map) to open it again after you collapse it. <strong>AirPlan</strong> (logo and name in the top bar - same pattern on Weather, Airspace, Flight Report, and Checklist) returns to the welcome screen; the <strong>Tool Strip</strong> beside it jumps to those other tools in one tap. <strong>Drawing Style</strong> and the drawing tools are in the sidebar's <strong>Draw</strong> tab. A floating <strong>Help</strong> button (top-right on small screens) opens this help window. In this help window, swipe the tab row horizontally if not all tabs fit on one line; scroll the content below.</p>
                             </section>
                         </div>
                     </details>
@@ -1025,7 +1047,7 @@
                     </section>
                     <section class="help-section" id="help-rc-welcome">
                         <h3>Welcome screen</h3>
-                        <p>From any tool, <strong>AirPlan</strong> (logo and name, top-left) returns to the AirPlan welcome screen for the full launcher (including training, knowledge, DJI planner, and the airspace chooser). Use the <strong>Tool Strip</strong> when you only need to hop between the five main tools.</p>
+                        <p>From any tool, <strong>AirPlan</strong> (logo and name, top-left) returns to the AirPlan welcome screen for the full launcher (including training, knowledge, and the airspace chooser). <strong>Log a Flight</strong> is the primary welcome action; <strong>Plan &amp; Map</strong> opens the planning map. Use the <strong>Tool Strip</strong> when you only need to hop between the five main tools.</p>
                     </section>
                 </div>
                 <div class="tab-panel" id="help-tab-references">
@@ -1034,6 +1056,7 @@
                             <h3>Data Sources</h3>
                             <ul>
                                 <li><strong>UK Postcodes</strong> - <a href="https://postcodes.io/" target="_blank" rel="noopener">postcodes.io</a> (free, no API key required)</li>
+                                <li><strong>Place names (UK)</strong> - <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim</a> (OpenStreetMap geocoding for search and Add Point Here)</li>
                                 <li><strong>What3Words</strong> - <a href="https://what3words.com/developer" target="_blank" rel="noopener">What3Words API</a> (requires API key)</li>
                                 <li><strong>Ordnance Survey Maps</strong> - <a href="https://osdatahub.os.uk/" target="_blank" rel="noopener">OS Data Hub</a> (requires API key)</li>
                                 <li><strong>OpenStreetMap</strong> - <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (map tiles)</li>

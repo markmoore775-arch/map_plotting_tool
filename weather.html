@@ -21,7 +21,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/weather.css?v=45">
+    <link rel="stylesheet" href="css/weather.css?v=48">
 </head>
 <body class="weather-mode ap-shell">
     <script>
@@ -53,61 +53,68 @@
         </div>
     </header>
 
-    <!-- Bottom dock: matches top ap-tool-nav pill (one card, status + controls + note) -->
+    <!-- Bottom dock: status + primary actions + optional forecast / map overlay controls -->
     <div class="weather-bottom-chrome" id="weatherBottomChrome">
-        <div class="weather-map-dock" role="region" aria-label="Weather map controls">
-            <p class="weather-map-hint weather-map-dock__status" id="weatherMapHint" role="status" aria-live="polite">Click the Map to Set Your Location. Or Tap Select Location, Then Tap the Map.</p>
+        <div class="weather-map-dock weather-map-dock--no-location" id="weatherMapDock" role="region" aria-label="Weather map controls">
+            <p class="weather-map-hint weather-map-dock__status" id="weatherMapHint" role="status" aria-live="polite">Step 1: Pick a site on the map</p>
             <div class="weather-map-dock__body">
-                <div class="weather-toolbar-group weather-toolbar-group--select">
-                    <button type="button" class="weather-btn" id="weatherSelectBtn" title="Click map to select location">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <span>Select Location</span>
+                <div class="weather-map-dock__primary">
+                    <button type="button" class="weather-btn weather-btn-select" id="weatherSelectBtn" title="Tap the map to place your site marker">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span>Select on map</span>
                     </button>
-                </div>
-                <div class="weather-toolbar-group weather-wind-group">
-                    <button type="button" class="weather-btn" id="weatherWindToggle" aria-pressed="false" title="Show animated wind overlay on the map">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
-                        <span>Wind Map</span>
-                    </button>
-                    <label for="weatherWindAltitude" class="weather-wind-alt-label">Alt</label>
-                    <select id="weatherWindAltitude" class="weather-wind-alt-select" title="Wind altitude for map overlay">
-                        <option value="10m">10 m</option>
-                        <option value="120m" selected>120 m</option>
-                    </select>
-                </div>
-                <div class="weather-toolbar-group weather-model-group">
-                    <label for="weatherModel" class="weather-model-label">Model</label>
-                    <button type="button" class="weather-model-info-btn" id="weatherModelInfoBtn" aria-label="Weather model help" title="">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg>
-                    </button>
-                    <select id="weatherModel" class="weather-model-select" title="Weather model / source">
-                        <option value="auto">Best Match</option>
-                        <option value="ecmwf_ifs">ECMWF IFS</option>
-                        <option value="gfs_seamless">GFS (NOAA)</option>
-                        <option value="ukmo_seamless">UK Met Office</option>
-                        <option value="gem_global">GEM (Canada)</option>
-                    </select>
-                </div>
-                <div class="weather-toolbar-group weather-time-group">
-                    <label class="weather-time-label">
-                        <input type="radio" name="weatherTime" value="now" id="weatherTimeNow" checked>
-                        <span>Now</span>
-                    </label>
-                    <label class="weather-time-label">
-                        <input type="radio" name="weatherTime" value="future" id="weatherTimeFuture">
-                        <span>Date &amp; Time</span>
-                    </label>
-                    <input type="datetime-local" id="weatherDateTime" class="weather-datetime hidden" min="" max="">
-                </div>
-                <div class="weather-toolbar-group weather-toolbar-group--fetch">
-                    <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Get Weather for selected location" aria-label="Get Weather">
+                    <button type="button" class="weather-btn weather-btn-primary" id="weatherFetchBtn" disabled title="Pick a site on the map first">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
-                        <span class="weather-fetch-label--full" aria-hidden="true">Get Weather</span>
-                        <span class="weather-fetch-label--short" aria-hidden="true">Get Weather</span>
+                        <span>Get weather report</span>
                     </button>
                 </div>
+                <details class="weather-map-dock__extras" id="weatherDockExtras">
+                    <summary class="weather-map-dock__extras-summary">Options</summary>
+                    <div class="weather-map-dock__toolbar">
+                        <div class="weather-map-dock__forecast-inner">
+                            <div class="weather-toolbar-group weather-model-group">
+                                <label for="weatherModel" class="weather-model-label">Model</label>
+                                <button type="button" class="weather-model-info-btn" id="weatherModelInfoBtn" aria-label="Weather model help" title="">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg>
+                                </button>
+                                <select id="weatherModel" class="weather-model-select" title="Weather model / source">
+                                    <option value="auto">Best Match</option>
+                                    <option value="ecmwf_ifs">ECMWF IFS</option>
+                                    <option value="gfs_seamless">GFS (NOAA)</option>
+                                    <option value="ukmo_seamless">UK Met Office</option>
+                                    <option value="gem_global">GEM (Canada)</option>
+                                </select>
+                            </div>
+                            <div class="weather-toolbar-group weather-time-group">
+                                <span class="weather-time-heading" id="weatherTimeHeading">When</span>
+                                <label class="weather-time-label">
+                                    <input type="radio" name="weatherTime" value="now" id="weatherTimeNow" checked>
+                                    <span>Now</span>
+                                </label>
+                                <label class="weather-time-label">
+                                    <input type="radio" name="weatherTime" value="future" id="weatherTimeFuture">
+                                    <span>Date &amp; Time</span>
+                                </label>
+                                <input type="datetime-local" id="weatherDateTime" class="weather-datetime hidden" min="" max="" aria-labelledby="weatherTimeHeading">
+                            </div>
+                        </div>
+                        <div class="weather-map-dock__wind-row">
+                            <span class="weather-map-dock__wind-label">Map overlay</span>
+                            <div class="weather-toolbar-group weather-wind-group">
+                                <button type="button" class="weather-btn" id="weatherWindToggle" aria-pressed="false" title="Show animated wind overlay on the map">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+                                    <span>Wind map</span>
+                                </button>
+                                <label for="weatherWindAltitude" class="weather-wind-alt-label">Height</label>
+                                <select id="weatherWindAltitude" class="weather-wind-alt-select" title="Wind altitude for map overlay">
+                                    <option value="10m">10 m</option>
+                                    <option value="120m" selected>120 m</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </details>
             </div>
-            <p class="weather-toolbar-expectation weather-map-dock__note">Tap <strong>Wind Map</strong> for an animated overlay (10 m or 120 m). Point forecast: wind, gusts, visibility, precipitation, and Green / Amber / Red suitability.</p>
         </div>
     </div>
 
@@ -135,9 +142,9 @@
                     <span>Append To Flight Report</span>
                     <span class="weather-flight-report-arrow" aria-hidden="true">→</span>
                 </button>
-                <button type="button" class="weather-btn weather-btn-export" id="weatherExportPptxBtn" title="Export report as PowerPoint">
+                <button type="button" class="weather-btn weather-btn-export" id="weatherExportPptxBtn" title="Export report as PowerPoint" aria-label="Export report as PowerPoint">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-                    <span>PPTX</span>
+                    <span>PowerPoint</span>
                 </button>
                 <button type="button" class="weather-btn weather-btn-export" id="weatherExportPdfBtn" title="Export report as PDF">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
@@ -239,15 +246,15 @@
                                     <ul class="weather-hourly-rag-key-list">
                                         <li>
                                             <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--good" aria-hidden="true"></span>
-                                            <span class="weather-hourly-rag-key-label"><strong>Green</strong> — Favourable</span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Green</strong> - Favourable</span>
                                         </li>
                                         <li>
                                             <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--caution" aria-hidden="true"></span>
-                                            <span class="weather-hourly-rag-key-label"><strong>Amber</strong> — Marginal (Caution Band)</span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Amber</strong> - Marginal (Caution Band)</span>
                                         </li>
                                         <li>
                                             <span class="weather-hourly-rag-swatch weather-hourly-rag-swatch--poor" aria-hidden="true"></span>
-                                            <span class="weather-hourly-rag-key-label"><strong>Red</strong> — Postpone</span>
+                                            <span class="weather-hourly-rag-key-label"><strong>Red</strong> - Postpone</span>
                                         </li>
                                     </ul>
                                 </div>
@@ -357,6 +364,6 @@
     <script src="js/notam-pib.js?v=3"></script>
     <script src="js/airspace-nearby.js?v=5"></script>
     <script src="js/weather-wind-overlay.js?v=13"></script>
-    <script src="js/weather.js?v=33"></script>
+    <script src="js/weather.js?v=35"></script>
 </body>
 </html>

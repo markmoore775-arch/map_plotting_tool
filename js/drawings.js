@@ -1613,7 +1613,7 @@ const Drawings = (() => {
                     const label = shape.label || getShapeTypeLabel(shape.type);
                     showConfirmModal({
                         title: 'Delete route?',
-                        message: `Delete this ${label}? This cannot be undone.`,
+                        message: `Delete this ${label}? You can undo this with Ctrl+Z.`,
                         confirmLabel: 'Delete'
                     }).then(ok => {
                         if (ok) removeShape(shape.id);
@@ -1672,6 +1672,7 @@ const Drawings = (() => {
             // Intercept Rectangle creation when in grid overlay draw mode
             if (typeof GridOverlay !== 'undefined' && GridOverlay.isGridDrawModeActive && GridOverlay.isGridDrawModeActive() && shapeType === 'Rectangle') {
                 map.removeLayer(layer);
+                pushUndoSnapshot();
                 GridOverlay.captureBoundsFromLayer(layer);
                 GridOverlay.exitGridDrawMode();
                 refreshInteractionCursor();
@@ -2242,6 +2243,11 @@ const Drawings = (() => {
             zIndexOffset: 1000
         }).addTo(map);
 
+        handle.on('dragstart', () => {
+            // Snapshot before the radius changes so the resize can be undone
+            pushUndoSnapshot();
+        });
+
         handle.on('drag', (e) => {
             const pos = e.target.getLatLng();
             const newAngle = bearingTo(center[0], center[1], pos.lat, pos.lng);
@@ -2276,7 +2282,9 @@ const Drawings = (() => {
             label.setIcon(makeLabelIcon(getMeasurementText(shape) || '', true));
 
             updateShapeLabelMarker(shape);
-            pushUndoSnapshot();
+            if (typeof window.airplotScheduleMapDraftSave === 'function') {
+                window.airplotScheduleMapDraftSave();
+            }
             const modal = document.getElementById('shapeEditModal');
             if (modal && !modal.classList.contains('hidden') && parseInt(document.getElementById('editShapeId').value, 10) === shape.id) {
                 document.getElementById('editShapeRadius').value = Math.round(shape.radius);
@@ -2360,10 +2368,19 @@ const Drawings = (() => {
         }
 
         if (shape.type === 'polygon' || shape.type === 'rectangle') {
-            return null;
+            if (!shape.latlngs || shape.latlngs.length < 3) return null;
+            const area = calcPolygonArea(shape.latlngs);
+            if (!area) return null;
+            return formatArea(area);
         }
 
         return null;
+    }
+
+    function formatArea(m2) {
+        if (m2 >= 1000000) return `${(m2 / 1000000).toFixed(2)} km\u00b2`;
+        if (m2 >= 10000) return `${(m2 / 10000).toFixed(2)} ha`;
+        return `${Math.round(m2)} m\u00b2`;
     }
 
     function calcPolylineLength(latlngs) {
@@ -2918,6 +2935,13 @@ const Drawings = (() => {
         count.textContent = `(${shapes.length})`;
         list.innerHTML = '';
 
+        if (shapes.length === 0) {
+            const empty = document.createElement('li');
+            empty.className = 'list-empty-state';
+            empty.innerHTML = 'No shapes yet.<br>Pick a <strong>draw tool</strong> above or on the map toolbar, then click the map.';
+            list.appendChild(empty);
+        }
+
         for (const s of shapes) {
             const li = document.createElement('li');
             li.className = 'point-item';
@@ -2975,7 +2999,7 @@ const Drawings = (() => {
                     const label = s.label || getShapeTypeLabel(s.type);
                     showConfirmModal({
                         title: 'Delete shape?',
-                        message: `Delete this ${label}? This cannot be undone.`,
+                        message: `Delete this ${label}? You can undo this with Ctrl+Z.`,
                         confirmLabel: 'Delete'
                     }).then(ok => {
                         if (ok) removeShape(s.id);

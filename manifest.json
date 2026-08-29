@@ -1,7 +1,7 @@
 {
   "name": "AirPlan",
   "short_name": "AirPlan",
-  "description": "AirPlan v1: plan on an interactive map, check weather, monitor live ADS-B traffic (hazard-themed map, altitude labels, session trails), write structured flight reports, and run an M4T / TD checklist - with local drafts and quick links between Report and Checklist.",
+  "description": "AirPlan v1.1: plan on an interactive map, check weather, monitor live ADS-B traffic (hazard-themed map, altitude labels, session trails), write structured flight reports, and run an M4T / TD checklist - with local drafts and quick links between tools.",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0a0a0a",

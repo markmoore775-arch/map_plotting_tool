@@ -243,7 +243,7 @@
         if (uas) parts.push(uas);
         if (name) parts.push(name);
         if (launch || land) {
-            var timePart = (launch || '—') + '–' + (land || '—');
+            var timePart = (launch || '-') + '–' + (land || '-');
             if (ft) timePart += ' (' + ft + ')';
             parts.push(timePart);
         } else if (ft) {

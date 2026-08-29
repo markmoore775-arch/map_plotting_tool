@@ -320,7 +320,9 @@ const Converters = (() => {
         if (UK_POSTCODE_REGEX.test(input)) return 'postcode';
         if (OS_GRID_REGEX.test(input.replace(/\s+/g, ''))) return 'osgrid';
         if (W3W_REGEX.test(input)) return 'w3w';
-        if (DMS_REGEX.test(input)) return 'dms';
+        // Real DMS coordinates always contain digits; without this check any
+        // place name containing n/s/e/w letters would be misdetected as DMS.
+        if (/\d/.test(input) && DMS_REGEX.test(input)) return 'dms';
         // Check if it looks like decimal coordinates
         const parts = input.split(/[,\s]+/).filter(p => p.length > 0);
         if (parts.length >= 2 && !isNaN(parseFloat(parts[0])) && !isNaN(parseFloat(parts[1]))) {
@@ -336,9 +338,35 @@ const Converters = (() => {
             'dms': 'Degrees Minutes Seconds',
             'w3w': 'What3Words',
             'decimal': 'Decimal Lat/Lng',
-            'unknown': 'Unknown format'
+            'unknown': 'Place name (will search online)'
         };
         return labels[format] || format;
+    }
+
+    // ---- Place name search (Nominatim, UK-biased) ----
+
+    async function lookupPlaceName(query) {
+        try {
+            const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=' +
+                encodeURIComponent(query);
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: { Accept: 'application/json' },
+                mode: 'cors'
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    return { lat, lng, displayName: data[0].display_name || '' };
+                }
+            }
+        } catch (e) {
+            console.error('Place name lookup failed:', e);
+        }
+        return null;
     }
 
     // ---- Resolve any format to lat/lng ----
@@ -346,26 +374,29 @@ const Converters = (() => {
     async function resolve(input, w3wApiKey) {
         const format = detectFormat(input);
 
+        // Coordinate parses that fail fall back to a place-name search, so
+        // slightly misdetected inputs (e.g. addresses with digits) still resolve.
         switch (format) {
-            case 'decimal':
-                return parseDMS(input) || parseDecimal(input);
-            case 'dms':
-                return parseDMS(input);
-            case 'osgrid':
-                return parseOSGrid(input);
+            case 'decimal': {
+                const r = parseDMS(input) || parseDecimal(input);
+                return r || await lookupPlaceName(input);
+            }
+            case 'dms': {
+                const r = parseDMS(input);
+                return r || await lookupPlaceName(input);
+            }
+            case 'osgrid': {
+                const r = parseOSGrid(input);
+                return r || await lookupPlaceName(input);
+            }
             case 'postcode':
                 return await lookupPostcode(input);
             case 'w3w':
                 return await lookupW3W(input, w3wApiKey);
-            default:
-                // Try all parsers
-                let result = parseDecimal(input);
-                if (result) return result;
-                result = parseDMS(input);
-                if (result) return result;
-                result = parseOSGrid(input);
-                if (result) return result;
-                return null;
+            default: {
+                const r = parseDecimal(input) || parseDMS(input) || parseOSGrid(input);
+                return r || await lookupPlaceName(input);
+            }
         }
     }
 
@@ -571,6 +602,7 @@ const Converters = (() => {
         lookupPostcodesBulk,
         lookupW3W,
         reverseW3W,
+        lookupPlaceName,
         detectFormat,
         formatLabel,
         resolve,
