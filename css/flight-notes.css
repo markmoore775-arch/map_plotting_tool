@@ -506,6 +506,15 @@ body.flight-notes-mode.fn-light-theme .fn-report-storage-status--error {
     margin-bottom: 10px;
 }
 
+.fn-weather-profile-row {
+    margin-bottom: 12px;
+    max-width: 28rem;
+}
+
+.fn-weather-profile-select {
+    width: 100%;
+}
+
 .fn-weather-actions {
     display: flex;
     flex-wrap: wrap;

@@ -31,7 +31,7 @@
         '</section>',
         '<section class="weather-help-section" aria-labelledby="weather-help-report-title">',
         '<h3 class="weather-help-section-title" id="weather-help-report-title">Inside the Report</h3>',
-        '<p class="weather-help-section-text"><strong>Summary</strong>: wind by altitude, visibility, clouds, precipitation, temperature. Expand <strong>How This Is Calculated</strong> on Summary for flight-suitability (Green / Amber / Red) rules. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong> (expand <strong>About Flight Categories</strong> for decoded labels and UK limits). <strong>Airspace</strong>: set <strong>Search Radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About This Forecast Model</strong> for model notes. Use <strong>Wind map</strong> in the map dock for an animated wind overlay (10 m or 120 m).</p>',
+        '<p class="weather-help-section-text"><strong>Summary</strong>: wind by altitude, visibility, clouds, precipitation, temperature. Green / Amber / Red is a <strong>forecast indicator</strong> against the selected <strong>Aircraft</strong> profile — confirm on site before deciding. Expand <strong>How This Is Calculated</strong> for threshold rules. <strong>12-hour forecast</strong>, <strong>METAR / TAF</strong> (expand <strong>About Flight Categories</strong> for decoded labels and UK limits). <strong>Airspace</strong>: set <strong>Search Radius (km)</strong> and <strong>Refresh</strong>; NOTAMs and UK zones with a small map each. On Summary, expand <strong>About This Forecast Model</strong> for model notes. Use <strong>Wind map</strong> in the map dock for an animated wind overlay (10 m or 120 m).</p>',
         '</section>',
         '<details class="weather-help-details">',
         '<summary>METAR / TAF Flight Categories</summary>',
@@ -134,6 +134,33 @@
 
     const FS = FlightSuitability;
     const GUST_120M_MULTIPLIER = FS.GUST_120M_MULTIPLIER;
+
+    function getSelectedAircraftProfileId() {
+        const el = document.getElementById('weatherAircraftProfile');
+        if (el && el.value && FS.AIRCRAFT_PROFILES[el.value]) return el.value;
+        return FS.getStoredAircraftProfileId();
+    }
+
+    function initAircraftProfileSelect() {
+        const el = document.getElementById('weatherAircraftProfile');
+        if (!el) return;
+        FS.populateAircraftProfileSelect(el, FS.getStoredAircraftProfileId());
+    }
+
+    function onAircraftProfileChange() {
+        const el = document.getElementById('weatherAircraftProfile');
+        if (el && el.value) FS.setStoredAircraftProfileId(el.value);
+        scheduleWeatherDraftSave();
+        rerenderOpenWeatherReport();
+    }
+
+    function rerenderOpenWeatherReport() {
+        if (!lastReportData || !selectedPoint) return;
+        const content = document.getElementById('weatherReportContent');
+        if (!content || content.classList.contains('hidden')) return;
+        renderReport(lastReportData, lastDisplayTime, lastHourlySlice, lastModel, lastAviationData);
+    }
+
     const SUIT_SUSTAINED_AMBER_KMH = FS.SUIT_SUSTAINED_AMBER_KMH;
     const SUIT_SUSTAINED_RED_KMH = FS.SUIT_SUSTAINED_RED_KMH;
     const SUIT_GUST_AMBER_KMH = FS.SUIT_GUST_AMBER_KMH;
@@ -260,7 +287,8 @@
                 notamPrioritise: !!(priUas && priUas.checked),
                 exportTheme: exportTheme ? exportTheme.value : 'light',
                 windOverlay: !!(windToggle && windToggle.classList.contains('active')),
-                windAltitude: windAlt ? windAlt.value : '120m'
+                windAltitude: windAlt ? windAlt.value : '120m',
+                aircraftProfile: getSelectedAircraftProfileId()
             };
             localStorage.setItem(WEATHER_DRAFT_STORAGE_KEY, JSON.stringify(payload));
         } catch (e) { /* ignore */ }
@@ -320,6 +348,12 @@
 
             var modelEl = document.getElementById('weatherModel');
             if (modelEl && d.model) modelEl.value = d.model;
+
+            var aircraftEl = document.getElementById('weatherAircraftProfile');
+            if (aircraftEl && d.aircraftProfile && FS.AIRCRAFT_PROFILES[d.aircraftProfile]) {
+                aircraftEl.value = d.aircraftProfile;
+                FS.setStoredAircraftProfileId(d.aircraftProfile);
+            }
 
             var tn = document.getElementById('weatherTimeNow');
             var tf = document.getElementById('weatherTimeFuture');
@@ -429,14 +463,15 @@
 
     /** RAG suitability — see js/flight-suitability.js */
     function deriveSuitability(data) {
-        return FS.deriveSuitability(data);
+        return FS.deriveSuitability(data, getSelectedAircraftProfileId());
     }
 
     function buildWeatherRagMethodologyPlainLines(usedTargetTime) {
-        return FS.buildWeatherRagMethodologyPlainLines(usedTargetTime, 'weather');
+        return FS.buildWeatherRagMethodologyPlainLines(usedTargetTime, 'weather', getSelectedAircraftProfileId());
     }
 
     function buildWeatherHowCalculatedBodyHtml(suitability, usedTargetTime) {
+        const profile = FS.resolveProfile(getSelectedAircraftProfileId());
         const tech = suitability.technical ? String(suitability.technical) : '';
         const techBlock = tech
             ? '<p class="weather-how-calculated-technical">' + escapeHtml(tech) + '</p>'
@@ -444,36 +479,45 @@
         const timeBlock = usedTargetTime
             ? '<p><strong>Forecast hour</strong>: With <strong>Date &amp; time</strong> selected, the nearest Open-Meteo hourly bin to your chosen instant is used.</p>'
             : '<p><strong>Forecast hour</strong>: With <strong>Now</strong> selected, the latest hourly bin at or before the current moment is used.</p>';
-        const windBlock =
-            '<p><strong>Wind and gusts</strong>: Sustained wind uses the higher of 10 m and 120 m. Gusts use the higher of 10 m gusts and an estimate at 120 m (×' +
-            GUST_120M_MULTIPLIER +
-            ' sustained 120 m) when 120 m data exists. Model gusts are measured at 10 m only; 120 m gusts are estimated (see <strong>Wind by altitude</strong> above).</p>';
+        const windBlock = profile.useWind120m
+            ? '<p><strong>Wind and gusts</strong>: Sustained wind uses the higher of 10 m and 120 m. Gusts use the higher of 10 m gusts and an estimate at 120 m (×' +
+              GUST_120M_MULTIPLIER +
+              ' sustained 120 m) when 120 m data exists. Model gusts are measured at 10 m only; 120 m gusts are estimated (see <strong>Wind by altitude</strong> above).</p>'
+            : '<p><strong>Wind and gusts</strong>: For this profile, sustained wind and gusts use <strong>10 m model values only</strong> (typical for lower AGL operations).</p>';
         const threshBlock =
-            '<p><strong>Thresholds (summary band)</strong>: Amber/red use model wind (km/h), visibility, and rain in the hour (mm). Sustained: amber above ~' +
-            SUIT_SUSTAINED_AMBER_KMH +
-            ', red above ~' +
-            SUIT_SUSTAINED_RED_KMH +
+            '<p><strong>Aircraft profile</strong>: ' +
+            escapeHtml(profile.label) +
+            '. ' +
+            escapeHtml(profile.notes) +
+            '</p>' +
+            '<p><strong>Thresholds (forecast indicator)</strong>: Amber/unfavourable bands use model wind (km/h), visibility, and rain in the hour (mm). Sustained: amber above ~' +
+            profile.sustainedAmberKmh +
+            ', unfavourable above ~' +
+            profile.sustainedRedKmh +
             '. Gusts: amber above ~' +
-            SUIT_GUST_AMBER_KMH +
-            ', red above ~' +
-            SUIT_GUST_RED_KMH +
+            profile.gustAmberKmh +
+            ', unfavourable above ~' +
+            profile.gustRedKmh +
             '. Visibility: amber below ~' +
-            SUIT_VIS_AMBER_M / 1000 +
-            ' km, red below ~' +
-            SUIT_VIS_RED_M / 1000 +
+            profile.visAmberM / 1000 +
+            ' km, unfavourable below ~' +
+            profile.visRedM / 1000 +
             ' km. Rain: trace/drizzle up to ~' +
-            SUIT_PRECIP_AMBER_MM +
+            profile.precipAmberMm +
             ' mm/h stays green; above ~' +
-            SUIT_PRECIP_AMBER_MM +
+            profile.precipAmberMm +
             ' mm/h trends amber; above ~' +
-            SUIT_PRECIP_RED_MM +
-            ' mm/h trends red.</p>';
+            profile.precipRedMm +
+            ' mm/h trends unfavourable.</p>' +
+            '<p class="weather-how-calculated-disclaimer">' +
+            escapeHtml(FS.FORECAST_DISCLAIMER) +
+            '</p>';
         return techBlock + timeBlock + windBlock + threshBlock;
     }
 
     /** Per-hour RAG using the same rules as deriveSuitability (Open-Meteo hourly arrays). */
     function deriveSuitabilityForHourlyIndex(h, idx) {
-        return FS.deriveSuitabilityForHourlyIndex(h, idx);
+        return FS.deriveSuitabilityForHourlyIndex(h, idx, getSelectedAircraftProfileId());
     }
 
     /** PPTX table cell fill for hourly RAG (amber is orange-tinted, not pink, vs red). */
@@ -992,40 +1036,88 @@
         var lines = [];
         if (suitability.technical) lines.push(suitability.technical);
         lines.push('');
+        lines.push(FS.FORECAST_DISCLAIMER);
+        lines.push('');
+        var profile = FS.resolveProfile(getSelectedAircraftProfileId());
+        lines.push('Aircraft profile: ' + profile.label + '.');
+        lines.push(profile.notes);
+        lines.push('');
         if (usedTargetTime) {
             lines.push('Forecast hour: With Date & time selected, the nearest Open-Meteo hourly bin to your chosen instant is used.');
         } else {
             lines.push('Forecast hour: With Now selected, the latest hourly bin at or before the current moment is used.');
         }
         lines.push('');
-        lines.push(
-            'Wind and gusts: Sustained wind uses the higher of 10 m and 120 m. Gusts use the higher of 10 m gusts and an estimate at 120 m (×' +
-                GUST_120M_MULTIPLIER +
-                ' sustained 120 m) when 120 m data exists. Model gusts are measured at 10 m only; 120 m gusts are estimated.'
-        );
+        if (profile.useWind120m) {
+            lines.push(
+                'Wind and gusts: Sustained wind uses the higher of 10 m and 120 m. Gusts use the higher of 10 m gusts and an estimate at 120 m (×' +
+                    GUST_120M_MULTIPLIER +
+                    ' sustained 120 m) when 120 m data exists. Model gusts are measured at 10 m only; 120 m gusts are estimated.'
+            );
+        } else {
+            lines.push('Wind and gusts: For this profile, sustained wind and gusts use 10 m model values only.');
+        }
         lines.push('');
         lines.push(
-            'Thresholds (summary band): Amber/red use model wind (km/h), visibility, and rain in the hour (mm). Sustained: amber above ~' +
-                SUIT_SUSTAINED_AMBER_KMH +
-                ', red above ~' +
-                SUIT_SUSTAINED_RED_KMH +
+            'Thresholds (forecast indicator): Amber/unfavourable use model wind (km/h), visibility, and rain in the hour (mm). Sustained: amber above ~' +
+                profile.sustainedAmberKmh +
+                ', unfavourable above ~' +
+                profile.sustainedRedKmh +
                 '. Gusts: amber above ~' +
-                SUIT_GUST_AMBER_KMH +
-                ', red above ~' +
-                SUIT_GUST_RED_KMH +
+                profile.gustAmberKmh +
+                ', unfavourable above ~' +
+                profile.gustRedKmh +
                 '. Visibility: amber below ~' +
-                SUIT_VIS_AMBER_M / 1000 +
-                ' km, red below ~' +
-                SUIT_VIS_RED_M / 1000 +
+                profile.visAmberM / 1000 +
+                ' km, unfavourable below ~' +
+                profile.visRedM / 1000 +
                 ' km. Rain: trace/drizzle up to ~' +
-                SUIT_PRECIP_AMBER_MM +
+                profile.precipAmberMm +
                 ' mm/h stays green; above ~' +
-                SUIT_PRECIP_AMBER_MM +
+                profile.precipAmberMm +
                 ' mm/h trends amber; above ~' +
-                SUIT_PRECIP_RED_MM +
-                ' mm/h trends red.'
+                profile.precipRedMm +
+                ' mm/h trends unfavourable.'
         );
         return lines;
+    }
+
+    /** Short export copy for PDF/PPTX forecast slide (avoids overlap with the hourly table). */
+    function buildWeatherHowCalculatedExportPlainLines(suitability, usedTargetTime) {
+        var profile = FS.resolveProfile(getSelectedAircraftProfileId());
+        var hourBit = usedTargetTime
+            ? 'Hour: nearest Open-Meteo bin to selected date & time.'
+            : 'Hour: latest Open-Meteo bin at or before now.';
+        var windBit = profile.useWind120m
+            ? 'Wind/gusts: higher of 10 m & 120 m (120 m gusts est. ×' + GUST_120M_MULTIPLIER + ').'
+            : 'Wind/gusts: 10 m model values only.';
+        var thresh =
+            'Green/Amber/Red when sustained exceeds ~' +
+            profile.sustainedAmberKmh +
+            '/~' +
+            profile.sustainedRedKmh +
+            ' km/h, gusts ~' +
+            profile.gustAmberKmh +
+            '/~' +
+            profile.gustRedKmh +
+            ' km/h, visibility below ~' +
+            profile.visAmberM / 1000 +
+            '/~' +
+            profile.visRedM / 1000 +
+            ' km, or rain above ~' +
+            profile.precipAmberMm +
+            '/~' +
+            profile.precipRedMm +
+            ' mm/h.';
+        return (
+            profile.label +
+            '. ' +
+            hourBit +
+            ' ' +
+            windBit +
+            ' Model-based indicator only — confirm on site before flying. ' +
+            thresh
+        );
     }
 
     function airspaceNearestDistKm(a, lat, lng) {
@@ -1127,7 +1219,7 @@
         const tempStr = temp != null ? Math.round(temp) + ' °C' : '-';
 
         const lines = [];
-        lines.push('--- Forecast (selected hour) ---');
+        lines.push('--- Forecast (Open-Meteo, selected hour) ---');
         lines.push('10 m wind: ' + formatWindRow(data.wind_speed_10m, data.wind_direction_10m));
         lines.push('10 m gusts: ' + gustsStr);
         lines.push('120 m wind: ' + wind120Str);
@@ -1142,12 +1234,11 @@
             lines.push(summaryText);
         }
         lines.push('');
-        lines.push('--- Assessment ---');
-        lines.push(suitability.label + ': ' + suitability.brief);
+        FS.buildForecastIndicatorPlainLines(suitability, getSelectedAircraftProfileId()).forEach(function (ln) {
+            lines.push(ln);
+        });
         lines.push('');
         lines.push('--- How this is calculated ---');
-        if (suitability.technical) lines.push(suitability.technical);
-        lines.push('');
         buildWeatherRagMethodologyPlainLines(usedTargetTime).forEach(function (ln) {
             lines.push(ln);
         });
@@ -1276,6 +1367,14 @@
             '<span class="weather-suitability-explainer">' +
             escapeHtml(suitability.brief) +
             '</span>';
+
+        const disclaimerEl = document.getElementById('weatherForecastDisclaimer');
+        if (disclaimerEl) {
+            const profile = FS.resolveProfile(getSelectedAircraftProfileId());
+            disclaimerEl.textContent =
+                FS.FORECAST_DISCLAIMER + ' Profile: ' + profile.label + '.';
+            disclaimerEl.hidden = false;
+        }
 
         const howBody = document.getElementById('weatherHowCalculatedBody');
         if (howBody) {
@@ -1798,8 +1897,8 @@
             return document.getElementById('weatherItemMap-airspace-' + slug + '-' + idx);
         }
 
-        var MAP_THUMB_MM = 26;
-        var MAP_COL_W = 34;
+        var MAP_THUMB_MM = 48;
+        var MAP_COL_W = 56;
         var pdfMapEntries = [];
 
         var j;
@@ -1849,7 +1948,7 @@
             }
         }
 
-        var ts = PdfTheme.tableStyles();
+        var ts = PdfTheme.tableStyles({ large: true });
         var body = items.map(function (it) {
             var txt =
                 it.kind === 'airspace'
@@ -1865,10 +1964,12 @@
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         doc.setTextColor(85, 85, 85);
-        doc.text('One row per restriction or NOTAM: map (left) and full details (right). Maps are indicative.', 10, 14);
+        var contentTopY = PdfTheme.contentTopMm();
+        var mapMargin = 10;
+        doc.text('One row per restriction or NOTAM: map (left) and full details (right). Maps are indicative.', mapMargin, contentTopY - 4);
 
         doc.autoTable({
-            startY: 18,
+            startY: contentTopY,
             head: [['Map', 'Details']],
             body: body,
             tableWidth: tableW,
@@ -1882,7 +1983,7 @@
             }),
             bodyStyles: Object.assign({}, ts.bodyStyles, { valign: 'top' }),
             alternateRowStyles: ts.alternateRowStyles,
-            styles: Object.assign({}, ts.styles, { minCellHeight: 26, valign: 'top' }),
+            styles: Object.assign({}, ts.styles, { minCellHeight: 50, valign: 'top', fontSize: 8 }),
             margin: ts.margin,
             tableLineColor: ts.tableLineColor,
             tableLineWidth: ts.tableLineWidth,
@@ -2442,6 +2543,7 @@
 
         try {
             PptxTheme.setLight(isWeatherExportLightTheme());
+            PptxTheme.setContentTopIn(1.0);
 
             const pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_WIDE';
@@ -2456,11 +2558,19 @@
             const cellOpts = PptxTheme.tableCellOpts();
             const labelOpts = PptxTheme.tableLabelOpts();
             const border = PptxTheme.tableBorder();
+            var pptxX = PptxTheme.marginXIn();
+            var pptxW = PptxTheme.contentWidthIn();
+            var pptxSlideTitleY = PptxTheme.slideTitleIn();
+            var pptxContentTopY = PptxTheme.contentTopIn();
+            var pptxTitleContentTopY = PptxTheme.titleContentTopIn();
+            var pptxContentBottomY = PptxTheme.contentBottomIn();
+            var pptxSlideSubtitleY = pptxSlideTitleY + 0.34;
 
             const data = lastReportData;
             const suitability = deriveSuitability(data);
             const suitLabelHex = suitabilityLabelHex(suitability.level);
             const modelLabel = MODEL_LABELS[lastModel] || lastModel;
+            const profileLabel = FS.resolveProfile(getSelectedAircraftProfileId()).label;
             const locLabel = selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5);
             const usedTargetTime = getUsedTargetTimeForReport();
             const timeLabel = formatForecastHourSourceLabel(lastDisplayTime, usedTargetTime);
@@ -2470,20 +2580,22 @@
 
             // --- Slide 1: Title + Map ---
             let slide = pptx.addSlide({ masterName: 'TITLE_SLIDE' });
-            slide.addText('Flight Weather Report', { x: 1.1, y: 0.15, w: 8, h: 0.6, fontSize: 26, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+            slide.addText('Flight Weather Report', { x: 1.1, y: pptxSlideTitleY, w: 8, h: 0.6, fontSize: 26, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
             var mapSize = 5.6;
-            slide.addShape('roundRect', { x: 0.42, y: 1.02, w: mapSize + 0.16, h: mapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
-            slide.addImage({ data: mapImg, x: 0.5, y: 1.1, w: mapSize, h: mapSize, rounding: false });
+            var mapY = pptxTitleContentTopY;
+            slide.addShape('roundRect', { x: pptxX - 0.08, y: mapY - 0.08, w: mapSize + 0.16, h: mapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
+            slide.addImage({ data: mapImg, x: pptxX, y: mapY, w: mapSize, h: mapSize, rounding: false });
 
             var panelX = 6.5;
             var panelW = 6.3;
-            PptxTheme.addInfoPanel(slide, panelX, 1.0, panelW, 5.7, [
+            PptxTheme.addInfoPanel(slide, panelX, mapY - 0.02, panelW, 5.7, [
                 { label: 'LOCATION', value: locLabel, divider: true },
                 { label: 'DATE & TIME', value: timeLabel, divider: true },
                 { label: 'WEATHER MODEL', value: modelLabel, divider: true },
+                { label: 'AIRCRAFT PROFILE', value: profileLabel, divider: true },
                 {
-                    label: 'FLIGHT SUITABILITY',
+                    label: 'FORECAST INDICATOR',
                     suitability: {
                         label: suitability.label,
                         explainer: suitability.explainer,
@@ -2498,10 +2610,10 @@
 
             // --- Slide 2: Weather Summary ---
             slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-            slide.addText('Weather Summary', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+            slide.addText('Weather Summary', { x: pptxX, y: pptxSlideTitleY, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
             slide.addText(suitability.label, {
-                x: 0.5,
-                y: 0.82,
+                x: pptxX,
+                y: pptxContentTopY,
                 w: 2.5,
                 h: 0.35,
                 fontSize: 15,
@@ -2511,9 +2623,9 @@
                 valign: 'top'
             });
             slide.addText(suitability.explainer, {
-                x: 0.5,
-                y: 1.05,
-                w: 12.2,
+                x: pptxX,
+                y: pptxContentTopY + 0.28,
+                w: pptxW,
                 h: 0.68,
                 fontSize: 12,
                 color: C.textPrimary,
@@ -2524,58 +2636,60 @@
 
             const summaryText = deriveSummaryText(lastHourlySlice, suitability);
             if (summaryText) {
-                slide.addText(summaryText, { x: 0.5, y: 1.8, w: 12.2, h: 0.65, fontSize: 11, color: C.textMuted, fontFace: 'Arial', wrap: true });
+                slide.addText('Next 12 hours (range from selected hour): ' + summaryText, { x: pptxX, y: pptxContentTopY + 1.0, w: pptxW, h: 0.65, fontSize: 11, color: C.textMuted, fontFace: 'Arial', wrap: true });
             }
 
             const gusts120 = data.wind_speed_120m != null ? Math.round(data.wind_speed_120m * GUST_120M_MULTIPLIER) + ' km/h' : '-';
             const cloudStr = formatCloudCoverStr(data.cloud_cover, data.cloud_cover_low);
             const precipStr = formatPrecipWithProb(data.precipitation, data.precipitation_probability);
 
-            const summaryTableY = summaryText ? 2.52 : 2.0;
+            const summaryTableY = summaryText ? pptxContentTopY + 1.72 : pptxContentTopY + 1.12;
             const summaryRows = [
                 [{ text: 'Parameter', options: headerOpts }, { text: 'Value', options: headerOpts }],
-                [{ text: 'Wind 10 m (sustained)', options: labelOpts }, { text: formatWindRow(data.wind_speed_10m, data.wind_direction_10m), options: cellOpts }],
-                [{ text: 'Gusts 10 m', options: labelOpts }, { text: data.wind_gusts_10m != null ? Math.round(data.wind_gusts_10m) + ' km/h' : '-', options: cellOpts }],
-                [{ text: 'Wind 120 m (sustained)', options: labelOpts }, { text: formatWindRow(data.wind_speed_120m, data.wind_direction_120m), options: cellOpts }],
-                [{ text: 'Gusts 120 m (est.)', options: labelOpts }, { text: gusts120, options: cellOpts }],
+                [{ text: 'Wind 10m (sustained)', options: labelOpts }, { text: formatWindRow(data.wind_speed_10m, data.wind_direction_10m), options: cellOpts }],
+                [{ text: 'Gusts 10m', options: labelOpts }, { text: data.wind_gusts_10m != null ? Math.round(data.wind_gusts_10m) + ' km/h' : '-', options: cellOpts }],
+                [{ text: 'Wind 120m (sustained)', options: labelOpts }, { text: formatWindRow(data.wind_speed_120m, data.wind_direction_120m), options: cellOpts }],
+                [{ text: 'Gusts 120m', options: labelOpts }, { text: gusts120, options: cellOpts }],
                 [{ text: 'Visibility', options: labelOpts }, { text: formatVisibility(data.visibility), options: cellOpts }],
-                [{ text: 'Cloud cover', options: labelOpts }, { text: cloudStr, options: cellOpts }],
+                [{ text: 'Cloud Cover', options: labelOpts }, { text: cloudStr, options: cellOpts }],
                 [{ text: 'Precipitation', options: labelOpts }, { text: precipStr, options: cellOpts }],
                 [{ text: 'Temperature', options: labelOpts }, { text: data.temperature_2m != null ? Math.round(data.temperature_2m) + ' °C' : '-', options: cellOpts }]
             ];
-            slide.addTable(summaryRows, { x: 0.5, y: summaryTableY, w: 12.2, colW: [4.2, 8], border: border, rowH: 0.4 });
-            slide.addText('Data from Open-Meteo (' + modelLabel + ')', { x: 0.5, y: 6.7, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
+            slide.addTable(summaryRows, { x: pptxX, y: summaryTableY, w: pptxW, colW: [4.2, 8], border: border, rowH: 0.4 });
+            slide.addText('Data from Open-Meteo (' + modelLabel + ')', { x: pptxX, y: pptxContentBottomY - 0.05, w: 8, h: 0.3, fontSize: 9, color: C.textMuted, fontFace: 'Arial' });
 
-            // --- How This Is Calculated ---
-            slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-            slide.addText('How This Is Calculated', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
-            slide.addText(buildWeatherHowCalculatedPlainLines(suitability, usedTargetTime).join('\n'), {
-                x: 0.5,
-                y: 0.85,
-                w: 12.2,
-                h: 6.0,
-                fontSize: 10,
-                color: C.textPrimary,
-                fontFace: 'Arial',
-                valign: 'top',
-                wrap: true,
-                lineSpacingMultiple: 1.2
-            });
-
-            // --- 12-Hour Forecast (if available) ---
+            // --- 12-Hour Forecast + How This Is Calculated (single balanced slide) ---
             if (lastHourlySlice && lastHourlySlice.hourly) {
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('12-Hour Forecast', { x: 0.5, y: 0.2, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('12-Hour Forecast', { x: pptxX, y: pptxSlideTitleY, w: 8, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
                 const h = lastHourlySlice.hourly;
                 const start = lastHourlySlice.startIdx;
                 const count = Math.min(12, (h.time?.length || 0) - start);
 
+                var howPlainPptx = buildWeatherHowCalculatedExportPlainLines(suitability, usedTargetTime);
+                var howPanelPad = 0.15;
+                var howTitleH = 0.24;
+                var howTitleBodyGap = 0.1;
+                var howPanelH = 1.08;
+                var howPanelY = pptxContentBottomY - howPanelH - 0.08;
+                var tableAreaBottomY = howPanelY - 0.12;
+                var forecastSubtitle = 'All wind speeds in km/h. Cell colours match Summary flight suitability (Green / Amber / Red).';
+                var subtitleH = 0.32;
+                var tableAreaH = Math.max(0, tableAreaBottomY - pptxContentTopY);
+                var rowH = Math.min(0.44, Math.max(0.34, (tableAreaH - subtitleH) / (1 + count)));
+                var tableBlockH = subtitleH + rowH * (1 + count);
+                var tableBlockStartY = pptxContentTopY + Math.max(0, (tableAreaH - tableBlockH) / 2);
+                if (tableBlockStartY + tableBlockH > tableAreaBottomY) {
+                    tableBlockStartY = pptxContentTopY;
+                    rowH = Math.min(0.44, Math.max(0.34, (tableAreaBottomY - pptxContentTopY - subtitleH) / (1 + count)));
+                }
+
                 const forecastHeader = [
                     { text: 'Time', options: headerOpts },
-                    { text: 'Sust. 10m', options: headerOpts },
+                    { text: 'Wind 10m', options: headerOpts },
                     { text: 'Gusts 10m', options: headerOpts },
-                    { text: 'Sust. 120m', options: headerOpts },
+                    { text: 'Wind 120m', options: headerOpts },
                     { text: 'Gusts 120m', options: headerOpts },
                     { text: 'Vis', options: headerOpts },
                     { text: 'Cloud', options: headerOpts },
@@ -2614,18 +2728,56 @@
                     ]);
                 }
 
-                slide.addText('All wind speeds in km/h. Cell colours match Summary flight suitability (Green / Amber / Red).', { x: 0.5, y: 0.7, w: 12, h: 0.35, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
-                slide.addTable(forecastRows, { x: 0.3, y: 1.05, w: 12.6, colW: [1.2, 1.3, 1.3, 1.3, 1.3, 1.5, 1.2, 1.3, 1.2], border: border, rowH: 0.4, fontSize: 9 });
+                slide.addText(forecastSubtitle, { x: pptxX, y: tableBlockStartY, w: pptxW, h: subtitleH, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
+                var tableEndY = tableBlockStartY + subtitleH + rowH * (1 + count);
+                if (tableEndY > tableAreaBottomY) {
+                    rowH = Math.max(0.3, (tableAreaBottomY - tableBlockStartY - subtitleH) / (1 + count));
+                    tableEndY = tableBlockStartY + subtitleH + rowH * (1 + count);
+                }
+                slide.addTable(forecastRows, { x: pptxX - 0.2, y: tableBlockStartY + subtitleH, w: 12.6, colW: [1.2, 1.3, 1.3, 1.3, 1.3, 1.5, 1.2, 1.3, 1.2], border: border, rowH: rowH, fontSize: 9 });
+
+                howPanelY = Math.max(pptxContentBottomY - howPanelH - 0.08, tableEndY + 0.1);
+                slide.addShape('roundRect', {
+                    x: pptxX,
+                    y: howPanelY,
+                    w: pptxW,
+                    h: howPanelH,
+                    fill: { color: C.surface },
+                    rectRadius: 0.08,
+                    line: { color: C.border, width: 0.3 }
+                });
+                slide.addText('How This Is Calculated', {
+                    x: pptxX + howPanelPad,
+                    y: howPanelY + howPanelPad,
+                    w: 4,
+                    h: howTitleH,
+                    fontSize: 10,
+                    bold: true,
+                    color: C.accent,
+                    fontFace: 'Arial'
+                });
+                slide.addText(howPlainPptx, {
+                    x: pptxX + howPanelPad,
+                    y: howPanelY + howPanelPad + howTitleH + howTitleBodyGap,
+                    w: pptxW - howPanelPad * 2,
+                    h: howPanelH - howPanelPad * 2 - howTitleH - howTitleBodyGap,
+                    fontSize: 7.5,
+                    color: C.textPrimary,
+                    fontFace: 'Arial',
+                    valign: 'top',
+                    wrap: true,
+                    lineSpacingMultiple: 1.2
+                });
             }
 
             // --- METAR / TAF ---
             if (lastAviationData && lastAviationData.error) {
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('METAR / TAF: Aerodromes within 50 NM', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('METAR / TAF: Aerodromes within 50 NM', { x: pptxX, y: pptxSlideTitleY, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
                 slide.addText('Could not load aviation data: ' + lastAviationData.error, {
-                    x: 0.5,
-                    y: 0.9,
-                    w: 12.2,
+                    x: pptxX,
+                    y: pptxContentTopY + 0.05,
+                    w: pptxW,
                     h: 1.0,
                     fontSize: 11,
                     color: C.textPrimary,
@@ -2645,15 +2797,15 @@
                 });
 
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('METAR / TAF: Aerodromes within 50 NM', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('METAR / TAF: Aerodromes within 50 NM', { x: pptxX, y: pptxSlideTitleY, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
-                var maxY = 6.6;
-                let yPos = 0.85;
+                var maxY = pptxContentBottomY;
+                let yPos = pptxContentTopY;
 
                 function newMetarSlide(title) {
                     slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                    slide.addText(title, { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
-                    yPos = 0.85;
+                    slide.addText(title, { x: pptxX, y: pptxSlideTitleY, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                    yPos = pptxContentTopY;
                 }
 
                 lastAviationData.nearby.forEach(function (s) {
@@ -2689,14 +2841,14 @@
                             { text: (s.name || s.icao), options: { bold: true, fontSize: 12, color: C.textPrimary } },
                             { text: '  ' + s.icao + '  (' + nmWithKmBracket(s.distNm) + ')', options: { fontSize: 10, color: C.accent } }
                         ],
-                        { x: 0.5, y: yPos, w: 12, h: 0.35, fontFace: 'Arial' }
+                        { x: pptxX, y: yPos, w: 12, h: 0.35, fontFace: 'Arial' }
                     );
                     yPos += 0.4;
 
                     if (rawMetar) {
                         if (metarTime) {
                             slide.addText('Observed: ' + formatAviationTime(metarTime), {
-                                x: 0.7,
+                                x: pptxX + 0.2,
                                 y: yPos,
                                 w: 11.5,
                                 h: 0.2,
@@ -2707,7 +2859,7 @@
                             yPos += 0.22;
                         }
                         var decodedMetar = decodeMetar(metar);
-                        slide.addText('METAR: ' + (decodedMetar || rawMetar), { x: 0.7, y: yPos, w: 11.5, h: 0.6, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
+                        slide.addText('METAR: ' + (decodedMetar || rawMetar), { x: pptxX + 0.2, y: yPos, w: 11.5, h: 0.6, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
                         yPos += 0.7;
                     }
                     if (rawTaf) {
@@ -2718,7 +2870,7 @@
                                 tafMetaParts.push('Valid: ' + formatAviationTime(tafValidFrom) + ' – ' + formatAviationTime(tafValidTo));
                             }
                             slide.addText(tafMetaParts.join(' · '), {
-                                x: 0.7,
+                                x: pptxX + 0.2,
                                 y: yPos,
                                 w: 11.5,
                                 h: 0.2,
@@ -2729,23 +2881,23 @@
                             yPos += 0.22;
                         }
                         var boxH = tafH - 0.1 - tafMetaH;
-                        slide.addText('TAF: ' + tafText, { x: 0.7, y: yPos, w: 11.5, h: boxH, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
+                        slide.addText('TAF: ' + tafText, { x: pptxX + 0.2, y: yPos, w: 11.5, h: boxH, fontSize: 9, color: C.textPrimary, fontFace: 'Arial', fill: { color: C.surface }, shape: pptx.ShapeType.roundRect, rectRadius: 0.03, valign: 'top', paraSpaceAfter: 4 });
                         yPos += boxH + 0.1;
                     }
                     yPos += 0.2;
                 });
 
                 slide.addText(
-                    'Data from Aviation Weather Center (aviationweather.gov). ' + AVIATION_FLIGHT_CATEGORY_HELP_PLAIN,
-                    { x: 0.5, y: maxY + 0.1, w: 12, h: 0.55, fontSize: 8, color: C.textMuted, fontFace: 'Arial', lineSpacingMultiple: 1.2 }
+                    'Source: Aviation Weather Center. ' + AVIATION_FLIGHT_CATEGORY_HELP_PLAIN,
+                    { x: pptxX, y: maxY + 0.05, w: pptxW, h: 0.55, fontSize: 8, color: C.textMuted, fontFace: 'Arial', lineSpacingMultiple: 1.2 }
                 );
             } else if (lastAviationData) {
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('METAR / TAF: Aerodromes within 50 NM', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('METAR / TAF: Aerodromes within 50 NM', { x: pptxX, y: pptxSlideTitleY, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
                 slide.addText('No aerodromes with METAR/TAF within 50 NM of the selected location.', {
-                    x: 0.5,
-                    y: 0.9,
-                    w: 12.2,
+                    x: pptxX,
+                    y: pptxContentTopY + 0.05,
+                    w: pptxW,
                     h: 0.6,
                     fontSize: 11,
                     color: C.textMuted,
@@ -2790,8 +2942,8 @@
                 var imgN = mapElN ? await captureWeatherMinimapForPptx(mapElN) : null;
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
                 slide.addText('NOTAM: ' + (ntmP.id || 'n/a'), {
-                    x: 0.5,
-                    y: 0.2,
+                    x: pptxX,
+                    y: pptxSlideTitleY,
                     w: 10,
                     h: 0.45,
                     fontSize: 18,
@@ -2800,8 +2952,8 @@
                     fontFace: 'Arial'
                 });
                 slide.addText('Within ' + exportRadiusKm + ' km search radius', {
-                    x: 0.5,
-                    y: 0.62,
+                    x: pptxX,
+                    y: pptxSlideSubtitleY,
                     w: 10,
                     h: 0.25,
                     fontSize: 10,
@@ -2810,21 +2962,21 @@
                 });
                 if (imgN) {
                     slide.addShape('roundRect', {
-                        x: 0.42,
-                        y: 0.82,
+                        x: pptxX - 0.08,
+                        y: pptxContentTopY - 0.08,
                         w: 4.96,
                         h: 4.96,
                         fill: { color: C.surface },
                         rectRadius: 0.12,
                         line: { color: C.border, width: 0.5 }
                     });
-                    slide.addImage({ data: imgN, x: 0.5, y: 0.9, w: 4.8, h: 4.8, rounding: false });
+                    slide.addImage({ data: imgN, x: pptxX, y: pptxContentTopY, w: 4.8, h: 4.8, rounding: false });
                 }
                 slide.addText(buildWeatherNotamPptxLines(ntmP, selectedPoint.lat, selectedPoint.lng), {
                     x: 5.55,
-                    y: 0.9,
+                    y: pptxContentTopY,
                     w: 7.1,
-                    h: 5.4,
+                    h: pptxContentBottomY - pptxContentTopY,
                     fontSize: 9,
                     color: C.textPrimary,
                     fontFace: 'Arial',
@@ -2832,8 +2984,8 @@
                     lineSpacingMultiple: 1.15
                 });
                 slide.addText('UK NOTAMs from NATS AIS via UK NOTAM Archive', {
-                    x: 0.5,
-                    y: 6.8,
+                    x: pptxX,
+                    y: pptxContentBottomY + 0.02,
                     w: 8,
                     h: 0.3,
                     fontSize: 9,
@@ -2855,8 +3007,8 @@
                     slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
                     var catColorP = catColorsPptx[afP.category] || C.textPrimary;
                     slide.addText(AIRSPACE_CATEGORY_LABEL[catP] + ': ' + (afP.name || afP.designator || 'n/a'), {
-                        x: 0.5,
-                        y: 0.2,
+                        x: pptxX,
+                        y: pptxSlideTitleY,
                         w: 11,
                         h: 0.45,
                         fontSize: 18,
@@ -2865,8 +3017,8 @@
                         fontFace: 'Arial'
                     });
                     slide.addText('Within ' + exportRadiusKm + ' km search radius', {
-                        x: 0.5,
-                        y: 0.62,
+                        x: pptxX,
+                        y: pptxSlideSubtitleY,
                         w: 10,
                         h: 0.25,
                         fontSize: 10,
@@ -2875,21 +3027,21 @@
                     });
                     if (imgA) {
                         slide.addShape('roundRect', {
-                            x: 0.42,
-                            y: 0.82,
+                            x: pptxX - 0.08,
+                            y: pptxContentTopY - 0.08,
                             w: 4.96,
                             h: 4.96,
                             fill: { color: C.surface },
                             rectRadius: 0.12,
                             line: { color: C.border, width: 0.5 }
                         });
-                        slide.addImage({ data: imgA, x: 0.5, y: 0.9, w: 4.8, h: 4.8, rounding: false });
+                        slide.addImage({ data: imgA, x: pptxX, y: pptxContentTopY, w: 4.8, h: 4.8, rounding: false });
                     }
                     slide.addText(buildWeatherAirspacePptxLines(afP, selectedPoint.lat, selectedPoint.lng), {
                         x: 5.55,
-                        y: 0.9,
+                        y: pptxContentTopY,
                         w: 7.1,
-                        h: 5.4,
+                        h: pptxContentBottomY - pptxContentTopY,
                         fontSize: 9,
                         color: C.textPrimary,
                         fontFace: 'Arial',
@@ -2897,8 +3049,8 @@
                         lineSpacingMultiple: 1.15
                     });
                     slide.addText('UK airspace data from NATS AIS (ENR 5.1) and UK AIP', {
-                        x: 0.5,
-                        y: 6.8,
+                        x: pptxX,
+                        y: pptxContentBottomY + 0.02,
                         w: 8,
                         h: 0.3,
                         fontSize: 9,
@@ -2943,12 +3095,12 @@
                 map.setView(origView.center, origView.zoom, { animate: false });
 
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('NOTAMs and airspace map: ' + airspaceSearchRadiusKm + ' km radius', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('NOTAMs and airspace map: ' + airspaceSearchRadiusKm + ' km radius', { x: pptxX, y: pptxSlideTitleY, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
                 var amapSize = 5.6;
-                slide.addShape('roundRect', { x: 0.42, y: 0.82, w: amapSize + 0.16, h: amapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
-                slide.addImage({ data: airspaceMapImg, x: 0.5, y: 0.9, w: amapSize, h: amapSize, rounding: false });
+                slide.addShape('roundRect', { x: pptxX - 0.08, y: pptxContentTopY - 0.08, w: amapSize + 0.16, h: amapSize + 0.16, fill: { color: C.surface }, rectRadius: 0.12, line: { color: C.border, width: 0.5 } });
+                slide.addImage({ data: airspaceMapImg, x: pptxX, y: pptxContentTopY, w: amapSize, h: amapSize, rounding: false });
 
-                var legendY = 0.9;
+                var legendY = pptxContentTopY + 0.08;
                 var legendX = 6.5;
                 slide.addText('Legend', { x: legendX, y: legendY, w: 4, h: 0.3, fontSize: 12, bold: true, color: C.textPrimary, fontFace: 'Arial' });
                 legendY += 0.4;
@@ -2973,65 +3125,65 @@
             // --- Airspace & NOTAM Data Sources explainer ---
             if (notamSlides.length > 0 || airspaceFeatures.length > 0) {
                 slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-                slide.addText('Airspace & NOTAM Data Sources', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+                slide.addText('Airspace & NOTAM Data Sources', { x: pptxX, y: pptxSlideTitleY, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
-                var srcY = 0.85;
+                var srcY = pptxContentTopY;
 
                 if (notamSlides.length > 0) {
-                    slide.addText('NOTAMs', { x: 0.5, y: srcY, w: 5, h: 0.3, fontSize: 14, bold: true, color: C.accent, fontFace: 'Arial' });
+                    slide.addText('NOTAMs', { x: pptxX, y: srcY, w: 5, h: 0.3, fontSize: 14, bold: true, color: C.accent, fontFace: 'Arial' });
                     srcY += 0.35;
-                    slide.addShape('roundRect', { x: 0.5, y: srcY, w: 12.2, h: 1.55, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
+                    slide.addShape('roundRect', { x: pptxX, y: srcY, w: pptxW, h: 1.55, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
                     slide.addText([
                         { text: 'Source: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
                         { text: 'UK NOTAM Archive (jonty.github.io/uk-notam-archive), mirroring the NATS AIS Contingency Pre-flight Information Bulletin (PIB).', options: { color: C.textPrimary, fontSize: 10 } }
-                    ], { x: 0.7, y: srcY + 0.08, w: 11.8, h: 0.3, fontFace: 'Arial' });
+                    ], { x: pptxX + 0.2, y: srcY + 0.08, w: pptxW - 0.4, h: 0.3, fontFace: 'Arial' });
                     slide.addText([
                         { text: 'Authority: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
                         { text: 'NOTAMs are issued by NATS (National Air Traffic Services) on behalf of the UK Civil Aviation Authority (CAA). They are the official mechanism for communicating temporary airspace restrictions, hazards, and aeronautical changes.', options: { color: C.textPrimary, fontSize: 10 } }
-                    ], { x: 0.7, y: srcY + 0.38, w: 11.8, h: 0.45, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    ], { x: pptxX + 0.2, y: srcY + 0.38, w: pptxW - 0.4, h: 0.45, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
                     slide.addText([
                         { text: 'Reliability: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
                         { text: 'Data is updated hourly from the official NATS PIB. However, this report uses an unofficial open-data mirror. For flight-critical decisions, always verify against the official NATS AIS PIB (pibs.nats.aero) or the Drone Assist app.', options: { color: C.textPrimary, fontSize: 10 } }
-                    ], { x: 0.7, y: srcY + 0.85, w: 11.8, h: 0.6, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    ], { x: pptxX + 0.2, y: srcY + 0.85, w: pptxW - 0.4, h: 0.6, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
                     srcY += 1.7;
                 }
 
                 if (airspaceFeatures.length > 0) {
-                    slide.addText('FRZ, Restricted & Danger Areas', { x: 0.5, y: srcY, w: 8, h: 0.3, fontSize: 14, bold: true, color: C.accent, fontFace: 'Arial' });
+                    slide.addText('FRZ, Restricted & Danger Areas', { x: pptxX, y: srcY, w: 8, h: 0.3, fontSize: 14, bold: true, color: C.accent, fontFace: 'Arial' });
                     srcY += 0.35;
-                    slide.addShape('roundRect', { x: 0.5, y: srcY, w: 12.2, h: 2.15, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
+                    slide.addShape('roundRect', { x: pptxX, y: srcY, w: pptxW, h: 2.15, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
                     slide.addText([
                         { text: 'Source: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
                         { text: 'UK Aeronautical Information Publication (AIP) ENR 5.1 and NATS UAS airspace boundaries. Data includes Flight Restriction Zones (FRZ), Prohibited (EG P), Restricted (EG R), and Danger (EG D) areas.', options: { color: C.textPrimary, fontSize: 10 } }
-                    ], { x: 0.7, y: srcY + 0.08, w: 11.8, h: 0.45, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    ], { x: pptxX + 0.2, y: srcY + 0.08, w: pptxW - 0.4, h: 0.45, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
                     slide.addText([
                         { text: 'Authority: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
                         { text: 'Airspace boundaries are defined by the UK CAA and published through the AIP, managed by NATS Aeronautical Information Service. FRZs are mandated under the Air Navigation Order (ANO) Article 94A for drone operations near aerodromes.', options: { color: C.textPrimary, fontSize: 10 } }
-                    ], { x: 0.7, y: srcY + 0.55, w: 11.8, h: 0.55, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    ], { x: pptxX + 0.2, y: srcY + 0.55, w: pptxW - 0.4, h: 0.55, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
                     slide.addText([
                         { text: 'Reliability: ', options: { bold: true, color: C.textMuted, fontSize: 10 } },
                         { text: 'These are official published boundaries and are considered authoritative for planning purposes. However, Danger and Restricted areas may be temporarily activated or deactivated; always cross-reference with current NOTAMs. This data does not include temporary airspace reservations (RA(T)) which require a separate check.', options: { color: C.textPrimary, fontSize: 10 } }
-                    ], { x: 0.7, y: srcY + 1.15, w: 11.8, h: 0.85, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
+                    ], { x: pptxX + 0.2, y: srcY + 1.15, w: pptxW - 0.4, h: 0.85, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.2 });
                     srcY += 2.3;
                 }
 
-                slide.addText('This report is for planning purposes only and does not replace the obligation to conduct a formal pre-flight assessment using official sources.', { x: 0.5, y: Math.max(srcY + 0.15, 6.5), w: 12, h: 0.4, fontSize: 9, bold: true, color: C.textMuted, fontFace: 'Arial', italic: true });
+                slide.addText('This report is for planning purposes only and does not replace the obligation to conduct a formal pre-flight assessment using official sources.', { x: pptxX, y: Math.max(srcY + 0.15, pptxContentBottomY - 0.35), w: pptxW, h: 0.4, fontSize: 9, bold: true, color: C.textMuted, fontFace: 'Arial', italic: true });
             }
 
             // --- Final Slide: Data Sources & Model Explainer ---
             var info = MODEL_EXPLAINERS[lastModel] || MODEL_EXPLAINERS['auto'];
             slide = pptx.addSlide({ masterName: 'CONTENT_SLIDE' });
-            slide.addText('Data Sources & Forecast Model', { x: 0.5, y: 0.2, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
+            slide.addText('Data Sources & Forecast Model', { x: pptxX, y: pptxSlideTitleY, w: 10, h: 0.5, fontSize: 20, bold: true, color: C.textPrimary, fontFace: 'Arial' });
 
             slide.addText([
                 { text: 'Model: ', options: { fontSize: 12, color: C.textMuted, fontFace: 'Arial' } },
                 { text: info.name, options: { fontSize: 12, color: C.textPrimary, fontFace: 'Arial', bold: true } }
-            ], { x: 0.5, y: 0.85, w: 12, h: 0.3 });
-            slide.addText(info.fullName, { x: 0.5, y: 1.15, w: 12, h: 0.3, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
-            slide.addText('Resolution: ' + info.resolution + '   |   Provider: ' + info.provider, { x: 0.5, y: 1.45, w: 12, h: 0.3, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
+            ], { x: pptxX, y: pptxContentTopY, w: pptxW, h: 0.3 });
+            slide.addText(info.fullName, { x: pptxX, y: pptxContentTopY + 0.3, w: pptxW, h: 0.3, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
+            slide.addText('Resolution: ' + info.resolution + '   |   Provider: ' + info.provider, { x: pptxX, y: pptxContentTopY + 0.6, w: pptxW, h: 0.3, fontSize: 10, color: C.textMuted, fontFace: 'Arial' });
 
-            slide.addShape('roundRect', { x: 0.5, y: 1.9, w: 12.2, h: 1.2, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
-            slide.addText(info.equiv.replace(/<\/?strong>/g, ''), { x: 0.7, y: 2.0, w: 11.8, h: 1.0, fontSize: 11, color: C.textPrimary, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.3 });
+            slide.addShape('roundRect', { x: pptxX, y: pptxContentTopY + 1.05, w: pptxW, h: 1.2, fill: { color: C.surface }, rectRadius: 0.06, line: { color: C.border, width: 0.3 } });
+            slide.addText(info.equiv.replace(/<\/?strong>/g, ''), { x: pptxX + 0.2, y: pptxContentTopY + 1.15, w: pptxW - 0.4, h: 1.0, fontSize: 11, color: C.textPrimary, fontFace: 'Arial', valign: 'top', lineSpacingMultiple: 1.3 });
 
             var equivHeader = [
                 { text: 'Service', options: headerOpts },
@@ -3044,9 +3196,9 @@
                 [{ text: 'Met Office', options: cellOpts }, { text: 'Met Office UKV (2 km) + Global', options: cellOpts }, { text: 'UK Met Office', options: cellOpts }, { text: 'Direct equivalent', options: { fill: { color: C.surface }, color: '66BB6A', fontSize: 10, fontFace: 'Arial' } }],
                 [{ text: 'Windy.com', options: cellOpts }, { text: 'ECMWF IFS (default) / GFS / ICON', options: cellOpts }, { text: 'ECMWF IFS / GFS', options: cellOpts }, { text: 'Direct equivalent', options: { fill: { color: C.surface }, color: '66BB6A', fontSize: 10, fontFace: 'Arial' } }]
             ];
-            slide.addTable(equivRows, { x: 0.3, y: 3.35, w: 12.6, colW: [2.5, 4.2, 3.2, 2.7], border: border, rowH: 0.42 });
+            slide.addTable(equivRows, { x: pptxX - 0.2, y: pptxContentTopY + 2.5, w: 12.6, colW: [2.5, 4.2, 3.2, 2.7], border: border, rowH: 0.42 });
 
-            slide.addText('Forecast data: Open-Meteo (open-meteo.com) CC BY 4.0. METAR/TAF: Aviation Weather Center (aviationweather.gov). NOTAMs: NATS AIS via UK NOTAM Archive. Airspace: UK AIP / NATS.', { x: 0.5, y: 5.6, w: 12, h: 0.5, fontSize: 9, color: C.textMuted, fontFace: 'Arial', lineSpacingMultiple: 1.3 });
+            slide.addText('Forecast data: Open-Meteo (open-meteo.com) CC BY 4.0. METAR/TAF: Aviation Weather Center. NOTAMs: NATS AIS via UK NOTAM Archive. Airspace: UK AIP / NATS.', { x: pptxX, y: pptxContentBottomY - 0.55, w: pptxW, h: 0.5, fontSize: 9, color: C.textMuted, fontFace: 'Arial', lineSpacingMultiple: 1.3 });
 
             const fileName = 'Weather_Report_' + new Date().toISOString().slice(0, 10) + '.pptx';
             await pptx.writeFile({ fileName: fileName });
@@ -3055,6 +3207,7 @@
             console.error('PPTX export failed:', err);
             alert('Failed to export PowerPoint: ' + (err.message || 'Unknown error'));
         } finally {
+            PptxTheme.setContentTopIn(0.85);
             btn.disabled = false;
             btn.querySelector('span').textContent = origText;
             nudgeApShellChromeAfterRasterExport();
@@ -3073,15 +3226,17 @@
 
         try {
             PdfTheme.setLight(isWeatherExportLightTheme());
+            PdfTheme.setContentTopMm(28);
 
             await PdfTheme.loadLogo();
             const c = PdfTheme.colors();
-            const ts = PdfTheme.tableStyles();
+            const ts = PdfTheme.tableStyles({ large: true });
 
             const data = lastReportData;
             const suitability = deriveSuitability(data);
             var suitLabelRgbPdf = suitabilityLabelRgb(suitability.level);
             const modelLabel = MODEL_LABELS[lastModel] || lastModel;
+            const profileLabel = FS.resolveProfile(getSelectedAircraftProfileId()).label;
             const locLabel = selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5);
             const usedTargetTime = getUsedTargetTimeForReport();
             const timeLabel = formatForecastHourSourceLabel(lastDisplayTime, usedTargetTime);
@@ -3089,25 +3244,34 @@
             const mapContainer = document.getElementById('weatherMap') || document.getElementById('map');
             const mapImg = await PdfTheme.captureSquareMap(mapContainer);
 
-            const doc = PdfTheme.createDoc();
+            const doc = PdfTheme.createDoc({ landscape: true });
 
             var pdfPageW = PdfTheme.pageWidthMm();
+            var pdfPageH = PdfTheme.pageHeightMm();
+            var pdfPageBreakY = pdfPageH - 15;
             var pdfMargin = 10;
             var pdfBodyW = pdfPageW - 2 * pdfMargin;
             var pdfMetarBlockX = 12;
             var pdfMetarBlockW = pdfPageW - pdfMetarBlockX - pdfMargin;
             var pdfMetarTextMaxW = pdfMetarBlockW - 4;
             var pdfSourceColTextW = pdfBodyW - 20;
+            var pdfContentTopY = PdfTheme.contentTopMm();
+            var pdfTitleContentTopY = PdfTheme.titleContentTopMm();
 
-            // Page 1: Title + Map + Info Panel
+            // Page 1: Title + Map (left) + Info Panel (right) — matches PPTX layout
             PdfTheme.addHeader(doc, 'Flight Weather Report', true);
-            doc.addImage(mapImg, 'PNG', 10, 25, 120, 120);
-            PdfTheme.addInfoPanel(doc, 10, 25 + 120 + 8, 190, [
+            var titleMapY = pdfTitleContentTopY;
+            var titleMapSize = 130;
+            var titlePanelX = pdfMargin + titleMapSize + 10;
+            var titlePanelW = pdfPageW - titlePanelX - pdfMargin;
+            PdfTheme.addFramedImage(doc, mapImg, pdfMargin, titleMapY, titleMapSize);
+            PdfTheme.addInfoPanel(doc, titlePanelX, titleMapY, titlePanelW, [
                 { label: 'LOCATION', value: locLabel, divider: true },
                 { label: 'DATE & TIME', value: timeLabel, divider: true },
                 { label: 'WEATHER MODEL', value: modelLabel, divider: true },
+                { label: 'AIRCRAFT PROFILE', value: profileLabel, divider: true },
                 {
-                    label: 'FLIGHT SUITABILITY',
+                    label: 'FORECAST INDICATOR',
                     suitability: {
                         label: suitability.label,
                         explainer: suitability.explainer,
@@ -3125,13 +3289,26 @@
             PdfTheme.addHeader(doc, 'Weather Summary');
 
             var summaryTextPdf = deriveSummaryText(lastHourlySlice, suitability);
-            var summaryStartY = 18;
+            var summaryStartY = pdfContentTopY;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(suitLabelRgbPdf[0], suitLabelRgbPdf[1], suitLabelRgbPdf[2]);
+            doc.text(suitability.label, pdfMargin, summaryStartY);
+            summaryStartY += 7;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+            var suitExplLines = doc.splitTextToSize(suitability.explainer, pdfBodyW - 4);
+            doc.text(suitExplLines, pdfMargin, summaryStartY);
+            summaryStartY += suitExplLines.length * 4.5 + 4;
+
             if (summaryTextPdf) {
-                doc.setFont('helvetica', 'normal');
                 doc.setFontSize(9);
                 doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
                 var summaryLines = doc.splitTextToSize('Next 12 hours (range from selected hour): ' + summaryTextPdf, pdfBodyW - 4);
-                doc.text(summaryLines, 10, summaryStartY);
+                doc.text(summaryLines, pdfMargin, summaryStartY);
                 summaryStartY += summaryLines.length * 4.2 + 4;
             }
 
@@ -3150,7 +3327,6 @@
                 startY: summaryStartY,
                 head: [['Parameter', 'Value']],
                 body: [
-                    ['Suitability', suitability.label + ': ' + suitability.explainer],
                     ['Wind 10m (sustained)', w10],
                     ['Gusts 10m', g10],
                     ['Wind 120m (sustained)', w120],
@@ -3160,26 +3336,39 @@
                     ['Precipitation', precipStr],
                     ['Temperature', tempStr]
                 ],
-                columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } },
+                columnStyles: { 0: { cellWidth: 70, fontStyle: 'bold' } },
+                tableWidth: pdfBodyW,
                 ...ts
             });
-            doc.setFontSize(7);
+            doc.setFontSize(8);
             doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-            doc.text('Data from Open-Meteo (' + modelLabel + ')', 10, doc.lastAutoTable.finalY + 5);
+            doc.text('Data from Open-Meteo (' + modelLabel + ')', pdfMargin, doc.lastAutoTable.finalY + 5);
 
-            // How This Is Calculated
-            PdfTheme.newPage(doc);
-            PdfTheme.addHeader(doc, 'How This Is Calculated');
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8.5);
-            doc.setTextColor(c.text[0], c.text[1], c.text[2]);
-            var howLines = doc.splitTextToSize(buildWeatherHowCalculatedPlainLines(suitability, usedTargetTime).join('\n'), pdfBodyW - 4);
-            doc.text(howLines, 10, 18);
-
-            // 12-Hour Forecast (limited to 12 rows from startIdx, matching PPTX)
+            // 12-Hour Forecast + How This Is Calculated (single balanced page)
             if (lastHourlySlice && lastHourlySlice.hourly) {
                 PdfTheme.newPage(doc);
                 PdfTheme.addHeader(doc, '12-Hour Forecast');
+
+                var contentTopY = pdfContentTopY;
+                var contentBottomY = pdfPageBreakY;
+                var forecastSubtitle = 'All wind speeds in km/h. Cell colours match Summary flight suitability (Green / Amber / Red).';
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                var howPlain = buildWeatherHowCalculatedExportPlainLines(suitability, usedTargetTime);
+                var howPanelPad = 5;
+                var howTextW = pdfBodyW - howPanelPad * 2;
+                var howTitleBlockH = 6;
+                var howTitleBodyGap = 3.5;
+                var howLinesArr = doc.splitTextToSize(howPlain, howTextW);
+                var howBodyLineH = 3.1;
+                var howBodyStartY = howPanelPad + howTitleBlockH + howTitleBodyGap;
+                var howPanelH = Math.min(
+                    32,
+                    howBodyStartY + howLinesArr.length * howBodyLineH + howPanelPad
+                );
+                var howPanelY = contentBottomY - howPanelH - 3;
+                var tableAreaBottomY = howPanelY - 4;
 
                 var hourly = lastHourlySlice.hourly;
                 var startIdx = lastHourlySlice.startIdx || 0;
@@ -3214,13 +3403,33 @@
                         ht != null ? Math.round(ht) + '°C' : '-'
                     ]);
                 }
+
+                doc.setFontSize(9);
+                var subtitleLines = doc.splitTextToSize(forecastSubtitle, pdfBodyW - 4);
+                var subtitleH = subtitleLines.length * 4 + 2;
+
+                var tableAreaH = Math.max(0, tableAreaBottomY - contentTopY);
+                var baseRowH = Math.min(9, Math.max(6, (tableAreaH - subtitleH) / (1 + forecastCount)));
+                var tableH = baseRowH * (1 + forecastCount);
+                var tableBlockH = subtitleH + tableH;
+                var tableBlockStartY = contentTopY + Math.max(0, (tableAreaH - tableBlockH) / 2);
+                if (tableBlockStartY + tableBlockH > tableAreaBottomY) {
+                    tableBlockStartY = contentTopY;
+                    baseRowH = Math.min(9, Math.max(6, (tableAreaBottomY - contentTopY - subtitleH) / (1 + forecastCount)));
+                }
+
+                doc.setFontSize(9);
+                doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
+                doc.text(subtitleLines, pdfMargin, tableBlockStartY + 4);
+
                 doc.autoTable({
-                    startY: 18,
+                    startY: tableBlockStartY + subtitleH,
                     head: [['Time', 'Wind 10m', 'Gusts 10m', 'Wind 120m', 'Gusts 120m', 'Vis', 'Cloud', 'Precip', 'Temp']],
                     body: fRows,
+                    tableWidth: pdfBodyW,
                     ...ts,
-                    styles: { ...ts.styles, fontSize: 6.5 },
-                    headStyles: { ...ts.headStyles, fontSize: 6.5 },
+                    styles: { ...ts.styles, fontSize: 8.5, minCellHeight: baseRowH, valign: 'middle' },
+                    headStyles: { ...ts.headStyles, fontSize: 8.5, minCellHeight: baseRowH, valign: 'middle' },
                     alternateRowStyles: {
                         fillColor: ts.bodyStyles.fillColor,
                         textColor: ts.bodyStyles.textColor
@@ -3234,9 +3443,25 @@
                         }
                     }
                 });
+
+                howPanelY = Math.max(howPanelY, doc.lastAutoTable.finalY + 4);
+                if (howPanelY + howPanelH > contentBottomY) {
+                    howPanelY = contentBottomY - howPanelH - 3;
+                }
+
+                doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
+                doc.roundedRect(pdfMargin, howPanelY, pdfBodyW, howPanelH, 2, 2, 'F');
+                doc.setDrawColor(c.border[0], c.border[1], c.border[2]);
+                doc.setLineWidth(0.2);
+                doc.roundedRect(pdfMargin, howPanelY, pdfBodyW, howPanelH, 2, 2, 'S');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.setTextColor(c.accent[0], c.accent[1], c.accent[2]);
+                doc.text('How This Is Calculated', pdfMargin + howPanelPad, howPanelY + howPanelPad + 4);
+                doc.setFont('helvetica', 'normal');
                 doc.setFontSize(7);
-                doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-                doc.text('All wind speeds in km/h. Shaded cells use the same Green / Amber / Red flight suitability as the Summary.', 10, doc.lastAutoTable.finalY + 5);
+                doc.setTextColor(c.text[0], c.text[1], c.text[2]);
+                doc.text(howLinesArr, pdfMargin + howPanelPad, howPanelY + howBodyStartY);
             }
 
             // METAR / TAF
@@ -3246,7 +3471,7 @@
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(10);
                 doc.setTextColor(c.text[0], c.text[1], c.text[2]);
-                doc.text('Could not load aviation data: ' + lastAviationData.error, 10, 22);
+                doc.text('Could not load aviation data: ' + lastAviationData.error, pdfMargin, pdfContentTopY + 4);
             } else if (lastAviationData && lastAviationData.nearby && lastAviationData.nearby.length > 0) {
                 PdfTheme.newPage(doc);
                 PdfTheme.addHeader(doc, 'METAR / TAF: Aerodromes within 50 NM');
@@ -3262,7 +3487,7 @@
                     if (icao) tafByIcao[icao] = t;
                 });
 
-                var yPos = 18;
+                var yPos = pdfContentTopY;
                 lastAviationData.nearby.forEach(function (s) {
                     var metar = metarByIcao[s.icao];
                     var taf = tafByIcao[s.icao];
@@ -3298,10 +3523,10 @@
                     var tafBoxH = tafLines.length > 0 ? tafLines.length * 3.2 + 4 : 0;
                     var blockH = 8 + metarMetaH + metarBoxH + tafMetaH + tafBoxH + 3;
 
-                    if (yPos + blockH > 195) {
+                    if (yPos + blockH > pdfPageBreakY) {
                         PdfTheme.newPage(doc);
                         PdfTheme.addHeader(doc, 'METAR / TAF (continued)');
-                        yPos = 18;
+                        yPos = pdfContentTopY;
                     }
 
                     var nameText = (s.name || s.icao);
@@ -3339,10 +3564,10 @@
                         yPos += tafMetaH;
                     }
                     if (tafLines.length > 0) {
-                        if (yPos + tafBoxH > 195) {
+                        if (yPos + tafBoxH > pdfPageBreakY) {
                             PdfTheme.newPage(doc);
                             PdfTheme.addHeader(doc, 'METAR / TAF (continued)');
-                            yPos = 18;
+                            yPos = pdfContentTopY;
                         }
                         doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
                         doc.roundedRect(pdfMetarBlockX, yPos - 3, pdfMetarBlockW, tafBoxH, 1, 1, 'F');
@@ -3360,21 +3585,21 @@
                 doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
                 var fcNoteLines = doc.splitTextToSize(
                     'Source: Aviation Weather Center. ' + AVIATION_FLIGHT_CATEGORY_HELP_PLAIN,
-                    190
+                    pdfBodyW
                 );
-                if (yPos + fcNoteLines.length * 3.2 > 195) {
+                if (yPos + fcNoteLines.length * 3.2 > pdfPageBreakY) {
                     PdfTheme.newPage(doc);
                     PdfTheme.addHeader(doc, 'METAR / TAF (continued)');
-                    yPos = 18;
+                    yPos = pdfContentTopY;
                 }
-                doc.text(fcNoteLines, 10, yPos + 4);
+                doc.text(fcNoteLines, pdfMargin, yPos + 4);
             } else if (lastAviationData) {
                 PdfTheme.newPage(doc);
                 PdfTheme.addHeader(doc, 'METAR / TAF: Aerodromes within 50 NM');
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(10);
                 doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-                doc.text('No aerodromes with METAR/TAF within 50 NM of the selected location.', 10, 22);
+                doc.text('No aerodromes with METAR/TAF within 50 NM of the selected location.', pdfMargin, pdfContentTopY + 4);
             }
 
             // NOTAMs and Airspace (tables: NOTAM, FRZ, Restricted, etc., then map; matches PPTX)
@@ -3421,10 +3646,11 @@
                     ];
                 });
                 doc.autoTable({
-                    startY: 18,
+                    startY: pdfContentTopY,
                     head: [['NOTAM ID', 'Tag', 'Distance', 'Radius', 'Vertical', 'Validity', 'Description']],
                     body: nBody,
-                    columnStyles: { 6: { cellWidth: 58 } },
+                    tableWidth: pdfBodyW,
+                    columnStyles: { 6: { cellWidth: 72 } },
                     ...ts
                 });
             }
@@ -3438,9 +3664,10 @@
                     return [a.category, a.designator, a.name, a.lower, a.upper];
                 });
                 doc.autoTable({
-                    startY: 18,
+                    startY: pdfContentTopY,
                     head: [['Type', 'Designator', 'Name', 'Lower', 'Upper']],
                     body: aBody,
+                    tableWidth: pdfBodyW,
                     ...ts,
                     didParseCell: function (data) {
                         if (data.section === 'body' && data.column.index === 0) {
@@ -3473,7 +3700,7 @@
             if (notams.length === 0 || airspace.length === 0) {
                 PdfTheme.newPage(doc);
                 PdfTheme.addHeader(doc, 'NOTAMs & UK airspace (search radius)');
-                var emptyY = 22;
+                var emptyY = pdfContentTopY + 4;
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(10);
                 doc.setTextColor(c.text[0], c.text[1], c.text[2]);
@@ -3540,10 +3767,12 @@
 
                 PdfTheme.newPage(doc);
                 PdfTheme.addHeader(doc, 'NOTAMs and airspace map: ' + airspaceSearchRadiusKm + ' km radius');
-                doc.addImage(airspaceMapImg, 'PNG', 10, 16, 120, 120);
+                var overviewMapSize = 140;
+                var overviewMapY = pdfContentTopY;
+                PdfTheme.addFramedImage(doc, airspaceMapImg, pdfMargin, overviewMapY, overviewMapSize);
 
-                var legX = 140;
-                var legY = 20;
+                var legX = pdfMargin + overviewMapSize + 14;
+                var legY = pdfContentTopY + 6;
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(11);
                 doc.setTextColor(c.text[0], c.text[1], c.text[2]);
@@ -3583,7 +3812,7 @@
                 PdfTheme.newPage(doc);
                 PdfTheme.addHeader(doc, 'Airspace & NOTAM Data Sources');
 
-                var srcY = 18;
+                var srcY = pdfContentTopY;
 
                 if (notams.length > 0) {
                     doc.setFont('helvetica', 'bold');
@@ -3667,7 +3896,7 @@
                 doc.setFont('helvetica', 'bolditalic');
                 doc.setFontSize(7.5);
                 doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-                doc.text('This report is for planning purposes only and does not replace the obligation to conduct a formal pre-flight assessment using official sources.', 10, Math.min(srcY + 5, 195));
+                doc.text('This report is for planning purposes only and does not replace the obligation to conduct a formal pre-flight assessment using official sources.', pdfMargin, Math.min(srcY + 5, pdfPageBreakY));
             }
 
             // Final Page: Data Sources
@@ -3678,28 +3907,29 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(10);
             doc.setTextColor(c.text[0], c.text[1], c.text[2]);
-            doc.text('Model: ' + info.name, 10, 20);
+            doc.text('Model: ' + info.name, pdfMargin, pdfContentTopY + 2);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(c.muted[0], c.muted[1], c.muted[2]);
-            doc.text(info.fullName, 10, 26);
-            doc.text('Resolution: ' + info.resolution + '   |   Provider: ' + info.provider, 10, 31);
+            doc.text(info.fullName, pdfMargin, pdfContentTopY + 8);
+            doc.text('Resolution: ' + info.resolution + '   |   Provider: ' + info.provider, pdfMargin, pdfContentTopY + 13);
 
             doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
-            doc.roundedRect(pdfMargin, 35, pdfBodyW, 18, 1, 1, 'F');
+            doc.roundedRect(pdfMargin, pdfContentTopY + 17, pdfBodyW, 18, 1, 1, 'F');
             doc.setFontSize(7.5);
             doc.setTextColor(c.text[0], c.text[1], c.text[2]);
             var equivLines = doc.splitTextToSize(info.equiv.replace(/<\/?strong>/g, ''), pdfBodyW - 8);
-            doc.text(equivLines, 14, 40);
+            doc.text(equivLines, pdfMargin + 4, pdfContentTopY + 22);
 
             doc.autoTable({
-                startY: 58,
+                startY: pdfContentTopY + 40,
                 head: [['Service', 'Primary Model', 'AirPlan Equivalent', 'Match']],
                 body: [
                     ['BBC Weather', 'ECMWF IFS (via MeteoGroup/DTN)', 'ECMWF IFS', 'Direct equivalent'],
                     ['Met Office', 'Met Office UKV (2 km) + Global', 'UK Met Office', 'Direct equivalent'],
                     ['Windy.com', 'ECMWF IFS (default) / GFS / ICON', 'ECMWF IFS / GFS', 'Direct equivalent']
                 ],
+                tableWidth: pdfBodyW,
                 ...ts,
                 didParseCell: function (data) {
                     if (data.section === 'body' && data.column.index === 3) {
@@ -3721,6 +3951,7 @@
             console.error('PDF export failed:', err);
             alert('Failed to export PDF: ' + (err.message || 'Unknown error'));
         } finally {
+            PdfTheme.setContentTopMm(18);
             btn.disabled = false;
             btn.querySelector('span').textContent = origText;
             nudgeApShellChromeAfterRasterExport();
@@ -3975,6 +4206,7 @@
         }
 
         restoreWeatherDraftFromStorage();
+        initAircraftProfileSelect();
         syncAirspaceRadiusInput();
         syncWeatherModelSelectTitle();
         updateMapLocationHint();
@@ -3988,6 +4220,10 @@
                 scheduleWeatherDraftSave();
                 notifyWeatherWindOverlayOptionsChanged();
             });
+        }
+        var aircraftProfileEl = document.getElementById('weatherAircraftProfile');
+        if (aircraftProfileEl) {
+            aircraftProfileEl.addEventListener('change', onAircraftProfileChange);
         }
         var weatherDateTimeEl = document.getElementById('weatherDateTime');
         if (weatherDateTimeEl) {

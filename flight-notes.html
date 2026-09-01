@@ -398,15 +398,25 @@
                     <span id="fnWeatherFetchStatus" class="fn-weather-fetch-status" role="status" aria-live="polite"></span>
                 </div>
                 <p class="fn-weather-hint">Uses the same Open-Meteo API as <a href="weather.html">Flight Weather</a>. Coordinates come from <strong>Location</strong> or an <strong>Additional Operational Location</strong> with a resolved lat/lng. When you have more than one site, choose which to use above. Forecast values use your mission <strong>Date</strong> and <strong>Time</strong> when both are set.</p>
+                <div class="fn-weather-profile-row">
+                    <label class="fn-label" for="fnWeatherProfile">Aircraft profile</label>
+                    <select id="fnWeatherProfile" class="fn-input fn-weather-profile-select" title="Reference profile for forecast suitability thresholds" aria-label="Aircraft profile for weather suitability">
+                        <option value="matrice4_enterprise">DJI Matrice 4 (enterprise)</option>
+                        <option value="mini5_pro">DJI Mini 5 Pro</option>
+                    </select>
+                </div>
                 <details class="fn-weather-how">
                     <summary class="fn-weather-how-summary">How This Is Calculated</summary>
                     <div class="fn-weather-how-body">
                         <p>When <strong>Date</strong> or <strong>Time</strong> is missing, the report uses the latest Open-Meteo hourly bin at or before the current moment (same idea as choosing <strong>Now</strong> on Flight Weather).</p>
-                        <p>Flight suitability (Green / Amber / Red) uses the same rules as Flight Weather: sustained wind (higher of 10 m and 120 m), gusts (higher of 10 m gusts and an estimate from 120 m sustained wind), visibility, and rain in the hour. Trace drizzle up to <strong>0.5</strong> mm/h stays in the green band; higher hourly totals trend amber or red. Expand <strong>How This Is Calculated</strong> on the Flight Weather Summary tab for the full threshold list.</p>
+                        <p>Green / Amber / Red is a <strong>forecast indicator</strong> against the selected aircraft profile — not a go/no-go decision. Confirm conditions on site and apply your Operations Manual before flying.</p>
+                        <p>Thresholds differ by profile (e.g. Matrice 4 uses 10 m and 120 m wind; Mini 5 Pro uses 10 m only with stricter gust margins). Expand <strong>How This Is Calculated</strong> on the Flight Weather Summary tab for the full threshold list.</p>
                     </div>
                 </details>
-                <label class="fn-label" for="fnWeather">Conditions</label>
-                <textarea id="fnWeather" name="fnWeather" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Wind, visibility, cloud, etc."></textarea>
+                <label class="fn-label" for="fnWeather">Forecast (Open-Meteo)</label>
+                <textarea id="fnWeather" name="fnWeather" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Fetched forecast data and model indicator appear here."></textarea>
+                <label class="fn-label" for="fnWeatherOnSite">On-site weather assessment</label>
+                <textarea id="fnWeatherOnSite" name="fnWeatherOnSite" class="fn-input fn-textarea fn-textarea-short" rows="3" placeholder="Actual wind on ground, gusts observed, visibility, and your operational decision (e.g. proceeded after on-site check)."></textarea>
             </section>
 
             <section class="fn-section" aria-labelledby="fn-airspace-heading">
@@ -558,7 +568,7 @@
                 <button type="button" class="modal-close" id="fnWeatherClearModalClose" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <p>This will remove all text from the <strong>Conditions</strong> box only. The rest of your flight report will stay as it is.</p>
+                <p>This will remove all text from the <strong>Forecast (Open-Meteo)</strong> and <strong>On-site weather assessment</strong> boxes. The rest of your flight report will stay as it is.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="fnWeatherClearModalCancel">Cancel</button>
@@ -575,7 +585,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="js/pdf-theme.js?v=7"></script>
-    <script src="js/flight-suitability.js?v=1"></script>
+    <script src="js/flight-suitability.js?v=2"></script>
     <script src="js/notam-pib.js?v=3"></script>
     <script src="js/airspace-nearby.js?v=5"></script>
     <script src="js/geolocation-helpers.js?v=7"></script>

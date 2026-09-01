@@ -46,8 +46,8 @@ assert(formatCloudCoverStr(75, 20) === '75% total, 20% low', 'cloud cover');
 const staticChecks = [
     ['PPTX forecast hour source label', /exportWeatherPptx[\s\S]*?formatForecastHourSourceLabel/],
     ['PDF forecast hour source label', /exportWeatherPdf[\s\S]*?formatForecastHourSourceLabel/],
-    ['PPTX how-calculated slide', /exportWeatherPptx[\s\S]*?How This Is Calculated[\s\S]*?buildWeatherHowCalculatedPlainLines/],
-    ['PDF how-calculated page', /exportWeatherPdf[\s\S]*?How This Is Calculated[\s\S]*?buildWeatherHowCalculatedPlainLines/],
+    ['PPTX how-calculated section', /exportWeatherPptx[\s\S]*?How This Is Calculated[\s\S]*?buildWeatherHowCalculatedExportPlainLines/],
+    ['PDF how-calculated section', /exportWeatherPdf[\s\S]*?How This Is Calculated[\s\S]*?buildWeatherHowCalculatedExportPlainLines/],
     ['PPTX hourly precip helper', /exportWeatherPptx[\s\S]*?formatHourlyPrecipCell/],
     ['PDF hourly precip helper', /exportWeatherPdf[\s\S]*?formatHourlyPrecipCell/],
     ['PDF 12-hour summary text', /exportWeatherPdf[\s\S]*?deriveSummaryText\(lastHourlySlice/],

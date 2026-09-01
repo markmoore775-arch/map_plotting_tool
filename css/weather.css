@@ -1394,6 +1394,30 @@ body.ap-shell.fn-light-theme.weather-mode .weather-model-info-btn:hover {
     margin-bottom: 16px;
 }
 
+.weather-forecast-disclaimer {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--sidebar-text-muted, #9999aa);
+    margin: 0 0 12px 0;
+    max-width: 52em;
+}
+
+.weather-how-calculated-disclaimer {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--sidebar-text-muted, #9999aa);
+    margin-top: 8px;
+}
+
+.weather-toolbar-group.weather-aircraft-group {
+    min-width: 0;
+}
+
+.weather-aircraft-group .weather-model-select {
+    min-width: 11rem;
+    max-width: 100%;
+}
+
 /* Wind by altitude */
 .weather-alt-section {
     margin-bottom: 16px;

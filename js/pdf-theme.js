@@ -65,30 +65,54 @@ const PdfTheme = (() => {
         }
     }
 
-    /** A4 portrait (mm); all PDF reports use this. */
-    var PAGE_W = 210;
-    var PAGE_H = 297;
+    var _landscape = false;
+    /** Default Y (mm) where body content begins below the page header. */
+    var _contentTopMm = 18;
 
-    function createDoc() {
-        var doc = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    function setContentTopMm(v) {
+        _contentTopMm = v;
+    }
+
+    function contentTopMm() {
+        return _contentTopMm;
+    }
+
+    /** Title-page content (map/panel) sits slightly lower than inner pages. */
+    function titleContentTopMm() {
+        return _contentTopMm + 8;
+    }
+
+    function pageDims() {
+        return _landscape ? { w: 297, h: 210 } : { w: 210, h: 297 };
+    }
+
+    function createDoc(opts) {
+        opts = opts || {};
+        _landscape = !!opts.landscape;
+        var dims = pageDims();
+        var orient = _landscape ? 'landscape' : 'portrait';
+        var doc = new jspdf.jsPDF({ orientation: orient, unit: 'mm', format: 'a4' });
         var c = C();
         doc.setFillColor(c.bg[0], c.bg[1], c.bg[2]);
-        doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
+        doc.rect(0, 0, dims.w, dims.h, 'F');
         return doc;
     }
 
     function newPage(doc) {
-        doc.addPage('a4', 'portrait');
+        var orient = _landscape ? 'landscape' : 'portrait';
+        doc.addPage('a4', orient);
+        var dims = pageDims();
         var c = C();
         doc.setFillColor(c.bg[0], c.bg[1], c.bg[2]);
-        doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
+        doc.rect(0, 0, dims.w, dims.h, 'F');
     }
 
     function addHeader(doc, title, isTitlePage) {
         var c = C();
+        var pw = pageDims().w;
         var barH = isTitlePage ? 3 : 2;
         doc.setFillColor(c.accent[0], c.accent[1], c.accent[2]);
-        doc.rect(0, 0, PAGE_W, barH, 'F');
+        doc.rect(0, 0, pw, barH, 'F');
         var logoLeft = 10;
         var logoTop = 5;
         var logoH = isTitlePage ? 14 : 10;
@@ -101,7 +125,7 @@ const PdfTheme = (() => {
                     logoH = 10;
                     logoW = logoH * LOGO_ASPECT;
                     logoTop = 3.5;
-                    logoLeft = PAGE_W - 10 - logoW;
+                    logoLeft = pw - 10 - logoW;
                     doc.addImage(_logoBase64, 'PNG', logoLeft, logoTop, logoW, logoH);
                 }
             } catch (e) {}
@@ -126,7 +150,8 @@ const PdfTheme = (() => {
 
     function addFooter(doc) {
         var c = C();
-        var pw = PAGE_W, ph = PAGE_H;
+        var pw = pageDims().w;
+        var ph = pageDims().h;
         doc.setFillColor(c.accent[0], c.accent[1], c.accent[2]);
         doc.rect(0, ph - 6, pw, 1.5, 'F');
         doc.setFillColor(c.footer[0], c.footer[1], c.footer[2]);
@@ -259,22 +284,24 @@ const PdfTheme = (() => {
         return totalH;
     }
 
-    function tableStyles() {
+    function tableStyles(opts) {
+        opts = opts || {};
         var c = C();
+        var large = !!opts.large;
         return {
             headStyles: {
                 fillColor: c.accent,
                 textColor: c.headerText,
                 fontStyle: 'bold',
-                fontSize: 7.5,
+                fontSize: large ? 9 : 7.5,
                 font: 'helvetica'
             },
             bodyStyles: {
                 fillColor: c.surface,
                 textColor: c.text,
-                fontSize: 7,
+                fontSize: large ? 8.5 : 7,
                 font: 'helvetica',
-                cellPadding: 2
+                cellPadding: large ? 2.5 : 2
             },
             alternateRowStyles: {
                 fillColor: c.bg
@@ -313,19 +340,36 @@ const PdfTheme = (() => {
         return sq.toDataURL('image/png');
     }
 
+    /** Draw image inside a rounded surface-coloured frame (matches PPTX map styling). */
+    function addFramedImage(doc, imgData, x, y, size) {
+        var c = C();
+        var pad = 2;
+        doc.setFillColor(c.surface[0], c.surface[1], c.surface[2]);
+        doc.roundedRect(x - pad, y - pad, size + pad * 2, size + pad * 2, 2, 2, 'F');
+        doc.setDrawColor(c.border[0], c.border[1], c.border[2]);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(x - pad, y - pad, size + pad * 2, size + pad * 2, 2, 2, 'S');
+        doc.addImage(imgData, 'PNG', x, y, size, size);
+    }
+
     return {
         setLight: setLight,
         loadLogo: loadLogo,
         colors: C,
         hex: hex,
-        pageWidthMm: function () { return PAGE_W; },
-        pageHeightMm: function () { return PAGE_H; },
+        pageWidthMm: function () { return pageDims().w; },
+        pageHeightMm: function () { return pageDims().h; },
+        isLandscape: function () { return _landscape; },
+        setContentTopMm: setContentTopMm,
+        contentTopMm: contentTopMm,
+        titleContentTopMm: titleContentTopMm,
         createDoc: createDoc,
         newPage: newPage,
         addHeader: addHeader,
         addFooter: addFooter,
         addAllFooters: addAllFooters,
         addInfoPanel: addInfoPanel,
+        addFramedImage: addFramedImage,
         tableStyles: tableStyles,
         captureSquareMap: captureSquareMap
     };

@@ -55,7 +55,7 @@
                 ids.push('fnBattery' + n + BATTERY_N_FIELD_SUFFIXES[i]);
             }
         }
-        ids.push('fnWeather', 'fnAirspaceRadiusKm', 'fnNotes');
+        ids.push('fnWeather', 'fnWeatherOnSite', 'fnAirspaceRadiusKm', 'fnNotes');
         return ids;
     }
 
@@ -1905,20 +1905,22 @@
         return origSiteId;
     }
 
-    /** Grow/shrink Conditions textarea to fit content (fetch + typing); cap height so very long notes scroll inside. */
+    /** Grow/shrink weather textareas to fit content; cap height so very long notes scroll inside. */
     function autoResizeConditionsTextarea() {
-        var ta = document.getElementById('fnWeather');
-        if (!ta) return;
-        ta.style.height = 'auto';
-        var cap = Math.min(window.innerHeight * 0.85, 1400);
-        var h = ta.scrollHeight;
-        if (h > cap) {
-            ta.style.height = cap + 'px';
-            ta.style.overflowY = 'auto';
-        } else {
-            ta.style.height = h + 'px';
-            ta.style.overflowY = 'hidden';
-        }
+        ['fnWeather', 'fnWeatherOnSite'].forEach(function (id) {
+            var ta = document.getElementById(id);
+            if (!ta) return;
+            ta.style.height = 'auto';
+            var cap = Math.min(window.innerHeight * 0.85, 1400);
+            var h = ta.scrollHeight;
+            if (h > cap) {
+                ta.style.height = cap + 'px';
+                ta.style.overflowY = 'auto';
+            } else {
+                ta.style.height = h + 'px';
+                ta.style.overflowY = 'hidden';
+            }
+        });
     }
 
     function trimVal(id) {
@@ -2139,8 +2141,10 @@
         }
 
         var w = trimVal('fnWeather');
+        var wOnSite = trimVal('fnWeatherOnSite');
         pushBanner('Conditions');
-        pushRow('Weather', w || '-', 'conditions');
+        pushRow('Forecast (Open-Meteo)', w || '-', 'conditions');
+        pushRow('On-site weather assessment', wOnSite || '-', 'conditions');
 
         pushBanner('Airspace');
         pushRow('Airspace summary', fnAirspaceSummaryForExport(), 'airspace');
@@ -2228,7 +2232,8 @@
 
         lines.push('');
         lines.push('--- Conditions ---');
-        lines.push('Weather: ' + dash(trimVal('fnWeather').replace(/\n/g, ' ')));
+        lines.push('Forecast (Open-Meteo): ' + dash(trimVal('fnWeather').replace(/\n/g, ' ')));
+        lines.push('On-site weather assessment: ' + dash(trimVal('fnWeatherOnSite').replace(/\n/g, ' ')));
         lines.push('');
         lines.push('--- Airspace ---');
         lines.push('Airspace summary: ' + fnAirspaceSummaryForExport());
@@ -2245,6 +2250,24 @@
     var HOURLY_PARAMS =
         'wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_120m,wind_direction_120m,visibility,cloud_cover,cloud_cover_low,precipitation,precipitation_probability,temperature_2m';
     var FS = FlightSuitability;
+
+    function getSelectedFnAircraftProfileId() {
+        var el = document.getElementById('fnWeatherProfile');
+        if (el && el.value && FS.AIRCRAFT_PROFILES[el.value]) return el.value;
+        return FS.getStoredAircraftProfileId();
+    }
+
+    function initFnAircraftProfileSelect() {
+        var el = document.getElementById('fnWeatherProfile');
+        if (!el) return;
+        FS.populateAircraftProfileSelect(el, FS.getStoredAircraftProfileId());
+    }
+
+    function onFnAircraftProfileChange() {
+        var el = document.getElementById('fnWeatherProfile');
+        if (el && el.value) FS.setStoredAircraftProfileId(el.value);
+        saveFlightNotesDraft();
+    }
     var GUST_120M_MULTIPLIER = FS.GUST_120M_MULTIPLIER;
     var WX_MODEL_LABELS = {
         auto: 'Best match',
@@ -2339,7 +2362,7 @@
     }
 
     function deriveSuitability(data) {
-        return FS.deriveSuitability(data);
+        return FS.deriveSuitability(data, getSelectedFnAircraftProfileId());
     }
 
     function deriveSummaryText(hourlySlice, suitability) {
@@ -2502,7 +2525,7 @@
         var tempStr = temp != null ? Math.round(temp) + ' °C' : '-';
 
         var lines = [];
-        lines.push('--- Forecast (selected hour) ---');
+        lines.push('--- Forecast (Open-Meteo, selected hour) ---');
         lines.push('10 m wind: ' + formatWindRow(data.wind_speed_10m, data.wind_direction_10m));
         lines.push('10 m gusts: ' + gustsStr);
         lines.push('120 m wind: ' + wind120Str);
@@ -2517,13 +2540,12 @@
             lines.push(summaryText);
         }
         lines.push('');
-        lines.push('--- Assessment ---');
-        lines.push(suitability.label + ': ' + suitability.brief);
+        FS.buildForecastIndicatorPlainLines(suitability, getSelectedFnAircraftProfileId()).forEach(function (ln) {
+            lines.push(ln);
+        });
         lines.push('');
         lines.push('--- How this is calculated ---');
-        if (suitability.technical) lines.push(suitability.technical);
-        lines.push('');
-        FS.buildWeatherRagMethodologyPlainLines(usedTargetTime, 'flightReport').forEach(function (ln) {
+        FS.buildWeatherRagMethodologyPlainLines(usedTargetTime, 'flightReport', getSelectedFnAircraftProfileId()).forEach(function (ln) {
             lines.push(ln);
         });
         lines.push('');
@@ -3908,7 +3930,7 @@
             var ta = document.getElementById('fnWeather');
             if (!ta) return;
             var existing = trimVal('fnWeather');
-            var sep = '\n\n--- Open-Meteo (from Flight Weather) ---\n';
+            var sep = '\n\n--- Open-Meteo forecast (from Flight Weather) ---\n';
             ta.value = existing ? existing + sep + o.text : o.text;
             setWeatherFetchStatus('Added from Flight Weather.', 'ok');
             autoResizeConditionsTextarea();
@@ -4026,6 +4048,12 @@
             ta.style.height = '';
             ta.style.overflowY = '';
         }
+        var onSite = document.getElementById('fnWeatherOnSite');
+        if (onSite) {
+            onSite.value = '';
+            onSite.style.height = '';
+            onSite.style.overflowY = '';
+        }
         clearWeatherFetchStatus();
         autoResizeConditionsTextarea();
         closeWeatherClearModal();
@@ -4045,6 +4073,11 @@
         if (ta) {
             ta.style.height = '';
             ta.style.overflowY = '';
+        }
+        var onSiteTa = document.getElementById('fnWeatherOnSite');
+        if (onSiteTa) {
+            onSiteTa.style.height = '';
+            onSiteTa.style.overflowY = '';
         }
         syncManualSelectsFromDateInput();
         saveEmptyDraftForActiveReport();
@@ -4261,11 +4294,14 @@
         if (weatherClearClose) weatherClearClose.addEventListener('click', closeWeatherClearModal);
         if (weatherClearBackdrop) weatherClearBackdrop.addEventListener('click', closeWeatherClearModal);
         if (weatherClearConfirm) weatherClearConfirm.addEventListener('click', clearConditionsOnly);
+        initFnAircraftProfileSelect();
+        var fnWeatherProfileSel = document.getElementById('fnWeatherProfile');
+        if (fnWeatherProfileSel) fnWeatherProfileSel.addEventListener('change', onFnAircraftProfileChange);
         var fnWeatherTa = document.getElementById('fnWeather');
-        if (fnWeatherTa) {
-            fnWeatherTa.addEventListener('input', autoResizeConditionsTextarea);
-            autoResizeConditionsTextarea();
-        }
+        var fnWeatherOnSiteTa = document.getElementById('fnWeatherOnSite');
+        if (fnWeatherTa) fnWeatherTa.addEventListener('input', autoResizeConditionsTextarea);
+        if (fnWeatherOnSiteTa) fnWeatherOnSiteTa.addEventListener('input', autoResizeConditionsTextarea);
+        autoResizeConditionsTextarea();
         window.addEventListener(
             'resize',
             function () {

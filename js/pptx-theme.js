@@ -8,8 +8,42 @@ const PptxTheme = (() => {
 
     let logoBase64 = null;
     let _light = false;
+    /** Default body content Y (inches) below slide header bar — weather export uses 1.0 to match PDF. */
+    var _contentTopIn = 0.85;
+    var SLIDE_FOOTER_TOP = 7.32;
     /** airplanlogowhite/black.png aspect (width / height). */
     var LOGO_ASPECT = 840 / 938;
+
+    function setContentTopIn(v) {
+        _contentTopIn = v;
+    }
+
+    function contentTopIn() {
+        return _contentTopIn;
+    }
+
+    /** Slide title text Y — scales with content top margin. */
+    function slideTitleIn() {
+        return Math.max(0.35, _contentTopIn - 0.62);
+    }
+
+    /** Title slide map/panel Y — slightly lower than inner-page content. */
+    function titleContentTopIn() {
+        return _contentTopIn + 0.28;
+    }
+
+    /** Max Y for flowing content before the footer band. */
+    function contentBottomIn() {
+        return SLIDE_FOOTER_TOP - 0.08;
+    }
+
+    function marginXIn() {
+        return 0.5;
+    }
+
+    function contentWidthIn() {
+        return 12.2;
+    }
 
     const COLORS_DARK = {
         darkBg:      '1E1E2E',
@@ -291,6 +325,13 @@ const PptxTheme = (() => {
         COLORS: COLORS_DARK,
         colors: colors,
         setLight: setLight,
+        setContentTopIn: setContentTopIn,
+        contentTopIn: contentTopIn,
+        slideTitleIn: slideTitleIn,
+        titleContentTopIn: titleContentTopIn,
+        contentBottomIn: contentBottomIn,
+        marginXIn: marginXIn,
+        contentWidthIn: contentWidthIn,
         loadLogo: loadLogo,
         applyTheme: applyTheme,
         captureSquareMap: captureSquareMap,
