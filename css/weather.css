@@ -214,8 +214,35 @@ body.ap-shell.fn-light-theme.weather-mode .weather-map-dock__extras-summary {
     color: var(--sidebar-text-muted, #5c6378);
 }
 
-/* Desktop: extras always expanded, summary hidden */
+/* Desktop: wide dock — buttons row + single options row */
 @media (min-width: 901px) {
+    .weather-bottom-chrome {
+        width: max-content;
+        max-width: calc(100vw - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    }
+
+    .weather-map-dock {
+        width: max-content;
+        max-width: 100%;
+    }
+
+    .weather-map-dock__body {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 14px;
+        width: max-content;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .weather-map-dock__extras {
+        flex: none;
+        width: max-content;
+        min-width: 100%;
+        max-width: 100%;
+    }
+
     .weather-map-dock__extras-summary {
         display: none;
     }
@@ -223,19 +250,49 @@ body.ap-shell.fn-light-theme.weather-mode .weather-map-dock__extras-summary {
     .weather-map-dock__forecast-inner {
         display: flex;
         flex-direction: row;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: center;
-        gap: 12px 16px;
+        justify-content: center;
+        gap: 10px 14px;
+        flex-shrink: 0;
     }
 
     .weather-map-dock__toolbar {
-        padding-top: 2px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px 14px;
+        padding-top: 8px;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
-        gap: 12px 16px;
+        width: max-content;
+        min-width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: visible;
     }
 
     body.ap-shell.fn-light-theme.weather-mode .weather-map-dock__toolbar {
         border-top-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .weather-toolbar-group {
+        flex-shrink: 0;
+    }
+
+    .weather-aircraft-group .weather-model-select {
+        min-width: 9.5rem;
+    }
+
+    .weather-model-group .weather-model-select {
+        min-width: 6.5rem;
+    }
+
+    /* Date picker open: allow forecast groups to wrap without crushing the wind row */
+    .weather-map-dock__forecast-inner:has(.weather-datetime:not(.hidden)) {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .weather-map-dock__wind-row {
